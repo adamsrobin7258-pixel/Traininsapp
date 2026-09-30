@@ -56,16 +56,30 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
       - name: Verify and name APK
         id: apk
+        shell: bash
         run: |
+          set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
           APK="kalethra-${VERSION}-debug.apk"
           cp android/app/build/outputs/apk/debug/app-debug.apk "$APK"
-          BUILD_TOOLS=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          BADGING=$("$BUILD_TOOLS/aapt2" dump badging "$APK" | head -1)
+          # Newest stable build-tools (skip release candidates).
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | grep -v -- '-rc' | sort -V | tail -1)"
+          echo "Using $BUILD_TOOLS"
+
+          BADGING=$("$BUILD_TOOLS/aapt2" dump badging "$APK" | sed -n 1p)
           echo "$BADGING"
-          echo "$BADGING" | grep -q "name='com.kalethra.app'"
-          echo "$BADGING" | grep -q "versionName='${VERSION}'"
-          "$BUILD_TOOLS/apksigner" verify --print-certs "$APK" | grep "Signer #1 certificate"
+          grep -q "name='com.kalethra.app'" <<< "$BADGING"
+          grep -q "versionName='${VERSION}'" <<< "$BADGING"
+
+          # The APK must be signed with the shared debug key so it installs as an update.
+          SIGNER=$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)
+          echo "$SIGNER"
+          ACTUAL=$(grep -m1 'certificate SHA-256 digest' <<< "$SIGNER" | awk -F': ' '{print $2}' | tr -d ' ')
+          EXPECTED=$(keytool -list -v -keystore android/app/debug.keystore -storepass android \
+            -alias androiddebugkey | grep 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          echo "Signer SHA-256: $ACTUAL"
+          echo "Expected:       $EXPECTED"
+          test -n "$ACTUAL" && test "$ACTUAL" = "$EXPECTED"
           echo "file=$APK" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v5
         with:
