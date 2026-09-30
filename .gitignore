@@ -1,0 +1,11 @@
+node_modules
+dist
+coverage
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.log
+# Generated at build time (see scripts/copy-sqlite-wasm.mjs)
+public/assets/sql-wasm.wasm

@@ -1,0 +1,36 @@
+.screen {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin: 0 auto;
+  padding-top: calc(var(--safe-top) + var(--space-8));
+  padding-right: calc(var(--safe-right) + var(--layout-gutter));
+  padding-bottom: calc(var(--safe-bottom) + var(--size-tab-bar) + var(--space-10));
+  padding-left: calc(var(--safe-left) + var(--layout-gutter));
+}
+
+.header {
+  margin-bottom: var(--space-8);
+}
+
+.eyebrow {
+  margin-bottom: var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.title {
+  font-size: var(--font-size-large-title);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-title);
+  overflow-wrap: anywhere;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}

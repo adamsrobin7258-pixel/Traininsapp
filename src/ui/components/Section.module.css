@@ -1,0 +1,19 @@
+.section {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  margin-bottom: var(--space-3);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.footer {
+  margin-top: var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}

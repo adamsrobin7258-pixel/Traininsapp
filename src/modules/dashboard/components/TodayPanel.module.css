@@ -1,0 +1,14 @@
+.panel {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.panel > * {
+  padding: var(--space-5) var(--space-4);
+}
+
+.panel > * + * {
+  border-left: var(--border-hairline) solid var(--color-separator);
+}

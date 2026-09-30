@@ -1,0 +1,111 @@
+/*
+ * Design tokens – the single source of truth for visual values.
+ * Components use only these variables, never raw colors or sizes.
+ * Documentation: DESIGN_SYSTEM.md
+ */
+:root {
+  /* Typography */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Roboto', 'Segoe UI', system-ui, sans-serif;
+  --font-size-caption: 0.75rem; /* 12 */
+  --font-size-footnote: 0.8125rem; /* 13 */
+  --font-size-subhead: 0.9375rem; /* 15 */
+  --font-size-body: 1rem; /* 16 */
+  --font-size-headline: 1.0625rem; /* 17 */
+  --font-size-title: 1.375rem; /* 22 */
+  --font-size-large-title: 2rem; /* 32 */
+  --font-size-metric: 1.75rem; /* 28 */
+  --line-height-tight: 1.15;
+  --line-height-snug: 1.3;
+  --line-height-body: 1.45;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --letter-spacing-title: -0.022em;
+  --letter-spacing-caps: 0.06em;
+
+  /* Spacing (4 pt grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Radii */
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-full: 999px;
+
+  /* Sizes */
+  --size-tap-target: 2.75rem; /* 44 pt minimum touch target */
+  --size-icon: 1.5rem;
+  --size-icon-sm: 1.25rem;
+  --size-tab-bar: 3.5rem;
+  --layout-gutter: var(--space-5);
+  --layout-max-width: 36rem;
+  --border-hairline: 0.5px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Safe areas (Capacitor injects --safe-area-inset-* on Android) */
+  --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+  --safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+  --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+  --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+
+  /* Color – light theme (default) */
+  --color-bg: #f5f4f1;
+  --color-surface: #ffffff;
+  --color-surface-muted: #ebe9e4;
+  --color-surface-pressed: #f0eeea;
+  --color-control-selected: #ffffff;
+  --color-text: #15161a;
+  --color-text-secondary: #53555c;
+  --color-text-tertiary: #6e7077;
+  --color-separator: rgb(21 22 26 / 0.1);
+  --color-border: rgb(21 22 26 / 0.16);
+  --color-accent: #cc431c;
+  --color-accent-text: #b93d18;
+  --color-accent-subtle: rgb(204 67 28 / 0.1);
+  --color-on-accent: #ffffff;
+  --color-positive: #1d7f55;
+  --color-critical: #c0332b;
+  --color-tab-bar: rgb(245 244 241 / 0.86);
+  --color-focus: var(--color-accent);
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #0e0f11;
+  --color-surface: #18191c;
+  --color-surface-muted: #232428;
+  --color-surface-pressed: #202125;
+  --color-control-selected: #37383d;
+  --color-text: #f2f1ee;
+  --color-text-secondary: #a3a4aa;
+  --color-text-tertiary: #888a91;
+  --color-separator: rgb(242 241 238 / 0.09);
+  --color-border: rgb(242 241 238 / 0.16);
+  --color-accent: #ff6a3d;
+  --color-accent-text: #ff8c66;
+  --color-accent-subtle: rgb(255 106 61 / 0.14);
+  --color-on-accent: #16100d;
+  --color-positive: #3fc68a;
+  --color-critical: #ff6b61;
+  --color-tab-bar: rgb(14 15 17 / 0.86);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+  }
+}

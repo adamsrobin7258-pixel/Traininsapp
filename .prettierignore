@@ -1,0 +1,6 @@
+dist
+coverage
+android
+ios
+public/assets
+package-lock.json

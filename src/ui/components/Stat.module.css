@@ -1,0 +1,24 @@
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.value {
+  font-size: var(--font-size-metric);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-title);
+  font-variant-numeric: tabular-nums;
+}
+
+.value[data-empty='true'] {
+  color: var(--color-text-tertiary);
+}
+
+.label {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
