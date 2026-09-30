@@ -7,6 +7,10 @@ export const en: TranslationSchema = {
     startupErrorTitle: 'The app could not be started',
     startupErrorBody:
       'Something went wrong while opening the local database. Please restart the app.',
+    startupErrorKey:
+      'The key for your encrypted data is not available on this device. Your data has not been changed.',
+    startupErrorMigration:
+      'The local database could not be updated. The change was fully rolled back and your data is unchanged.',
     retry: 'Try again',
   },
   nav: {
@@ -104,11 +108,37 @@ export const en: TranslationSchema = {
       system: 'System',
       systemHint: 'Follows your device language (currently: {language}).',
     },
-    dataTitle: 'Data',
     cloudSync: 'Cloud sync',
     cloudSyncOff: 'Off',
-    dataFooter:
-      'All data is stored locally on this device. An optional account with sync will follow in a later version.',
+    privacy: {
+      title: 'Privacy & security',
+      location: 'Storage',
+      locationValue: 'This device only',
+      encryption: 'Encryption',
+      encryptionOn: 'On',
+      encryptionOff: 'Off',
+      footerEncrypted:
+        'Your data is encrypted and stored only on this device. Kalethra does not send data to third parties.',
+      footerDevelopment:
+        'Browser development mode: data is stored unencrypted in the browser. The Android and iOS apps always encrypt.',
+      runCheck: 'Check storage',
+      running: 'Checking …',
+      checkFailed: 'The check could not be run.',
+      lastRun: 'Value from {date} found',
+      developmentMode: 'Browser development mode',
+      checks: {
+        encryption: 'Encrypted database',
+        writeRead: 'Write and read',
+        restart: 'Kept after restart',
+        rollback: 'Rollback on errors',
+        schema: 'Database version',
+      },
+      status: {
+        pass: 'Passed',
+        fail: 'Failed',
+        pending: 'Check after restart',
+      },
+    },
     aboutTitle: 'About {appName}',
     version: 'Version',
   },

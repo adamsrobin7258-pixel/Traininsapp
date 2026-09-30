@@ -41,6 +41,14 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    table: 'diagnostics',
+    category: 'app',
+    sensitivity: 'technical',
+    exportable: false,
+    deletedWithProfile: false,
+    syncable: false,
+  },
+  {
     table: 'profiles',
     category: 'profile',
     sensitivity: 'personal',

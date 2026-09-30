@@ -9,6 +9,10 @@ export const de = {
     startupErrorTitle: 'Die App konnte nicht gestartet werden',
     startupErrorBody:
       'Beim Öffnen der lokalen Datenbank ist ein Fehler aufgetreten. Bitte starte die App neu.',
+    startupErrorKey:
+      'Der Schlüssel für deine verschlüsselten Daten ist auf diesem Gerät nicht verfügbar. Deine Daten wurden nicht verändert.',
+    startupErrorMigration:
+      'Die lokale Datenbank konnte nicht aktualisiert werden. Die Änderung wurde vollständig zurückgenommen, deine Daten sind unverändert.',
     retry: 'Erneut versuchen',
   },
   nav: {
@@ -109,11 +113,37 @@ export const de = {
       system: 'System',
       systemHint: 'Folgt der Gerätesprache (aktuell: {language}).',
     },
-    dataTitle: 'Daten',
     cloudSync: 'Cloud-Synchronisierung',
     cloudSyncOff: 'Aus',
-    dataFooter:
-      'Alle Daten werden lokal auf diesem Gerät gespeichert. Ein optionales Konto mit Synchronisierung folgt in einer späteren Version.',
+    privacy: {
+      title: 'Datenschutz & Sicherheit',
+      location: 'Speicherort',
+      locationValue: 'Nur dieses Gerät',
+      encryption: 'Verschlüsselung',
+      encryptionOn: 'Aktiv',
+      encryptionOff: 'Nicht aktiv',
+      footerEncrypted:
+        'Deine Daten werden verschlüsselt und ausschließlich auf diesem Gerät gespeichert. Kalethra sendet keine Daten an Dritte.',
+      footerDevelopment:
+        'Browser-Entwicklungsmodus: Daten liegen unverschlüsselt im Browser. Die Android- und iOS-App speichern immer verschlüsselt.',
+      runCheck: 'Speicher prüfen',
+      running: 'Wird geprüft …',
+      checkFailed: 'Die Prüfung konnte nicht ausgeführt werden.',
+      lastRun: 'Wert vom {date} gefunden',
+      developmentMode: 'Browser-Entwicklungsmodus',
+      checks: {
+        encryption: 'Verschlüsselte Datenbank',
+        writeRead: 'Schreiben und Lesen',
+        restart: 'Erhalten nach Neustart',
+        rollback: 'Rücksetzen bei Fehlern',
+        schema: 'Datenbankversion',
+      },
+      status: {
+        pass: 'Bestanden',
+        fail: 'Fehlgeschlagen',
+        pending: 'Nach Neustart prüfen',
+      },
+    },
     aboutTitle: 'Über {appName}',
     version: 'Version',
   },

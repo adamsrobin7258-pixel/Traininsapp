@@ -53,7 +53,13 @@ export default tseslint.config(
         {
           allowConstantExport: true,
           // Context providers export their consumer hook from the same file.
-          allowExportNames: ['useI18n', 'useSettings', 'useProfile', 'useSyncService'],
+          allowExportNames: [
+            'useI18n',
+            'useSettings',
+            'useProfile',
+            'useSyncService',
+            'useStorage',
+          ],
         },
       ],
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],

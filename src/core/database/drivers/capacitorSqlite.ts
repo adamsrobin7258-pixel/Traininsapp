@@ -4,14 +4,22 @@ import {
   SQLiteConnection,
   type SQLiteDBConnection,
 } from '@capacitor-community/sqlite';
-import type { DatabaseDriver, RunResult, SqlExecutor, SqlValue } from '../types';
+import { planEncryptedOpen, verifyEncrypted, type EncryptionPort } from '../encryption';
+import type {
+  DatabaseDriver,
+  DatabaseSecurity,
+  OpenedDatabase,
+  RunResult,
+  SqlExecutor,
+  SqlValue,
+} from '../types';
 
 /**
  * Driver backed by @capacitor-community/sqlite.
- * - Android/iOS: native SQLite database stored in the app sandbox.
- * - Web (development only): jeep-sqlite (sql.js/WASM) persisted in IndexedDB.
+ * - Android/iOS: native SQLCipher database, always encrypted (see ../encryption.ts).
+ * - Web (development only): jeep-sqlite (sql.js/WASM) in IndexedDB, NOT encrypted.
  */
-export async function openCapacitorSqliteDriver(databaseName: string): Promise<DatabaseDriver> {
+export async function openCapacitorSqliteDriver(databaseName: string): Promise<OpenedDatabase> {
   const isWeb = Capacitor.getPlatform() === 'web';
   const sqlite = new SQLiteConnection(CapacitorSQLite);
 
@@ -21,16 +29,55 @@ export async function openCapacitorSqliteDriver(databaseName: string): Promise<D
 
   await sqlite.checkConnectionsConsistency();
   const existing = (await sqlite.isConnection(databaseName, false)).result === true;
-  const connection = existing
-    ? await sqlite.retrieveConnection(databaseName, false)
-    : await sqlite.createConnection(databaseName, false, 'no-encryption', 1, false);
+
+  const port = createEncryptionPort(sqlite);
+  let connection: SQLiteDBConnection;
+  let outcome: DatabaseSecurity['outcome'];
+  if (isWeb) {
+    outcome = 'development-unencrypted';
+    connection = existing
+      ? await sqlite.retrieveConnection(databaseName, false)
+      : await sqlite.createConnection(databaseName, false, 'no-encryption', 1, false);
+  } else if (existing) {
+    // Same process, e.g. after "retry" on the startup error screen; verified below.
+    outcome = 'opened';
+    connection = await sqlite.retrieveConnection(databaseName, false);
+  } else {
+    const plan = await planEncryptedOpen(port, databaseName);
+    outcome = plan.outcome;
+    connection = await sqlite.createConnection(databaseName, true, plan.mode, 1, false);
+  }
   await connection.open();
+
+  if (!isWeb) {
+    await verifyEncrypted(port, databaseName);
+  }
   await connection.execute('PRAGMA foreign_keys = ON;', false);
 
   const persist = isWeb ? () => sqlite.saveToStore(databaseName) : () => Promise.resolve();
-  return new CapacitorSqliteDriver(connection, persist, async () => {
+  const driver = new CapacitorSqliteDriver(connection, persist, async () => {
     await sqlite.closeConnection(databaseName, false);
   });
+  const security: DatabaseSecurity = {
+    encrypted: !isWeb,
+    outcome,
+    cipherVersion: isWeb ? null : await readCipherVersion(driver),
+  };
+  return { driver, security };
+}
+
+function createEncryptionPort(sqlite: SQLiteConnection): EncryptionPort {
+  return {
+    isSecretStored: async () => (await sqlite.isSecretStored()).result === true,
+    setEncryptionSecret: (passphrase) => sqlite.setEncryptionSecret(passphrase),
+    isDatabase: async (name) => (await sqlite.isDatabase(name)).result === true,
+    isDatabaseEncrypted: async (name) => (await sqlite.isDatabaseEncrypted(name)).result === true,
+  };
+}
+
+async function readCipherVersion(driver: DatabaseDriver): Promise<string | null> {
+  const rows = await driver.query<{ cipher_version?: string }>('PRAGMA cipher_version');
+  return rows[0]?.cipher_version ?? null;
 }
 
 async function setupWebStore(sqlite: SQLiteConnection): Promise<void> {

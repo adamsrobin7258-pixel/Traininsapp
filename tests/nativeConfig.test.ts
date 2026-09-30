@@ -57,6 +57,21 @@ describe('native project configuration', () => {
   });
 });
 
+describe('database encryption configuration', () => {
+  it('enables SQLCipher on Android and iOS', () => {
+    const sqlite = capacitorConfig.plugins?.CapacitorSQLite;
+    expect(sqlite?.androidIsEncryption).toBe(true);
+    expect(sqlite?.iosIsEncryption).toBe(true);
+    expect(sqlite?.iosKeychainPrefix).toBe('kalethra');
+  });
+
+  it('does not enable biometric unlock, which would block background access', () => {
+    const sqlite = capacitorConfig.plugins?.CapacitorSQLite;
+    expect(sqlite?.androidBiometric).toBeUndefined();
+    expect(sqlite?.iosBiometric).toBeUndefined();
+  });
+});
+
 describe('Android privacy configuration', () => {
   const manifest = read('android/app/src/main/AndroidManifest.xml');
   const rules = read('android/app/src/main/res/xml/data_extraction_rules.xml');

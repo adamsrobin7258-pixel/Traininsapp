@@ -27,6 +27,17 @@ describe('migrator', () => {
     );
   });
 
+  it('upgrades a version 1 database without losing data', async () => {
+    const [v1] = migrations;
+    await migrate(db, [v1!]);
+    await db.run(
+      "INSERT INTO profiles (id, display_name, created_at, updated_at) VALUES ('p1', 'Anna', 'x', 'x')",
+    );
+
+    expect(await migrate(db, migrations)).toEqual(migrations.slice(1).map((m) => m.version));
+    expect(await db.query('SELECT display_name FROM profiles')).toEqual([{ display_name: 'Anna' }]);
+  });
+
   it('is idempotent', async () => {
     await migrate(db, migrations);
     expect(await migrate(db, migrations)).toEqual([]);

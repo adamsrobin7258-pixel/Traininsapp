@@ -6,9 +6,9 @@ import {
   THEME_PREFERENCES,
   useSettings,
 } from '@/core/settings';
-import { useSyncService } from '@/core/sync';
 import { DISPLAY_NAME_MAX_LENGTH, useProfile } from '@/core/user';
 import { List, ListRow, Screen, Section, SegmentedControl, TextField } from '@/ui';
+import { PrivacySection } from '../components/PrivacySection';
 import { ProfileHeader } from '../components/ProfileHeader';
 
 function reportError(error: unknown) {
@@ -19,7 +19,6 @@ export function ProfileScreen() {
   const { t } = useI18n();
   const { settings, updateSetting } = useSettings();
   const { profile, rename } = useProfile();
-  const syncStatus = useSyncService().getStatus();
   const deviceLocale = resolveLocale('system', getDeviceLanguages());
 
   const themeOptions = THEME_PREFERENCES.map((value) => ({
@@ -77,14 +76,7 @@ export function ProfileScreen() {
         />
       </Section>
 
-      <Section title={t('profile.dataTitle')} footer={t('profile.dataFooter')}>
-        <List>
-          <ListRow
-            title={t('profile.cloudSync')}
-            value={syncStatus.state === 'disabled' ? t('profile.cloudSyncOff') : undefined}
-          />
-        </List>
-      </Section>
+      <PrivacySection />
 
       <Section title={t('profile.aboutTitle', { appName: t('app.name') })}>
         <List>

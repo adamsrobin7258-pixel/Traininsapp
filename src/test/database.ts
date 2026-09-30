@@ -1,4 +1,4 @@
-import { migrate, migrations, type DatabaseDriver } from '@/core/database';
+import { migrate, migrations, type DatabaseDriver, type DatabaseSecurity } from '@/core/database';
 import { openSqlJsDriver } from '@/core/database/drivers/sqlJs';
 
 /** Fresh in-memory SQLite database with the full app schema. */
@@ -12,3 +12,10 @@ export async function createTestDatabase(): Promise<DatabaseDriver> {
 export function fixedClock(iso = '2026-09-30T08:00:00.000Z') {
   return () => new Date(iso);
 }
+
+/** Security info as a verified native (encrypted) database would report it. */
+export const ENCRYPTED_TEST_SECURITY: DatabaseSecurity = {
+  encrypted: true,
+  outcome: 'opened',
+  cipherVersion: '4.17.0 test',
+};

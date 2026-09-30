@@ -28,3 +28,17 @@ export interface DatabaseDriver extends SqlExecutor {
   transaction<T>(work: (tx: SqlExecutor) => Promise<T>): Promise<T>;
   close(): Promise<void>;
 }
+
+/** How the local database is protected. Shown to the user and checked by the self-test. */
+export interface DatabaseSecurity {
+  /** True only when the native database was opened with the stored key and verified. */
+  encrypted: boolean;
+  outcome: 'created' | 'opened' | 'encrypted-existing' | 'development-unencrypted';
+  /** SQLCipher version reported by the database, `null` in the browser. */
+  cipherVersion: string | null;
+}
+
+export interface OpenedDatabase {
+  driver: DatabaseDriver;
+  security: DatabaseSecurity;
+}

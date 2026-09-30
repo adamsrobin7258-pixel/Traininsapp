@@ -5,11 +5,12 @@ import { StartupError } from './layout/StartupError';
 import { AppProviders } from './AppProviders';
 import { createRoutes } from './router';
 import { createServices, loadInitialState, type AppServices, type InitialState } from './services';
+import { classifyStartupError, type StartupProblem } from './startupProblem';
 
 type BootState =
   | { status: 'loading' }
   | { status: 'ready'; services: AppServices; initialState: InitialState }
-  | { status: 'error' };
+  | { status: 'error'; problem: StartupProblem };
 
 const BOOT_TIMEOUT_MS = 20_000;
 
@@ -26,8 +27,8 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 
 async function boot(): Promise<{ services: AppServices; initialState: InitialState }> {
   // Some SQLite failures (e.g. a broken WASM binary on web) never settle; fail visibly instead.
-  const db = await withTimeout(openAppDatabase(), BOOT_TIMEOUT_MS);
-  const services = createServices(db);
+  const opened = await withTimeout(openAppDatabase(), BOOT_TIMEOUT_MS);
+  const services = createServices(opened);
   return { services, initialState: await loadInitialState(services) };
 }
 
@@ -44,7 +45,7 @@ export function AppRoot() {
       },
       (error: unknown) => {
         console.error('App startup failed', error);
-        if (!cancelled) setState({ status: 'error' });
+        if (!cancelled) setState({ status: 'error', problem: classifyStartupError(error) });
       },
     );
     return () => {
@@ -56,6 +57,7 @@ export function AppRoot() {
   if (state.status === 'error') {
     return (
       <StartupError
+        problem={state.problem}
         onRetry={() => {
           setState({ status: 'loading' });
           setAttempt((value) => value + 1);

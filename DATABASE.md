@@ -56,7 +56,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 1)
+## Aktuelles Schema (Version 2)
 
 ```sql
 CREATE TABLE app_settings (
@@ -73,6 +73,15 @@ CREATE TABLE profiles (
   deleted_at   TEXT,                      -- Tombstone
   sync_state   TEXT NOT NULL DEFAULT 'local'
                CHECK (sync_state IN ('local', 'pending', 'synced'))
+);
+```
+
+```sql
+-- Migration 2: technische Prüfwerte des Speicher-Selbsttests
+CREATE TABLE diagnostics (
+  key        TEXT PRIMARY KEY NOT NULL,
+  value      TEXT NOT NULL,
+  updated_at TEXT NOT NULL
 );
 ```
 
@@ -144,6 +153,7 @@ Details: [docs/PRIVACY.md](docs/PRIVACY.md). Kurzfassung für Entwickler:
 
 - Jede neue Tabelle braucht einen Eintrag im Datenkatalog `src/core/privacy/dataCatalog.ts`
   (Kategorie, Sensibilität, Export, Löschung, Sync) – sonst schlägt ein Test fehl.
-- Tabellen mit `health`- oder `location`-Daten sind per Test gesperrt, bis die Datenbank
-  verschlüsselt ist (SQLCipher über das Plugin, geplant vor der ersten Gesundheitstabelle).
+- Die native Datenbank ist mit SQLCipher verschlüsselt (Schlüssel im Keystore/Keychain, siehe
+  [docs/PRIVACY.md](docs/PRIVACY.md)). Tabellen mit `health`- oder `location`-Daten bleiben per
+  Test gesperrt, bis die Verschlüsselung auf dem Gerät validiert ist.
 - Android-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet.

@@ -38,6 +38,20 @@
   border-radius: var(--radius-lg);
 }
 
+.button {
+  width: 100%;
+  border: 0;
+  text-align: left;
+  color: var(--color-accent-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.button:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+}
+
 .icon {
   display: grid;
   flex: none;

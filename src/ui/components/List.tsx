@@ -19,11 +19,23 @@ interface ListRowProps {
   icon?: IconName;
   /** Turns the row into a navigation link. */
   to?: string;
+  /** Turns the row into a button. */
+  onPress?: () => void;
+  disabled?: boolean;
   /** Custom trailing content, e.g. a control. Replaces `value`. */
   trailing?: ReactNode;
 }
 
-export function ListRow({ title, subtitle, value, icon, to, trailing }: ListRowProps) {
+export function ListRow({
+  title,
+  subtitle,
+  value,
+  icon,
+  to,
+  onPress,
+  disabled,
+  trailing,
+}: ListRowProps) {
   const content = (
     <>
       {icon ? (
@@ -46,6 +58,15 @@ export function ListRow({ title, subtitle, value, icon, to, trailing }: ListRowP
         <Link to={to} className={`${styles.row} ${styles.interactive}`}>
           {content}
         </Link>
+      ) : onPress ? (
+        <button
+          type="button"
+          className={`${styles.row} ${styles.interactive} ${styles.button}`}
+          onClick={onPress}
+          disabled={disabled}
+        >
+          {content}
+        </button>
       ) : (
         <div className={styles.row}>{content}</div>
       )}

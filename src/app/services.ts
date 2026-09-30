@@ -1,4 +1,4 @@
-import type { DatabaseDriver } from '@/core/database';
+import { StorageService, type OpenedDatabase } from '@/core/database';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -9,10 +9,15 @@ export interface AppServices {
   settings: SettingsService;
   profile: ProfileService;
   sync: SyncService;
+  storage: StorageService;
 }
 
-export function createServices(db: DatabaseDriver, clock: Clock = systemClock): AppServices {
+export function createServices(
+  { driver: db, security }: OpenedDatabase,
+  clock: Clock = systemClock,
+): AppServices {
   return {
+    storage: new StorageService(db, security, clock),
     settings: new SettingsService(new SettingsRepository(db, clock)),
     profile: new ProfileService(new ProfileRepository(db), clock),
     sync: new LocalOnlySyncService(),

@@ -24,7 +24,7 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 ## Welche Daten gibt es?
 
-### Aktuell gespeichert (Schema-Version 1)
+### Aktuell gespeichert (Schema-Version 2)
 
 | Tabelle             | Inhalt                                      | Sensibilität    |
 | ------------------- | ------------------------------------------- | --------------- |
@@ -70,50 +70,70 @@ Automatische Tests (`dataCatalog.test.ts`) erzwingen:
 
 ## Verschlüsselung der lokalen Datenbank
 
-**Status: nicht aktiv – bewusst.** Aktuell liegen nur Einstellungen und ein optionaler Vorname
-in der Datenbank.
+**Status (Phase 2, Schritt 1): implementiert, automatisiert getestet – Gerätevalidierung auf dem
+Xiaomi 15 Ultra ausstehend.** Bis zur bestätigten Gerätevalidierung bleibt
+`LOCAL_DATABASE_ENCRYPTED = false`; der Datenkatalog-Test sperrt damit weiterhin jede Tabelle mit
+Gesundheits- oder Standortdaten. Es werden **keine Gesundheitsdaten gespeichert**.
 
-### Prüfergebnis
+### Umsetzung
 
-| Frage                                              | Ergebnis                                                                                                                                                                                                |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unterstützt die verwendete Lösung Verschlüsselung? | Ja. `@capacitor-community/sqlite` bringt SQLCipher mit: Android `net.zetetic:sqlcipher-android` (im CI-Build bereits als `libsqlcipher.so` enthalten), iOS `SQLCipher.swift` per Swift Package Manager. |
-| Schlüsselablage                                    | Das Plugin speichert die Passphrase selbst: iOS im **Keychain**, Android in **EncryptedSharedPreferences** (Schlüssel im Android Keystore).                                                             |
-| Unterstützt unsere Architektur das?                | Ja. Nur `src/core/database/drivers/capacitorSqlite.ts` müsste sich ändern (Verbindung mit `encrypted = true`, Modus `secret`/`encryption`). Repositories und Module bleiben unverändert.                |
-| Browser (Entwicklung)                              | `jeep-sqlite` unterstützt keine Verschlüsselung. Unkritisch, weil der Browser kein Produktziel ist; muss aber in der Treiberlogik berücksichtigt werden.                                                |
+| Baustein                | Umsetzung                                                                                                                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Verschlüsselung         | SQLCipher 4 über `@capacitor-community/sqlite` (Android `net.zetetic:sqlcipher-android`, iOS `SQLCipher.swift`) – AES-256, Schlüsselableitung durch SQLCipher. Keine eigene Kryptografie.                                |
+| Schlüssel               | 256 Bit aus `crypto.getRandomValues` (Zufallsquelle des Betriebssystems), als 64 Hex-Zeichen. Wird **einmal** beim ersten Start erzeugt und direkt an das Plugin übergeben.                                              |
+| Schlüsselablage Android | Das Plugin speichert den Schlüssel in `EncryptedSharedPreferences` (`sqlite_encrypted_shared_prefs`), verschlüsselt mit einem AES-256-GCM-Hauptschlüssel im **Android Keystore** (hardwaregestützt, nicht exportierbar). |
+| Schlüsselablage iOS     | **Keychain** (Präfix `kalethra`), Plugin-Standard `kSecAttrAccessibleWhenUnlocked`.                                                                                                                                      |
+| Nicht im Code           | Der Schlüssel steht nirgends im Quellcode, in `localStorage`, Capacitor Preferences, JSON-Dateien, SQLite, Git oder der Build-Konfiguration. Er existiert nur kurz im JS-Speicher beim ersten Start.                     |
+| Entscheidungslogik      | `src/core/database/encryption.ts` (`planEncryptedOpen`, `verifyEncrypted`) – rein, mit Fake-Plugin getestet.                                                                                                             |
+| Browser                 | Nur Entwicklungsmodus: `jeep-sqlite` kann nicht verschlüsseln. Die App zeigt das im Profil offen an („Nicht aktiv“).                                                                                                     |
 
-### Warum nicht schon jetzt?
+### Ablauf beim Start (Android/iOS)
 
-1. **Nicht auf Geräten testbar in dieser Phase.** Ein Fehler in der Schlüsselverwaltung macht
-   die Datenbank unlesbar – die App startet dann nicht mehr. Das darf nicht ungetestet
-   ausgeliefert werden, besonders nicht auf Geräten mit angepasstem Android (z. B. Xiaomi
-   HyperOS), bei denen Keystore-Probleme bekannt sind.
-2. **Es gibt noch keine schützenswerten Gesundheitsdaten.**
-3. **Offene Fragen, die vorher entschieden werden müssen:** Die Android-Seite des Plugins nutzt
-   `androidx.security:security-crypto` (EncryptedSharedPreferences). Google hat diese Bibliothek
-   als veraltet markiert. Sie funktioniert, ist aber langfristig ein Wartungsrisiko.
-   Außerdem braucht es eine Wiederherstellungsstrategie, falls der Schlüssel verloren geht
-   (z. B. nach Zurücksetzen des Keystores durch das System).
+```
+Datenbank vorhanden?  Schlüssel gespeichert?   → Aktion
+nein                  nein                     → Schlüssel erzeugen, neue verschlüsselte DB ("created")
+nein                  ja                       → neue verschlüsselte DB mit vorhandenem Schlüssel
+ja, unverschlüsselt   nein/ja                  → ggf. Schlüssel erzeugen, DB in-place verschlüsseln
+                                                  ("encrypted-existing", Upgrade von 0.1.1)
+ja, verschlüsselt     ja                       → mit gespeichertem Schlüssel öffnen ("opened")
+ja, verschlüsselt     nein                     → STOPP: DatabaseKeyError('missing-key')
+ja, nicht lesbar      –                        → STOPP: DatabaseKeyError('unreadable')
+danach                                         → Prüfen, dass die Datei verschlüsselt ist,
+                                                  sonst STOPP: DatabaseKeyError('not-encrypted')
+```
 
-Eine halbfertige Verschlüsselung wäre schlechter als keine, weil sie Sicherheit vortäuscht.
+Es gibt **keinen** Pfad, der auf eine unverschlüsselte oder neue leere Datenbank ausweicht. Bei
+einem Schlüsselproblem zeigt die App einen eigenen Fehlerbildschirm; die Datei bleibt unverändert.
 
-### Plan (⏳ Phase 2, **vor** der ersten Gesundheitstabelle)
+Geprüftes Plugin-Verhalten (Quellcode 8.1.1):
 
-1. Zufällige Passphrase mit `crypto.getRandomValues` (256 Bit) erzeugen – **keine** eigene
-   Kryptografie, nur Zufallserzeugung der Plattform.
-2. Einmalig per `setEncryptionSecret` an das Plugin übergeben. Ab dann verwaltet das Plugin sie
-   im Keychain bzw. Keystore.
-3. Die bestehende unverschlüsselte Datenbank mit dem Plugin-Modus `encryption` verschlüsseln
-   (Migration vorhandener Daten).
-4. Verhalten bei fehlendem Schlüssel festlegen und im Startfehler-Bildschirm abbilden.
-5. Auf echten Geräten testen, auch auf dem Xiaomi 15 Ultra, und zwar: Neuinstallation,
-   Update und Neustart des Geräts.
-6. Danach `LOCAL_DATABASE_ENCRYPTED = true` setzen. Erst dann lassen die Tests
-   Gesundheitstabellen zu.
+- Modus `secret` ohne gespeicherten Schlüssel → Fehler „No Passphrase stored“, kein Fallback.
+- Falscher Schlüssel → SQLCipher kann die Datei nicht lesen → Fehler.
+- **Achtung:** Das Plugin enthält einen veralteten, fest eingebauten Schlüssel (`"sqlite secret"`,
+  `GlobalSQLite.java`). `isDatabaseEncrypted()` meldet auch eine damit verschlüsselte Datei als
+  verschlüsselt. Kalethra verwendet ihn nie: Geöffnet wird ausschließlich im Modus
+  `secret`/`encryption` mit dem eigenen Schlüssel – ein erfolgreiches Öffnen beweist also,
+  dass unser Schlüssel passt.
+- `setEncryptionSecret` lässt sich nur einmal aufrufen; ein bestehender Schlüssel wird nie
+  überschrieben.
 
-Falls sich die Plugin-Lösung auf Android als instabil erweist, wird Alternativen der Vorzug
-gegeben, die den Schlüssel direkt im Android Keystore halten. Selbst entwickelte
-Kryptografie ist ausgeschlossen.
+### Verhalten in Situationen
+
+| Situation             | Android                                                                      | iOS                                                                                                                                        |
+| --------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| App-Neustart          | Schlüssel aus Keystore, DB öffnet                                            | Schlüssel aus Keychain, DB öffnet                                                                                                          |
+| Geräte-Neustart       | wie App-Neustart (Keystore-Schlüssel bleibt)                                 | Keychain erst nach Entsperren lesbar                                                                                                       |
+| Gesperrter Bildschirm | Schlüssel verfügbar (keine Bindung an Entsperrung) → Hintergrund-GPS möglich | Schlüssel **nicht** lesbar (`WhenUnlocked`). Eine bereits geöffnete DB bleibt nutzbar → für GPS DB vor dem Sperren öffnen und offen halten |
+| Deinstallation        | DB, verschlüsselte Prefs und Keystore-Schlüssel werden gelöscht              | App-Daten werden gelöscht; der Keychain-Eintrag kann iOS-bedingt bestehen bleiben                                                          |
+| Neuinstallation       | neue DB mit neuem Schlüssel                                                  | neue DB; ein noch vorhandener Keychain-Schlüssel wird wiederverwendet (unkritisch, alte Daten existieren nicht mehr)                       |
+| Backup                | ausgeschlossen (DB und Prefs), siehe unten                                   | Keychain `WhenUnlocked` wird mit **verschlüsselten** Backups übertragen, DB ebenfalls – siehe offene Punkte                                |
+
+### Selbsttest auf dem Gerät
+
+Profil → „Datenschutz & Sicherheit“ → „Speicher prüfen“ (`src/core/database/selfTest.ts`) prüft
+auf dem echten Gerät: verschlüsselte DB inkl. SQLCipher-Version, Schreiben/Lesen, Erhalt nach
+App-Neustart (zweiter Lauf nach Neustart), Rollback einer Transaktion und die Schema-Version.
+Er nutzt nur die technische Tabelle `diagnostics`.
 
 ## Android-Backup
 
@@ -211,9 +231,13 @@ synchronisiert sind – ohne Konto sofort.
 
 ## Offene Punkte
 
-1. Datenbankverschlüsselung umsetzen und auf Geräten testen (Pflicht vor Gesundheitsdaten).
-2. iOS: Backup-Ausschluss der Datenbank entscheiden.
-3. Export/Import und Löschfunktionen umsetzen, bevor die App veröffentlicht wird.
-4. Datenschutzerklärung, Einwilligungstexte und Store-Angaben (Google Play Data Safety,
-   Apple Privacy Nutrition Label) erstellen.
-5. Für die spätere Cloud: Auftragsverarbeitungsvertrag, EU-Region, Löschkonzept für Tombstones.
+1. **Gerätevalidierung der Verschlüsselung auf dem Xiaomi 15 Ultra** (Upgrade von 0.1.1,
+   Neustart, Geräte-Neustart). Erst danach `LOCAL_DATABASE_ENCRYPTED = true` und Gesundheitsdaten.
+2. iOS: Entscheidung Backup-Ausschluss bzw. Keychain-Attribut `…ThisDeviceOnly` (Plugin-Anpassung
+   nötig) und iOS-Gerätetest.
+3. Wiederherstellungsweg bei verlorenem Schlüssel (z. B. „Lokale Daten zurücksetzen“ mit
+   ausdrücklicher Bestätigung) – aktuell nur Fehlerbildschirm.
+4. Export/Import und Löschfunktionen vor Veröffentlichung.
+5. Datenschutzerklärung, Einwilligungstexte, Store-Angaben (Google Play Data Safety, Apple
+   Privacy Nutrition Label).
+6. Für die spätere Cloud: Auftragsverarbeitungsvertrag, EU-Region, Löschkonzept für Tombstones.

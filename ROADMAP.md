@@ -28,6 +28,14 @@ aktualisierter Dokumentation.
 - Erweiterbarkeit: Module ohne Tab möglich, strengere Architekturregeln (Capacitor nur in
   Adaptern, Domain-Logik ohne React)
 
+## Phase 2, Schritt 1 – Datenbankverschlüsselung 🟡
+
+- SQLCipher-Verschlüsselung auf Android und iOS, Schlüssel im Keystore/Keychain
+- Kein Fallback auf unverschlüsselte Daten, eigene Fehlerbildschirme bei Schlüssel- und
+  Migrationsproblemen
+- Speicher-Selbsttest im Profil („Datenschutz & Sicherheit“)
+- **Ausstehend:** Validierung auf dem Xiaomi 15 Ultra → danach Schritt 2 (Körpergewicht)
+
 ## Phase 2 – Erste Fachfunktionen (Vorschlag)
 
 Empfohlene Reihenfolge – jeweils vollständig und nutzbar statt alles gleichzeitig:
