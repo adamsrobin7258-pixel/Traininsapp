@@ -10,7 +10,7 @@ export { TrainingStore, type TrainingRepositories } from './trainingStore';
 export * from './trainingTypes';
 export * from './workout';
 export type { LastPerformance } from './workoutRepository';
-export { WorkoutService } from './workoutService';
+export { WorkoutService, type TrainingOverview } from './workoutService';
 export {
   TrainingProvider,
   useTraining,

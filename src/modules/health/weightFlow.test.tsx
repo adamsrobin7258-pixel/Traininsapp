@@ -187,7 +187,7 @@ describe('weight tracking', () => {
   });
 });
 
-describe('day selection on the Today screen', () => {
+describe('weight entry links', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
@@ -197,55 +197,6 @@ describe('day selection on the Today screen', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
-  });
-
-  it('selects today by default and disables future days', async () => {
-    await renderApp('/');
-    expect(await screen.findByRole('heading', { name: 'Heute' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Heute, Samstag, 3. Oktober' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-    expect(screen.getByRole('button', { name: 'Sonntag, 4. Oktober' })).toBeDisabled();
-    expect(screen.getByRole('button', { name: 'Nächste Woche' })).toBeDisabled();
-    expect(await screen.findByText('Noch nicht eingetragen')).toBeInTheDocument();
-  });
-
-  it('shows the weight of a selected past day and opens the entry for that day', async () => {
-    const { router } = await renderApp('/', {
-      prepare: async (services, profileId) => {
-        await services.weight.save(profileId, '2026-10-02', 82.7);
-      },
-    });
-
-    await userEvent.click(await screen.findByRole('button', { name: 'Freitag, 2. Oktober' }));
-    expect(screen.getByRole('heading', { name: 'Freitag, 2. Oktober' })).toBeInTheDocument();
-    expect(await screen.findByText('82,7 kg')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Donnerstag, 1. Oktober' }));
-    expect(await screen.findByText('Noch nicht eingetragen')).toBeInTheDocument();
-
-    await userEvent.click(screen.getByRole('link', { name: /Gewicht/ }));
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/health');
-    });
-    expect(router.state.location.search).toBe('?add=2026-10-01');
-    expect(dialog().getByText('Donnerstag, 1. Oktober')).toBeInTheDocument();
-  });
-
-  it('pages to previous weeks and back to today', async () => {
-    await renderApp('/');
-    await userEvent.click(await screen.findByRole('button', { name: 'Vorherige Woche' }));
-    expect(screen.getByRole('heading', { name: 'Samstag, 26. September' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Nächste Woche' })).toBeEnabled();
-
-    await userEvent.click(screen.getByRole('button', { name: 'Heute' }));
-    expect(screen.getByRole('heading', { name: 'Heute' })).toBeInTheDocument();
-  });
-
-  it('ignores a future day in the URL', async () => {
-    await renderApp('/?day=2026-12-24');
-    expect(await screen.findByRole('heading', { name: 'Heute' })).toBeInTheDocument();
   });
 
   it('never opens an entry for a future day from a link', async () => {

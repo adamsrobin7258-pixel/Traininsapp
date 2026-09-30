@@ -1,6 +1,6 @@
 import type { SqlExecutor, SqlValue } from '@/core/database';
 import { EXERCISE_TYPES, isOneOf } from './exercise';
-import type { SetValues, WorkoutSet } from './sets';
+import { SET_TYPES, type SetValues, type WorkoutSet } from './sets';
 import type {
   Workout,
   WorkoutDetail,
@@ -48,6 +48,8 @@ interface SetRow {
   distance_m: number | null;
   rpe: number | null;
   completed: number;
+  set_type: string;
+  drop_of: string | null;
 }
 
 const toWorkout = (row: WorkoutRow): Workout => ({
@@ -88,6 +90,9 @@ const toSet = (row: SetRow): WorkoutSet => ({
   durationS: row.duration_s,
   distanceM: row.distance_m,
   rpe: row.rpe,
+  // Unknown values (a newer app version) read as working sets, like rows from before 0.2.1.
+  setType: isOneOf(SET_TYPES, row.set_type) ? row.set_type : 'working',
+  dropOf: row.drop_of,
   completed: row.completed === 1,
 });
 
@@ -159,7 +164,8 @@ export class WorkoutRepository {
          (SELECT COUNT(*) FROM workout_exercises we WHERE we.workout_id = w.id) AS exercise_count,
          (SELECT COUNT(*) FROM workout_sets s JOIN workout_exercises we
             ON we.id = s.workout_exercise_id
-          WHERE we.workout_id = w.id AND s.completed = 1) AS completed_set_count
+          WHERE we.workout_id = w.id AND s.completed = 1 AND s.set_type = 'working')
+           AS completed_set_count
        FROM workouts w
        WHERE w.profile_id = ? AND w.status = 'completed' AND (? IS NULL OR w.training_type = ?)
        ORDER BY w.started_at DESC LIMIT ? OFFSET ?`,
@@ -183,6 +189,16 @@ export class WorkoutRepository {
       `SELECT COUNT(*) AS n FROM workouts
        WHERE profile_id = ? AND status = 'completed' AND (? IS NULL OR training_type = ?)`,
       [profileId, trainingType ?? null, trainingType ?? null],
+    );
+    return rows[0]?.n ?? 0;
+  }
+
+  /** Completed workouts on or after a local day (`YYYY-MM-DD`). */
+  async countCompletedFrom(profileId: string, fromLocalDate: string): Promise<number> {
+    const rows = await this.db.query<{ n: number }>(
+      `SELECT COUNT(*) AS n FROM workouts
+       WHERE profile_id = ? AND status = 'completed' AND local_date >= ?`,
+      [profileId, fromLocalDate],
     );
     return rows[0]?.n ?? 0;
   }
@@ -305,17 +321,28 @@ export class WorkoutRepository {
   async insertSet(set: WorkoutSet, now: string): Promise<void> {
     await this.db.run(
       `INSERT INTO workout_sets (id, workout_exercise_id, position, weight_kg, reps, duration_s,
-         distance_m, rpe, completed, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         distance_m, rpe, completed, set_type, drop_of, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         set.id,
         set.workoutExerciseId,
         set.position,
         ...setParams(set),
         set.completed ? 1 : 0,
+        set.setType,
+        set.dropOf,
         now,
         now,
       ],
+    );
+  }
+
+  /** Makes room for a set inserted at `position` (later sets move down by one). */
+  async shiftSetPositions(workoutExerciseId: string, fromPosition: number): Promise<void> {
+    await this.db.run(
+      `UPDATE workout_sets SET position = position + 1
+       WHERE workout_exercise_id = ? AND position >= ?`,
+      [workoutExerciseId, fromPosition],
     );
   }
 
@@ -331,13 +358,18 @@ export class WorkoutRepository {
     await this.db.run('DELETE FROM workout_sets WHERE id = ?', [id]);
   }
 
-  /** Removes placeholder sets without any value (e.g. unused planned sets) from a workout. */
+  /**
+   * Removes placeholder sets without any value (e.g. unused planned sets) from a workout. Empty
+   * drops go first; a working set is kept while it still has a drop with values.
+   */
   async deleteEmptySets(workoutId: string): Promise<void> {
-    await this.db.run(
-      `DELETE FROM workout_sets WHERE workout_exercise_id IN
-         (SELECT id FROM workout_exercises WHERE workout_id = ?)
+    const empty = `workout_exercise_id IN (SELECT id FROM workout_exercises WHERE workout_id = ?)
        AND weight_kg IS NULL AND reps IS NULL AND duration_s IS NULL AND distance_m IS NULL
-       AND rpe IS NULL`,
+       AND rpe IS NULL`;
+    await this.db.run(`DELETE FROM workout_sets WHERE set_type = 'drop' AND ${empty}`, [workoutId]);
+    await this.db.run(
+      `DELETE FROM workout_sets WHERE ${empty}
+       AND NOT EXISTS (SELECT 1 FROM workout_sets d WHERE d.drop_of = workout_sets.id)`,
       [workoutId],
     );
   }

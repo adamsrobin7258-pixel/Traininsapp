@@ -1,5 +1,6 @@
 import { Outlet, ScrollRestoration } from 'react-router';
 import { appModules } from '../modules';
+import { SystemBackHandler } from './SystemBackHandler';
 import { TabBar } from './TabBar';
 
 export function AppLayout() {
@@ -8,6 +9,7 @@ export function AppLayout() {
       <Outlet />
       <TabBar modules={appModules} />
       <ScrollRestoration />
+      <SystemBackHandler />
     </>
   );
 }

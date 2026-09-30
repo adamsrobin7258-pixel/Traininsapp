@@ -83,12 +83,27 @@ export function PlanScreen() {
     }
   }
 
+  /** "2 × Aufwärmen · 3 × 8 · 2 Drops" – the planned set structure in one line. */
   const targetsText = (planned: PlannedExercise) => {
-    const { targetSets: sets, targetReps: reps } = planned;
-    if (sets && reps) return t('training.plan.targetsValue', { sets, reps });
-    if (sets) return t('training.plan.targetsSetsOnly', { sets });
-    if (reps) return t('training.plan.targetsRepsOnly', { reps });
-    return t('training.plan.editTargets');
+    const { targetSets: sets, targetReps: reps, warmupSets, dropSets } = planned;
+    const working =
+      sets && reps
+        ? t('training.plan.targetsValue', { sets, reps })
+        : sets
+          ? t('training.plan.targetsSetsOnly', { sets })
+          : reps
+            ? t('training.plan.targetsRepsOnly', { reps })
+            : null;
+    const parts = [
+      warmupSets ? t('training.plan.targetsWarmups', { count: warmupSets }) : null,
+      working,
+      dropSets
+        ? dropSets === 1
+          ? t('training.plan.targetsDropsOne')
+          : t('training.plan.targetsDrops', { count: dropSets })
+        : null,
+    ].filter((part): part is string => part !== null);
+    return parts.length > 0 ? parts.join(' · ') : t('training.plan.editTargets');
   };
 
   return (

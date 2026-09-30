@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 4)
+## Aktuelles Schema (Version 5)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -156,6 +156,30 @@ exercises ──< exercise_muscles
 | `workouts`           | Eine Einheit: Trainingsart, Status, Start/Ende, Dauer, Kalendertag, Titel, Notizen, Plan-Bezug plus Namens-Snapshots          |
 | `workout_exercises`  | Übung im Workout, sortiert, mit **Snapshot** von `name_de`, `name_en`, `exercise_type`                                        |
 | `workout_sets`       | Satz: `weight_kg`, `reps`, `duration_s`, `distance_m`, `rpe` (alle optional), `completed`, `position`                         |
+
+### Satztypen (Migration 5)
+
+Rein additive Spalten; bestehende Zeilen bleiben unverändert und gelten als Arbeitssätze.
+
+```sql
+ALTER TABLE workout_sets ADD COLUMN set_type TEXT NOT NULL DEFAULT 'working'
+  CHECK (set_type IN ('warmup', 'working', 'drop'));
+ALTER TABLE workout_sets ADD COLUMN drop_of TEXT
+  REFERENCES workout_sets(id) ON DELETE CASCADE
+  CHECK ((set_type = 'drop') = (drop_of IS NOT NULL));
+CREATE INDEX workout_sets_drop_of ON workout_sets (drop_of);
+ALTER TABLE planned_exercises ADD COLUMN warmup_sets INTEGER CHECK (warmup_sets BETWEEN 1 AND 10);
+ALTER TABLE planned_exercises ADD COLUMN drop_sets INTEGER CHECK (drop_sets BETWEEN 1 AND 5);
+```
+
+| Thema          | Entscheidung                                                                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Aufwärmsatz    | `set_type = 'warmup'`, vollständig gespeichert, steht vor den Arbeitssätzen. Zählt weder als Satz noch zum Volumen, Rekorde und „Letztes Mal“ ignorieren ihn.                  |
+| Dropsatz       | `set_type = 'drop'` mit `drop_of` = Arbeitssatz. Die Kette ist über `position` geordnet und folgt direkt ihrem Arbeitssatz. Löschen des Arbeitssatzes löscht seine Drops.      |
+| Auswertung     | Volumen = Arbeitssätze + Drops; Satzanzahl, schwerster Satz und e1RM nur Arbeitssätze (`metrics.ts`, `groupSets` in `sets.ts`).                                                |
+| Plan           | `warmup_sets` (Aufwärmsätze) und `drop_sets` (Drops nach dem letzten Arbeitssatz); `NULL` = keine. Beim Start aus dem Plan werden sie mit Werten der letzten Einheit angelegt. |
+| Datenbankregel | Ein Drop ohne Arbeitssatz oder ein Arbeitssatz mit `drop_of` wird per `CHECK` abgelehnt.                                                                                       |
+| RPE            | Spalte `rpe` bleibt unverändert bestehen; die App erfasst und zeigt RPE nicht mehr, vorhandene Werte bleiben beim Speichern erhalten.                                          |
 
 ### Integrität der Historie
 

@@ -11,14 +11,29 @@ export interface SetValues {
   reps: number | null;
   durationS: number | null;
   distanceM: number | null;
-  /** Rate of perceived exertion, 1–10 in half steps. Optional. */
+  /**
+   * Rate of perceived exertion. Not entered or shown in the app; values stored by version 0.2.0
+   * are kept unchanged when a set is saved.
+   */
   rpe: number | null;
 }
+
+/**
+ * - `warmup`: preparation, stored in full but not part of working-set evaluations.
+ * - `working`: a regular set (all sets stored before set types existed).
+ * - `drop`: continues a working set with less load; belongs to it via `dropOf`.
+ */
+export const SET_TYPES = ['warmup', 'working', 'drop'] as const;
+export type SetType = (typeof SET_TYPES)[number];
 
 export interface WorkoutSet extends SetValues {
   id: string;
   workoutExerciseId: string;
+  /** Order within the exercise: warm-ups, then each working set followed by its drops. */
   position: number;
+  setType: SetType;
+  /** For drops: the working set they continue. The chain is ordered by `position`. */
+  dropOf: string | null;
   /** Only completed sets count for volume and records. */
   completed: boolean;
 }
@@ -48,17 +63,20 @@ export const WEIGHT_INPUT_DECIMALS = 2;
 
 type Field = keyof SetValues;
 
-const REQUIREMENTS: Record<ExerciseType, { required: Field[]; allowed: Field[] }> = {
-  weighted: { required: ['weightKg', 'reps'], allowed: ['weightKg', 'reps', 'rpe'] },
-  bodyweight: { required: ['reps'], allowed: ['weightKg', 'reps', 'rpe'] },
-  timed: { required: ['durationS'], allowed: ['durationS', 'weightKg', 'rpe'] },
-  distance: { required: ['distanceM'], allowed: ['distanceM', 'durationS', 'weightKg', 'rpe'] },
+const REQUIREMENTS: Record<ExerciseType, { required: Field[]; fields: Field[] }> = {
+  weighted: { required: ['weightKg', 'reps'], fields: ['weightKg', 'reps'] },
+  bodyweight: { required: ['reps'], fields: ['weightKg', 'reps'] },
+  timed: { required: ['durationS'], fields: ['durationS', 'weightKg'] },
+  distance: { required: ['distanceM'], fields: ['distanceM', 'durationS', 'weightKg'] },
 };
 
 /** Fields the set input shows for an exercise type, in display order. */
 export function setFieldsFor(type: ExerciseType): readonly Field[] {
-  return REQUIREMENTS[type].allowed;
+  return REQUIREMENTS[type].fields;
 }
+
+/** Stored-only fields that are valid for every type (legacy RPE values). */
+const LEGACY_FIELDS: readonly Field[] = ['rpe'];
 
 export type SetError =
   | { field: Field; problem: 'required' }
@@ -80,7 +98,7 @@ export function validateSet(values: SetValues, type: ExerciseType): SetError[] {
     if (values[field] === null) errors.push({ field, problem: 'required' });
   }
   for (const field of Object.keys(values) as Field[]) {
-    if (values[field] !== null && !rules.allowed.includes(field)) {
+    if (values[field] !== null && !rules.fields.includes(field) && !LEGACY_FIELDS.includes(field)) {
       errors.push({ field, problem: 'notAllowed' });
     }
   }
@@ -153,4 +171,31 @@ export function parseDurationInput(input: string): FieldInput {
 /** Distance in metres, one decimal place. */
 export function parseDistanceInput(input: string): FieldInput {
   return parseOptional(input, 1);
+}
+
+export interface WorkingSetGroup {
+  set: WorkoutSet;
+  /** Drops continuing this set, in order. */
+  drops: WorkoutSet[];
+}
+
+export interface GroupedSets {
+  warmups: WorkoutSet[];
+  working: WorkingSetGroup[];
+}
+
+/**
+ * Structures the sets of one exercise: warm-ups, then each working set with its drop chain.
+ * Input order (by position) is kept; drops whose working set is missing are ignored.
+ */
+export function groupSets(sets: readonly WorkoutSet[]): GroupedSets {
+  const ordered = [...sets].sort((a, b) => a.position - b.position);
+  const working = ordered
+    .filter((set) => set.setType === 'working')
+    .map((set) => ({ set, drops: [] as WorkoutSet[] }));
+  const byId = new Map(working.map((group) => [group.set.id, group]));
+  for (const set of ordered) {
+    if (set.setType === 'drop' && set.dropOf) byId.get(set.dropOf)?.drops.push(set);
+  }
+  return { warmups: ordered.filter((set) => set.setType === 'warmup'), working };
 }

@@ -29,6 +29,8 @@ const set = (values: Partial<WorkoutSet>): WorkoutSet => ({
   workoutExerciseId: 'we',
   position: 0,
   ...EMPTY_SET_VALUES,
+  setType: 'working',
+  dropOf: null,
   completed: true,
   ...values,
 });

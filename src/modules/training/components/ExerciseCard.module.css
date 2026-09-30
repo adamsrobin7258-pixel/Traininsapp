@@ -76,14 +76,36 @@
   gap: var(--space-2);
 }
 
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.groupTitle {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
 .footer {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
 }
 
+.adds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
 .addSet,
+.addOther,
 .secondary {
   display: inline-flex;
   align-items: center;
@@ -100,6 +122,13 @@
 .addSet {
   color: var(--color-accent-text);
   background: var(--color-accent-subtle);
+}
+
+.addOther {
+  padding: 0 var(--space-3);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
 }
 
 .secondary {

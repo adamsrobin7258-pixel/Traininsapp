@@ -1,5 +1,5 @@
 import type { SqlExecutor } from '@/core/database';
-import type { PlanDay, PlanDetail, PlannedExercise, TrainingPlan } from './plan';
+import type { PlanDay, PlanDetail, PlannedExercise, PlannedTargets, TrainingPlan } from './plan';
 
 interface PlanRow {
   id: string;
@@ -24,6 +24,8 @@ interface PlannedRow {
   position: number;
   target_sets: number | null;
   target_reps: number | null;
+  warmup_sets: number | null;
+  drop_sets: number | null;
 }
 
 const toPlan = (row: PlanRow): TrainingPlan => ({
@@ -49,6 +51,8 @@ const toPlanned = (row: PlannedRow): PlannedExercise => ({
   position: row.position,
   targetSets: row.target_sets,
   targetReps: row.target_reps,
+  warmupSets: row.warmup_sets,
+  dropSets: row.drop_sets,
 });
 
 /** SQL for plans, days and planned exercises. Every query is scoped to the profile. */
@@ -152,8 +156,8 @@ export class PlanRepository {
   async insertPlannedExercise(planned: PlannedExercise, now: string): Promise<void> {
     await this.db.run(
       `INSERT INTO planned_exercises (id, day_id, exercise_id, position, target_sets, target_reps,
-         created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+         warmup_sets, drop_sets, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         planned.id,
         planned.dayId,
@@ -161,21 +165,19 @@ export class PlanRepository {
         planned.position,
         planned.targetSets,
         planned.targetReps,
+        planned.warmupSets,
+        planned.dropSets,
         now,
         now,
       ],
     );
   }
 
-  async updateTargets(
-    id: string,
-    targetSets: number | null,
-    targetReps: number | null,
-    now: string,
-  ) {
+  async updateTargets(id: string, targets: PlannedTargets, now: string) {
     const result = await this.db.run(
-      'UPDATE planned_exercises SET target_sets = ?, target_reps = ?, updated_at = ? WHERE id = ?',
-      [targetSets, targetReps, now, id],
+      `UPDATE planned_exercises SET target_sets = ?, target_reps = ?, warmup_sets = ?,
+         drop_sets = ?, updated_at = ? WHERE id = ?`,
+      [targets.targetSets, targets.targetReps, targets.warmupSets, targets.dropSets, now, id],
     );
     return result.changes === 1;
   }

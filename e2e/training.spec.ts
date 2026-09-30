@@ -63,7 +63,7 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
   await page.getByLabel('Satz 1: Wdh.').fill('10');
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).click();
   await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
-  await page.getByRole('button', { name: 'Satz hinzufügen' }).click();
+  await page.getByRole('button', { name: 'Satz hinzufügen', exact: true }).click();
   await expect(page.getByLabel('Satz 2: Gewicht')).toHaveValue('60');
   await page.getByLabel('Satz 2: Wdh.').fill('8');
   await page.getByRole('button', { name: 'Satz 2 abschließen' }).click();
@@ -102,8 +102,7 @@ test('A – the set check keeps values, focus and the workout', async ({ page })
   await pickExercise(page, 'bank', /^Bankdrücken/);
   await page.getByLabel('Satz 1: Gewicht').fill('82,5');
   await page.getByLabel('Satz 1: Wdh.').fill('5');
-  await page.getByLabel('Satz 1: RPE').fill('8');
-  // Keyboard is "open": the RPE field has focus when the check is tapped.
+  // Keyboard is "open": the reps field has focus when the check is tapped.
   expect(await textFieldFocused(page)).toBe(true);
   const scrollBefore = await page.evaluate(() => window.scrollY);
 
@@ -113,7 +112,6 @@ test('A – the set check keeps values, focus and the workout', async ({ page })
   expect(await textFieldFocused(page)).toBe(false);
   await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
   await expect(page.getByLabel('Satz 1: Wdh.')).toHaveValue('5');
-  await expect(page.getByLabel('Satz 1: RPE')).toHaveValue('8');
   await expect(page.getByText('Laufendes Training')).toBeVisible();
   expect(page.url()).toMatch(/\/training\/workout$/);
   expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThan(40);
@@ -126,7 +124,7 @@ test('A – the set check keeps values, focus and the workout', async ({ page })
   // Values survive a reload, i.e. they were saved.
   await page.reload();
   await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
-  await expect(page.getByLabel('Satz 1: RPE')).toHaveValue('8');
+  await expect(page.getByLabel('Satz 1: Wdh.')).toHaveValue('5');
 });
 
 test('B – every exercise in the picker is reachable, also after the keyboard', async ({ page }) => {
@@ -220,4 +218,32 @@ test('does not scroll horizontally in the training area', async ({ page }) => {
   expect(await noHorizontalScroll(page)).toBe(true);
   // All controls of the set row are reachable.
   await expect(page.getByRole('button', { name: 'Satz 1 abschließen' })).toBeInViewport();
+});
+
+test('warm-ups and drops from the plan into the workout', async ({ page }) => {
+  await createPlan(page, 'Beine', 'Tag A');
+  await pickExercise(page, 'kniebeug', /^Kniebeugen/);
+  await page.getByRole('button', { name: /^Kniebeugen\s*Vorgabe/ }).click();
+  await page.getByLabel('Aufwärmsätze').fill('1');
+  await page.getByLabel('Arbeitssätze').fill('2');
+  await page.getByLabel('Wiederholungen').fill('8');
+  await page.getByLabel('Drops nach dem letzten Arbeitssatz').fill('1');
+  await page.getByRole('button', { name: 'Speichern' }).click();
+  await expect(page.getByText('1 × Aufwärmen · 2 × 8 · 1 Drop')).toBeVisible();
+
+  await page.getByRole('button', { name: 'Starten' }).click();
+  await expect(page.getByLabel('Aufwärmsatz 1: Gewicht')).toBeVisible();
+  await page.getByLabel('Satz 2: Gewicht', { exact: true }).fill('100');
+  await page.getByRole('button', { name: 'Satz 2 abschließen', exact: true }).tap();
+  await page.getByLabel('Drop 1 zu Satz 2: Gewicht').fill('70');
+  await page.getByLabel('Drop 1 zu Satz 2: Wdh.').fill('6');
+  await page.getByRole('button', { name: 'Drop 1 zu Satz 2 abschließen' }).tap();
+  await expect(page.getByRole('button', { name: 'Drop 1 zu Satz 2 wieder öffnen' })).toBeVisible();
+  expect(await textFieldFocused(page)).toBe(false);
+  await expect(page.getByLabel(/RPE/)).toHaveCount(0);
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  // Survives a reload with types and values.
+  await page.reload();
+  await expect(page.getByLabel('Drop 1 zu Satz 2: Gewicht')).toHaveValue('70');
 });

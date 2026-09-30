@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { registerBackHandler } from '../backStack';
 import { AUTOFOCUS_SELECTOR, isTextEntry } from '../focus';
 import styles from './Sheet.module.css';
 
@@ -57,7 +58,7 @@ function useVisualViewport(): ViewportBox | null {
 
 /**
  * Modal bottom sheet: sits in the thumb zone above the keyboard, closes on Escape or backdrop
- * tap, keeps focus inside and restores it afterwards. Render it only while open.
+ * tap, keeps focus inside and restores it afterwards. The system back action closes it first. Render it only while open.
  *
  * Opening a sheet never opens the keyboard on its own: focus goes to the sheet itself unless a
  * field is marked with `AUTOFOCUS` (see focus.ts). Closing it never re-focuses a text field.
@@ -101,7 +102,12 @@ export function Sheet({ title, onClose, closeLabel, fill = false, children }: Sh
     }
 
     document.addEventListener('keydown', handleKey);
+    // System back (Android) closes the sheet before it navigates anywhere.
+    const unregisterBack = registerBackHandler(() => {
+      close();
+    });
     return () => {
+      unregisterBack();
       document.removeEventListener('keydown', handleKey);
       document.body.style.overflow = overflow;
       // Returning focus to a text field would bring the keyboard back unasked.

@@ -12,3 +12,4 @@ export { Stat } from './components/Stat';
 export { TextField } from './components/TextField';
 export { Icon, type IconName } from './icons/Icon';
 export { AUTOFOCUS, dismissKeyboard, isTextEntry } from './focus';
+export { closeTopOverlay, registerBackHandler } from './backStack';

@@ -1,10 +1,17 @@
 import type { Clock } from '@/shared/lib/clock';
-import { toLocalDateKey } from '@/shared/lib/date';
+import { addDays, toLocalDateKey } from '@/shared/lib/date';
 import { createId } from '@/shared/lib/id';
 import { TrainingError } from './errors';
 import { EXERCISE_TYPES, isOneOf, type Exercise } from './exercise';
 import { moveItem } from './plan';
-import { EMPTY_SET_VALUES, validateSet, type SetValues, type WorkoutSet } from './sets';
+import {
+  EMPTY_SET_VALUES,
+  groupSets,
+  validateSet,
+  type SetType,
+  type SetValues,
+  type WorkoutSet,
+} from './sets';
 import { DEFAULT_TRAINING_TYPE, getTrainingType, isKnownTrainingType } from './trainingTypes';
 import type { TrainingRepositories, TrainingStore } from './trainingStore';
 import {
@@ -19,13 +26,19 @@ import {
 } from './workout';
 import type { LastPerformance } from './workoutRepository';
 
-/** Values to pre-fill for set `index` from the previous performance (not completed). */
-function prefill(
-  last: LastPerformance | null,
-  index: number,
-  targetReps: number | null,
-): SetValues {
-  const source = last?.sets[Math.min(index, last.sets.length - 1)];
+export interface TrainingOverview {
+  last: WorkoutSummary | null;
+  last7Days: number;
+  last30Days: number;
+}
+
+/** The entry at `index`, or the last one if the list is shorter. */
+function nearest<T>(items: readonly T[], index: number): T | undefined {
+  return items[Math.min(index, items.length - 1)];
+}
+
+/** Values to pre-fill from a set of the previous performance (the new set is not completed). */
+function prefill(source: WorkoutSet | undefined, targetReps: number | null = null): SetValues {
   return {
     ...EMPTY_SET_VALUES,
     weightKg: source?.weightKg ?? null,
@@ -69,6 +82,21 @@ export class WorkoutService {
   async trainedMinutesOn(profileId: string, localDate: string): Promise<number | null> {
     const seconds = await this.store.repos.workouts.trainedSecondsOn(profileId, localDate);
     return seconds === null ? null : Math.round(seconds / 60);
+  }
+
+  /**
+   * Read-only summary for the Today screen: the last completed workout and how many workouts
+   * were completed in the last 7 and 30 days (including today).
+   */
+  async overview(profileId: string): Promise<TrainingOverview> {
+    const today = this.clock();
+    const since = (days: number) => toLocalDateKey(addDays(today, -(days - 1)));
+    const [last] = await this.store.repos.workouts.listCompleted(profileId, { limit: 1 });
+    return {
+      last: last ?? null,
+      last7Days: await this.store.repos.workouts.countCompletedFrom(profileId, since(7)),
+      last30Days: await this.store.repos.workouts.countCompletedFrom(profileId, since(30)),
+    };
   }
 
   countHistory(profileId: string, trainingType?: string): Promise<number> {
@@ -129,12 +157,27 @@ export class WorkoutService {
         const workoutExercise = this.snapshot(workout.id, exercise, position);
         await repos.workouts.insertExercise(workoutExercise, now);
         const last = await repos.workouts.lastPerformance(profileId, exercise.id, workout.id);
-        const count = planned.targetSets ?? Math.max(1, last?.sets.length ?? 1);
-        for (let index = 0; index < count; index += 1) {
-          await repos.workouts.insertSet(
-            this.newSet(workoutExercise.id, index, prefill(last, index, planned.targetReps)),
-            now,
-          );
+        const previous = groupSets(last?.sets ?? []);
+        let setPosition = 0;
+        const insert = async (values: SetValues, setType: SetType, dropOf: string | null) => {
+          const set = this.newSet(workoutExercise.id, setPosition, values, setType, dropOf);
+          setPosition += 1;
+          await repos.workouts.insertSet(set, now);
+          return set;
+        };
+        // Warm-ups, working sets and the drops after the last working set, as planned.
+        for (let index = 0; index < (planned.warmupSets ?? 0); index += 1) {
+          await insert(prefill(nearest(previous.warmups, index)), 'warmup', null);
+        }
+        const workingCount = planned.targetSets ?? Math.max(1, previous.working.length);
+        let lastWorking: WorkoutSet | null = null;
+        for (let index = 0; index < workingCount; index += 1) {
+          const source = nearest(previous.working, index)?.set;
+          lastWorking = await insert(prefill(source, planned.targetReps), 'working', null);
+        }
+        const previousDrops = previous.working.at(-1)?.drops ?? [];
+        for (let index = 0; index < (planned.dropSets ?? 0) && lastWorking; index += 1) {
+          await insert(prefill(nearest(previousDrops, index)), 'drop', lastWorking.id);
         }
       }
     });
@@ -156,8 +199,9 @@ export class WorkoutService {
       const workoutExercise = this.snapshot(workoutId, exercise, position);
       await repos.workouts.insertExercise(workoutExercise, now);
       const last = await repos.workouts.lastPerformance(profileId, exercise.id, workoutId);
+      const firstWorking = groupSets(last?.sets ?? []).working[0]?.set;
       await repos.workouts.insertSet(
-        this.newSet(workoutExercise.id, 0, prefill(last, 0, null)),
+        this.newSet(workoutExercise.id, 0, prefill(firstWorking), 'working', null),
         now,
       );
       await repos.workouts.touch(workoutId, now);
@@ -189,24 +233,59 @@ export class WorkoutService {
     });
   }
 
-  /** Adds a set, pre-filled with the previous set of the same exercise for fast entry. */
-  async addSet(profileId: string, workoutExerciseId: string): Promise<string> {
+  /**
+   * Adds a working set (at the end, pre-filled from the previous working set) or a warm-up set
+   * (after the existing warm-ups, before the first working set).
+   */
+  async addSet(
+    profileId: string,
+    workoutExerciseId: string,
+    setType: 'working' | 'warmup' = 'working',
+  ): Promise<string> {
     const owner = await this.requireExercise(profileId, workoutExerciseId);
-    const detail = await this.getDetail(profileId, owner.workoutId);
-    const previous = detail.exercises.find((e) => e.id === workoutExerciseId)?.sets.at(-1);
-    const values: SetValues = previous
-      ? {
-          weightKg: previous.weightKg,
-          reps: previous.reps,
-          durationS: previous.durationS,
-          distanceM: previous.distanceM,
-          rpe: null,
-        }
-      : EMPTY_SET_VALUES;
+    const sets = await this.exerciseSets(profileId, owner.workoutId, workoutExerciseId);
+    const { warmups, working } = groupSets(sets);
+    const previous = setType === 'warmup' ? warmups.at(-1) : working.at(-1)?.set;
+    const values: SetValues = previous ? { ...prefill(previous), rpe: null } : EMPTY_SET_VALUES;
     const now = this.now();
     return this.store.atomic(async (repos) => {
-      const position = await repos.workouts.nextSetPosition(workoutExerciseId);
-      const set = this.newSet(workoutExerciseId, position, values);
+      let position: number;
+      if (setType === 'warmup') {
+        position = previous
+          ? previous.position + 1
+          : (working[0]?.set.position ?? (await repos.workouts.nextSetPosition(workoutExerciseId)));
+        await repos.workouts.shiftSetPositions(workoutExerciseId, position);
+      } else {
+        position = await repos.workouts.nextSetPosition(workoutExerciseId);
+      }
+      const set = this.newSet(workoutExerciseId, position, values, setType, null);
+      await repos.workouts.insertSet(set, now);
+      await repos.workouts.touch(owner.workoutId, now);
+      return set.id;
+    });
+  }
+
+  /**
+   * Adds a drop to a working set: placed after its existing drops, values left empty (a drop
+   * uses a lower load than the set before).
+   */
+  async addDrop(profileId: string, workingSetId: string): Promise<string> {
+    const owner = await this.store.repos.workouts.setOwner(workingSetId);
+    if (owner?.profileId !== profileId) throw new TrainingError('not-found');
+    const sets = await this.exerciseSets(profileId, owner.workoutId, owner.workoutExerciseId);
+    const group = groupSets(sets).working.find((g) => g.set.id === workingSetId);
+    if (!group) throw new TrainingError('invalid-value');
+    const position = (group.drops.at(-1) ?? group.set).position + 1;
+    const now = this.now();
+    return this.store.atomic(async (repos) => {
+      await repos.workouts.shiftSetPositions(owner.workoutExerciseId, position);
+      const set = this.newSet(
+        owner.workoutExerciseId,
+        position,
+        EMPTY_SET_VALUES,
+        'drop',
+        workingSetId,
+      );
       await repos.workouts.insertSet(set, now);
       await repos.workouts.touch(owner.workoutId, now);
       return set.id;
@@ -332,8 +411,27 @@ export class WorkoutService {
     };
   }
 
-  private newSet(workoutExerciseId: string, position: number, values: SetValues): WorkoutSet {
-    return { id: createId(), workoutExerciseId, position, ...values, completed: false };
+  private newSet(
+    workoutExerciseId: string,
+    position: number,
+    values: SetValues,
+    setType: SetType,
+    dropOf: string | null,
+  ): WorkoutSet {
+    return {
+      id: createId(),
+      workoutExerciseId,
+      position,
+      ...values,
+      setType,
+      dropOf,
+      completed: false,
+    };
+  }
+
+  private async exerciseSets(profileId: string, workoutId: string, workoutExerciseId: string) {
+    const detail = await this.getDetail(profileId, workoutId);
+    return detail.exercises.find((e) => e.id === workoutExerciseId)?.sets ?? [];
   }
 
   private assertStartable(trainingType: string) {

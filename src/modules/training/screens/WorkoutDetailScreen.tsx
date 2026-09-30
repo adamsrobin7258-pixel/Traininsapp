@@ -5,11 +5,13 @@ import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
   exerciseDisplayName,
+  groupSets,
   totalVolumeKg,
   TrainingError,
   useTraining,
   useTrainingData,
   workoutDisplayTitle,
+  type WorkoutSet,
 } from '@/core/training';
 import { formatLongDate } from '@/shared/lib/format';
 import { ConfirmSheet, Button, List, ListRow, Screen, Section, Stat } from '@/ui';
@@ -46,7 +48,33 @@ export function WorkoutDetailScreen() {
   const workout = detail.data;
   const sets = workout.exercises.flatMap((exercise) => exercise.sets);
   const completed = sets.filter((set) => set.completed);
+  // Warm-ups add no volume and are not counted as sets; drops belong to their working set.
   const volume = totalVolumeKg(completed);
+  const completedWorking = completed.filter((set) => set.setType === 'working');
+
+  /** Sets in display order with their marker: warm-ups (A1), working sets (1), drops (↓). */
+  const detailRows = (list: readonly WorkoutSet[]) => {
+    const { warmups, working } = groupSets(list);
+    return [
+      ...warmups.map((set, i) => ({
+        set,
+        badge: t('training.workout.warmupBadge', { number: i + 1 }),
+        label: t('training.workout.warmupNumber', { number: i + 1 }),
+      })),
+      ...working.flatMap((group, i) => [
+        {
+          set: group.set,
+          badge: String(i + 1),
+          label: t('training.workout.setNumber', { number: i + 1 }),
+        },
+        ...group.drops.map((set, d) => ({
+          set,
+          badge: t('training.workout.dropBadge'),
+          label: t('training.workout.dropNumber', { number: i + 1, drop: d + 1 }),
+        })),
+      ]),
+    ];
+  };
   const started = new Date(workout.startedAt);
   const time = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(
     started,
@@ -83,7 +111,7 @@ export function WorkoutDetailScreen() {
         />
         <Stat
           label={t('training.detail.sets')}
-          value={String(completed.length)}
+          value={String(completedWorking.length)}
           emptyLabel={t('common.noValue')}
         />
         <Stat
@@ -120,15 +148,17 @@ export function WorkoutDetailScreen() {
               >
                 <h3 className={styles.exerciseName}>{exerciseDisplayName(exercise, locale)}</h3>
                 <ol className={styles.sets}>
-                  {exercise.sets.map((set, index) => (
-                    <li key={set.id} className={styles.set} data-completed={set.completed}>
-                      <span className={styles.setNumber}>{index + 1}</span>
-                      <span>{formatSetShort(set, exercise.exerciseType, unit, locale)}</span>
-                      <span className={styles.rpe}>
-                        {set.rpe !== null
-                          ? `${t('training.workout.rpeHeader')} ${new Intl.NumberFormat(locale).format(set.rpe)}`
-                          : ''}
+                  {detailRows(exercise.sets).map(({ set, badge, label }) => (
+                    <li
+                      key={set.id}
+                      className={styles.set}
+                      data-completed={set.completed}
+                      data-type={set.setType}
+                    >
+                      <span className={styles.setNumber} aria-label={label}>
+                        {badge}
                       </span>
+                      <span>{formatSetShort(set, exercise.exerciseType, unit, locale)}</span>
                     </li>
                   ))}
                 </ol>

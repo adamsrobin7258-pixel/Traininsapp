@@ -70,6 +70,16 @@ aktualisierter Dokumentation.
 - Trainingsänderungen laufen nacheinander (Blur-Speichern vor Button-Aktion)
 - E2E-Tests bei 390 px (hell/dunkel) und 320 × 568 px
 
+## Phase 3.2 – Heute, Satztypen, Android-Zurück ✅
+
+- Android-System-Zurück folgt der App-Navigation (Sheet schließen → eine Ebene höher → Heute →
+  App beenden), laufendes Training bleibt erhalten
+- „Heute“ als reine Übersicht: Training (letztes, nächstes, 7/30 Tage), Gewicht mit kleinem
+  Verlauf, Ernährung als Leerzustand bis zur Ernährungserfassung; Wochenleiste entfernt
+- Aufwärm- und Dropsätze als echte Satztypen (Migration 5), im Plan konfigurierbar
+  (Aufwärmsätze, Drops am letzten Arbeitssatz) und beim Start übernommen
+- RPE aus der Oberfläche entfernt (gespeicherte Werte bleiben erhalten)
+
 ## Phase 4 – Vorschlag
 
 Reihenfolge noch offen; Vorschläge:

@@ -79,3 +79,8 @@
   resize: vertical;
   font-family: inherit;
 }
+
+.hint {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}

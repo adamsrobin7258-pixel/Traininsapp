@@ -72,7 +72,7 @@ describe('migrator', () => {
   });
 
   it('refuses to open a database created by a newer app version', async () => {
-    await migrate(db, [{ version: 5, name: 'future', up: 'SELECT 1;' }]);
+    await migrate(db, [{ version: 99, name: 'future', up: 'SELECT 1;' }]);
     await expect(migrate(db, migrations)).rejects.toThrow(/newer than this app supports/);
   });
 

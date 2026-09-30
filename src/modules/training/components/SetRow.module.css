@@ -67,6 +67,19 @@
   background: var(--color-accent-subtle);
 }
 
+/* Warm-ups are lighter, drops sit visually under their working set. */
+.row[data-type='warmup'] .number {
+  font-size: var(--font-size-footnote);
+}
+
+.row[data-type='drop'] .number {
+  color: var(--color-accent-text);
+}
+
+.row[data-type='drop'] .input:not(:focus-visible) {
+  border-left-color: var(--color-accent);
+}
+
 .error {
   padding-left: calc(1.5rem + var(--space-2));
   font-size: var(--font-size-footnote);

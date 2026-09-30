@@ -45,7 +45,8 @@ describe('app shell', () => {
 
   it('opens areas from the dashboard', async () => {
     await renderApp();
-    await userEvent.click(screen.getByRole('link', { name: /Mahlzeiten und Nährstoffe/ }));
+    // The nutrition summary card (not the tab) opens the area.
+    await userEvent.click(screen.getByRole('link', { name: /^Ernährung.*Kalorien/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Ernährung' })).toBeInTheDocument();
   });
 

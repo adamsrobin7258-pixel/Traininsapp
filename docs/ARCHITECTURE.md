@@ -205,6 +205,11 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 „Aus Plan starten“ (Trainingstag wählen). Pläne werden ausschließlich unter „Pläne“
 (`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
 
+**Heute.** Reine Übersicht ohne Eingaben: Training (`WorkoutService.overview`, nächster Plan-Tag),
+Gesundheit (Gewicht mit kleinem Verlauf, aus `core/health`) und Ernährung (noch keine Daten, daher
+ehrlicher Leerzustand). „Heute“ speichert nichts und berechnet nichts Eigenes über die Darstellung
+hinaus; jede Karte öffnet ihren Bereich.
+
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer
 tatsächlichen Einheit. Beim Start aus einem Plan werden Übungen kopiert und Sätze vorbelegt
@@ -267,6 +272,17 @@ type TranslateFn = (key: TranslationKey, params?: TranslationParams) => string;
 
 Tokens (`tokens.css`), Basis-Styles, Icons und gemeinsame Komponenten. Kennt keine Fachlogik und
 keinen App-Zustand. Beschreibung: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+**System-Zurück (Android).** `core/platform/backButton.ts` kapselt `@capacitor/app` (einzige
+Stelle mit Capacitor). `app/layout/SystemBackHandler` entscheidet zentral:
+
+1. Ist ein Sheet offen, wird es geschlossen (`ui/backStack.ts`: Sheets melden sich beim Öffnen an).
+2. Sonst eine Ebene höher: `backTarget()` in `app/backNavigation.ts` leitet die Elternseite aus der
+   Modul-Registry ab (`/training/plans/:id` → `/training/plans` → `/training` → `/`).
+3. Auf „Heute“ wird die App beendet.
+
+Es gibt keine zweite Navigation und keine Bestätigungsdialoge; ein laufendes Training bleibt beim
+Verlassen unverändert gespeichert. Browser und iOS sind nicht betroffen (kein System-Zurück-Ereignis).
 
 **Tastatur und Fokus (`ui/focus.ts`, `Sheet`).** Die Bildschirmtastatur folgt dem Fokus. Regeln:
 

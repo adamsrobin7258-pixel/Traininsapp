@@ -14,15 +14,9 @@ export type ModuleId = keyof typeof ROUTES;
 
 /** Query parameters shared between areas (kept here so modules stay independent). */
 export const ROUTE_PARAMS = {
-  /** Today screen: selected day, YYYY-MM-DD. */
-  day: 'day',
   /** Health screen: open the weight entry for a day, YYYY-MM-DD. */
   addWeight: 'add',
 } as const;
-
-export function addWeightLink(date: string): string {
-  return `${ROUTES.health}?${ROUTE_PARAMS.addWeight}=${date}`;
-}
 
 /** Sub pages of the training area. */
 export const TRAINING_LINKS = {

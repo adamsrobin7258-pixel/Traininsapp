@@ -6,7 +6,6 @@ import {
   parseDurationInput,
   parseLoadInput,
   parseRepsInput,
-  parseRpeInput,
   setFieldsFor,
   TrainingError,
   useTraining,
@@ -22,7 +21,8 @@ import { describeSetError, describeTrainingError } from '../domain/errors';
 import { headerKey } from '../domain/setFields';
 import styles from './SetRow.module.css';
 
-type Field = keyof SetValues;
+/** Fields entered in a set row (RPE is no longer entered; stored values are kept). */
+type Field = Exclude<keyof SetValues, 'rpe'>;
 type Drafts = Record<Field, string>;
 
 function toDrafts(set: SetValues, unit: WeightUnit, locale: string): Drafts {
@@ -31,7 +31,6 @@ function toDrafts(set: SetValues, unit: WeightUnit, locale: string): Drafts {
   return {
     weightKg: set.weightKg === null ? '' : text(fromKg(set.weightKg, unit), WEIGHT_INPUT_DECIMALS),
     reps: text(set.reps, 0),
-    rpe: text(set.rpe, 1),
     durationS: text(set.durationS, 0),
     distanceM: text(set.distanceM, 1),
   };
@@ -41,8 +40,6 @@ function parseField(field: Field, input: string, unit: WeightUnit): FieldInput {
   switch (field) {
     case 'weightKg':
       return parseLoadInput(input, unit);
-    case 'rpe':
-      return parseRpeInput(input);
     case 'distanceM':
       return parseDistanceInput(input);
     case 'durationS':
@@ -54,7 +51,13 @@ function parseField(field: Field, input: string, unit: WeightUnit): FieldInput {
 
 interface SetRowProps {
   set: WorkoutSet;
-  number: number;
+  /** Spoken name of the set, e.g. "Satz 2", "Aufwärmsatz 1", "Drop 1 zu Satz 3". */
+  label: string;
+  /** Short visible marker: "2", "A1", "↓". */
+  badge: string;
+  /** Names of the check button, e.g. "Satz 2 abschließen" / "Satz 2 wieder öffnen". */
+  completeLabel: string;
+  reopenLabel: string;
   exerciseType: ExerciseType;
 }
 
@@ -66,11 +69,18 @@ interface SetRowProps {
  * cannot bring up the keyboard. If a field is still focused, it is blurred first – its own
  * save runs before the toggle because training changes are queued (see `mutate`).
  */
-export function SetRow({ set, number, exerciseType }: SetRowProps) {
+export function SetRow({
+  set,
+  label,
+  badge,
+  completeLabel,
+  reopenLabel,
+  exerciseType,
+}: SetRowProps) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const { mutate } = useTraining();
-  const fields = setFieldsFor(exerciseType);
+  const fields = setFieldsFor(exerciseType).filter((field): field is Field => field !== 'rpe');
   const snapshot = JSON.stringify([set, unit, locale]);
   const [synced, setSynced] = useState(() => ({ snapshot, base: toDrafts(set, unit, locale) }));
   const [drafts, setDrafts] = useState(synced.base);
@@ -90,12 +100,13 @@ export function SetRow({ set, number, exerciseType }: SetRowProps) {
   }
 
   function collect(): SetValues | null {
+    // Start from the stored set so values that are not entered here (legacy RPE) are kept.
     const values: SetValues = {
       weightKg: null,
       reps: null,
-      rpe: null,
       durationS: null,
       distanceM: null,
+      rpe: set.rpe,
     };
     const bad: Field[] = [];
     for (const field of fields) {
@@ -120,23 +131,25 @@ export function SetRow({ set, number, exerciseType }: SetRowProps) {
       setInvalid([]);
     } catch (failure) {
       if (failure instanceof TrainingError) {
-        setInvalid(failure.setErrors.map((e) => e.field));
+        setInvalid(
+          failure.setErrors.map((e) => e.field).filter((field): field is Field => field !== 'rpe'),
+        );
       }
       setError(describeTrainingError(failure, t, unit, locale));
     }
   }
 
   return (
-    <div className={styles.row} data-completed={set.completed}>
+    <div className={styles.row} data-completed={set.completed} data-type={set.setType}>
       <div className={styles.grid} style={{ '--fields': fields.length } as CSSProperties}>
         <span className={styles.number} aria-hidden="true">
-          {number}
+          {badge}
         </span>
         {fields.map((field) => (
           <input
             key={field}
             className={styles.input}
-            aria-label={`${t('training.workout.setNumber', { number })}: ${t(headerKey(field, exerciseType))}`}
+            aria-label={`${label}: ${t(headerKey(field, exerciseType))}`}
             aria-invalid={invalid.includes(field)}
             inputMode={field === 'reps' || field === 'durationS' ? 'numeric' : 'decimal'}
             enterKeyHint="done"
@@ -153,11 +166,7 @@ export function SetRow({ set, number, exerciseType }: SetRowProps) {
           type="button"
           className={styles.check}
           aria-pressed={set.completed}
-          aria-label={
-            set.completed
-              ? t('training.workout.reopenSet', { number })
-              : t('training.workout.completeSet', { number })
-          }
+          aria-label={set.completed ? reopenLabel : completeLabel}
           onClick={() => {
             dismissKeyboard();
             void save(!set.completed);

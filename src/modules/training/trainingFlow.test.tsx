@@ -82,7 +82,8 @@ describe('training', () => {
 
     await userEvent.click(tab('Heute'));
     expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
-    expect(screen.queryByText('Nächstes Training')).not.toBeInTheDocument();
+    // No invented suggestion: without a plan there is no next workout and nothing running.
+    expect(await screen.findByText('Kein Training geplant')).toBeInTheDocument();
     expect(screen.queryByText('Laufendes Training')).not.toBeInTheDocument();
   });
 
@@ -178,7 +179,8 @@ describe('training', () => {
 
     // The dashboard now suggests the plan day – and only now.
     await userEvent.click(tab('Heute'));
-    expect(await screen.findByText('Nächstes Training')).toBeInTheDocument();
+    expect(await screen.findByText('Push A · Push/Pull/Legs')).toBeInTheDocument();
+    expect(screen.queryByText('Kein Training geplant')).not.toBeInTheDocument();
 
     await userEvent.click(tab('Training'));
     await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
@@ -342,6 +344,121 @@ describe('training', () => {
       }
       const day = within(screen.getByRole('region', { name: 'Tag A' }));
       expect(day.getAllByRole('listitem')).toHaveLength(3);
+    });
+  });
+
+  describe('set types', () => {
+    it('configures warm-ups and drops in the plan and takes them into the workout', async () => {
+      const { db } = await renderApp('/training/plans');
+      await userEvent.click(await screen.findByRole('button', { name: 'Neuer Plan' }));
+      await userEvent.type(dialog().getByLabelText('Name des Plans'), 'Beine');
+      await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+      await screen.findByRole('heading', { level: 1, name: 'Beine' });
+      await userEvent.click(screen.getByRole('button', { name: 'Trainingstag hinzufügen' }));
+      await userEvent.type(dialog().getByLabelText('Name des Trainingstags'), 'Tag A');
+      await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+      await closedDialog();
+      await pickExercise('kniebeug', /^Kniebeugen/);
+
+      await userEvent.click(screen.getByRole('button', { name: /^KniebeugenVorgabe/ }));
+      await userEvent.type(dialog().getByLabelText('Aufwärmsätze'), '2');
+      await userEvent.type(dialog().getByLabelText('Arbeitssätze'), '3');
+      await userEvent.type(dialog().getByLabelText('Wiederholungen'), '8');
+      await userEvent.type(dialog().getByLabelText('Drops nach dem letzten Arbeitssatz'), '2');
+      await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+      await closedDialog();
+      expect(await screen.findByText('2 × Aufwärmen · 3 × 8 · 2 Drops')).toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: 'Starten' }));
+      const card = within(await screen.findByRole('article', { name: 'Kniebeugen' }));
+      expect(card.getByRole('group', { name: 'Aufwärmen' })).toBeInTheDocument();
+      expect(card.getByRole('group', { name: 'Arbeitssätze' })).toBeInTheDocument();
+      expect(card.getByLabelText('Aufwärmsatz 2: Gewicht')).toBeInTheDocument();
+      expect(card.getByLabelText('Satz 3: Wdh.')).toHaveValue('8');
+      expect(card.getByLabelText('Drop 2 zu Satz 3: Gewicht')).toBeInTheDocument();
+      expect(card.queryByLabelText(/RPE/)).not.toBeInTheDocument();
+
+      // Enter the drop chain and complete it; values are stored with their type.
+      await fill('Satz 3: Gewicht', '100');
+      await userEvent.click(card.getByRole('button', { name: 'Satz 3 abschließen' }));
+      await fill('Drop 1 zu Satz 3: Gewicht', '70');
+      await fill('Drop 1 zu Satz 3: Wdh.', '6');
+      expect(textFieldFocused()).toBe(true);
+      await userEvent.click(card.getByRole('button', { name: 'Drop 1 zu Satz 3 abschließen' }));
+      await card.findByRole('button', { name: 'Drop 1 zu Satz 3 wieder öffnen' });
+      expect(textFieldFocused()).toBe(false);
+      const rows = await db.query<{ set_type: string; weight_kg: number | null }>(
+        'SELECT set_type, weight_kg FROM workout_sets ORDER BY position',
+      );
+      expect(rows.map((row) => row.set_type)).toEqual([
+        'warmup',
+        'warmup',
+        'working',
+        'working',
+        'working',
+        'drop',
+        'drop',
+      ]);
+      expect(rows[5]?.weight_kg).toBe(70);
+    });
+
+    it('adds warm-ups and drops during a free workout', async () => {
+      const { db } = await renderApp('/training');
+      await startFreeWorkout();
+      await pickExercise('bank', /^Bankdrücken/);
+      const card = within(screen.getByRole('article', { name: 'Bankdrücken' }));
+      await fill('Satz 1: Gewicht', '80');
+
+      await userEvent.click(card.getByRole('button', { name: 'Aufwärmsatz hinzufügen' }));
+      expect(await card.findByLabelText('Aufwärmsatz 1: Gewicht')).toBeInTheDocument();
+      await userEvent.click(card.getByRole('button', { name: 'Drop zum letzten Satz hinzufügen' }));
+      expect(await card.findByLabelText('Drop 1 zu Satz 1: Gewicht')).toHaveValue('');
+      // The working set keeps what was typed before the buttons were used.
+      expect(card.getByLabelText('Satz 1: Gewicht')).toHaveValue('80');
+      expect(textFieldFocused()).toBe(false);
+
+      const rows = await db.query<{ set_type: string; drop_of: string | null; id: string }>(
+        'SELECT id, set_type, drop_of FROM workout_sets ORDER BY position',
+      );
+      expect(rows.map((row) => row.set_type)).toEqual(['warmup', 'working', 'drop']);
+      expect(rows[2]?.drop_of).toBe(rows[1]?.id);
+    });
+
+    it('shows set types in the finished workout and counts working sets only', async () => {
+      await renderApp('/training', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          const workout = await services.training.workouts.startFree(profileId);
+          const exercise = await services.training.workouts.addExercise(
+            profileId,
+            workout.id,
+            'sys.bench-press',
+          );
+          await services.training.workouts.addSet(profileId, exercise, 'warmup');
+          const detail = await services.training.workouts.getDetail(profileId, workout.id);
+          const [warmup, working] = detail.exercises[0]?.sets ?? [];
+          if (!warmup || !working) throw new Error('sets expected');
+          const drop = await services.training.workouts.addDrop(profileId, working.id);
+          const save = (id: string, weightKg: number, reps: number) =>
+            services.training.workouts.updateSet(
+              profileId,
+              id,
+              { weightKg, reps, durationS: null, distanceM: null, rpe: null },
+              true,
+            );
+          await save(warmup.id, 40, 10);
+          await save(working.id, 100, 8);
+          await save(drop, 70, 6);
+          await services.training.workouts.finish(profileId, workout.id);
+        },
+      });
+      await userEvent.click(await screen.findByRole('link', { name: /Krafttraining/ }));
+      // 800 + 420; the warm-up (400) adds no volume and is no set of its own.
+      expect(await screen.findByText('1.220 kg')).toBeInTheDocument();
+      expect(screen.getByLabelText('Aufwärmsatz 1')).toHaveTextContent('A1');
+      expect(screen.getByLabelText('Drop 1 zu Satz 1')).toHaveTextContent('↓');
+      expect(screen.getByText('70 kg × 6')).toBeInTheDocument();
+      expect(screen.queryByText(/RPE/)).not.toBeInTheDocument();
     });
   });
 });

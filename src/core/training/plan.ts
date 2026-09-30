@@ -23,10 +23,20 @@ export interface PlannedExercise {
   dayId: string;
   exerciseId: string;
   position: number;
-  /** Optional targets; no periodisation logic yet. */
+  /** Optional targets; no periodisation logic yet. `targetSets` counts working sets. */
   targetSets: number | null;
   targetReps: number | null;
+  /** Warm-up sets before the working sets (`null` = none). */
+  warmupSets: number | null;
+  /** Drops after the last working set (`null` = none). */
+  dropSets: number | null;
 }
+
+/** Everything that can be configured for a planned exercise; `null` means "not set". */
+export type PlannedTargets = Pick<
+  PlannedExercise,
+  'targetSets' | 'targetReps' | 'warmupSets' | 'dropSets'
+>;
 
 export interface PlanDayWithExercises extends PlanDay {
   exercises: PlannedExercise[];
@@ -40,6 +50,8 @@ export const PLAN_NAME_MAX_LENGTH = 60;
 export const TARGET_LIMITS = {
   sets: { min: 1, max: 20 },
   reps: { min: 1, max: 100 },
+  warmupSets: { min: 1, max: 10 },
+  dropSets: { min: 1, max: 5 },
 } as const;
 
 export interface NextPlanDay {

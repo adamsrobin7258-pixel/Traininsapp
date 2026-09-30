@@ -9,6 +9,7 @@ import {
   TARGET_LIMITS,
   type NextPlanDay,
   type PlanDetail,
+  type PlannedTargets,
   type TrainingPlan,
 } from './plan';
 import { DEFAULT_TRAINING_TYPE } from './trainingTypes';
@@ -142,6 +143,8 @@ export class PlanService {
           position: day?.exercises.length ?? 0,
           targetSets: null,
           targetReps: null,
+          warmupSets: null,
+          dropSets: null,
         },
         now,
       );
@@ -150,20 +153,42 @@ export class PlanService {
     return id;
   }
 
+  /** Sets working sets × reps and keeps the configured warm-ups and drops. */
   async setTargets(
     profileId: string,
     plannedId: string,
     targetSets: number | null,
     targetReps: number | null,
   ): Promise<void> {
+    const current = await this.requirePlannedExercise(profileId, plannedId);
+    await this.configure(profileId, plannedId, { ...current, targetSets, targetReps });
+  }
+
+  /**
+   * Configures a planned exercise: warm-up sets, working sets × reps and drops after the last
+   * working set. Started workouts copy this structure.
+   */
+  async configure(profileId: string, plannedId: string, targets: PlannedTargets): Promise<void> {
     const owner = await this.requirePlanned(profileId, plannedId);
-    const sets = optionalTarget(targetSets, TARGET_LIMITS.sets);
-    const reps = optionalTarget(targetReps, TARGET_LIMITS.reps);
+    const checked: PlannedTargets = {
+      targetSets: optionalTarget(targets.targetSets, TARGET_LIMITS.sets),
+      targetReps: optionalTarget(targets.targetReps, TARGET_LIMITS.reps),
+      warmupSets: optionalTarget(targets.warmupSets, TARGET_LIMITS.warmupSets),
+      dropSets: optionalTarget(targets.dropSets, TARGET_LIMITS.dropSets),
+    };
     const now = this.now();
     await this.store.atomic(async (repos) => {
-      await repos.plans.updateTargets(plannedId, sets, reps, now);
+      await repos.plans.updateTargets(plannedId, checked, now);
       await repos.plans.touchPlan(owner.planId, now);
     });
+  }
+
+  private async requirePlannedExercise(profileId: string, plannedId: string) {
+    const owner = await this.requirePlanned(profileId, plannedId);
+    const plan = await this.getPlan(profileId, owner.planId);
+    const planned = plan.days.flatMap((day) => day.exercises).find((e) => e.id === plannedId);
+    if (!planned) throw new TrainingError('not-found');
+    return planned;
   }
 
   async removeExercise(profileId: string, plannedId: string): Promise<void> {

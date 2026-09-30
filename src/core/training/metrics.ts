@@ -1,23 +1,25 @@
 import type { ExerciseType } from './exercise';
-import type { WorkoutSet } from './sets';
+import type { SetType, WorkoutSet } from './sets';
 
 /**
  * Central, pure training metrics. Prepared for records and statistics; the UI shows only a
  * small part of it for now.
  */
 
+type VolumeSet = Pick<WorkoutSet, 'weightKg' | 'reps' | 'completed'> & { setType?: SetType };
+
 /**
- * Volume of one set in kilograms: load × repetitions, completed sets only.
+ * Volume of one set in kilograms: load × repetitions, completed sets only. Working sets and
+ * their drops count; warm-up sets do not (they prepare, they are not training volume).
  * Bodyweight exercises count only the added load (body weight is not known per set).
  */
-export function setVolumeKg(set: Pick<WorkoutSet, 'weightKg' | 'reps' | 'completed'>): number {
+export function setVolumeKg(set: VolumeSet): number {
+  if (set.setType === 'warmup') return 0;
   if (!set.completed || set.weightKg === null || set.reps === null) return 0;
   return set.weightKg * set.reps;
 }
 
-export function totalVolumeKg(
-  sets: readonly Pick<WorkoutSet, 'weightKg' | 'reps' | 'completed'>[],
-) {
+export function totalVolumeKg(sets: readonly VolumeSet[]) {
   return sets.reduce((sum, set) => sum + setVolumeKg(set), 0);
 }
 
@@ -38,12 +40,16 @@ export interface ExercisePerformance {
   completedSets: number;
 }
 
-/** Aggregates completed sets of one exercise, e.g. for later personal records. */
+/**
+ * Aggregates completed sets of one exercise, e.g. for later personal records. Records and the
+ * set count consider working sets only; drops add to the volume; warm-ups are ignored.
+ */
 export function summarizeSets(
   sets: readonly WorkoutSet[],
   type: ExerciseType,
 ): ExercisePerformance {
-  const done = sets.filter((set) => set.completed);
+  const completed = sets.filter((set) => set.completed);
+  const done = completed.filter((set) => set.setType === 'working');
   const loads = done.map((set) => set.weightKg).filter((w): w is number => w !== null);
   const reps = done.map((set) => set.reps).filter((r): r is number => r !== null);
   const estimates =
@@ -60,7 +66,7 @@ export function summarizeSets(
     heaviestKg: loads.length ? Math.max(...loads) : null,
     mostReps: reps.length ? Math.max(...reps) : null,
     bestEstimatedOneRepMaxKg: estimates.length ? Math.max(...estimates) : null,
-    volumeKg: totalVolumeKg(done),
+    volumeKg: totalVolumeKg(completed),
     completedSets: done.length,
   };
 }
