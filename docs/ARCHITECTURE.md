@@ -99,23 +99,19 @@ einem Bildschirm heraus verlinkt (etwa Running aus Training).
 
 **Prüfung der geplanten Bereiche (Phase 1.1):**
 
-| Bereich                                         | Einordnung                                                                                     | Anbindung                      |
-| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------ |
-| Dashboard, Training, Nutrition, Health, Profile | Tab-Module (vorhanden)                                                                         | `tab` gesetzt                  |
-| Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                    | Route, Link aus Training/Heute |
-| HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`disciplines.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training        |
-| Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                 | Route, Link aus Heute          |
-| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                    | Route                          |
-| Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                             | `SyncService`                  |
+| Bereich                                         | Einordnung                                                                                                     | Anbindung                      |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| Dashboard, Training, Nutrition, Health, Profile | Tab-Module (vorhanden)                                                                                         | `tab` gesetzt                  |
+| Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                                    | Route, Link aus Training/Heute |
+| HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`core/training/trainingTypes.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training        |
+| Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                                 | Route, Link aus Heute          |
+| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                                    | Route                          |
+| Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                                             | `SyncService`                  |
 
 Ergebnis: Kein Umbau nötig außer dem optionalen Tab (umgesetzt). Die Regeln unten verhindern
 direkte Abhängigkeiten zwischen Modulen.
 
-**Neue Trainingsart hinzufügen:** Die Trainingsarten sind in
-`modules/training/domain/disciplines.ts` zentral definiert. In Phase 2 bekommt jede Art eine
-Beschreibung ihrer Metriken (z. B. Kraft: Sätze × Wiederholungen × Gewicht; HYROX: Stationen und
-Laufabschnitte; Mobility: Dauer). Die gemeinsame Trainingseinheit speichert artspezifische Werte
-über diese Beschreibung, sodass neue Arten ohne Schemaumbau hinzukommen.
+**Neue Trainingsart hinzufügen:** siehe [Trainingssystem](#trainingssystem-phase-3).
 
 **Modulübergreifende Daten:** Das Dashboard liest später Kennzahlen anderer Module
 (`TodaySummary`). Dafür exportiert jedes Modul eine kleine Abfrage-Schnittstelle über seine
@@ -124,17 +120,18 @@ Anbieter – so bleibt die Regel „Module importieren sich nicht gegenseitig“
 
 ### `core/` – Infrastruktur
 
-| Ordner      | Inhalt                                                                                                                          |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                                                       |
-| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                                                            |
-| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                                                    |
-| `user/`     | Lokales Profil: Repository, Service, Provider                                                                                   |
-| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                                                 |
-| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                                             |
-| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)                                   |
-| `health/`   | Gemeinsame Gesundheits-Domain: Gewicht (Typen, Einheiten, Validierung), Repository, Service, Provider/Hooks, Diagramm-Geometrie |
-| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([docs/PRIVACY.md](docs/PRIVACY.md))                              |
+| Ordner      | Inhalt                                                                                                                                            |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                                                                         |
+| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                                                                              |
+| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                                                                      |
+| `user/`     | Lokales Profil: Repository, Service, Provider                                                                                                     |
+| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                                                                   |
+| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                                                               |
+| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)                                                     |
+| `health/`   | Gemeinsame Gesundheits-Domain: Gewicht (Typen, Einheiten, Validierung), Repository, Service, Provider/Hooks, Diagramm-Geometrie                   |
+| `training/` | Trainingssystem: Sportarten-Registry, Übungen und Katalog, Sätze/Validierung, Kennzahlen, Pläne, Workouts; Repositories, Services, Provider/Hooks |
+| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([PRIVACY.md](PRIVACY.md))                                                          |
 
 Muster für Datenzugriff (in Phase 1 für Einstellungen und Profil umgesetzt):
 
@@ -173,6 +170,67 @@ SqlExecutor → CapacitorSqliteDriver → SQLCipher (verschlüsselt, Android/iOS
 - Modulübergreifende Links (Tagesauswahl, „Gewicht für Tag X eintragen“) laufen über
   `ROUTE_PARAMS`/`addWeightLink` in `app/routes.ts`: `/?day=YYYY-MM-DD`, `/health?add=YYYY-MM-DD`.
   Ungültige oder zukünftige Tage in der URL werden ignoriert.
+
+### Trainingssystem (Phase 3)
+
+```
+modules/training   Training-Start, Pläne, Verlauf, laufendes Workout, Detail, Übungen
+modules/dashboard  „Nächstes Training“ / laufendes Training, Trainingsminuten des Tages
+        │  useTraining / useTrainingData                       (core/training/TrainingProvider)
+        ▼
+ExerciseService · PlanService · WorkoutService    Regeln, Validierung, Eigentümerprüfung
+        ▼
+TrainingStore (repos + atomic() = Transaktion)
+        ▼
+ExerciseRepository · PlanRepository · WorkoutRepository   SQL, immer auf profile_id eingeschränkt
+```
+
+**Sportarten-Modell.** `trainingTypes.ts` ist die Registry aller Trainingsarten. Jede Art hat eine
+Kategorie (Kraft, Ausdauer, Hybrid, Beweglichkeit), einen **Workflow** und die Kennzahlen, die sie
+liefern kann:
+
+| Workflow    | Erfassung                                      | Arten                                                                 | Status                                   |
+| ----------- | ---------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------- |
+| `sets`      | Übungen mit Sätzen (Gewicht, Wdh., Dauer, RPE) | Krafttraining, Hypertrophie, Powerlifting, Gewichtheben, Calisthenics | umgesetzt (Krafttraining als Oberfläche) |
+| `endurance` | Dauer, Distanz, Pace, optional GPS-Track       | Laufen, Gehen, Radfahren                                              | nur Architektur                          |
+| `segments`  | Stationen/Abschnitte mit Zwischenzeiten        | HYROX                                                                 | nur Architektur                          |
+| `timed`     | Zeitbasierte Übungen                           | Mobility, Stretching                                                  | nur Architektur                          |
+
+`available: false` verhindert den Start noch nicht umgesetzter Arten im Service (nicht nur in der
+UI). In der Datenbank steht die Art als Text; unbekannte Werte fallen auf `other` zurück.
+**Neue Trainingsart:** Eintrag in `TRAINING_TYPES`, Übersetzung in `training.types`, bei neuem
+Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumbau.
+
+**Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
+Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer
+tatsächlichen Einheit. Beim Start aus einem Plan werden Übungen kopiert und Sätze vorbelegt
+(Anzahl aus Vorgabe oder letzter Einheit, Werte aus „Letztes Mal“ bzw. Ziel-Wdh.). Danach sind
+Plan und Workout unabhängig. „Nächstes Training“ ist der Tag nach dem zuletzt trainierten Tag des
+zuletzt genutzten Plans (zyklisch).
+
+**Satzmodell.** Ein Satz hat für alle Übungstypen dieselben optionalen Felder (Gewicht in kg,
+Wdh., Dauer in s, Distanz in m, RPE). Welche Felder angezeigt und beim Abschließen verlangt
+werden, bestimmt der Übungstyp (`weighted`, `bodyweight`, `timed`, `distance`) in `sets.ts`.
+Eingaben werden in der Domain geparst (Last in der Profileinheit → kg über `shared/lib/units.ts`,
+dieselbe Logik wie beim Körpergewicht), im Service validiert und in der Datenbank per `CHECK`
+begrenzt.
+
+**Historie.** Workouts speichern Namens-Snapshots von Plan, Tag und Übungen; Übungen werden nur
+deaktiviert. Änderungen an Plänen und Übungen verändern damit nie vergangene Trainings (Details
+und Tests: [DATABASE.md](DATABASE.md#training-migration-4)).
+
+**Laufendes Workout.** Jede Eingabe wird beim Verlassen des Feldes bzw. beim Abhaken gespeichert;
+das aktive Workout liegt in der Datenbank (höchstens eines pro Profil) und wird nach Neustart
+wieder geöffnet. Gleichzeitige Speichervorgänge serialisiert die Datenbankschicht.
+
+**Kennzahlen.** `metrics.ts` berechnet Volumen, geschätztes 1RM (Epley) und besten Satz aus
+abgeschlossenen Sätzen – zentral, rein funktional, getestet. Rekorde (PRs) und Statistiken bauen
+darauf auf. Ausdauer-Kennzahlen (Pace, Geschwindigkeit, Höhenmeter, Splits) sind in der Registry
+deklariert und werden mit ihrem Workflow implementiert.
+
+**GPS.** Nicht umgesetzt. Arten mit `supportsRoute` erhalten später einen Track (1:1 zum
+Workout, Trackpunkte in eigener Tabelle) über den `LocationTracker`
+([GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md)).
 
 ### Zentrale Schnittstellen
 
@@ -230,7 +288,7 @@ folgenden Voraussetzungen und Einschränkungen sind geprüft:
 | **Systemleisten**            | `SystemBars` aus `@capacitor/core` (**bereits umgesetzt**)                               | Android: Edge-to-Edge, Safe-Area-Variablen werden injiziert (`insetsHandling: 'css'`).                                                                                                                                                                                                                                                                                    |
 
 GPS/Standort: Vertrag `LocationTracker` in `src/core/platform/location/types.ts` (ohne
-Implementierung), Konzept in [docs/GPS_ARCHITECTURE.md](docs/GPS_ARCHITECTURE.md).
+Implementierung), Konzept in [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md).
 
 Bekanntes Risiko von Capacitor (siehe ADR-001): Dauerhafte Hintergrundarbeit (z. B. GPS-Tracking
 eines Laufs bei gesperrtem Bildschirm) braucht native Plugins mit Foreground-Service (Android)
@@ -356,7 +414,7 @@ Format: Kontext → Entscheidung → Konsequenzen. Status aller ADRs: _angenomme
 - **Entscheidung:** Auto-Backup und Geräteübertragung für alle App-Daten aus. Datenbank-
   verschlüsselung mit SQLCipher (bereits im Plugin enthalten) wird vor der ersten
   Gesundheitstabelle eingeführt und bis dahin per Test erzwungen. Details:
-  [docs/PRIVACY.md](docs/PRIVACY.md).
+  [PRIVACY.md](PRIVACY.md).
 
 ### ADR-012: Gemeinsamer Debug-Signaturschlüssel
 
@@ -375,3 +433,15 @@ Format: Kontext → Entscheidung → Konsequenzen. Status aller ADRs: _angenomme
   zusammengeführt werden.
 - **Konsequenz:** Keine direkte Abhängigkeit zwischen Modulen; Diagramm-Geometrie und Validierung
   sind ohne React testbar.
+
+### ADR-014: Sportartunabhängiges Trainingsmodell mit historischen Snapshots
+
+- **Kontext:** Kraft ist die erste Sportart; Laufen, Radfahren, HYROX, Mobility u. a. folgen.
+  Pläne und Übungen ändern sich, vergangene Trainings dürfen das nicht.
+- **Entscheidung:** Eine gemeinsame Struktur Workout → Übung → Satz mit typisierten, optionalen
+  Satzfeldern statt Tabellen je Sportart oder JSON-Spalten; Trainingsart als Text mit Registry im
+  Code. Workouts kopieren Namen und Typen (Snapshots), Plan-Bezüge werden beim Löschen auf `NULL`
+  gesetzt, Übungen nur deaktiviert.
+- **Konsequenz:** Neue Sportarten brauchen nur Tabellen für wirklich neue Daten (GPS-Track,
+  Splits). Umbenennungen wirken nicht rückwirkend – gewollt, weil der Verlauf dokumentiert, was
+  damals trainiert wurde.

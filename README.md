@@ -9,17 +9,18 @@ Aktivität und Regeneration in einer App, lokal nutzbar ohne Konto.
 | Android Package ID / iOS Bundle ID | `com.kalethra.app`                                                                   |
 | Version                            | aus `package.json` (Android `versionCode` wird daraus abgeleitet, z. B. 0.1.1 → 101) |
 
-**Status:** Phase 1.1 – technisches Fundament, Stabilisierung, Datenschutz-Grundlagen.
-Fachfunktionen folgen ab Phase 2 (siehe [ROADMAP.md](ROADMAP.md)).
+**Status:** Phase 3 (Version 0.2.0) – verschlüsselte lokale Datenbank, Körpergewicht und
+Krafttraining mit Übungsdatenbank, Plänen und Verlauf; weitere Sportarten sind architektonisch
+vorbereitet (siehe [docs/ROADMAP.md](docs/ROADMAP.md)).
 
 | Dokument                                             | Inhalt                                                       |
 | ---------------------------------------------------- | ------------------------------------------------------------ |
-| [ARCHITECTURE.md](ARCHITECTURE.md)                   | Schichten, Module, Schnittstellen, Architekturentscheidungen |
-| [DATABASE.md](DATABASE.md)                           | Datenbankkonzept, Migrationen, Sync-Vorbereitung             |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)         | Schichten, Module, Schnittstellen, Architekturentscheidungen |
+| [docs/DATABASE.md](docs/DATABASE.md)                 | Datenbankkonzept, Migrationen, Sync-Vorbereitung             |
 | [docs/PRIVACY.md](docs/PRIVACY.md)                   | Datenschutz, Datenkatalog, Backup, Verschlüsselung, Löschung |
 | [docs/GPS_ARCHITECTURE.md](docs/GPS_ARCHITECTURE.md) | Plattformgrenze und Konzept für GPS-Tracking                 |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                 | Tokens, Komponenten, Gestaltungsregeln                       |
-| [ROADMAP.md](ROADMAP.md)                             | Phasenplan, bekannte Einschränkungen                         |
+| [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)       | Tokens, Komponenten, Gestaltungsregeln                       |
+| [docs/ROADMAP.md](docs/ROADMAP.md)                   | Phasenplan, bekannte Einschränkungen                         |
 
 ## Technologien
 
@@ -35,7 +36,7 @@ Fachfunktionen folgen ab Phase 2 (siehe [ROADMAP.md](ROADMAP.md)).
 | CI           | GitHub Actions (Checks, Web-Build, Android-Debug-APK, optional iOS) |
 
 Bewusst **nicht** verwendet: UI-Bibliotheken, CSS-Frameworks, Icon-Pakete, State-Management-
-und i18n-Bibliotheken. Begründung in [ARCHITECTURE.md](ARCHITECTURE.md#adr-übersicht).
+und i18n-Bibliotheken. Begründung in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#adr-übersicht).
 
 ## Voraussetzungen
 
@@ -55,17 +56,18 @@ Entwicklung gedacht – das Produkt sind die nativen Apps.
 
 ## Befehle
 
-| Befehl                | Zweck                                                           |
-| --------------------- | --------------------------------------------------------------- |
-| `npm run dev`         | Entwicklungsserver                                              |
-| `npm run build`       | Typecheck + Produktionsbuild nach `dist/`                       |
-| `npm run check`       | Typecheck, Lint, Formatprüfung und Tests (vor jedem Commit)     |
-| `npm test`            | Tests einmalig; `npm run test:watch` im Watch-Modus             |
-| `npm run lint`        | ESLint (null Warnungen erlaubt)                                 |
-| `npm run format`      | Prettier schreibt Formatierung                                  |
-| `npm run cap:sync`    | Build + Web-Assets und Plugins in die nativen Projekte kopieren |
-| `npm run cap:android` | Sync + Android Studio öffnen                                    |
-| `npm run cap:ios`     | Sync + Xcode öffnen                                             |
+| Befehl                | Zweck                                                                |
+| --------------------- | -------------------------------------------------------------------- |
+| `npm run dev`         | Entwicklungsserver                                                   |
+| `npm run build`       | Typecheck + Produktionsbuild nach `dist/`                            |
+| `npm run check`       | Typecheck, Lint, Formatprüfung und Tests (vor jedem Commit)          |
+| `npm test`            | Tests einmalig; `npm run test:watch` im Watch-Modus                  |
+| `npm run e2e`         | Playwright-End-to-End-Tests gegen den Build (vorher `npm run build`) |
+| `npm run lint`        | ESLint (null Warnungen erlaubt)                                      |
+| `npm run format`      | Prettier schreibt Formatierung                                       |
+| `npm run cap:sync`    | Build + Web-Assets und Plugins in die nativen Projekte kopieren      |
+| `npm run cap:android` | Sync + Android Studio öffnen                                         |
+| `npm run cap:ios`     | Sync + Xcode öffnen                                                  |
 
 ## Auf Geräten testen
 
@@ -114,7 +116,7 @@ android/, ios/  Native Projekte (von Capacitor erzeugt, versioniert)
 scripts/        Build-Hilfsskripte
 ```
 
-Details und Abhängigkeitsregeln: [ARCHITECTURE.md](ARCHITECTURE.md).
+Details und Abhängigkeitsregeln: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Mehrsprachigkeit
 
@@ -127,6 +129,6 @@ und Tests erzwingen Vollständigkeit. Fest codierte Texte in JSX werden von ESLi
 
 - Vor jedem Commit `npm run check`.
 - Neue Datenbanktabellen nur per Migration und mit Eintrag im Datenkatalog
-  (siehe [DATABASE.md](DATABASE.md), [docs/PRIVACY.md](docs/PRIVACY.md)).
+  (siehe [docs/DATABASE.md](docs/DATABASE.md), [docs/PRIVACY.md](docs/PRIVACY.md)).
 - Keine SDKs mit Netzwerkzugriff, Analytics, Werbung oder KI ohne dokumentierte Entscheidung.
 - Keine neuen Abhängigkeiten ohne Begründung im Pull Request.

@@ -4,7 +4,7 @@ import { Capacitor } from '@capacitor/core';
  * Thin boundary around platform APIs. Feature code asks this module instead of
  * calling Capacitor or browser globals directly, which keeps it testable.
  * Future native integrations (HealthKit, Health Connect, camera, notifications,
- * files) get their own adapters here – see ARCHITECTURE.md, "Plattformintegration".
+ * files) get their own adapters here – see docs/ARCHITECTURE.md, "Plattformintegration".
  */
 export type Platform = 'ios' | 'android' | 'web';
 

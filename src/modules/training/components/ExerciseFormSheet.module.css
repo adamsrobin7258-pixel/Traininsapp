@@ -1,0 +1,81 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  margin-top: var(--space-2);
+  padding: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  min-height: calc(var(--size-tap-target) + var(--space-1));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.field:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+.muscles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.muscles legend {
+  width: 100%;
+  margin-bottom: var(--space-2);
+}
+
+.chip {
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-subhead);
+  color: var(--color-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.notes {
+  min-height: 6rem;
+  padding: var(--space-3) var(--space-4);
+  resize: vertical;
+  font-family: inherit;
+}

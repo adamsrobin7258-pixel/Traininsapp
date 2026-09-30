@@ -1,7 +1,7 @@
 /**
  * Key figures shown on the dashboard. `null` means "no data yet".
- * In later phases the activity, nutrition and training modules provide these values
- * through their public APIs; the dashboard never reads their tables directly.
+ * Training minutes come from the training domain (core/training); steps and energy follow
+ * with activity and nutrition. The dashboard never reads other tables directly.
  */
 export interface TodaySummary {
   steps: number | null;

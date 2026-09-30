@@ -1,4 +1,5 @@
 import initSqlJs, { type Database } from 'sql.js';
+import { serialize } from '../serialize';
 import type { DatabaseDriver, RunResult, SqlExecutor, SqlValue } from '../types';
 
 /**
@@ -9,7 +10,7 @@ export async function openSqlJsDriver(): Promise<DatabaseDriver> {
   const SQL = await initSqlJs();
   const db = new SQL.Database();
   db.exec('PRAGMA foreign_keys = ON;');
-  return new SqlJsDriver(db);
+  return serialize(new SqlJsDriver(db));
 }
 
 /** sql.js is synchronous; report its exceptions as rejections, like a real async driver. */

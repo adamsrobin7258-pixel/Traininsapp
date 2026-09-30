@@ -4,6 +4,7 @@ import { getDeviceLanguages } from '@/core/platform';
 import { resolveLocale, resolveTheme, SettingsProvider, useSettings } from '@/core/settings';
 import { WeightProvider } from '@/core/health';
 import { StorageProvider } from '@/core/storage';
+import { TrainingProvider } from '@/core/training';
 import { SyncProvider } from '@/core/sync';
 import { applyTheme, useSystemPrefersDark } from '@/core/theme';
 import { ProfileProvider } from '@/core/user';
@@ -22,7 +23,9 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
         <ProfileProvider service={services.profile} initialProfile={initialState.profile}>
           <SyncProvider service={services.sync}>
             <StorageProvider service={services.storage}>
-              <WeightProvider service={services.weight}>{children}</WeightProvider>
+              <WeightProvider service={services.weight}>
+                <TrainingProvider services={services.training}>{children}</TrainingProvider>
+              </WeightProvider>
             </StorageProvider>
           </SyncProvider>
         </ProfileProvider>

@@ -20,5 +20,5 @@
 .label {
   font-size: var(--font-size-footnote);
   color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }

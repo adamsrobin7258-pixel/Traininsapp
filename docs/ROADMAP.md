@@ -1,0 +1,102 @@
+# Roadmap
+
+Die App entsteht in Phasen. Jede Phase endet mit lauffähiger App, grünen Tests und
+aktualisierter Dokumentation.
+
+## Phase 1 – Fundament ✅
+
+- React + TypeScript + Vite + Capacitor 8, Android- und iOS-Projekt
+- Modulare Architektur mit Modul-Registry und per ESLint erzwungenen Schichtgrenzen
+- SQLite-Infrastruktur: Treiberschnittstelle, Migrationen, Repositories für Einstellungen und
+  lokales Profil
+- Eigene typisierte i18n (Deutsch, Englisch), Sprache nach Gerät, manuell umschaltbar
+- Designsystem mit Tokens, Hell-/Dunkelmodus, gemeinsamen Komponenten
+- Fünf Bereiche mit Tab-Navigation: Heute, Training, Ernährung, Gesundheit, Profil
+- Einstellungen: Name, Erscheinungsbild, Sprache
+- Sync-Schnittstelle und Architekturentscheidung für Backend (Supabase), noch ohne Umsetzung
+- Tests (Vitest), Lint, Formatierung, CI mit Android-Debug-Build
+
+## Phase 1.1 – Stabilisierung ✅
+
+- Produktname **Kalethra**, App-ID `com.kalethra.app` auf allen Plattformen, Version 0.1.1
+  als einzige Quelle in `package.json`
+- CI: Actions auf Node-24-Versionen, Gradle-Cache, geprüfte und sprechend benannte APK
+  (`kalethra-debug-apk`), fester Debug-Signaturschlüssel für Updates auf Testgeräten
+- Datenschutz: Android-Backup und Geräteübertragung aus, Datenkatalog mit Test-Sperre für
+  unverschlüsselte Gesundheits- und Standortdaten ([PRIVACY.md](PRIVACY.md))
+- GPS-Plattformgrenze (`LocationTracker`) und Konzept ([GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))
+- Erweiterbarkeit: Module ohne Tab möglich, strengere Architekturregeln (Capacitor nur in
+  Adaptern, Domain-Logik ohne React)
+
+## Phase 2, Schritt 1 – Datenbankverschlüsselung ✅
+
+- SQLCipher-Verschlüsselung auf Android und iOS, Schlüssel im Keystore/Keychain
+- Kein Fallback auf unverschlüsselte Daten, eigene Fehlerbildschirme bei Schlüssel- und
+  Migrationsproblemen
+- Speicher-Selbsttest im Profil („Datenschutz & Sicherheit“)
+- Auf dem Xiaomi 15 Ultra validiert (SQLCipher 4.17.0 Community)
+
+## Phase 2, Schritt 2 – Körpergewicht ✅
+
+- Gewicht eintragen, bearbeiten, löschen (mit Bestätigung), ein Wert pro Tag
+- Einheit kg/lb (Einstellung), intern immer kg, Bereich 20–400 kg
+- Verlauf mit Nachladen, SVG-Diagramm mit Zeitraum (1 M, 3 M, 1 J, Alle)
+- Heute: auswählbare Tage, Wochenblättern, Gewicht des Tages mit Direktsprung zur Eingabe
+
+## Phase 3 – Trainingssystem ✅ (Version 0.2.0)
+
+- Sportartunabhängiges Modell: Trainingsarten-Registry mit Workflows (Sätze, Ausdauer,
+  Segmente, zeitbasiert); Krafttraining vollständig, übrige Arten nur als Architektur
+- Workout → Übung → Satz; Sätze mit Gewicht, Wdh., Dauer, Distanz, RPE, Abschluss, Reihenfolge
+- Übungsdatenbank: 21 Systemübungen (de/en, versioniert), eigene Übungen anlegen, bearbeiten,
+  deaktivieren
+- Trainingspläne mit Trainingstagen, Übungen, Vorgaben und Reihenfolge
+- Training frei oder aus Plan starten, laufendes Training wird gespeichert und wiederhergestellt,
+  „Letztes Mal“-Werte, Verlauf, Detailansicht mit Bearbeiten und Löschen
+- Volumen und geschätztes 1RM zentral berechnet (Basis für Rekorde)
+- Historie bleibt bei Plan- und Übungsänderungen erhalten (Snapshots, siehe
+  [DATABASE.md](DATABASE.md#training-migration-4))
+- Heute: „Nächstes Training“ bzw. laufendes Training (nur wenn vorhanden), Trainingsminuten
+- Datenbankzugriffe pro Verbindung serialisiert
+- Playwright-End-to-End-Tests in der CI
+
+## Phase 4 – Vorschlag
+
+Reihenfolge noch offen; Vorschläge:
+
+- **Rekorde und Fortschritt:** PRs je Übung (schwerster Satz, bestes 1RM, Volumen),
+  Verlauf je Übung als Diagramm – nutzt die vorhandenen Kennzahlen ohne Schemaänderung
+- **Laufen/Gehen/Radfahren ohne GPS** (manuelle Distanz/Dauer), danach GPS-Tracking mit
+  Hintergrundbetrieb ([GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))
+- **HYROX, Mobility, Stretching** als eigene Erfassungsoberflächen
+- Pausentimer zwischen Sätzen, Erinnerungen per lokaler Benachrichtigung
+- Ernährung: Mahlzeiten manuell, eigene Lebensmittel; später Lebensmitteldatenbank und
+  Barcode-Scanner
+- Schritte und aktive Energie aus Apple HealthKit / Android Health Connect
+
+## Phase 5 – Konto, Synchronisierung, Monetarisierung
+
+- Supabase-Auth (E-Mail, Sign in with Apple, Google), Kontoverknüpfung des lokalen Profils
+- Synchronisierung nach ADR-004
+- Datenexport und Kontolöschung
+- Abonnements über RevenueCat, Freischaltungen über `EntitlementService`
+
+## Später
+
+Statistiken und Fortschrittsanalysen mit Diagrammen, Schlaf und Regeneration, Widgets,
+Smartwatch-Anbindung, KI-gestützte Empfehlungen (nur mit klarem Nutzen und Datenschutzkonzept).
+
+## Bekannte Einschränkungen (Stand Phase 3)
+
+| Thema                      | Beschreibung                                                                                                                                                                                                                          |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Web nur für Entwicklung    | Im Browser speichert SQLite (WASM) unverschlüsselt in IndexedDB (auch Trainingsdaten); die App weist im Profil darauf hin. Nicht als Produkt gedacht.                                                                                 |
+| sql.js gepinnt             | `sql.js` ist auf 1.11.0 fixiert, weil `jeep-sqlite` 2.8.0 genau diese Version bündelt. `jeep-sqlite` ist seit 2024 nicht aktualisiert – betrifft nur den Web-Entwicklungsmodus, bei Problemen durch eigenen sql.js-Treiber ersetzbar. |
+| WASM im nativen Paket      | Die `sql-wasm.wasm` (~650 KB) landet auch in den nativen Paketen, obwohl sie dort ungenutzt ist. Kann später beim `cap sync` ausgeschlossen werden.                                                                                   |
+| Build-Warnung              | Vite meldet beim Build, dass `jeep-sqlite` das Node-Modul `crypto` importiert; es wird im Browser nicht benötigt. Harmlos.                                                                                                            |
+| npm audit                  | 3 mittlere Meldungen in `@capacitor/cli` (Abhängigkeit `xcode` → `uuid`). Nur Build-Werkzeug, nicht in der App enthalten. Der von npm vorgeschlagene Fix wäre ein Downgrade; wir warten auf ein Update von Capacitor.                 |
+| Standard-Icons             | App-Icon und Splash-Screen sind noch die Capacitor-Vorgaben.                                                                                                                                                                          |
+| Wochenbeginn               | Die Wochenansicht beginnt immer am Montag (ISO 8601), unabhängig von der Region.                                                                                                                                                      |
+| Gerätetests                | Android wird auf dem Xiaomi 15 Ultra getestet (durch den Nutzer). iOS ist bisher nur in der CI baubar und nicht auf einem Gerät geprüft.                                                                                              |
+| Eigene Übungen einsprachig | Eigene Übungen haben einen Namen für beide Sprachen; Systemübungen sind übersetzt.                                                                                                                                                    |
+| Übungen im Workout         | Übungen innerhalb eines Workouts werden per Pfeiltasten statt Drag & Drop sortiert (zuverlässiger auf kleinen Bildschirmen und mit Screenreadern).                                                                                    |

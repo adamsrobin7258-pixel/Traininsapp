@@ -2,7 +2,7 @@ import type { Migration } from './types';
 
 /**
  * Body weight, one primary value per profile and local calendar day. Stored in kilograms.
- * Deletions are physical until cloud sync exists (see DATABASE.md, "weight_entries").
+ * Deletions are physical until cloud sync exists (see docs/DATABASE.md, "weight_entries").
  */
 export const migration003WeightEntries: Migration = {
   version: 3,

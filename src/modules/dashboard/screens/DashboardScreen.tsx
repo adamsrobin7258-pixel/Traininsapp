@@ -6,11 +6,13 @@ import { parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { formatLongDate } from '@/shared/lib/format';
 import { List, ListRow, Screen, Section } from '@/ui';
 import { DayWeightRow } from '../components/DayWeightRow';
+import { TrainingOverview } from '../components/TrainingOverview';
 import { TodayPanel } from '../components/TodayPanel';
 import { WeekStrip } from '../components/WeekStrip';
 import { buildGreeting } from '../domain/greeting';
 import { resolveSelectedDay, shiftByWeeks } from '../domain/selectedDay';
 import { EMPTY_TODAY_SUMMARY } from '../domain/todaySummary';
+import { useTrainingData } from '@/core/training';
 import { useToday } from '../hooks/useToday';
 import styles from './DashboardScreen.module.css';
 
@@ -23,6 +25,14 @@ export function DashboardScreen() {
   const today = toLocalDateKey(now);
   const selected = resolveSelectedDay(params.get(ROUTE_PARAMS.day), today);
   const isToday = selected === today;
+  const trained = useTrainingData(
+    (s, profileId) => s.workouts.trainedMinutesOn(profileId, selected),
+    [selected],
+  );
+  const summary = {
+    ...EMPTY_TODAY_SUMMARY,
+    trainingMinutes: trained.status === 'ready' ? trained.data : null,
+  };
 
   function select(day: string) {
     // Replace, so browsing days does not fill the back stack.
@@ -53,10 +63,12 @@ export function DashboardScreen() {
         }
       >
         <div className={styles.dayContent}>
-          <TodayPanel summary={EMPTY_TODAY_SUMMARY} />
+          <TodayPanel summary={summary} />
           <DayWeightRow day={selected} />
         </div>
       </Section>
+
+      <TrainingOverview />
 
       <Section title={t('dashboard.areasTitle')}>
         <List>

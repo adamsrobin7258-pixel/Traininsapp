@@ -6,11 +6,17 @@
  * An unchanged value edited in pounds therefore round-trips to the same number.
  */
 
-export const WEIGHT_UNITS = ['kg', 'lb'] as const;
-export type WeightUnit = (typeof WEIGHT_UNITS)[number];
+import {
+  formatDecimalInput,
+  fromKg,
+  parseDecimalInput,
+  roundTo,
+  toKg,
+  type WeightUnit,
+} from '@/shared/lib/units';
 
-/** Exact by definition (international pound, 1959). */
-export const KG_PER_LB = 0.45359237;
+// Unit logic is shared with training loads (src/shared/lib/units.ts).
+export { fromKg, KG_PER_LB, toKg, WEIGHT_UNITS, type WeightUnit } from '@/shared/lib/units';
 
 /**
  * Accepted range in kilograms. Covers children from about six years up to very heavy adults
@@ -36,18 +42,9 @@ export type WeightInputError = 'empty' | 'invalid' | 'precision' | 'range';
 
 export type ParsedWeight = { ok: true; kg: number } | { ok: false; error: WeightInputError };
 
-export function toKg(value: number, unit: WeightUnit): number {
-  return unit === 'kg' ? value : value * KG_PER_LB;
-}
-
-export function fromKg(kg: number, unit: WeightUnit): number {
-  return unit === 'kg' ? kg : kg / KG_PER_LB;
-}
-
 /** Rounds for display/editing to the input precision. */
 export function roundForDisplay(value: number): number {
-  const factor = 10 ** WEIGHT_INPUT_DECIMALS;
-  return Math.round(value * factor) / factor;
+  return roundTo(value, WEIGHT_INPUT_DECIMALS);
 }
 
 export function isWeightInRange(kg: number): boolean {
@@ -67,13 +64,9 @@ export function weightLimitsIn(unit: WeightUnit): { min: number; max: number } {
  * thousands separators, signs, exponents and more than one decimal place.
  */
 export function parseWeightInput(input: string, unit: WeightUnit): ParsedWeight {
-  const text = input.trim();
-  if (text === '') return { ok: false, error: 'empty' };
-  const match = /^(\d{1,4})(?:[.,](\d+))?$/.exec(text);
-  if (!match) return { ok: false, error: 'invalid' };
-  const decimals = match[2] ?? '';
-  if (decimals.length > WEIGHT_INPUT_DECIMALS) return { ok: false, error: 'precision' };
-  const value = Number(`${match[1] ?? ''}.${decimals || '0'}`);
+  const parsed = parseDecimalInput(input, { maxDecimals: WEIGHT_INPUT_DECIMALS });
+  if (!parsed.ok) return parsed;
+  const { value } = parsed;
   const kg = toKg(value, unit);
   // Compare the typed value against limits in the same unit, so the displayed limits are exact.
   const limits = weightLimitsIn(unit);
@@ -85,11 +78,7 @@ export function parseWeightInput(input: string, unit: WeightUnit): ParsedWeight 
 
 /** Value for pre-filling an edit field, e.g. "82,4" (German) or "181.7" (English). */
 export function formatWeightInput(kg: number, unit: WeightUnit, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: WEIGHT_INPUT_DECIMALS,
-    useGrouping: false,
-  }).format(roundForDisplay(fromKg(kg, unit)));
+  return formatDecimalInput(fromKg(kg, unit), WEIGHT_INPUT_DECIMALS, locale);
 }
 
 /** Display value with unit, e.g. "82,4 kg". */

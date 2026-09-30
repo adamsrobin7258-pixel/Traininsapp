@@ -23,7 +23,7 @@ export interface SqlExecutor {
 export interface DatabaseDriver extends SqlExecutor {
   /**
    * Runs `work` inside a transaction. Commits when the callback resolves and
-   * rolls back when it throws. Transactions must not be nested.
+   * rolls back when it throws. Calls are serialised per connection (see serialize.ts); transactions must not be nested.
    */
   transaction<T>(work: (tx: SqlExecutor) => Promise<T>): Promise<T>;
   close(): Promise<void>;

@@ -114,11 +114,28 @@ describe('sql.js driver transactions', () => {
     await db.close();
   });
 
-  it('rejects nested transactions', async () => {
+  it('serialises overlapping calls instead of mixing them into an open transaction', async () => {
     const db = await openSqlJsDriver();
-    await expect(db.transaction(() => db.transaction(() => Promise.resolve()))).rejects.toThrow(
-      /Nested transactions/,
-    );
+    await db.execute('CREATE TABLE items (name TEXT NOT NULL)');
+
+    const failing = db.transaction(async (tx) => {
+      await tx.run('INSERT INTO items (name) VALUES (?)', ['rolled back']);
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      throw new Error('abort');
+    });
+    // Issued while the first transaction is still open: must neither fail nor be rolled back.
+    const concurrent = db.transaction(async (tx) => {
+      await tx.run('INSERT INTO items (name) VALUES (?)', ['second']);
+    });
+    const plain = db.run('INSERT INTO items (name) VALUES (?)', ['plain']);
+
+    await expect(failing).rejects.toThrow('abort');
+    await concurrent;
+    await plain;
+    expect(await db.query('SELECT name FROM items ORDER BY rowid')).toEqual([
+      { name: 'second' },
+      { name: 'plain' },
+    ]);
     await db.close();
   });
 });

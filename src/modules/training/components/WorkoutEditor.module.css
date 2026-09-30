@@ -1,0 +1,15 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}

@@ -5,6 +5,7 @@ import {
   type SQLiteDBConnection,
 } from '@capacitor-community/sqlite';
 import { planEncryptedOpen, verifyEncrypted, type EncryptionPort } from '../encryption';
+import { serialize } from '../serialize';
 import type {
   DatabaseDriver,
   DatabaseSecurity,
@@ -55,9 +56,11 @@ export async function openCapacitorSqliteDriver(databaseName: string): Promise<O
   await connection.execute('PRAGMA foreign_keys = ON;', false);
 
   const persist = isWeb ? () => sqlite.saveToStore(databaseName) : () => Promise.resolve();
-  const driver = new CapacitorSqliteDriver(connection, persist, async () => {
-    await sqlite.closeConnection(databaseName, false);
-  });
+  const driver = serialize(
+    new CapacitorSqliteDriver(connection, persist, async () => {
+      await sqlite.closeConnection(databaseName, false);
+    }),
+  );
   const security: DatabaseSecurity = {
     encrypted: !isWeb,
     outcome,
@@ -85,8 +88,9 @@ async function setupWebStore(sqlite: SQLiteConnection): Promise<void> {
   defineCustomElements(window);
   if (!document.querySelector('jeep-sqlite')) {
     const element = document.createElement('jeep-sqlite');
-    // The WASM binary is copied to public/assets by scripts/copy-sqlite-wasm.mjs.
-    element.setAttribute('wasmpath', 'assets');
+    // The WASM binary is copied to public/assets by scripts/copy-sqlite-wasm.mjs. Absolute
+    // path: a relative one breaks when the app is reloaded on a nested route.
+    element.setAttribute('wasmpath', `${import.meta.env.BASE_URL}assets`);
     document.body.appendChild(element);
   }
   await customElements.whenDefined('jeep-sqlite');

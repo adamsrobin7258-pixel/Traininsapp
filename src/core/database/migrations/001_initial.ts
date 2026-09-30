@@ -2,7 +2,7 @@ import type { Migration } from './types';
 
 /**
  * Initial schema: app settings and the local profile.
- * Conventions for all user-owned tables are documented in DATABASE.md.
+ * Conventions for all user-owned tables are documented in docs/DATABASE.md.
  */
 export const migration001Initial: Migration = {
   version: 1,

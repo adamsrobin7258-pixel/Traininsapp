@@ -1,0 +1,226 @@
+import type { Equipment, ExerciseType, MovementPattern, MuscleGroup } from './exercise';
+
+/**
+ * Bundled system exercises. Synced into the `exercises` table at startup when the version
+ * changes (insert new, update existing, deactivate removed) – no migration needed to grow the
+ * catalog. IDs are permanent: never rename or reuse one, because workouts reference them.
+ * A larger external catalog can later be imported through the same sync.
+ */
+export const EXERCISE_CATALOG_VERSION = 1;
+
+export interface CatalogExercise {
+  id: `sys.${string}`;
+  nameDe: string;
+  nameEn: string;
+  exerciseType: ExerciseType;
+  equipment: Equipment;
+  movementPattern: MovementPattern;
+  primary: MuscleGroup[];
+  secondary?: MuscleGroup[];
+}
+
+export const EXERCISE_CATALOG: readonly CatalogExercise[] = [
+  {
+    id: 'sys.bench-press',
+    nameDe: 'Bankdrücken',
+    nameEn: 'Bench Press',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'horizontalPush',
+    primary: ['chest'],
+    secondary: ['triceps', 'shoulders'],
+  },
+  {
+    id: 'sys.incline-dumbbell-press',
+    nameDe: 'Schrägbankdrücken mit Kurzhanteln',
+    nameEn: 'Incline Dumbbell Press',
+    exerciseType: 'weighted',
+    equipment: 'dumbbell',
+    movementPattern: 'horizontalPush',
+    primary: ['chest'],
+    secondary: ['shoulders', 'triceps'],
+  },
+  {
+    id: 'sys.overhead-press',
+    nameDe: 'Schulterdrücken',
+    nameEn: 'Overhead Press',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'verticalPush',
+    primary: ['shoulders'],
+    secondary: ['triceps'],
+  },
+  {
+    id: 'sys.lateral-raise',
+    nameDe: 'Seitheben',
+    nameEn: 'Lateral Raise',
+    exerciseType: 'weighted',
+    equipment: 'dumbbell',
+    movementPattern: 'isolation',
+    primary: ['shoulders'],
+  },
+  {
+    id: 'sys.dip',
+    nameDe: 'Dips',
+    nameEn: 'Dip',
+    exerciseType: 'bodyweight',
+    equipment: 'bodyweight',
+    movementPattern: 'verticalPush',
+    primary: ['chest', 'triceps'],
+    secondary: ['shoulders'],
+  },
+  {
+    id: 'sys.push-up',
+    nameDe: 'Liegestütze',
+    nameEn: 'Push-up',
+    exerciseType: 'bodyweight',
+    equipment: 'bodyweight',
+    movementPattern: 'horizontalPush',
+    primary: ['chest'],
+    secondary: ['triceps', 'shoulders'],
+  },
+  {
+    id: 'sys.triceps-pushdown',
+    nameDe: 'Trizepsdrücken am Kabel',
+    nameEn: 'Triceps Pushdown',
+    exerciseType: 'weighted',
+    equipment: 'cable',
+    movementPattern: 'isolation',
+    primary: ['triceps'],
+  },
+  {
+    id: 'sys.pull-up',
+    nameDe: 'Klimmzüge',
+    nameEn: 'Pull-up',
+    exerciseType: 'bodyweight',
+    equipment: 'bodyweight',
+    movementPattern: 'verticalPull',
+    primary: ['lats'],
+    secondary: ['biceps', 'back'],
+  },
+  {
+    id: 'sys.lat-pulldown',
+    nameDe: 'Latzug',
+    nameEn: 'Lat Pulldown',
+    exerciseType: 'weighted',
+    equipment: 'cable',
+    movementPattern: 'verticalPull',
+    primary: ['lats'],
+    secondary: ['biceps'],
+  },
+  {
+    id: 'sys.barbell-row',
+    nameDe: 'Langhantelrudern',
+    nameEn: 'Barbell Row',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'horizontalPull',
+    primary: ['back'],
+    secondary: ['lats', 'biceps'],
+  },
+  {
+    id: 'sys.seated-cable-row',
+    nameDe: 'Rudern am Kabel',
+    nameEn: 'Seated Cable Row',
+    exerciseType: 'weighted',
+    equipment: 'cable',
+    movementPattern: 'horizontalPull',
+    primary: ['back'],
+    secondary: ['lats', 'biceps'],
+  },
+  {
+    id: 'sys.biceps-curl',
+    nameDe: 'Bizepscurls',
+    nameEn: 'Biceps Curl',
+    exerciseType: 'weighted',
+    equipment: 'dumbbell',
+    movementPattern: 'isolation',
+    primary: ['biceps'],
+    secondary: ['forearms'],
+  },
+  {
+    id: 'sys.back-squat',
+    nameDe: 'Kniebeugen',
+    nameEn: 'Back Squat',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'squat',
+    primary: ['quadriceps', 'glutes'],
+    secondary: ['core'],
+  },
+  {
+    id: 'sys.leg-press',
+    nameDe: 'Beinpresse',
+    nameEn: 'Leg Press',
+    exerciseType: 'weighted',
+    equipment: 'machine',
+    movementPattern: 'squat',
+    primary: ['quadriceps'],
+    secondary: ['glutes'],
+  },
+  {
+    id: 'sys.deadlift',
+    nameDe: 'Kreuzheben',
+    nameEn: 'Deadlift',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'hinge',
+    primary: ['hamstrings', 'glutes', 'back'],
+    secondary: ['forearms'],
+  },
+  {
+    id: 'sys.romanian-deadlift',
+    nameDe: 'Rumänisches Kreuzheben',
+    nameEn: 'Romanian Deadlift',
+    exerciseType: 'weighted',
+    equipment: 'barbell',
+    movementPattern: 'hinge',
+    primary: ['hamstrings'],
+    secondary: ['glutes', 'back'],
+  },
+  {
+    id: 'sys.walking-lunge',
+    nameDe: 'Ausfallschritte',
+    nameEn: 'Walking Lunge',
+    exerciseType: 'weighted',
+    equipment: 'dumbbell',
+    movementPattern: 'lunge',
+    primary: ['quadriceps', 'glutes'],
+  },
+  {
+    id: 'sys.leg-curl',
+    nameDe: 'Beinbeuger an der Maschine',
+    nameEn: 'Leg Curl',
+    exerciseType: 'weighted',
+    equipment: 'machine',
+    movementPattern: 'isolation',
+    primary: ['hamstrings'],
+  },
+  {
+    id: 'sys.calf-raise',
+    nameDe: 'Wadenheben',
+    nameEn: 'Calf Raise',
+    exerciseType: 'weighted',
+    equipment: 'machine',
+    movementPattern: 'isolation',
+    primary: ['calves'],
+  },
+  {
+    id: 'sys.plank',
+    nameDe: 'Unterarmstütz',
+    nameEn: 'Plank',
+    exerciseType: 'timed',
+    equipment: 'bodyweight',
+    movementPattern: 'core',
+    primary: ['core'],
+  },
+  {
+    id: 'sys.farmers-carry',
+    nameDe: 'Farmer’s Walk',
+    nameEn: 'Farmer’s Carry',
+    exerciseType: 'distance',
+    equipment: 'dumbbell',
+    movementPattern: 'carry',
+    primary: ['forearms', 'fullBody'],
+  },
+];

@@ -1,7 +1,7 @@
 {
   "name": "kalethra",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "description": "Modulare Fitness- und Gesundheits-App für Android und iOS (React, TypeScript, Vite, Capacitor, SQLite).",
   "engines": {
@@ -23,7 +23,8 @@
     "check": "npm run typecheck && npm run lint && npm run format:check && npm run test",
     "cap:sync": "npm run build && cap sync",
     "cap:android": "npm run cap:sync && cap open android",
-    "cap:ios": "npm run cap:sync && cap open ios"
+    "cap:ios": "npm run cap:sync && cap open ios",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@capacitor-community/sqlite": "^8.1.1",
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@capacitor/cli": "^8.5.2",
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.56.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

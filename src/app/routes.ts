@@ -23,3 +23,11 @@ export const ROUTE_PARAMS = {
 export function addWeightLink(date: string): string {
   return `${ROUTES.health}?${ROUTE_PARAMS.addWeight}=${date}`;
 }
+
+/** Sub pages of the training area. */
+export const TRAINING_LINKS = {
+  activeWorkout: `${ROUTES.training}/workout`,
+  exercises: `${ROUTES.training}/exercises`,
+  workout: (id: string) => `${ROUTES.training}/workouts/${id}`,
+  plan: (id: string) => `${ROUTES.training}/plans/${id}`,
+} as const;

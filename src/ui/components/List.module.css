@@ -89,7 +89,9 @@
   flex: 0 1 auto;
   max-width: 55%;
   text-align: right;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
   font-size: var(--font-size-body);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);

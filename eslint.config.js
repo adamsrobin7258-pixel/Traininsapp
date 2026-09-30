@@ -36,7 +36,17 @@ const restrict = (...patterns) => ({
 });
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'android', 'ios', 'public/assets'] },
+  {
+    ignores: [
+      'dist',
+      'coverage',
+      'android',
+      'ios',
+      'public/assets',
+      'test-results',
+      'playwright-report',
+    ],
+  },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.strictTypeChecked],
@@ -64,6 +74,8 @@ export default tseslint.config(
             'useWeightForDate',
             'useLatestWeight',
             'useWeightTrend',
+            'useTraining',
+            'useTrainingData',
           ],
         },
       ],
@@ -96,6 +108,7 @@ export default tseslint.config(
       'src/core/database/migrations/**',
       'src/core/privacy/**',
       'src/core/health/**/*.ts',
+      'src/core/training/**/*.ts',
       'src/core/platform/location/**',
     ],
     rules: restrict(databaseDrivers, capacitor, coreLayer, pureDomain),

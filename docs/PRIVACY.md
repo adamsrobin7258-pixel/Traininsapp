@@ -26,15 +26,20 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 ### Aktuell gespeichert (Schema-Version 3)
 
-| Tabelle             | Inhalt                                                               | Sensibilität         |
-| ------------------- | -------------------------------------------------------------------- | -------------------- |
-| `schema_migrations` | Technischer Stand der Datenbank                                      | technisch            |
-| `app_settings`      | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
-| `diagnostics`       | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
-| `weight_entries`    | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
-| `profiles`          | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
+| Tabelle                                                     | Inhalt                                                               | Sensibilität         |
+| ----------------------------------------------------------- | -------------------------------------------------------------------- | -------------------- |
+| `schema_migrations`                                         | Technischer Stand der Datenbank                                      | technisch            |
+| `app_settings`                                              | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
+| `diagnostics`                                               | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
+| `weight_entries`                                            | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
+| `profiles`                                                  | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
+| `exercises`                                                 | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)             | personenbezogen      |
+| `exercise_muscles`                                          | Muskelgruppen je Übung                                               | technisch            |
+| `training_plans`, `training_plan_days`, `planned_exercises` | Trainingspläne, Tage, Übungen mit Vorgaben                           | **Gesundheitsdaten** |
+| `workouts`                                                  | Trainingseinheiten: Art, Zeitpunkt, Dauer, Titel, Notizen            | **Gesundheitsdaten** |
+| `workout_exercises`, `workout_sets`                         | Übungen und Sätze (Gewicht, Wdh., Dauer, Distanz, RPE)               | **Gesundheitsdaten** |
 
-Seit Phase 2 wird **Körpergewicht** gespeichert – ausschließlich in der verschlüsselten Datenbank. Trainings-, Ernährungs- und Standortdaten werden noch nicht gespeichert.
+Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** gespeichert – ausschließlich in der verschlüsselten Datenbank (per Test erzwungen). Die Trainingsfunktion nutzt kein Netzwerk, keine Analyse- und keine Tracking-Dienste. Ernährungs- und Standortdaten werden noch nicht gespeichert.
 
 ### Künftig (⏳ geplant, noch nicht implementiert)
 
@@ -44,7 +49,6 @@ Seit Phase 2 wird **Körpergewicht** gespeichert – ausschließlich in der vers
 | Herzfrequenz, Ruhepuls                 | Gesundheit       | Gesundheitsdaten                                                   |
 | Schlaf, Regeneration                   | Gesundheit       | Gesundheitsdaten                                                   |
 | Schritte, aktive Energie               | Aktivität        | Gesundheitsdaten                                                   |
-| Trainingseinheiten, Leistungswerte     | Training         | Gesundheitsdaten (Rückschlüsse auf körperliche Verfassung)         |
 | Mahlzeiten, Nährwerte                  | Ernährung        | Gesundheitsdaten (Rückschlüsse auf Ernährung/Erkrankungen möglich) |
 | GPS-Tracks, Routen                     | Standort         | Standortdaten – verraten Wohnort, Arbeitsplatz und Gewohnheiten    |
 | Importe aus HealthKit / Health Connect | je nach Datenart | Gesundheitsdaten                                                   |
@@ -196,7 +200,7 @@ Verschlüsselung entschieden werden. ⏳ Geprüfter Stand des Plugins:
 ## Datenlöschung (🟡 vorbereitet)
 
 Die Architektur ermöglicht folgende Löschwege. Grundlage sind der Datenkatalog (Kategorie und
-`deletedWithProfile`) und die Tombstone-Spalte `deleted_at` (siehe [DATABASE.md](../DATABASE.md)).
+`deletedWithProfile`) und die Tombstone-Spalte `deleted_at` (siehe [DATABASE.md](DATABASE.md)).
 
 | Löschweg                                                | Umsetzung                                                                                                          | Status     |
 | ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |

@@ -14,6 +14,8 @@ export interface AppModule {
   id: ModuleId;
   path: string;
   Screen: ComponentType;
+  /** Nested screens below `path`, e.g. `{ path: 'plans/:planId', Screen }`. */
+  subRoutes?: readonly { path: string; Screen: ComponentType }[];
   /**
    * Bottom-navigation entry. Omit it for modules that are reached from another screen
    * (e.g. running or cycling inside training) – they still get their route.

@@ -28,6 +28,11 @@ const paths = {
     </>
   ),
   chevronRight: <path d="M9.5 5.75 15.75 12 9.5 18.25" />,
+  check: <path d="m5.5 12.5 4.25 4.25L18.5 8" />,
+  plus: <path d="M12 5.5v13M5.5 12h13" />,
+  arrowUp: <path d="M12 18.5v-13M6.75 10.75 12 5.5l5.25 5.25" />,
+  arrowDown: <path d="M12 5.5v13M6.75 13.25 12 18.5l5.25-5.25" />,
+  close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
   chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,
 } satisfies Record<string, ReactElement>;
 

@@ -8,7 +8,17 @@ export function createRoutes(): RouteObject[] {
     {
       element: <AppLayout />,
       children: [
-        ...appModules.map(({ path, Screen }) => ({ path, element: <Screen /> })),
+        ...appModules.map(({ path, Screen, subRoutes }) =>
+          subRoutes?.length
+            ? {
+                path,
+                children: [
+                  { index: true, element: <Screen /> },
+                  ...subRoutes.map((sub) => ({ path: sub.path, element: <sub.Screen /> })),
+                ],
+              }
+            : { path, element: <Screen /> },
+        ),
         { path: '*', element: <Navigate to="/" replace /> },
       ],
     },

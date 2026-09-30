@@ -1,0 +1,144 @@
+.day {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.dayHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.dayName {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-title);
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.exercises {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exercise {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  border-top: var(--border-hairline) solid var(--color-separator);
+}
+
+.exercise:first-child {
+  border-top: 0;
+}
+
+.exerciseMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-2));
+  padding: var(--space-2) 0;
+  border: 0;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.exerciseName {
+  font-size: var(--font-size-body);
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.targets {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.tool {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.tool:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dayActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.dayTools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.add {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+  cursor: pointer;
+}
+
+.textTool {
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.danger {
+  color: var(--color-critical);
+}
+
+.planActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.muted {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
