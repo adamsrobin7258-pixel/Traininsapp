@@ -21,7 +21,13 @@ test('Today is a read-only overview that opens the areas', async ({ page }) => {
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Heute' })
     .click();
-  await expect(page.locator('main').getByText('91,8 kg')).toBeVisible();
+  await expect(page).toHaveURL(/\/$/);
+  await expect(
+    page
+      .locator('main')
+      .getByRole('link', { name: /^Gesundheit/ })
+      .getByText('91,8 kg'),
+  ).toBeVisible();
 
   await page
     .locator('main')
