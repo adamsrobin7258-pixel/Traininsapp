@@ -74,7 +74,7 @@ jobs:
           # The APK must be signed with the shared debug key so it installs as an update.
           SIGNER=$("$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" 2>&1)
           echo "$SIGNER"
-          ACTUAL=$(grep -m1 'certificate SHA-256 digest' <<< "$SIGNER" | awk -F': ' '{print $2}' | tr -d ' ')
+          ACTUAL=$(grep -m1 'certificate SHA-256 digest' <<< "$SIGNER" | awk '{print $NF}')
           EXPECTED=$(keytool -list -v -keystore android/app/debug.keystore -storepass android \
             -alias androiddebugkey | grep 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
           echo "Signer SHA-256: $ACTUAL"
