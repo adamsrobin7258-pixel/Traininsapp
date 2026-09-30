@@ -80,7 +80,24 @@ aktualisierter Dokumentation.
   (Aufwärmsätze, Drops am letzten Arbeitssatz) und beim Start übernommen
 - RPE aus der Oberfläche entfernt (gespeicherte Werte bleiben erhalten)
 
-## Phase 4 – Vorschlag
+## Phase 4.1 – Ernährungsfundament ✅ (Version 0.3.0)
+
+- Datenmodell (Migration 6): Lebensmittel mit Quelle, Bezugsmenge, Portionsgrößen, Favoriten;
+  konfigurierbare Mahlzeiten; Tagebuch mit Nährwert-Momentaufnahme; gespeicherte Mahlzeiten;
+  Rezepte; datierte Ziele (automatisch/manuell); Wasser
+- Rechenlogik: Einheiten (g/kg, ml/l, Stück/Portion über Portionsgröße), Nährwerte je Menge,
+  Rezepte gesamt/pro Portion, Tagessummen
+- `FoodDataProvider`-Schnittstelle (ohne Anbieter), Gewicht über bestehende Gesundheitsdaten
+- Heute zeigt die Tageswerte aus dem Ernährungstagebuch
+- Noch ohne Ernährungs-Oberfläche
+
+## Phase 4.2 – Vorschlag
+
+- Ernährungsseite: Tagebuch nach Mahlzeiten, eigene Lebensmittel anlegen, Menge erfassen
+- Lebensmittelsuche mit externem Anbieter (Auswahl und Datenschutzprüfung), Barcode-Scanner
+- Wasser erfassen, Ziele einstellen
+
+## Phase 4 – Weitere Vorschläge
 
 Reihenfolge noch offen; Vorschläge:
 

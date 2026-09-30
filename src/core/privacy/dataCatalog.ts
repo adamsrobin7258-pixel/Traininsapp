@@ -129,6 +129,90 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     deletedWithProfile: true,
     syncable: true,
   },
+  // Food data itself is not personal; custom foods and favourites are.
+  {
+    table: 'foods',
+    category: 'nutrition',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'food_servings',
+    category: 'nutrition',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  // Meal configuration (names, order).
+  {
+    table: 'meal_slots',
+    category: 'nutrition',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'recipes',
+    category: 'nutrition',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'recipe_ingredients',
+    category: 'nutrition',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  // Templates reveal eating habits: treated like the diary.
+  {
+    table: 'saved_meals',
+    category: 'nutrition',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'saved_meal_items',
+    category: 'nutrition',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  // What was eaten when: health data (Art. 9 GDPR).
+  {
+    table: 'food_entries',
+    category: 'nutrition',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'nutrition_goals',
+    category: 'nutrition',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
+    table: 'water_entries',
+    category: 'nutrition',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
 ];
 
 /**

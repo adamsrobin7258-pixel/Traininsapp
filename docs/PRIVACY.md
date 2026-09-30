@@ -24,34 +24,35 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 ## Welche Daten gibt es?
 
-### Aktuell gespeichert (Schema-Version 3)
+### Aktuell gespeichert (Schema-Version 6)
 
-| Tabelle                                                     | Inhalt                                                               | Sensibilität         |
-| ----------------------------------------------------------- | -------------------------------------------------------------------- | -------------------- |
-| `schema_migrations`                                         | Technischer Stand der Datenbank                                      | technisch            |
-| `app_settings`                                              | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
-| `diagnostics`                                               | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
-| `weight_entries`                                            | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
-| `profiles`                                                  | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
-| `exercises`                                                 | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)             | personenbezogen      |
-| `exercise_muscles`                                          | Muskelgruppen je Übung                                               | technisch            |
-| `training_plans`, `training_plan_days`, `planned_exercises` | Trainingspläne, Tage, Übungen mit Vorgaben                           | **Gesundheitsdaten** |
-| `workouts`                                                  | Trainingseinheiten: Art, Zeitpunkt, Dauer, Titel, Notizen            | **Gesundheitsdaten** |
-| `workout_exercises`, `workout_sets`                         | Übungen und Sätze (Gewicht, Wdh., Dauer, Distanz, RPE)               | **Gesundheitsdaten** |
+| Tabelle                                                                               | Inhalt                                                               | Sensibilität         |
+| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------- |
+| `schema_migrations`                                                                   | Technischer Stand der Datenbank                                      | technisch            |
+| `app_settings`                                                                        | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
+| `diagnostics`                                                                         | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
+| `weight_entries`                                                                      | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
+| `profiles`                                                                            | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
+| `exercises`                                                                           | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)             | personenbezogen      |
+| `exercise_muscles`                                                                    | Muskelgruppen je Übung                                               | technisch            |
+| `training_plans`, `training_plan_days`, `planned_exercises`                           | Trainingspläne, Tage, Übungen mit Vorgaben                           | **Gesundheitsdaten** |
+| `workouts`                                                                            | Trainingseinheiten: Art, Zeitpunkt, Dauer, Titel, Notizen            | **Gesundheitsdaten** |
+| `workout_exercises`, `workout_sets`                                                   | Übungen und Sätze (Gewicht, Wdh., Dauer, Distanz, RPE)               | **Gesundheitsdaten** |
+| `foods`, `food_servings`, `meal_slots`, `recipes`, `recipe_ingredients`               | Lebensmittel, Portionsgrößen, Mahlzeiten-Einstellung, Rezepte        | personenbezogen      |
+| `food_entries`, `saved_meals`, `saved_meal_items`, `nutrition_goals`, `water_entries` | Ernährungstagebuch, Vorlagen, Ziele, Wasser                          | **Gesundheitsdaten** |
 
-Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** gespeichert – ausschließlich in der verschlüsselten Datenbank (per Test erzwungen). Die Trainingsfunktion nutzt kein Netzwerk, keine Analyse- und keine Tracking-Dienste. Ernährungs- und Standortdaten werden noch nicht gespeichert.
+Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** gespeichert – ausschließlich in der verschlüsselten Datenbank (per Test erzwungen). Die Trainingsfunktion nutzt kein Netzwerk, keine Analyse- und keine Tracking-Dienste. Seit Phase 4.1 existiert das Datenmodell für **Ernährung** (verschlüsselt, lokal). Eine künftige externe Lebensmitteldatenbank (`FoodDataProvider`) erhält ausschließlich Suchtext, Barcode oder Produkt-ID – niemals Tagebuch, Ziele, Gewicht oder Profildaten. Standortdaten werden noch nicht gespeichert.
 
 ### Künftig (⏳ geplant, noch nicht implementiert)
 
-| Daten                                  | Kategorie        | Sensibilität                                                       |
-| -------------------------------------- | ---------------- | ------------------------------------------------------------------ |
-| Gewicht, Körperfett, Muskelmasse       | Gesundheit       | Gesundheitsdaten (Art. 9 DSGVO)                                    |
-| Herzfrequenz, Ruhepuls                 | Gesundheit       | Gesundheitsdaten                                                   |
-| Schlaf, Regeneration                   | Gesundheit       | Gesundheitsdaten                                                   |
-| Schritte, aktive Energie               | Aktivität        | Gesundheitsdaten                                                   |
-| Mahlzeiten, Nährwerte                  | Ernährung        | Gesundheitsdaten (Rückschlüsse auf Ernährung/Erkrankungen möglich) |
-| GPS-Tracks, Routen                     | Standort         | Standortdaten – verraten Wohnort, Arbeitsplatz und Gewohnheiten    |
-| Importe aus HealthKit / Health Connect | je nach Datenart | Gesundheitsdaten                                                   |
+| Daten                                  | Kategorie        | Sensibilität                                                    |
+| -------------------------------------- | ---------------- | --------------------------------------------------------------- |
+| Gewicht, Körperfett, Muskelmasse       | Gesundheit       | Gesundheitsdaten (Art. 9 DSGVO)                                 |
+| Herzfrequenz, Ruhepuls                 | Gesundheit       | Gesundheitsdaten                                                |
+| Schlaf, Regeneration                   | Gesundheit       | Gesundheitsdaten                                                |
+| Schritte, aktive Energie               | Aktivität        | Gesundheitsdaten                                                |
+| GPS-Tracks, Routen                     | Standort         | Standortdaten – verraten Wohnort, Arbeitsplatz und Gewohnheiten |
+| Importe aus HealthKit / Health Connect | je nach Datenart | Gesundheitsdaten                                                |
 
 ## Datenkatalog (🟡 vorbereitet, ✅ erzwungen)
 

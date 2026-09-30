@@ -174,4 +174,54 @@ describe('Today overview', () => {
     expect(card(/^Nutrition/).getByText('Carbs')).toBeInTheDocument();
     expect(await card(/^Training/).findByText('No workout completed yet')).toBeInTheDocument();
   });
+
+  it('shows today’s nutrition totals and goals from the food diary', async () => {
+    await renderApp('/', {
+      prepare: async (services, profileId) => {
+        const n = services.nutrition;
+        await n.meals.ensureDefaults(profileId);
+        const [breakfast] = await n.meals.listActive(profileId);
+        const oats = await n.foods.create(profileId, {
+          name: 'Haferflocken',
+          reference: { amount: 100, unit: 'g' },
+          nutrients: {
+            energyKcal: 370,
+            proteinG: 13.5,
+            carbsG: 58.7,
+            fatG: 7,
+            fiberG: null,
+            sugarG: null,
+            saturatedFatG: null,
+          },
+        });
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-03',
+          mealId: breakfast?.id ?? '',
+          foodId: oats.id,
+          amount: 200,
+          unit: 'g',
+        });
+        // Yesterday does not count for today.
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-02',
+          mealId: breakfast?.id ?? '',
+          foodId: oats.id,
+          amount: 500,
+          unit: 'g',
+        });
+        await n.goals.save(profileId, {
+          effectiveFrom: '2026-10-01',
+          goalType: 'maintain',
+          targets: { energyKcal: { auto: 2500, manual: null } },
+        });
+      },
+    });
+    const nutrition = card(/^Ernährung/);
+    expect(await nutrition.findByText('740 kcal')).toBeInTheDocument();
+    expect(nutrition.getByText('27 g')).toBeInTheDocument();
+    expect(nutrition.getByText('117 g')).toBeInTheDocument();
+    expect(nutrition.getByText('14 g')).toBeInTheDocument();
+    expect(nutrition.getByText('Kalorien · Ziel 2.500 kcal')).toBeInTheDocument();
+    expect(nutrition.queryByText('Noch keine Ernährungsdaten für heute')).not.toBeInTheDocument();
+  });
 });

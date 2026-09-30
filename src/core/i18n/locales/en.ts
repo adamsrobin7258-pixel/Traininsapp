@@ -59,6 +59,7 @@ export const en: TranslationSchema = {
       carbs: 'Carbs',
       fat: 'Fat',
       none: 'No nutrition data for today yet',
+      ofGoal: '{label} · goal {goal}',
     },
   },
   training: {
@@ -296,6 +297,38 @@ export const en: TranslationSchema = {
       carbohydrates: 'Carbohydrates',
       fat: 'Fat',
     },
+    meals: {
+      breakfast: 'Breakfast',
+      lunch: 'Lunch',
+      dinner: 'Dinner',
+      snacks: 'Snacks',
+    },
+    units: {
+      g: 'g',
+      kg: 'kg',
+      ml: 'ml',
+      l: 'l',
+      piece: 'pc',
+      serving: 'serving',
+    },
+    unitsLong: {
+      g: 'grams',
+      kg: 'kilograms',
+      ml: 'millilitres',
+      l: 'litres',
+      piece: 'pieces',
+      serving: 'servings',
+    },
+    goalTypes: {
+      lose: 'Lose weight',
+      maintain: 'Maintain weight',
+      gain: 'Build muscle',
+    },
+    goalOrigin: {
+      auto: 'Calculated automatically',
+      manual: 'Adjusted manually',
+    },
+    water: 'Water',
   },
   health: {
     title: 'Health',

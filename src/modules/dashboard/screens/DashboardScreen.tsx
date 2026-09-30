@@ -26,7 +26,7 @@ export function DashboardScreen() {
       <div className={styles.cards}>
         <TrainingSummary now={now} />
         <HealthSummary now={now} />
-        <NutritionSummary />
+        <NutritionSummary now={now} />
       </div>
     </Screen>
   );

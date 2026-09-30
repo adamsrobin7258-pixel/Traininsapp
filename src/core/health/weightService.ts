@@ -41,6 +41,12 @@ export class WeightService {
     return this.repository.findByDate(profileId, date);
   }
 
+  /** Latest value on or before a local day (e.g. for nutrition calculations of that day). */
+  getLatestOnOrBefore(profileId: string, date: string): Promise<WeightEntry | null> {
+    this.assertDate(date);
+    return this.repository.findLatest(profileId, date);
+  }
+
   /** Latest value on or before today, for "current weight". */
   getLatest(profileId: string): Promise<WeightEntry | null> {
     return this.repository.findLatest(profileId, this.todayKey());

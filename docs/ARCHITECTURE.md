@@ -120,18 +120,19 @@ Anbieter – so bleibt die Regel „Module importieren sich nicht gegenseitig“
 
 ### `core/` – Infrastruktur
 
-| Ordner      | Inhalt                                                                                                                                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                                                                         |
-| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                                                                              |
-| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                                                                      |
-| `user/`     | Lokales Profil: Repository, Service, Provider                                                                                                     |
-| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                                                                   |
-| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                                                               |
-| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)                                                     |
-| `health/`   | Gemeinsame Gesundheits-Domain: Gewicht (Typen, Einheiten, Validierung), Repository, Service, Provider/Hooks, Diagramm-Geometrie                   |
-| `training/` | Trainingssystem: Sportarten-Registry, Übungen und Katalog, Sätze/Validierung, Kennzahlen, Pläne, Workouts; Repositories, Services, Provider/Hooks |
-| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([PRIVACY.md](PRIVACY.md))                                                          |
+| Ordner       | Inhalt                                                                                                                                                                                                 |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `database/`  | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                                                                                                                              |
+| `i18n/`      | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                                                                                                                                   |
+| `settings/`  | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                                                                                                                           |
+| `user/`      | Lokales Profil: Repository, Service, Provider                                                                                                                                                          |
+| `sync/`      | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                                                                                                                        |
+| `theme/`     | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                                                                                                                    |
+| `platform/`  | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)                                                                                                          |
+| `health/`    | Gemeinsame Gesundheits-Domain: Gewicht (Typen, Einheiten, Validierung), Repository, Service, Provider/Hooks, Diagramm-Geometrie                                                                        |
+| `training/`  | Trainingssystem: Sportarten-Registry, Übungen und Katalog, Sätze/Validierung, Kennzahlen, Pläne, Workouts; Repositories, Services, Provider/Hooks                                                      |
+| `nutrition/` | Ernährung: Einheiten, Nährwertberechnung, Lebensmittel, Mahlzeiten, Tagebuch mit Momentaufnahmen, Vorlagen, Rezepte, Ziele, Wasser, `FoodDataProvider`-Vertrag; Repositories, Services, Provider/Hooks |
+| `privacy/`   | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([PRIVACY.md](PRIVACY.md))                                                                                                               |
 
 Muster für Datenzugriff (in Phase 1 für Einstellungen und Profil umgesetzt):
 
@@ -240,6 +241,21 @@ deklariert und werden mit ihrem Workflow implementiert.
 **GPS.** Nicht umgesetzt. Arten mit `supportsRoute` erhalten später einen Track (1:1 zum
 Workout, Trackpunkte in eigener Tabelle) über den `LocationTracker`
 ([GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md)).
+
+### Ernährung (Phase 4.1: Fundament)
+
+Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) → Services
+(`FoodService`, `MealService`, `DiaryService`, `RecipeService`, `GoalService`) →
+`NutritionProvider`/`useNutritionData`. Reine Rechenlogik (`units.ts`, `nutrients.ts`,
+`food.ts`, `recipe.ts`, `goals.ts`, `water.ts`, `diary.ts`) ist ohne React testbar.
+
+- **Datenquellen:** `FoodDataProvider` (Suche, Barcode, Produkt) ist nur ein Vertrag; externe
+  Produkte werden über `FoodService.importExternal` lokal gespeichert. Kein Anbieter ist im Code
+  verdrahtet.
+- **Gewicht:** `BodyWeightSource` in `core/nutrition`, umgesetzt im Composition Root über den
+  `WeightService` – keine zweite Gewichtsdatenhaltung.
+- **Heute** liest die Tageswerte des Tagebuchs und das gültige Ziel, speichert nichts.
+- Oberflächen (Tagebuch, Suche, Rezepte) folgen ab Phase 4.2.
 
 ### Zentrale Schnittstellen
 

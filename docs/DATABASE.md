@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 5)
+## Aktuelles Schema (Version 6)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -244,6 +244,33 @@ Zugriff: `ExerciseRepository`, `PlanRepository`, `WorkoutRepository` → `Exerci
 `PlanService`, `WorkoutService` (`src/core/training/`). Mehrschrittige Änderungen laufen über
 `TrainingStore.atomic` in einer Transaktion.
 
+## Ernährung (Migration 6)
+
+Fundament des Ernährungsmoduls (`src/core/nutrition/`). Nur neue Tabellen, bestehende Daten
+bleiben unberührt. Alle Tabellen hängen am Profil (`ON DELETE CASCADE`) und liegen in der
+verschlüsselten Datenbank.
+
+| Tabelle                           | Inhalt                                                                                                                                                                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `foods`                           | Lebensmittel: Name, Hersteller, Barcode, Quelle (`custom`/`local`/`external` + `provider`, `external_id`), Bezugsmenge (`reference_amount` + `reference_unit`), Nährwerte, Favorit, aktiv. Wird nie gelöscht, nur deaktiviert.  |
+| `food_servings`                   | Lebensmittelspezifische Größe von „Stück“ bzw. „Portion“ (z. B. 1 Stück = 120 g). Einzige Brücke zwischen Zähl- und Gewichts-/Volumeneinheiten.                                                                                 |
+| `meal_slots`                      | Konfigurierbare Mahlzeiten (vier Standards mit `default_key`, eigener Name optional, Reihenfolge, aktiv).                                                                                                                       |
+| `food_entries`                    | Gegessene Menge je lokalem Kalendertag (`local_date`) und Mahlzeit, mit **Nährwert-Momentaufnahme** sowie Namen von Lebensmittel und Mahlzeit. Bezug auf `foods`/`recipes`/`meal_slots` bleibt optional (`ON DELETE SET NULL`). |
+| `saved_meals`, `saved_meal_items` | Vorlagen („Standard-Frühstück“) mit Lebensmitteln und Mengen – kein Tagesprotokoll. Beim Anwenden entstehen neue Einträge mit aktuellen Werten.                                                                                 |
+| `recipes`, `recipe_ingredients`   | Rezepte mit Portionen, Beschreibung, Zubereitungszeit, Notizen; Zutaten verweisen auf Lebensmittel (Grundlage einer späteren Einkaufsliste).                                                                                    |
+| `nutrition_goals`                 | Tagesziele mit `effective_from` (gilt ab Tag) und Zielart (`lose`/`maintain`/`gain`); je Wert (kcal, Protein, KH, Fett, Wasser) eine automatische und eine manuelle Spalte. Manuell überschreibt automatisch.                   |
+| `water_entries`                   | Wasser je lokalem Tag, Menge und Einheit (`ml`/`l`), Uhrzeit optional; unabhängig von Nährwerten.                                                                                                                               |
+
+| Thema            | Entscheidung                                                                                                                                                                                                              |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Einheiten        | Feste Kennungen `g`, `kg`, `ml`, `l`, `piece`, `serving` (`CHECK`), Übersetzung erst in der Oberfläche. Umrechnung nur innerhalb einer Dimension (g↔kg, ml↔l); Stück/Portion nur über `food_servings`; Masse↔Volumen nie. |
+| Nährwerte        | Zahlen (kcal, g), bezogen auf die Bezugsmenge; Details (Ballaststoffe, Zucker, gesättigte Fettsäuren) optional, `NULL` = unbekannt. Gespeicherte Werte mit zwei Nachkommastellen.                                         |
+| Historie         | Einträge speichern die berechneten Nährwerte. Korrekturen an Lebensmitteln oder Rezepten ändern vergangene Tage nicht; Mengenänderungen skalieren die Momentaufnahme.                                                     |
+| Kalendertag      | `local_date` nach derselben Regel wie Gewicht und Training (`toLocalDateKey`).                                                                                                                                            |
+| Externe Produkte | Eindeutig je Profil über `(profile_id, provider, external_id)`; erneuter Import aktualisiert die lokale Kopie, danach offline nutzbar.                                                                                    |
+| Gewicht          | Keine eigene Speicherung: Ernährung liest über `BodyWeightSource` aus `weight_entries`.                                                                                                                                   |
+| Indizes          | `food_entries_day`, `water_entries_day` (Tagesabfragen, per Test geprüft), `foods_profile`, `foods_barcode`, `foods_external`, `recipe_ingredients_recipe`, `saved_meal_items_meal`.                                      |
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:
@@ -273,14 +300,13 @@ Weitere Regeln:
 
 ## Geplante Datenmodelle (nicht implementiert)
 
-Training ist seit Migration 4 umgesetzt (siehe oben).
+Training (Migration 4) und das Ernährungsfundament (Migration 6) sind umgesetzt (siehe oben).
 
 Skizze zur Orientierung; die Tabellen entstehen mit dem jeweiligen Modul als eigene Migrationen.
 
 | Bereich      | Tabellen (vorläufig)                                                                     |
 | ------------ | ---------------------------------------------------------------------------------------- |
 | Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                            |
-| Ernährung    | `foods`, `meals`, `meal_items`                                                           |
 | Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle: manuell/HealthKit/Health Connect) |
 | Aktivität    | `daily_activity` (Datum, Schritte, aktive Energie, Quelle)                               |
 | Regeneration | `sleep_sessions`                                                                         |

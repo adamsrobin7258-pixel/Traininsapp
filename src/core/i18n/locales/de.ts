@@ -61,6 +61,7 @@ export const de = {
       carbs: 'Kohlenhydrate',
       fat: 'Fett',
       none: 'Noch keine Ernährungsdaten für heute',
+      ofGoal: '{label} · Ziel {goal}',
     },
   },
   training: {
@@ -301,6 +302,38 @@ export const de = {
       carbohydrates: 'Kohlenhydrate',
       fat: 'Fett',
     },
+    meals: {
+      breakfast: 'Frühstück',
+      lunch: 'Mittagessen',
+      dinner: 'Abendessen',
+      snacks: 'Snacks',
+    },
+    units: {
+      g: 'g',
+      kg: 'kg',
+      ml: 'ml',
+      l: 'l',
+      piece: 'Stück',
+      serving: 'Portion',
+    },
+    unitsLong: {
+      g: 'Gramm',
+      kg: 'Kilogramm',
+      ml: 'Milliliter',
+      l: 'Liter',
+      piece: 'Stück',
+      serving: 'Portion',
+    },
+    goalTypes: {
+      lose: 'Abnehmen',
+      maintain: 'Gewicht halten',
+      gain: 'Muskelaufbau',
+    },
+    goalOrigin: {
+      auto: 'Automatisch berechnet',
+      manual: 'Manuell angepasst',
+    },
+    water: 'Wasser',
   },
   health: {
     title: 'Gesundheit',
