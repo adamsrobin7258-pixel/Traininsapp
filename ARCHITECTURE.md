@@ -43,7 +43,8 @@ Zusätzlich:
 - **Capacitor** (`@capacitor/*`) nur in Plattform-Adaptern (`src/core/platform/`) und
   Datenbanktreibern.
 - **Reine Domain-Logik** – `modules/**/domain`, `shared/`, Services, Repositories, Migrationen,
-  `core/privacy`, `core/platform/location` – darf weder React noch UI noch Capacitor importieren.
+  `core/privacy`, `core/platform/location`, `core/health/*.ts` – darf weder React noch UI noch
+  Capacitor importieren.
 - In JSX sind keine festen Texte erlaubt; sichtbarer Text kommt aus `t()`.
 
 ## Schichten im Detail
@@ -123,16 +124,17 @@ Anbieter – so bleibt die Regel „Module importieren sich nicht gegenseitig“
 
 ### `core/` – Infrastruktur
 
-| Ordner      | Inhalt                                                                                             |
-| ----------- | -------------------------------------------------------------------------------------------------- |
-| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                          |
-| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                               |
-| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                       |
-| `user/`     | Lokales Profil: Repository, Service, Provider                                                      |
-| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                    |
-| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                |
-| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)      |
-| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([docs/PRIVACY.md](docs/PRIVACY.md)) |
+| Ordner      | Inhalt                                                                                                                          |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                                                       |
+| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                                                            |
+| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                                                    |
+| `user/`     | Lokales Profil: Repository, Service, Provider                                                                                   |
+| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                                                 |
+| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                                             |
+| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)                                   |
+| `health/`   | Gemeinsame Gesundheits-Domain: Gewicht (Typen, Einheiten, Validierung), Repository, Service, Provider/Hooks, Diagramm-Geometrie |
+| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([docs/PRIVACY.md](docs/PRIVACY.md))                              |
 
 Muster für Datenzugriff (in Phase 1 für Einstellungen und Profil umgesetzt):
 
@@ -145,6 +147,32 @@ Screen ─► Hook/Provider ─► Service (Regeln, Validierung) ─► Reposito
 - **Service:** Geschäftsregeln (z. B. Namen normalisieren, ungültige Einstellungen verwerfen);
   bekommt Repository und `Clock` injiziert → deterministisch testbar.
 - **Provider/Hook:** hält den React-Zustand, ruft Services auf, aktualisiert optimistisch.
+
+### Datenfluss der ersten Gesundheitsfunktion (Körpergewicht)
+
+```
+modules/health  (Gesundheit: Übersicht, Diagramm, Verlauf, Eingabe-Sheet)
+modules/dashboard (Heute: Tagesauswahl, Gewicht des Tages)
+        │  useWeightForDate / useWeightData / useWeightService   (core/health/WeightProvider)
+        ▼
+WeightService      Regeln: kein Zukunftsdatum, 20–400 kg, ein Wert pro Tag (ersetzen statt duplizieren)
+        ▼
+WeightRepository   SQL für weight_entries, immer auf profile_id eingeschränkt
+        ▼
+SqlExecutor → CapacitorSqliteDriver → SQLCipher (verschlüsselt, Android/iOS)
+```
+
+- Eingaben werden in der Domain geparst (`parseWeightInput`: Komma/Punkt, eine Nachkommastelle,
+  Bereich) und im Service erneut geprüft; die Datenbank hat zusätzlich `CHECK`-Regeln.
+- Nach jeder Änderung erhöht der `WeightProvider` eine Revision; alle Ansichten, die Daten über
+  die Hooks laden, fragen gezielt neu ab (kein globales Neuladen, kein Laden bei unbeteiligten
+  Renders).
+- **Warum `core/health` und nicht `modules/health`?** Gewicht wird von „Heute“, „Gesundheit“
+  und später von Statistiken genutzt. Module dürfen sich nicht importieren; gemeinsame Domain
+  gehört daher in `core`, die Oberflächen bleiben in den Modulen (ADR-013).
+- Modulübergreifende Links (Tagesauswahl, „Gewicht für Tag X eintragen“) laufen über
+  `ROUTE_PARAMS`/`addWeightLink` in `app/routes.ts`: `/?day=YYYY-MM-DD`, `/health?add=YYYY-MM-DD`.
+  Ungültige oder zukünftige Tage in der URL werden ignoriert.
 
 ### Zentrale Schnittstellen
 
@@ -336,3 +364,14 @@ Format: Kontext → Entscheidung → Konsequenzen. Status aller ADRs: _angenomme
   dieselbe Signatur und lassen sich auf Testgeräten als Update installieren.
 - **Konsequenz:** Der Schlüssel ist öffentlich und nur für Tests geeignet. Release-Signierung
   erfolgt später mit einem geheimen Schlüssel aus GitHub-Secrets.
+
+### ADR-013: Gemeinsame Gesundheits-Domain in `core/health`
+
+- **Kontext:** Gewichtsdaten werden in „Heute“ und „Gesundheit“ gebraucht, später in Statistiken.
+- **Entscheidung:** Domain, Repository, Service und React-Anbindung liegen in `core/health`; die
+  Module enthalten nur Oberflächen. Weitere Messarten (Körperfett, Ruhepuls …) kommen ebenfalls
+  hierher – je Messart eine typisierte Tabelle, solange sich die Regeln unterscheiden;
+  gleichartige Messwerte können später in einer generischen `measurements`-Tabelle
+  zusammengeführt werden.
+- **Konsequenz:** Keine direkte Abhängigkeit zwischen Modulen; Diagramm-Geometrie und Validierung
+  sind ohne React testbar.

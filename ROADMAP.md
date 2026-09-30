@@ -28,13 +28,20 @@ aktualisierter Dokumentation.
 - Erweiterbarkeit: Module ohne Tab möglich, strengere Architekturregeln (Capacitor nur in
   Adaptern, Domain-Logik ohne React)
 
-## Phase 2, Schritt 1 – Datenbankverschlüsselung 🟡
+## Phase 2, Schritt 1 – Datenbankverschlüsselung ✅
 
 - SQLCipher-Verschlüsselung auf Android und iOS, Schlüssel im Keystore/Keychain
 - Kein Fallback auf unverschlüsselte Daten, eigene Fehlerbildschirme bei Schlüssel- und
   Migrationsproblemen
 - Speicher-Selbsttest im Profil („Datenschutz & Sicherheit“)
-- **Ausstehend:** Validierung auf dem Xiaomi 15 Ultra → danach Schritt 2 (Körpergewicht)
+- Auf dem Xiaomi 15 Ultra validiert (SQLCipher 4.17.0 Community)
+
+## Phase 2, Schritt 2 – Körpergewicht ✅
+
+- Gewicht eintragen, bearbeiten, löschen (mit Bestätigung), ein Wert pro Tag
+- Einheit kg/lb (Einstellung), intern immer kg, Bereich 20–400 kg
+- Verlauf mit Nachladen, SVG-Diagramm mit Zeitraum (1 M, 3 M, 1 J, Alle)
+- Heute: auswählbare Tage, Wochenblättern, Gewicht des Tages mit Direktsprung zur Eingabe
 
 ## Phase 2 – Erste Fachfunktionen (Vorschlag)
 

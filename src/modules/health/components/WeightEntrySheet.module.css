@@ -1,0 +1,80 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.label {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.value {
+  font-size: var(--font-size-subhead);
+  text-align: right;
+}
+
+.inputRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.inputRow:focus-within {
+  border-color: var(--color-focus);
+}
+
+.inputRow[data-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  font-size: var(--font-size-large-title);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-title);
+  background: transparent;
+}
+
+.input:focus-visible {
+  /* The surrounding field shows focus (see .inputRow:focus-within). */
+  outline: none;
+}
+
+.unit {
+  font-size: var(--font-size-headline);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.hint,
+.body {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}

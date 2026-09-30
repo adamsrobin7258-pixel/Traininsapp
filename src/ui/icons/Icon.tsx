@@ -28,6 +28,7 @@ const paths = {
     </>
   ),
   chevronRight: <path d="M9.5 5.75 15.75 12 9.5 18.25" />,
+  chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,
 } satisfies Record<string, ReactElement>;
 
 export type IconName = keyof typeof paths;

@@ -2,6 +2,7 @@ import { useLayoutEffect, type ReactNode } from 'react';
 import { I18nProvider } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import { resolveLocale, resolveTheme, SettingsProvider, useSettings } from '@/core/settings';
+import { WeightProvider } from '@/core/health';
 import { StorageProvider } from '@/core/storage';
 import { SyncProvider } from '@/core/sync';
 import { applyTheme, useSystemPrefersDark } from '@/core/theme';
@@ -20,7 +21,9 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
       <PreferencesBridge>
         <ProfileProvider service={services.profile} initialProfile={initialState.profile}>
           <SyncProvider service={services.sync}>
-            <StorageProvider service={services.storage}>{children}</StorageProvider>
+            <StorageProvider service={services.storage}>
+              <WeightProvider service={services.weight}>{children}</WeightProvider>
+            </StorageProvider>
           </SyncProvider>
         </ProfileProvider>
       </PreferencesBridge>

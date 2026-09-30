@@ -1,0 +1,61 @@
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  background: var(--color-scrim);
+  cursor: default;
+  animation: fade var(--duration-base) var(--ease-standard);
+}
+
+.panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: 100%;
+  max-width: var(--layout-max-width);
+  max-height: calc(100dvh - var(--safe-top) - var(--space-8));
+  overflow-y: auto;
+  padding: var(--space-3) calc(var(--safe-right) + var(--layout-gutter))
+    calc(var(--safe-bottom) + var(--space-5)) calc(var(--safe-left) + var(--layout-gutter));
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-bg);
+  animation: rise var(--duration-base) var(--ease-standard);
+}
+
+.handle {
+  align-self: center;
+  width: 2.25rem;
+  height: 0.3125rem;
+  border-radius: var(--radius-full);
+  background: var(--color-border);
+}
+
+.title {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  letter-spacing: var(--letter-spacing-title);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(1.5rem);
+    opacity: 0;
+  }
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}

@@ -71,6 +71,7 @@ export function PrivacySection() {
             check.phase === 'running' ? t('profile.privacy.running') : t('profile.privacy.runCheck')
           }
           onPress={runCheck}
+          action
           disabled={check.phase === 'running'}
         />
         {check.phase === 'error' ? <ListRow title={t('profile.privacy.checkFailed')} /> : null}

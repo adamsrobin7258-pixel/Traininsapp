@@ -1,4 +1,5 @@
 import { StorageService, type OpenedDatabase } from '@/core/database';
+import { WeightRepository, WeightService } from '@/core/health';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -10,6 +11,7 @@ export interface AppServices {
   profile: ProfileService;
   sync: SyncService;
   storage: StorageService;
+  weight: WeightService;
 }
 
 export function createServices(
@@ -18,6 +20,7 @@ export function createServices(
 ): AppServices {
   return {
     storage: new StorageService(db, security, clock),
+    weight: new WeightService(new WeightRepository(db), clock),
     settings: new SettingsService(new SettingsRepository(db, clock)),
     profile: new ProfileService(new ProfileRepository(db), clock),
     sync: new LocalOnlySyncService(),

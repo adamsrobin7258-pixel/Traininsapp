@@ -56,7 +56,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 2)
+## Aktuelles Schema (Version 3)
 
 ```sql
 CREATE TABLE app_settings (
@@ -88,6 +88,37 @@ CREATE TABLE diagnostics (
 `app_settings` ist gerätebezogen und wird nicht synchronisiert (Theme und Sprache können je
 Gerät verschieden sein). Werte werden beim Laden validiert; ungültige Werte fallen auf
 Standardwerte zurück.
+
+## `weight_entries` (Migration 3)
+
+Erste Gesundheitstabelle: Körpergewicht, **ein primärer Wert pro Profil und Kalendertag**.
+
+```sql
+CREATE TABLE weight_entries (
+  id          TEXT PRIMARY KEY NOT NULL,                 -- UUID
+  profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  date        TEXT NOT NULL,                             -- lokaler Kalendertag YYYY-MM-DD
+  value       REAL NOT NULL CHECK (value >= 20 AND value <= 400),
+  unit        TEXT NOT NULL DEFAULT 'kg' CHECK (unit = 'kg'),
+  created_at  TEXT NOT NULL,                             -- ISO-8601 UTC
+  updated_at  TEXT NOT NULL,
+  sync_state  TEXT NOT NULL DEFAULT 'local'
+);
+CREATE UNIQUE INDEX weight_entries_profile_date ON weight_entries (profile_id, date);
+```
+
+| Thema            | Entscheidung                                                                                                                                                                                                                                                                                                                                                     |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beziehung        | n:1 zu `profiles`; Löschen des Profils löscht die Einträge (`ON DELETE CASCADE`).                                                                                                                                                                                                                                                                                |
+| Einheit          | Intern immer **Kilogramm** (`unit` ist fest `kg`, dokumentiert die Basiseinheit). Anzeige/Eingabe in kg oder lb laut Einstellung `weightUnit`. Umrechnung genau einmal beim Speichern (1 lb = 0,45359237 kg, exakt), keine Rundung in der Datenbank; Anzeige rundet auf eine Nachkommastelle. Ein unverändert gespeicherter lb-Wert bleibt dadurch exakt gleich. |
+| Wertebereich     | 20–400 kg (≈ 44,1–881,8 lb), höchstens eine Nachkommastelle in der Eingabeeinheit. Deckt Kinder ab ca. 6 Jahren bis sehr schwere Erwachsene ab und fängt Tippfehler wie „8240“ ab. Geprüft in Domain (`parseWeightInput`), Service (`WeightService`) **und** Datenbank (`CHECK`).                                                                                |
+| Ein Wert pro Tag | Eindeutiger Index `(profile_id, date)`. Erneutes Eintragen für denselben Tag ersetzt den Wert (`INSERT … ON CONFLICT DO UPDATE`), `id` und `created_at` bleiben erhalten.                                                                                                                                                                                        |
+| Datum            | Lokaler Kalendertag statt Zeitstempel, damit Zeitzonenwechsel keine Tage verschieben. Zukünftige Tage lehnt der Service ab.                                                                                                                                                                                                                                      |
+| Index            | `weight_entries_profile_date` bedient alle Abfragen: Tageswert, Verlauf (`ORDER BY date DESC LIMIT/OFFSET`), Zeitraum fürs Diagramm, Zählung. Per Test über `EXPLAIN QUERY PLAN` abgesichert.                                                                                                                                                                    |
+| Löschen          | **Physisch** (kein Tombstone), weil es noch keine Cloud-Kopie gibt. Mit Einführung der Synchronisierung folgt eine Migration auf Tombstones (`deleted_at`).                                                                                                                                                                                                      |
+| Datenschutz      | Datenkatalog: Kategorie `health`, Sensibilität `health`, exportierbar, wird mit dem Profil gelöscht, später synchronisierbar. Nur in der verschlüsselten Datenbank zulässig (per Test erzwungen).                                                                                                                                                                |
+
+Zugriff ausschließlich über `WeightRepository` → `WeightService` (`src/core/health/`).
 
 ## Konventionen für Nutzerdaten-Tabellen
 
@@ -154,6 +185,6 @@ Details: [docs/PRIVACY.md](docs/PRIVACY.md). Kurzfassung für Entwickler:
 - Jede neue Tabelle braucht einen Eintrag im Datenkatalog `src/core/privacy/dataCatalog.ts`
   (Kategorie, Sensibilität, Export, Löschung, Sync) – sonst schlägt ein Test fehl.
 - Die native Datenbank ist mit SQLCipher verschlüsselt (Schlüssel im Keystore/Keychain, siehe
-  [docs/PRIVACY.md](docs/PRIVACY.md)). Tabellen mit `health`- oder `location`-Daten bleiben per
-  Test gesperrt, bis die Verschlüsselung auf dem Gerät validiert ist.
+  [docs/PRIVACY.md](docs/PRIVACY.md)); auf dem Xiaomi 15 Ultra validiert (SQLCipher 4.17.0
+  Community). Erst danach wurde `LOCAL_DATABASE_ENCRYPTED` aktiviert und `weight_entries` angelegt.
 - Android-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet.

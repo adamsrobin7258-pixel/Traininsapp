@@ -45,3 +45,18 @@ export function toLocalDateKey(date: Date): string {
   const day = String(date.getDate()).padStart(2, '0');
   return `${date.getFullYear()}-${month}-${day}`;
 }
+
+const DATE_KEY = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** Parses a YYYY-MM-DD key into a local date; `null` for malformed or impossible dates. */
+export function parseLocalDateKey(key: string): Date | null {
+  const match = DATE_KEY.exec(key);
+  if (!match) return null;
+  const [, year, month, day] = match.map(Number) as [number, number, number, number];
+  const date = new Date(year, month - 1, day);
+  return toLocalDateKey(date) === key ? date : null;
+}
+
+export function isLocalDateKey(value: string): boolean {
+  return parseLocalDateKey(value) !== null;
+}

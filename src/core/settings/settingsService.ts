@@ -3,6 +3,7 @@ import {
   DEFAULT_SETTINGS,
   LANGUAGE_PREFERENCES,
   THEME_PREFERENCES,
+  WEIGHT_UNIT_PREFERENCES,
   type AppSettings,
 } from './types';
 
@@ -15,6 +16,7 @@ function oneOf<T extends string>(allowed: readonly T[]) {
 const validators: Validators = {
   theme: oneOf(THEME_PREFERENCES),
   language: oneOf(LANGUAGE_PREFERENCES),
+  weightUnit: oneOf(WEIGHT_UNIT_PREFERENCES),
 };
 
 /** Merges stored values with defaults. Unknown keys and invalid values are ignored. */

@@ -21,7 +21,7 @@ describe('SettingsService', () => {
     await service.update('language', 'en');
     await service.update('theme', 'light');
 
-    expect(await service.load()).toEqual({ theme: 'light', language: 'en' });
+    expect(await service.load()).toEqual({ theme: 'light', language: 'en', weightUnit: 'kg' });
   });
 
   it('rejects invalid values', async () => {
@@ -52,6 +52,7 @@ describe('parseSettings', () => {
     ).toEqual({
       theme: 'system',
       language: 'de',
+      weightUnit: 'kg',
     });
   });
 });

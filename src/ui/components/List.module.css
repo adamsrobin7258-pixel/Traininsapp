@@ -42,9 +42,12 @@
   width: 100%;
   border: 0;
   text-align: left;
-  color: var(--color-accent-text);
   background: transparent;
   cursor: pointer;
+}
+
+.action {
+  color: var(--color-accent-text);
 }
 
 .button:disabled {
@@ -83,7 +86,10 @@
 }
 
 .value {
-  flex: none;
+  flex: 0 1 auto;
+  max-width: 55%;
+  text-align: right;
+  overflow-wrap: anywhere;
   font-size: var(--font-size-body);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);

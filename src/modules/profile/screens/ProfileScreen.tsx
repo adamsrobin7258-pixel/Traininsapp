@@ -4,6 +4,7 @@ import {
   LANGUAGE_PREFERENCES,
   resolveLocale,
   THEME_PREFERENCES,
+  WEIGHT_UNIT_PREFERENCES,
   useSettings,
 } from '@/core/settings';
 import { DISPLAY_NAME_MAX_LENGTH, useProfile } from '@/core/user';
@@ -54,6 +55,17 @@ export function ProfileScreen() {
           value={settings.theme}
           onChange={(value) => {
             updateSetting('theme', value).catch(reportError);
+          }}
+        />
+      </Section>
+
+      <Section title={t('profile.unitsTitle')}>
+        <SegmentedControl
+          label={t('profile.weightUnitLabel')}
+          options={WEIGHT_UNIT_PREFERENCES.map((value) => ({ value, label: value }))}
+          value={settings.weightUnit}
+          onChange={(value) => {
+            updateSetting('weightUnit', value).catch(reportError);
           }}
         />
       </Section>

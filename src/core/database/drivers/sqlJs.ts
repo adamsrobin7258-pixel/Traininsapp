@@ -12,30 +12,44 @@ export async function openSqlJsDriver(): Promise<DatabaseDriver> {
   return new SqlJsDriver(db);
 }
 
+/** sql.js is synchronous; report its exceptions as rejections, like a real async driver. */
+function settle<T>(work: () => T): Promise<T> {
+  try {
+    return Promise.resolve(work());
+  } catch (error) {
+    return Promise.reject(error instanceof Error ? error : new Error(String(error)));
+  }
+}
+
 class SqlJsDriver implements DatabaseDriver {
   private inTransaction = false;
 
   constructor(private readonly db: Database) {}
 
   execute(sql: string): Promise<void> {
-    this.db.exec(sql);
-    return Promise.resolve();
+    return settle(() => {
+      this.db.exec(sql);
+    });
   }
 
   run(sql: string, params: readonly SqlValue[] = []): Promise<RunResult> {
-    this.db.run(sql, [...params]);
-    return Promise.resolve({ changes: this.db.getRowsModified() });
+    return settle(() => {
+      this.db.run(sql, [...params]);
+      return { changes: this.db.getRowsModified() };
+    });
   }
 
   query<T extends object>(sql: string, params: readonly SqlValue[] = []): Promise<T[]> {
-    const statement = this.db.prepare(sql, [...params]);
-    const rows: T[] = [];
-    try {
-      while (statement.step()) rows.push(statement.getAsObject() as T);
-    } finally {
-      statement.free();
-    }
-    return Promise.resolve(rows);
+    return settle(() => {
+      const statement = this.db.prepare(sql, [...params]);
+      const rows: T[] = [];
+      try {
+        while (statement.step()) rows.push(statement.getAsObject() as T);
+      } finally {
+        statement.free();
+      }
+      return rows;
+    });
   }
 
   async transaction<T>(work: (tx: SqlExecutor) => Promise<T>): Promise<T> {

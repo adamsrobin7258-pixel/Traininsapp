@@ -80,6 +80,7 @@
   --color-positive: #1d7f55;
   --color-critical: #c0332b;
   --color-tab-bar: rgb(245 244 241 / 0.86);
+  --color-scrim: rgb(21 22 26 / 0.32);
   --color-focus: var(--color-accent);
 }
 
@@ -101,6 +102,7 @@
   --color-positive: #3fc68a;
   --color-critical: #ff6b61;
   --color-tab-bar: rgb(14 15 17 / 0.86);
+  --color-scrim: rgb(0 0 0 / 0.55);
 }
 
 @media (prefers-reduced-motion: reduce) {

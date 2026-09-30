@@ -24,15 +24,17 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 ## Welche Daten gibt es?
 
-### Aktuell gespeichert (Schema-Version 2)
+### Aktuell gespeichert (Schema-Version 3)
 
-| Tabelle             | Inhalt                                      | Sensibilität    |
-| ------------------- | ------------------------------------------- | --------------- |
-| `schema_migrations` | Technischer Stand der Datenbank             | technisch       |
-| `app_settings`      | Erscheinungsbild, Sprache                   | technisch       |
-| `profiles`          | Lokale Profil-ID (UUID), optionaler Vorname | personenbezogen |
+| Tabelle             | Inhalt                                                               | Sensibilität         |
+| ------------------- | -------------------------------------------------------------------- | -------------------- |
+| `schema_migrations` | Technischer Stand der Datenbank                                      | technisch            |
+| `app_settings`      | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
+| `diagnostics`       | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
+| `weight_entries`    | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
+| `profiles`          | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
 
-Es werden **noch keine Gesundheits-, Trainings-, Ernährungs- oder Standortdaten** gespeichert.
+Seit Phase 2 wird **Körpergewicht** gespeichert – ausschließlich in der verschlüsselten Datenbank. Trainings-, Ernährungs- und Standortdaten werden noch nicht gespeichert.
 
 ### Künftig (⏳ geplant, noch nicht implementiert)
 
@@ -70,10 +72,7 @@ Automatische Tests (`dataCatalog.test.ts`) erzwingen:
 
 ## Verschlüsselung der lokalen Datenbank
 
-**Status (Phase 2, Schritt 1): implementiert, automatisiert getestet – Gerätevalidierung auf dem
-Xiaomi 15 Ultra ausstehend.** Bis zur bestätigten Gerätevalidierung bleibt
-`LOCAL_DATABASE_ENCRYPTED = false`; der Datenkatalog-Test sperrt damit weiterhin jede Tabelle mit
-Gesundheits- oder Standortdaten. Es werden **keine Gesundheitsdaten gespeichert**.
+**Status: aktiv und auf dem Gerät validiert** (Xiaomi 15 Ultra, SQLCipher 4.17.0 Community, Phase 2): Upgrade einer unverschlüsselten 0.1.1-Datenbank, App-Neustart, Geräte-Neustart, Flugmodus und Neuinstallation bestanden. Seitdem ist `LOCAL_DATABASE_ENCRYPTED = true`.
 
 ### Umsetzung
 
@@ -199,13 +198,13 @@ Verschlüsselung entschieden werden. ⏳ Geprüfter Stand des Plugins:
 Die Architektur ermöglicht folgende Löschwege. Grundlage sind der Datenkatalog (Kategorie und
 `deletedWithProfile`) und die Tombstone-Spalte `deleted_at` (siehe [DATABASE.md](../DATABASE.md)).
 
-| Löschweg                                                | Umsetzung                                                                                                          | Status |
-| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ------ |
-| Einzelnen Eintrag löschen (z. B. eine Messung)          | Repository setzt `deleted_at`; wird bei Sync an den Server weitergegeben und später endgültig entfernt             | ⏳     |
-| Alle Trainings / Ernährungs- / Gesundheitsdaten löschen | Alle Tabellen einer `category` aus dem Datenkatalog (`tablesInCategory`) in einer Transaktion leeren               | ⏳     |
-| Komplettes lokales Profil löschen                       | Alle Tabellen mit `deletedWithProfile` leeren, danach neues leeres Profil anlegen                                  | ⏳     |
-| Cloud-Konto und Cloud-Daten löschen                     | Serverseitige Löschung aller Zeilen des Kontos plus Auth-Konto (Supabase), danach lokales Profil wieder rein lokal | ⏳     |
-| App deinstallieren                                      | Android und iOS löschen alle App-Daten; durch das deaktivierte Backup bleibt keine Kopie zurück                    | ✅     |
+| Löschweg                                                | Umsetzung                                                                                                          | Status     |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
+| Einzelnen Eintrag löschen (z. B. eine Messung)          | Gewicht: nach Bestätigung physisch gelöscht (`WeightService.delete`); mit Sync kommen Tombstones                   | ✅ Gewicht |
+| Alle Trainings / Ernährungs- / Gesundheitsdaten löschen | Alle Tabellen einer `category` aus dem Datenkatalog (`tablesInCategory`) in einer Transaktion leeren               | ⏳         |
+| Komplettes lokales Profil löschen                       | Alle Tabellen mit `deletedWithProfile` leeren, danach neues leeres Profil anlegen                                  | ⏳         |
+| Cloud-Konto und Cloud-Daten löschen                     | Serverseitige Löschung aller Zeilen des Kontos plus Auth-Konto (Supabase), danach lokales Profil wieder rein lokal | ⏳         |
+| App deinstallieren                                      | Android und iOS löschen alle App-Daten; durch das deaktivierte Backup bleibt keine Kopie zurück                    | ✅         |
 
 Endgültig löschen statt nur markieren: Lokal werden Tombstones gelöscht, sobald sie
 synchronisiert sind – ohne Konto sofort.
@@ -231,13 +230,11 @@ synchronisiert sind – ohne Konto sofort.
 
 ## Offene Punkte
 
-1. **Gerätevalidierung der Verschlüsselung auf dem Xiaomi 15 Ultra** (Upgrade von 0.1.1,
-   Neustart, Geräte-Neustart). Erst danach `LOCAL_DATABASE_ENCRYPTED = true` und Gesundheitsdaten.
-2. iOS: Entscheidung Backup-Ausschluss bzw. Keychain-Attribut `…ThisDeviceOnly` (Plugin-Anpassung
+1. iOS: Entscheidung Backup-Ausschluss bzw. Keychain-Attribut `…ThisDeviceOnly` (Plugin-Anpassung
    nötig) und iOS-Gerätetest.
-3. Wiederherstellungsweg bei verlorenem Schlüssel (z. B. „Lokale Daten zurücksetzen“ mit
+2. Wiederherstellungsweg bei verlorenem Schlüssel (z. B. „Lokale Daten zurücksetzen“ mit
    ausdrücklicher Bestätigung) – aktuell nur Fehlerbildschirm.
-4. Export/Import und Löschfunktionen vor Veröffentlichung.
-5. Datenschutzerklärung, Einwilligungstexte, Store-Angaben (Google Play Data Safety, Apple
+3. Export/Import und Löschfunktionen vor Veröffentlichung.
+4. Datenschutzerklärung, Einwilligungstexte, Store-Angaben (Google Play Data Safety, Apple
    Privacy Nutrition Label).
-6. Für die spätere Cloud: Auftragsverarbeitungsvertrag, EU-Region, Löschkonzept für Tombstones.
+5. Für die spätere Cloud: Auftragsverarbeitungsvertrag, EU-Region, Löschkonzept für Tombstones.

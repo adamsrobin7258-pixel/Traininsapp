@@ -36,9 +36,7 @@ describe('privacy and security section', () => {
 
   it('is honest about the unencrypted browser development mode', async () => {
     await renderApp('/profile', {
-      encrypted: false,
-      outcome: 'development-unencrypted',
-      cipherVersion: null,
+      security: { encrypted: false, outcome: 'development-unencrypted', cipherVersion: null },
     });
     const section = within(privacySection());
     expect(section.getByText('Nicht aktiv')).toBeInTheDocument();

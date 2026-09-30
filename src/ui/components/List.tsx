@@ -21,6 +21,8 @@ interface ListRowProps {
   to?: string;
   /** Turns the row into a button. */
   onPress?: () => void;
+  /** Styles a button row as an action (accent text, no chevron) instead of an item. */
+  action?: boolean;
   disabled?: boolean;
   /** Custom trailing content, e.g. a control. Replaces `value`. */
   trailing?: ReactNode;
@@ -33,6 +35,7 @@ export function ListRow({
   icon,
   to,
   onPress,
+  action = false,
   disabled,
   trailing,
 }: ListRowProps) {
@@ -48,7 +51,9 @@ export function ListRow({
         {subtitle ? <span className={styles.subtitle}>{subtitle}</span> : null}
       </span>
       {trailing ?? (value !== undefined ? <span className={styles.value}>{value}</span> : null)}
-      {to ? <Icon name="chevronRight" size={18} className={styles.chevron} /> : null}
+      {to || (onPress && !action) ? (
+        <Icon name="chevronRight" size={18} className={styles.chevron} />
+      ) : null}
     </>
   );
 
@@ -61,7 +66,7 @@ export function ListRow({
       ) : onPress ? (
         <button
           type="button"
-          className={`${styles.row} ${styles.interactive} ${styles.button}`}
+          className={`${styles.row} ${styles.interactive} ${styles.button} ${action ? styles.action : ''}`}
           onClick={onPress}
           disabled={disabled}
         >

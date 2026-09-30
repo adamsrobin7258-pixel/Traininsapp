@@ -56,14 +56,24 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     deletedWithProfile: true,
     syncable: true,
   },
+  {
+    table: 'weight_entries',
+    category: 'health',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
 ];
 
 /**
  * Whether the local database is encrypted at rest. Must be `true` before any table with
  * `health` or `location` sensitivity is added (enforced by dataCatalog.test.ts).
- * Planned implementation: SQLCipher via @capacitor-community/sqlite, see docs/PRIVACY.md.
+ * SQLCipher via @capacitor-community/sqlite (Android/iOS), validated on a Xiaomi 15 Ultra with
+ * SQLCipher 4.17.0 Community (Phase 2). Browser development builds are not encrypted and say so
+ * in the UI. See docs/PRIVACY.md.
  */
-export const LOCAL_DATABASE_ENCRYPTED = false;
+export const LOCAL_DATABASE_ENCRYPTED = true;
 
 export function requiresEncryptionAtRest(sensitivity: DataSensitivity): boolean {
   return sensitivity === 'health' || sensitivity === 'location';
