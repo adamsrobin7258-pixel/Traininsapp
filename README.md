@@ -1,17 +1,25 @@
-# Traininsapp
+# Kalethra
 
 Modulare Fitness- und Gesundheits-App für Android und iOS – Training, Ernährung, Gesundheit,
 Aktivität und Regeneration in einer App, lokal nutzbar ohne Konto.
 
-**Status:** Phase 1 – technisches Fundament und Grundoberfläche. Fachfunktionen folgen ab Phase 2
-(siehe [ROADMAP.md](ROADMAP.md)).
+|                                    |                                                                                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------ |
+| Produktname                        | **Kalethra**                                                                         |
+| Android Package ID / iOS Bundle ID | `com.kalethra.app`                                                                   |
+| Version                            | aus `package.json` (Android `versionCode` wird daraus abgeleitet, z. B. 0.1.1 → 101) |
 
-| Dokument                             | Inhalt                                                       |
-| ------------------------------------ | ------------------------------------------------------------ |
-| [ARCHITECTURE.md](ARCHITECTURE.md)   | Schichten, Module, Schnittstellen, Architekturentscheidungen |
-| [DATABASE.md](DATABASE.md)           | Datenbankkonzept, Migrationen, Sync-Vorbereitung             |
-| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md) | Tokens, Komponenten, Gestaltungsregeln                       |
-| [ROADMAP.md](ROADMAP.md)             | Phasenplan, bekannte Einschränkungen                         |
+**Status:** Phase 1.1 – technisches Fundament, Stabilisierung, Datenschutz-Grundlagen.
+Fachfunktionen folgen ab Phase 2 (siehe [ROADMAP.md](ROADMAP.md)).
+
+| Dokument                                             | Inhalt                                                       |
+| ---------------------------------------------------- | ------------------------------------------------------------ |
+| [ARCHITECTURE.md](ARCHITECTURE.md)                   | Schichten, Module, Schnittstellen, Architekturentscheidungen |
+| [DATABASE.md](DATABASE.md)                           | Datenbankkonzept, Migrationen, Sync-Vorbereitung             |
+| [docs/PRIVACY.md](docs/PRIVACY.md)                   | Datenschutz, Datenkatalog, Backup, Verschlüsselung, Löschung |
+| [docs/GPS_ARCHITECTURE.md](docs/GPS_ARCHITECTURE.md) | Plattformgrenze und Konzept für GPS-Tracking                 |
+| [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)                 | Tokens, Komponenten, Gestaltungsregeln                       |
+| [ROADMAP.md](ROADMAP.md)                             | Phasenplan, bekannte Einschränkungen                         |
 
 ## Technologien
 
@@ -65,7 +73,23 @@ Entwicklung gedacht – das Produkt sind die nativen Apps.
 
 1. `npm run cap:android` – öffnet `android/` in Android Studio.
 2. Gerät per USB (Entwickleroptionen, USB-Debugging) oder Emulator wählen, _Run_ drücken.
-3. Alternativ lädt die CI bei jedem Push ein Debug-APK als Artefakt hoch (`android-debug-apk`).
+3. Alternativ lädt die CI bei jedem Push eine Debug-APK hoch (siehe unten).
+
+**Debug-APK aus der CI installieren (z. B. Xiaomi / HyperOS)**
+
+1. Auf GitHub unter _Actions → CI →_ letzter Lauf das Artefakt `kalethra-debug-apk` laden
+   (Anmeldung nötig) und entpacken. Darin liegt `kalethra-<version>-debug.apk`.
+2. APK aufs Telefon übertragen und öffnen. Beim ersten Mal die Installation aus dieser Quelle
+   erlauben (_Einstellungen → Datenschutz/Sicherheit → Unbekannte Apps installieren_).
+   HyperOS zeigt ggf. einen zusätzlichen Sicherheitsscan und eine Wartezeit an.
+3. Updates: Neuere CI-APKs lassen sich direkt über die installierte Version installieren –
+   Daten bleiben erhalten.
+
+Alle Debug-Builds werden mit dem **absichtlich eingecheckten Debug-Schlüssel**
+`android/app/debug.keystore` signiert (Android-Standardzugangsdaten `android`). Nur so haben
+lokale und CI-APKs dieselbe Signatur. Der Schlüssel ist öffentlich und **nur für Tests**.
+Release-Builds für Google Play bekommen einen eigenen, geheimen Schlüssel (als GitHub-Secret,
+nie im Repository).
 
 **iOS**
 
@@ -102,5 +126,7 @@ und Tests erzwingen Vollständigkeit. Fest codierte Texte in JSX werden von ESLi
 ## Beitrag leisten
 
 - Vor jedem Commit `npm run check`.
-- Neue Datenbanktabellen nur per Migration (siehe [DATABASE.md](DATABASE.md)).
+- Neue Datenbanktabellen nur per Migration und mit Eintrag im Datenkatalog
+  (siehe [DATABASE.md](DATABASE.md), [docs/PRIVACY.md](docs/PRIVACY.md)).
+- Keine SDKs mit Netzwerkzugriff, Analytics, Werbung oder KI ohne dokumentierte Entscheidung.
 - Keine neuen Abhängigkeiten ohne Begründung im Pull Request.

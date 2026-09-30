@@ -5,7 +5,6 @@ import { HealthScreen } from './screens/HealthScreen';
 export const healthModule: AppModule = {
   id: 'health',
   path: ROUTES.health,
-  navLabelKey: 'nav.health',
-  icon: 'health',
   Screen: HealthScreen,
+  tab: { labelKey: 'nav.health', icon: 'health' },
 };

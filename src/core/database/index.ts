@@ -2,7 +2,7 @@ import { migrations } from './migrations';
 import { migrate } from './migrator';
 import type { DatabaseDriver } from './types';
 
-export const DATABASE_NAME = 'traininsapp';
+export const DATABASE_NAME = 'kalethra';
 
 /** Opens the platform database and brings its schema up to date. */
 export async function openAppDatabase(): Promise<DatabaseDriver> {

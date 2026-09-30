@@ -40,6 +40,10 @@ Zusätzlich:
 
 - **Nur** `src/core/database/drivers/` darf SQLite-Pakete importieren. Alle anderen greifen über
   Repositories auf Daten zu.
+- **Capacitor** (`@capacitor/*`) nur in Plattform-Adaptern (`src/core/platform/`) und
+  Datenbanktreibern.
+- **Reine Domain-Logik** – `modules/**/domain`, `shared/`, Services, Repositories, Migrationen,
+  `core/privacy`, `core/platform/location` – darf weder React noch UI noch Capacitor importieren.
 - In JSX sind keine festen Texte erlaubt; sichtbarer Text kommt aus `t()`.
 
 ## Schichten im Detail
@@ -68,9 +72,8 @@ Jedes Modul exportiert über `index.ts` genau eine Definition:
 export interface AppModule {
   id: ModuleId; // 'training'
   path: string; // ROUTES.training
-  navLabelKey: TranslationKey; // 'nav.training'
-  icon: IconName;
   Screen: ComponentType;
+  tab?: { labelKey: TranslationKey; icon: IconName }; // nur für Tabs der unteren Leiste
 }
 ```
 
@@ -88,8 +91,24 @@ modules/<name>/
 
 **Neues Modul hinzufügen:** Ordner anlegen, `AppModule` exportieren, in `app/modules.ts`
 registrieren, Pfad in `app/routes.ts` und Texte in den Sprachdateien ergänzen. Router und
-Navigation passen sich automatisch an. Nicht jedes Modul braucht einen Tab – sobald es mehr als
-fünf Bereiche gibt, bekommt `AppModule` ein Feld für die Platzierung (Tab, Unterseite).
+Navigation passen sich automatisch an. Nur Module mit `tab` erscheinen in der Tab-Leiste
+(maximal `MAX_TABS` = 5, per Test geprüft). Weitere Module – z. B. Running, Cycling, HYROX,
+Mobility, Calisthenics, Statistics, Settings, Cloud Sync – bekommen nur eine Route und werden aus
+einem Bildschirm heraus verlinkt (etwa Running aus Training).
+
+**Prüfung der geplanten Bereiche (Phase 1.1):**
+
+| Bereich                                         | Einordnung                                                                                     | Anbindung                      |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------ |
+| Dashboard, Training, Nutrition, Health, Profile | Tab-Module (vorhanden)                                                                         | `tab` gesetzt                  |
+| Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                    | Route, Link aus Training/Heute |
+| HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`disciplines.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training        |
+| Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                 | Route, Link aus Heute          |
+| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                    | Route                          |
+| Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                             | `SyncService`                  |
+
+Ergebnis: Kein Umbau nötig außer dem optionalen Tab (umgesetzt). Die Regeln unten verhindern
+direkte Abhängigkeiten zwischen Modulen.
 
 **Neue Trainingsart hinzufügen:** Die Trainingsarten sind in
 `modules/training/domain/disciplines.ts` zentral definiert. In Phase 2 bekommt jede Art eine
@@ -104,15 +123,16 @@ Anbieter – so bleibt die Regel „Module importieren sich nicht gegenseitig“
 
 ### `core/` – Infrastruktur
 
-| Ordner      | Inhalt                                                                            |
-| ----------- | --------------------------------------------------------------------------------- |
-| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator         |
-| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`              |
-| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung      |
-| `user/`     | Lokales Profil: Repository, Service, Provider                                     |
-| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                   |
-| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten               |
-| `platform/` | Grenze zu Plattform-APIs (Plattform, Gerätesprachen, später native Integrationen) |
+| Ordner      | Inhalt                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------- |
+| `database/` | Treiber-Schnittstelle, Treiber (Capacitor, sql.js), Migrationen, Migrator                          |
+| `i18n/`     | Sprachdateien, Übersetzer, Spracherkennung, `I18nProvider`/`useI18n`                               |
+| `settings/` | Einstellungen: Typen, Repository, Service (Validierung), Provider, Auflösung                       |
+| `user/`     | Lokales Profil: Repository, Service, Provider                                                      |
+| `sync/`     | Sync-Vertrag (`SyncService`) und lokale Standardimplementierung                                    |
+| `theme/`    | Theme anwenden (DOM + native Systemleisten), Systemmodus beobachten                                |
+| `platform/` | Grenze zu Plattform-APIs: Plattform, Gerätesprachen, Systemleisten, GPS-Vertrag (`location/`)      |
+| `privacy/`  | Datenkatalog: Sensibilität, Export, Löschung, Sync je Tabelle ([docs/PRIVACY.md](docs/PRIVACY.md)) |
 
 Muster für Datenzugriff (in Phase 1 für Einstellungen und Profil umgesetzt):
 
@@ -180,6 +200,9 @@ folgenden Voraussetzungen und Einschränkungen sind geprüft:
 | **Benachrichtigungen**       | `@capacitor/local-notifications`; Push später über FCM/APNs                              | Android 13+: Laufzeitberechtigung `POST_NOTIFICATIONS`; exakte Wecker eingeschränkt (Android 12+). iOS: Berechtigungsdialog, Push braucht APNs-Schlüssel.                                                                                                                                                                                                                 |
 | **Dateizugriff**             | `@capacitor/filesystem` + Share-Sheet für Export/Backup (CSV/JSON)                       | Scoped Storage auf Android: Export über Share-Sheet/Dokumentauswahl statt freier Pfade.                                                                                                                                                                                                                                                                                   |
 | **Systemleisten**            | `SystemBars` aus `@capacitor/core` (**bereits umgesetzt**)                               | Android: Edge-to-Edge, Safe-Area-Variablen werden injiziert (`insetsHandling: 'css'`).                                                                                                                                                                                                                                                                                    |
+
+GPS/Standort: Vertrag `LocationTracker` in `src/core/platform/location/types.ts` (ohne
+Implementierung), Konzept in [docs/GPS_ARCHITECTURE.md](docs/GPS_ARCHITECTURE.md).
 
 Bekanntes Risiko von Capacitor (siehe ADR-001): Dauerhafte Hintergrundarbeit (z. B. GPS-Tracking
 eines Laufs bei gesperrtem Bildschirm) braucht native Plugins mit Foreground-Service (Android)
@@ -290,3 +313,26 @@ Format: Kontext → Entscheidung → Konsequenzen. Status aller ADRs: _angenomme
 - **Entscheidung:** Eine Tabelle `profiles` mit lokaler UUID ab Tag eins, auch ohne Konto.
 - **Begründung:** Alle künftigen Daten haben einen Eigentümer; die spätere Kontoverknüpfung
   ändert nur das Profil, nicht die Fachdaten.
+
+### ADR-010: Produktidentität Kalethra, App-ID `com.kalethra.app`
+
+- **Entscheidung:** Produktname Kalethra, Android Package ID und iOS Bundle ID
+  `com.kalethra.app`. Die Version kommt nur aus `package.json`; Android leitet `versionCode`
+  daraus ab (MAJOR·10000 + MINOR·100 + PATCH), iOS-Werte werden per Test abgeglichen
+  (`tests/nativeConfig.test.ts`).
+- **Konsequenz:** Wechsel der App-ID vor jeder Veröffentlichung, deshalb ohne
+  Datenmigration. Der Datenbankname wurde zu `kalethra` geändert.
+
+### ADR-011: Kein automatisches Android-Backup, Verschlüsselung vor Gesundheitsdaten
+
+- **Entscheidung:** Auto-Backup und Geräteübertragung für alle App-Daten aus. Datenbank-
+  verschlüsselung mit SQLCipher (bereits im Plugin enthalten) wird vor der ersten
+  Gesundheitstabelle eingeführt und bis dahin per Test erzwungen. Details:
+  [docs/PRIVACY.md](docs/PRIVACY.md).
+
+### ADR-012: Gemeinsamer Debug-Signaturschlüssel
+
+- **Entscheidung:** `android/app/debug.keystore` liegt im Repository. So haben alle Debug-APKs
+  dieselbe Signatur und lassen sich auf Testgeräten als Update installieren.
+- **Konsequenz:** Der Schlüssel ist öffentlich und nur für Tests geeignet. Release-Signierung
+  erfolgt später mit einem geheimen Schlüssel aus GitHub-Secrets.

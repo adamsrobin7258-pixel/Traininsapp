@@ -5,13 +5,34 @@ import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
-// Architecture guards (see ARCHITECTURE.md, "Abhängigkeitsregeln").
+// Architecture guards (see ARCHITECTURE.md, "Abhängigkeitsregeln"). In flat config the last
+// matching block wins, so every block lists the complete set of patterns for its files.
 const databaseDrivers = {
   group: ['@capacitor-community/sqlite', 'jeep-sqlite', 'jeep-sqlite/*', 'sql.js'],
   message: 'Only src/core/database/drivers may use SQLite directly. Use a repository instead.',
 };
-const layerRule = (...patterns) => ({
-  'no-restricted-imports': ['error', { patterns: [databaseDrivers, ...patterns] }],
+const capacitor = {
+  group: ['@capacitor/*', '@capacitor-community/*'],
+  message: 'Native APIs belong in platform adapters (src/core/platform) or database drivers.',
+};
+const coreLayer = {
+  group: ['@/app', '@/app/*', '@/modules', '@/modules/*', '@/ui', '@/ui/*'],
+  message: 'core must not depend on app, feature modules or UI.',
+};
+const uiLayer = {
+  group: ['@/app', '@/app/*', '@/modules', '@/modules/*', '@/core', '@/core/*'],
+  message: 'ui and shared must stay independent of app, core and feature modules.',
+};
+const moduleLayer = {
+  group: ['@/modules/*', '@/app/*', '!@/app/routes', '!@/app/moduleTypes'],
+  message: 'Feature modules must not import each other or the app shell (except routes/types).',
+};
+const pureDomain = {
+  group: ['react', 'react-*', 'react/*', '@/ui', '@/ui/*'],
+  message: 'Domain logic, services and repositories must stay free of React and UI.',
+};
+const restrict = (...patterns) => ({
+  'no-restricted-imports': ['error', { patterns }],
 });
 
 export default tseslint.config(
@@ -45,34 +66,34 @@ export default tseslint.config(
           message: 'Hard-coded UI text. Add a key to src/core/i18n/locales and use t().',
         },
       ],
-      'no-restricted-imports': ['error', { patterns: [databaseDrivers] }],
     },
   },
+  { files: ['src/**'], rules: restrict(databaseDrivers, capacitor) },
+  { files: ['src/core/**'], rules: restrict(databaseDrivers, capacitor, coreLayer) },
+  { files: ['src/ui/**'], rules: restrict(databaseDrivers, capacitor, uiLayer) },
+  { files: ['src/shared/**'], rules: restrict(databaseDrivers, capacitor, uiLayer, pureDomain) },
+  { files: ['src/modules/**'], rules: restrict(databaseDrivers, capacitor, moduleLayer) },
   {
-    files: ['src/core/**'],
-    rules: layerRule({
-      group: ['@/app', '@/app/*', '@/modules', '@/modules/*', '@/ui', '@/ui/*'],
-      message: 'core must not depend on app, feature modules or UI.',
-    }),
+    files: ['src/modules/**/domain/**'],
+    rules: restrict(databaseDrivers, capacitor, moduleLayer, pureDomain),
   },
   {
-    files: ['src/ui/**', 'src/shared/**'],
-    rules: layerRule({
-      group: ['@/app', '@/app/*', '@/modules', '@/modules/*', '@/core', '@/core/*'],
-      message: 'ui and shared must stay independent of app, core and feature modules.',
-    }),
+    files: [
+      'src/core/**/*Service.ts',
+      'src/core/**/*Repository.ts',
+      'src/core/database/migrat*',
+      'src/core/database/migrations/**',
+      'src/core/privacy/**',
+      'src/core/platform/location/**',
+    ],
+    rules: restrict(databaseDrivers, capacitor, coreLayer, pureDomain),
   },
   {
-    files: ['src/modules/**'],
-    rules: layerRule({
-      group: ['@/modules/*', '@/app/*', '!@/app/routes', '!@/app/moduleTypes'],
-      message: 'Feature modules must not import each other or the app shell (except routes/types).',
-    }),
+    files: ['src/core/platform/**'],
+    ignores: ['src/core/platform/location/**'],
+    rules: restrict(databaseDrivers, coreLayer),
   },
-  {
-    files: ['src/core/database/drivers/**'],
-    rules: { 'no-restricted-imports': 'off' },
-  },
+  { files: ['src/core/database/drivers/**'], rules: restrict(coreLayer) },
   {
     files: ['src/**/*.test.{ts,tsx}', 'src/test/**'],
     rules: {

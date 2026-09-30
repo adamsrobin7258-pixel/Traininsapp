@@ -1,5 +1,4 @@
-import { SystemBars, SystemBarsStyle } from '@capacitor/core';
-import { isNativePlatform } from '@/core/platform';
+import { setSystemBarsTheme } from '@/core/platform';
 import type { ResolvedTheme } from '@/core/settings';
 
 /** Background colors per theme; must match --color-bg in src/ui/tokens.css. */
@@ -16,12 +15,5 @@ export function applyTheme(theme: ResolvedTheme): void {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', BROWSER_THEME_COLOR[theme]);
-
-  if (isNativePlatform()) {
-    // DARK = light icons on a dark background.
-    const style = theme === 'dark' ? SystemBarsStyle.Dark : SystemBarsStyle.Light;
-    SystemBars.setStyle({ style }).catch(() => {
-      // Cosmetic only; never block the UI because of the status bar.
-    });
-  }
+  setSystemBarsTheme(theme);
 }

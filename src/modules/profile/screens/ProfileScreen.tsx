@@ -86,7 +86,7 @@ export function ProfileScreen() {
         </List>
       </Section>
 
-      <Section title={t('profile.aboutTitle')}>
+      <Section title={t('profile.aboutTitle', { appName: t('app.name') })}>
         <List>
           <ListRow title={t('profile.version')} value={__APP_VERSION__} />
         </List>

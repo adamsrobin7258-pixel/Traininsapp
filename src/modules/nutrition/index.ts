@@ -5,7 +5,6 @@ import { NutritionScreen } from './screens/NutritionScreen';
 export const nutritionModule: AppModule = {
   id: 'nutrition',
   path: ROUTES.nutrition,
-  navLabelKey: 'nav.nutrition',
-  icon: 'nutrition',
   Screen: NutritionScreen,
+  tab: { labelKey: 'nav.nutrition', icon: 'nutrition' },
 };

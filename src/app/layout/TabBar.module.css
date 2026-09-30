@@ -15,7 +15,7 @@
 
 .items {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(var(--tab-count, 5), 1fr);
   max-width: var(--layout-max-width);
   height: var(--size-tab-bar);
   margin: 0 auto;

@@ -2,7 +2,7 @@ import type { TranslationSchema } from '../types';
 
 export const en: TranslationSchema = {
   app: {
-    name: 'Traininsapp',
+    name: 'Kalethra',
     loading: 'Loading …',
     startupErrorTitle: 'The app could not be started',
     startupErrorBody:
@@ -109,7 +109,7 @@ export const en: TranslationSchema = {
     cloudSyncOff: 'Off',
     dataFooter:
       'All data is stored locally on this device. An optional account with sync will follow in a later version.',
-    aboutTitle: 'About',
+    aboutTitle: 'About {appName}',
     version: 'Version',
   },
   languages: {

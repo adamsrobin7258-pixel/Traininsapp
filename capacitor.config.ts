@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.traininsapp.mobile',
-  appName: 'Traininsapp',
+  appId: 'com.kalethra.app',
+  appName: 'Kalethra',
   webDir: 'dist',
   plugins: {
     CapacitorSQLite: {

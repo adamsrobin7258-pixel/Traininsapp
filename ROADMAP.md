@@ -16,14 +16,26 @@ aktualisierter Dokumentation.
 - Sync-Schnittstelle und Architekturentscheidung für Backend (Supabase), noch ohne Umsetzung
 - Tests (Vitest), Lint, Formatierung, CI mit Android-Debug-Build
 
+## Phase 1.1 – Stabilisierung ✅
+
+- Produktname **Kalethra**, App-ID `com.kalethra.app` auf allen Plattformen, Version 0.1.1
+  als einzige Quelle in `package.json`
+- CI: Actions auf Node-24-Versionen, Gradle-Cache, geprüfte und sprechend benannte APK
+  (`kalethra-debug-apk`), fester Debug-Signaturschlüssel für Updates auf Testgeräten
+- Datenschutz: Android-Backup und Geräteübertragung aus, Datenkatalog mit Test-Sperre für
+  unverschlüsselte Gesundheits- und Standortdaten ([docs/PRIVACY.md](docs/PRIVACY.md))
+- GPS-Plattformgrenze (`LocationTracker`) und Konzept ([docs/GPS_ARCHITECTURE.md](docs/GPS_ARCHITECTURE.md))
+- Erweiterbarkeit: Module ohne Tab möglich, strengere Architekturregeln (Capacitor nur in
+  Adaptern, Domain-Logik ohne React)
+
 ## Phase 2 – Erste Fachfunktionen (Vorschlag)
 
 Empfohlene Reihenfolge – jeweils vollständig und nutzbar statt alles gleichzeitig:
 
 1. **Gesundheit: Körpergewicht manuell erfassen** – kleinster vollständiger Durchstich durch alle
    Schichten (Migration `measurements`, Repository, Service, Liste, Eingabe, Verlauf als einfache
-   Liste). Validiert die Datenmuster, bevor größere Module folgen. Vorher: Entscheidung zur
-   DB-Verschlüsselung und zum Android-Backup (siehe DATABASE.md, Datenschutz).
+   Liste). Validiert die Datenmuster, bevor größere Module folgen. Vorher: Datenbank-
+   verschlüsselung umsetzen und auf Geräten testen (siehe docs/PRIVACY.md).
 2. **Einheiten-Einstellung** (metrisch/imperial) – wird mit dem ersten Messwert gebraucht.
 3. **Training: Übungskatalog + freies Workout protokollieren** (Krafttraining: Übungen, Sätze,
    Wiederholungen, Gewicht). Datenmodell mit Beschreibung je Trainingsart (siehe ARCHITECTURE.md).
@@ -62,7 +74,7 @@ Smartwatch-Anbindung, KI-gestützte Empfehlungen (nur mit klarem Nutzen und Date
 
 | Thema                     | Beschreibung                                                                                                                                                                                                                                                                                                                    |
 | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Keine Gerätetests         | Android und iOS wurden **nicht** auf echten Geräten oder Emulatoren getestet. In der Entwicklungsumgebung von Phase 1 war kein Android SDK und kein Xcode verfügbar. Die nativen Projekte wurden erzeugt und synchronisiert; der Android-Debug-Build läuft in der CI (GitHub Actions), der iOS-Build ist dort manuell startbar. |
+| Keine Gerätetests         | Android und iOS wurden **nicht** auf echten Geräten oder Emulatoren getestet. In der Entwicklungsumgebung war kein Android SDK und kein Xcode verfügbar. Der Android-Debug-Build läuft in der CI (GitHub Actions) und liefert eine installierbare APK; der iOS-Build ist dort manuell startbar und wurde noch nicht ausgeführt. |
 | Web nur für Entwicklung   | Im Browser speichert SQLite (WASM) in IndexedDB. Das ist nicht als Produkt gedacht.                                                                                                                                                                                                                                             |
 | sql.js gepinnt            | `sql.js` ist auf 1.11.0 fixiert, weil `jeep-sqlite` 2.8.0 genau diese Version bündelt. `jeep-sqlite` ist seit 2024 nicht aktualisiert – betrifft nur den Web-Entwicklungsmodus, bei Problemen durch eigenen sql.js-Treiber ersetzbar.                                                                                           |
 | WASM im nativen Paket     | Die `sql-wasm.wasm` (~650 KB) landet auch in den nativen Paketen, obwohl sie dort ungenutzt ist. Kann später beim `cap sync` ausgeschlossen werden.                                                                                                                                                                             |
@@ -70,5 +82,4 @@ Smartwatch-Anbindung, KI-gestützte Empfehlungen (nur mit klarem Nutzen und Date
 | npm audit                 | 3 mittlere Meldungen in `@capacitor/cli` (Abhängigkeit `xcode` → `uuid`). Nur Build-Werkzeug, nicht in der App enthalten. Der von npm vorgeschlagene Fix wäre ein Downgrade; wir warten auf ein Update von Capacitor.                                                                                                           |
 | Kein paralleles Schreiben | Der Capacitor-Treiber serialisiert Transaktionen nicht über mehrere gleichzeitige asynchrone Abläufe. Solange Schreibzugriffe über Services laufen, unkritisch; bei Hintergrundimporten (Phase 3) ist eine Schreibwarteschlange vorzusehen.                                                                                     |
 | Standard-Icons            | App-Icon und Splash-Screen sind noch die Capacitor-Vorgaben.                                                                                                                                                                                                                                                                    |
-| App-ID                    | `app.traininsapp.mobile` ist ein Platzhalter und muss vor der ersten Store-Veröffentlichung endgültig festgelegt werden (danach nicht mehr änderbar).                                                                                                                                                                           |
 | Wochenbeginn              | Die Wochenansicht beginnt immer am Montag (ISO 8601), unabhängig von der Region.                                                                                                                                                                                                                                                |

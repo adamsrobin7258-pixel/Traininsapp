@@ -19,7 +19,7 @@ SqlExecutor / DatabaseDriver        src/core/database/types.ts
 └─────────────────────────────┴─────────────────────────────┘
 ```
 
-- Datenbankname: `traininsapp` (`DATABASE_NAME` in `src/core/database/index.ts`).
+- Datenbankname: `kalethra` (`DATABASE_NAME` in `src/core/database/index.ts`).
 - Ablage iOS: `Library/CapacitorDatabase` (nicht im Dokumente-Ordner sichtbar);
   Android: App-interner Speicher.
 - `PRAGMA foreign_keys = ON` wird bei jedem Öffnen gesetzt.
@@ -140,10 +140,10 @@ Aufräumen alter Tombstones, Verhalten bei Abmeldung (Daten lokal behalten oder 
 
 ## Datenschutz
 
-- Gesundheitsdaten sind besonders schützenswert (Art. 9 DSGVO). Vor dem Speichern der ersten
-  Gesundheitsdaten (Phase 2) wird entschieden:
-  - ob die lokale Datenbank verschlüsselt wird (SQLCipher über das Plugin, Schlüssel im
-    Keychain/Keystore),
-  - ob Androids automatisches Backup (`android:allowBackup`, aktuell Capacitor-Standard `true`)
-    die Datenbank einschließen darf.
-- Export- und Löschfunktion aller Nutzerdaten vor Veröffentlichung.
+Details: [docs/PRIVACY.md](docs/PRIVACY.md). Kurzfassung für Entwickler:
+
+- Jede neue Tabelle braucht einen Eintrag im Datenkatalog `src/core/privacy/dataCatalog.ts`
+  (Kategorie, Sensibilität, Export, Löschung, Sync) – sonst schlägt ein Test fehl.
+- Tabellen mit `health`- oder `location`-Daten sind per Test gesperrt, bis die Datenbank
+  verschlüsselt ist (SQLCipher über das Plugin, geplant vor der ersten Gesundheitstabelle).
+- Android-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet.

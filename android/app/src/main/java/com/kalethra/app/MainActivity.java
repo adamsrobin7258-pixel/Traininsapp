@@ -1,4 +1,4 @@
-package app.traininsapp.mobile;
+package com.kalethra.app;
 
 import com.getcapacitor.BridgeActivity;
 

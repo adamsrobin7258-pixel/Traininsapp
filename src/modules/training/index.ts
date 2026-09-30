@@ -5,7 +5,6 @@ import { TrainingScreen } from './screens/TrainingScreen';
 export const trainingModule: AppModule = {
   id: 'training',
   path: ROUTES.training,
-  navLabelKey: 'nav.training',
-  icon: 'training',
   Screen: TrainingScreen,
+  tab: { labelKey: 'nav.training', icon: 'training' },
 };

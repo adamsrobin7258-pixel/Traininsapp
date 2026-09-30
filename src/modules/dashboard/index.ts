@@ -5,7 +5,6 @@ import { DashboardScreen } from './screens/DashboardScreen';
 export const dashboardModule: AppModule = {
   id: 'dashboard',
   path: ROUTES.dashboard,
-  navLabelKey: 'nav.dashboard',
-  icon: 'today',
   Screen: DashboardScreen,
+  tab: { labelKey: 'nav.dashboard', icon: 'today' },
 };

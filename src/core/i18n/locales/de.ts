@@ -4,7 +4,7 @@
  */
 export const de = {
   app: {
-    name: 'Traininsapp',
+    name: 'Kalethra',
     loading: 'Wird geladen …',
     startupErrorTitle: 'Die App konnte nicht gestartet werden',
     startupErrorBody:
@@ -114,7 +114,7 @@ export const de = {
     cloudSyncOff: 'Aus',
     dataFooter:
       'Alle Daten werden lokal auf diesem Gerät gespeichert. Ein optionales Konto mit Synchronisierung folgt in einer späteren Version.',
-    aboutTitle: 'Info',
+    aboutTitle: 'Über {appName}',
     version: 'Version',
   },
   languages: {
