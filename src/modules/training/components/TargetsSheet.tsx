@@ -2,7 +2,7 @@ import { useId, useState, type SyntheticEvent } from 'react';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { parseRepsInput, useTraining, type PlannedExercise } from '@/core/training';
-import { Button, Sheet } from '@/ui';
+import { AUTOFOCUS, Button, Sheet } from '@/ui';
 import { describeTrainingError } from '../domain/errors';
 import styles from './ExerciseFormSheet.module.css';
 
@@ -53,6 +53,7 @@ export function TargetsSheet({
           {t('training.plan.targetSets')}
         </label>
         <input
+          {...AUTOFOCUS}
           id={setsId}
           className={styles.field}
           inputMode="numeric"

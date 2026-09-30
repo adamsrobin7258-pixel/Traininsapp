@@ -1,0 +1,43 @@
+.plans {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.plan {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.planName {
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.empty > button {
+  margin-top: var(--space-3);
+}
+
+.emptyTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.emptyBody {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}

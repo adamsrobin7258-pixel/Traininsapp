@@ -33,6 +33,7 @@ const paths = {
   arrowUp: <path d="M12 18.5v-13M6.75 10.75 12 5.5l5.25 5.25" />,
   arrowDown: <path d="M12 5.5v13M6.75 13.25 12 18.5l5.25-5.25" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  plan: <path d="M9 6.75h10.25M9 12h10.25M9 17.25h10.25M4.75 6.75h.5M4.75 12h.5M4.75 17.25h.5" />,
   chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,
 } satisfies Record<string, ReactElement>;
 

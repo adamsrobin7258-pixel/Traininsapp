@@ -15,7 +15,13 @@ interface ExercisePickerProps {
   onClose: () => void;
 }
 
-/** Search the active exercises (both languages) or create a custom one on the spot. */
+/**
+ * Search the active exercises (both languages) or create a custom one on the spot.
+ *
+ * Opens without the keyboard (the search field is only focused when tapped). The sheet keeps
+ * its height within the visible viewport; the search stays on top and only the list scrolls,
+ * so every exercise stays reachable with or without the keyboard.
+ */
 export function ExercisePicker({ onPick, onClose }: ExercisePickerProps) {
   const { t, locale } = useI18n();
   const searchId = useId();
@@ -48,7 +54,12 @@ export function ExercisePicker({ onPick, onClose }: ExercisePickerProps) {
       : [];
 
   return (
-    <Sheet title={t('training.exercises.pick')} onClose={onClose} closeLabel={t('common.close')}>
+    <Sheet
+      title={t('training.exercises.pick')}
+      onClose={onClose}
+      closeLabel={t('common.close')}
+      fill
+    >
       <label htmlFor={searchId} className="visually-hidden">
         {t('training.exercises.search')}
       </label>
@@ -64,32 +75,34 @@ export function ExercisePicker({ onPick, onClose }: ExercisePickerProps) {
           setQuery(event.target.value);
         }}
       />
-      <List label={t('training.exercises.title')}>
-        <ListRow
-          title={t('training.exercises.create')}
-          action
-          onPress={() => {
-            setCreating(true);
-          }}
-        />
-        {matches.map((exercise) => (
+      <div className={styles.scroll} data-testid="exercise-picker-list">
+        <List label={t('training.exercises.title')}>
           <ListRow
-            key={exercise.id}
-            title={exerciseDisplayName(exercise, locale)}
-            subtitle={t(`training.equipment.${exercise.equipment}`)}
-            disabled={busy}
+            title={t('training.exercises.create')}
+            action
             onPress={() => {
-              setBusy(true);
-              void onPick(exercise).finally(() => {
-                setBusy(false);
-              });
+              setCreating(true);
             }}
           />
-        ))}
-      </List>
-      {exercises.status === 'ready' && matches.length === 0 ? (
-        <p className={styles.empty}>{t('training.exercises.noResults')}</p>
-      ) : null}
+          {matches.map((exercise) => (
+            <ListRow
+              key={exercise.id}
+              title={exerciseDisplayName(exercise, locale)}
+              subtitle={t(`training.equipment.${exercise.equipment}`)}
+              disabled={busy}
+              onPress={() => {
+                setBusy(true);
+                void onPick(exercise).finally(() => {
+                  setBusy(false);
+                });
+              }}
+            />
+          ))}
+        </List>
+        {exercises.status === 'ready' && matches.length === 0 ? (
+          <p className={styles.empty}>{t('training.exercises.noResults')}</p>
+        ) : null}
+      </div>
     </Sheet>
   );
 }

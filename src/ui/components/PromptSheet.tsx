@@ -1,5 +1,6 @@
 import { useId, useState, type SyntheticEvent } from 'react';
 import { Button } from './Button';
+import { AUTOFOCUS } from '../focus';
 import { Sheet } from './Sheet';
 import styles from './Dialogs.module.css';
 
@@ -56,6 +57,7 @@ export function PromptSheet({
           {label}
         </label>
         <input
+          {...AUTOFOCUS}
           id={inputId}
           className={styles.input}
           value={value}

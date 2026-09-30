@@ -14,7 +14,7 @@ import {
   type MovementPattern,
   type MuscleGroup,
 } from '@/core/training';
-import { Button, Sheet } from '@/ui';
+import { AUTOFOCUS, Button, Sheet } from '@/ui';
 import { describeTrainingError } from '../domain/errors';
 import styles from './ExerciseFormSheet.module.css';
 
@@ -110,6 +110,7 @@ export function ExerciseFormSheet({
           {t('training.exercises.nameLabel')}
         </label>
         <input
+          {...(exercise ? {} : AUTOFOCUS)}
           id={ids.name}
           className={styles.field}
           value={name}

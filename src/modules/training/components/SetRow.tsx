@@ -16,7 +16,7 @@ import {
   type SetValues,
   type WorkoutSet,
 } from '@/core/training';
-import { Icon } from '@/ui';
+import { dismissKeyboard, Icon } from '@/ui';
 import { formatDecimalInput, fromKg, type WeightUnit } from '@/shared/lib/units';
 import { describeSetError, describeTrainingError } from '../domain/errors';
 import { headerKey } from '../domain/setFields';
@@ -61,6 +61,10 @@ interface SetRowProps {
 /**
  * One set: large numeric inputs, saved when a field loses focus; the check button completes
  * the set (validated in the service) or reopens it.
+ *
+ * The check button is a plain button: it never keeps or moves focus into a text field, so it
+ * cannot bring up the keyboard. If a field is still focused, it is blurred first – its own
+ * save runs before the toggle because training changes are queued (see `mutate`).
  */
 export function SetRow({ set, number, exerciseType }: SetRowProps) {
   const { t, locale } = useI18n();
@@ -154,11 +158,10 @@ export function SetRow({ set, number, exerciseType }: SetRowProps) {
               ? t('training.workout.reopenSet', { number })
               : t('training.workout.completeSet', { number })
           }
-          onMouseDown={(event) => {
-            // Keep the focused input from saving separately before the toggle.
-            event.preventDefault();
+          onClick={() => {
+            dismissKeyboard();
+            void save(!set.completed);
           }}
-          onClick={() => void save(!set.completed)}
         >
           <Icon name="check" size={22} />
         </button>

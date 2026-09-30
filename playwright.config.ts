@@ -20,8 +20,19 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   projects: [
-    { name: 'mobile-light', use: { ...devices['Pixel 7'], colorScheme: 'light' } },
-    { name: 'mobile-dark', use: { ...devices['Pixel 7'], colorScheme: 'dark' } },
+    {
+      name: 'w390-light',
+      use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, colorScheme: 'light' },
+    },
+    {
+      name: 'w390-dark',
+      use: { ...devices['Pixel 7'], viewport: { width: 390, height: 844 }, colorScheme: 'dark' },
+    },
+    {
+      // Small phone: narrow and short, the hardest case for sheets and lists.
+      name: 'w320-light',
+      use: { ...devices['Pixel 7'], viewport: { width: 320, height: 568 }, colorScheme: 'light' },
+    },
   ],
   webServer: {
     // Expects a prior `npm run build`.

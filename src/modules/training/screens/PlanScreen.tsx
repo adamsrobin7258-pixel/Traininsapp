@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ROUTES, TRAINING_LINKS } from '@/app/routes';
+import { TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
@@ -38,7 +38,7 @@ export function PlanScreen() {
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [error, setError] = useState<string | null>(null);
-  const back = { to: ROUTES.training, label: t('training.back') };
+  const back = { to: TRAINING_LINKS.plans, label: t('training.plansTitle') };
 
   const data = useTrainingData(
     async (s, profileId) => ({
@@ -308,7 +308,7 @@ export function PlanScreen() {
           destructive
           onConfirm={async () => {
             await mutate((s, profileId) => s.plans.deletePlan(profileId, plan.id));
-            await navigate(ROUTES.training, { replace: true });
+            await navigate(TRAINING_LINKS.plans, { replace: true });
           }}
           onClose={() => {
             setDialog(null);

@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -22,7 +23,11 @@ interface TrainingContextValue extends TrainingServices {
   profileId: string;
   /** Increments after every change, so readers reload. */
   revision: number;
-  /** Runs a change and refreshes all training views afterwards (also after failures). */
+  /**
+   * Runs a change and refreshes all training views afterwards (also after failures). Changes
+   * run strictly one after another in call order: e.g. a field saved on blur is stored before
+   * the button tap that caused the blur completes the set or copies it into a new one.
+   */
   mutate: <T>(change: (services: TrainingServices, profileId: string) => Promise<T>) => Promise<T>;
 }
 
@@ -37,14 +42,20 @@ export function TrainingProvider({
 }) {
   const { profile } = useProfile();
   const [revision, setRevision] = useState(0);
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
 
   const mutate = useCallback(
-    async <T,>(change: (s: TrainingServices, profileId: string) => Promise<T>) => {
-      try {
-        return await change(services, profile.id);
-      } finally {
-        setRevision((value) => value + 1);
-      }
+    <T,>(change: (s: TrainingServices, profileId: string) => Promise<T>): Promise<T> => {
+      const run = async () => {
+        try {
+          return await change(services, profile.id);
+        } finally {
+          setRevision((value) => value + 1);
+        }
+      };
+      const result = queue.current.then(run, run);
+      queue.current = result.catch(() => undefined);
+      return result;
     },
     [services, profile.id],
   );

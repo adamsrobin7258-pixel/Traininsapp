@@ -23,13 +23,25 @@
   gap: var(--space-4);
   width: 100%;
   max-width: var(--layout-max-width);
-  max-height: calc(100dvh - var(--safe-top) - var(--space-8));
+  /* Percentages refer to .root, which spans the visible viewport (above the keyboard). */
+  max-height: calc(100% - var(--safe-top) - var(--space-8));
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: var(--space-3) calc(var(--safe-right) + var(--layout-gutter))
     calc(var(--safe-bottom) + var(--space-5)) calc(var(--safe-left) + var(--layout-gutter));
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: var(--color-bg);
   animation: rise var(--duration-base) var(--ease-standard);
+}
+
+.panel:focus {
+  outline: none;
+}
+
+/* Fixed header, scrolling content: the sheet keeps its height, a child scrolls (see .scroll). */
+.panel[data-fill='true'] {
+  height: calc(100% - var(--safe-top) - var(--space-8));
+  overflow: hidden;
 }
 
 .handle {

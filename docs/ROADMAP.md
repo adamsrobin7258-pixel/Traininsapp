@@ -60,6 +60,16 @@ aktualisierter Dokumentation.
 - Datenbankzugriffe pro Verbindung serialisiert
 - Playwright-End-to-End-Tests in der CI
 
+## Phase 3.1 – Training-Bedienung stabilisiert ✅
+
+- Satz-Haken öffnet keine Tastatur mehr und hält kein Eingabefeld fokussiert
+- Übungsauswahl öffnet ohne Tastatur, passt sich dem sichtbaren Bereich (auch über der
+  Tastatur) an und scrollt als eigene Liste bis zum letzten Eintrag
+- Trainingsstart: nur „Freies Training“ und „Aus Plan starten“; Planverwaltung als eigener
+  Bereich „Pläne“ mit leerem Zustand und Sprung aus dem Start-Dialog
+- Trainingsänderungen laufen nacheinander (Blur-Speichern vor Button-Aktion)
+- E2E-Tests bei 390 px (hell/dunkel) und 320 × 568 px
+
 ## Phase 4 – Vorschlag
 
 Reihenfolge noch offen; Vorschläge:

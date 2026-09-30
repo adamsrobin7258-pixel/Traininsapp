@@ -12,7 +12,7 @@ import {
 } from '@/core/health';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
-import { Button, Sheet } from '@/ui';
+import { AUTOFOCUS, Button, Sheet } from '@/ui';
 import { longDate } from '../domain/dates';
 import styles from './WeightEntrySheet.module.css';
 
@@ -160,6 +160,7 @@ function WeightForm({
         </label>
         <div className={styles.inputRow} data-invalid={error !== null}>
           <input
+            {...AUTOFOCUS}
             id={inputId}
             className={styles.input}
             type="text"

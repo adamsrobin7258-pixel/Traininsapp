@@ -1,4 +1,5 @@
 .search {
+  flex-shrink: 0;
   min-height: calc(var(--size-tap-target) + var(--space-2));
   padding: 0 var(--space-4);
   border: 1px solid transparent;
@@ -15,4 +16,19 @@
 .empty {
   font-size: var(--font-size-subhead);
   color: var(--color-text-secondary);
+}
+
+/* The only scrolling part of the picker: fills the rest of the sheet, keeps its own scroll. */
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Room below the last row for the home indicator / gesture bar. */
+  padding-bottom: var(--space-2);
+}
+
+.empty {
+  margin-top: var(--space-4);
 }

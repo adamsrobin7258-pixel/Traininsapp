@@ -3,13 +3,9 @@ import { useNavigate } from 'react-router';
 import { TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
-import {
-  PLAN_NAME_MAX_LENGTH,
-  useTraining,
-  useTrainingData,
-  workoutDisplayTitle,
-} from '@/core/training';
-import { Button, List, ListRow, PromptSheet, Screen, Section } from '@/ui';
+import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
+import { Button, List, ListRow, Screen, Section } from '@/ui';
+import { StartWorkoutSheet } from '../components/StartWorkoutSheet';
 import { WorkoutHistory } from '../components/WorkoutHistory';
 import { describeTrainingError } from '../domain/errors';
 import { formatDuration, trainingTypeLabel } from '../domain/format';
@@ -21,14 +17,14 @@ export function TrainingScreen() {
   const { weightUnit: unit } = useSettings().settings;
   const { mutate } = useTraining();
   const navigate = useNavigate();
-  const [creatingPlan, setCreatingPlan] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const overview = useTrainingData(
     async (s, profileId) => ({
       active: await s.workouts.getActive(profileId),
       next: await s.plans.nextWorkout(profileId),
-      plans: await s.plans.listPlans(profileId),
+      planCount: (await s.plans.listPlans(profileId)).length,
     }),
     [],
   );
@@ -70,18 +66,21 @@ export function TrainingScreen() {
                 {t('training.nextFromPlan', { day: data.next.dayName, plan: data.next.planName })}
               </p>
               <Button fullWidth onClick={() => void start(data.next?.dayId ?? null)}>
-                {t('training.start')}
+                {t('training.startDay')}
               </Button>
             </div>
           ) : null}
           <Button
             fullWidth
             variant={data.next ? 'secondary' : 'primary'}
-            onClick={() => void start(null)}
+            onClick={() => {
+              setError(null);
+              setStarting(true);
+            }}
           >
-            {data.next ? t('training.startFree') : t('training.start')}
+            {t('training.start')}
           </Button>
-          {error ? (
+          {error && !starting ? (
             <p className={styles.error} role="alert">
               {error}
             </p>
@@ -89,19 +88,20 @@ export function TrainingScreen() {
         </div>
       ) : null}
 
-      <Section title={t('training.plansTitle')}>
-        <List label={t('training.plansTitle')}>
-          {data?.plans.map((plan) => (
-            <ListRow key={plan.id} title={plan.name} to={TRAINING_LINKS.plan(plan.id)} />
-          ))}
-          {data && data.plans.length === 0 ? <ListRow title={t('training.plansEmpty')} /> : null}
+      <Section>
+        <List>
           <ListRow
-            title={t('training.newPlan')}
-            action
-            onPress={() => {
-              setCreatingPlan(true);
-            }}
+            title={t('training.plansTitle')}
+            subtitle={
+              data
+                ? data.planCount === 1
+                  ? t('training.plansCountOne')
+                  : t('training.plansCount', { count: data.planCount })
+                : undefined
+            }
+            to={TRAINING_LINKS.plans}
           />
+          <ListRow title={t('training.manageExercises')} to={TRAINING_LINKS.exercises} />
         </List>
       </Section>
 
@@ -109,28 +109,14 @@ export function TrainingScreen() {
         <WorkoutHistory />
       </Section>
 
-      <Section>
-        <List>
-          <ListRow title={t('training.manageExercises')} to={TRAINING_LINKS.exercises} />
-        </List>
-      </Section>
-
-      {creatingPlan ? (
-        <PromptSheet
-          title={t('training.newPlan')}
-          label={t('training.plan.namePrompt')}
-          placeholder={t('training.plan.namePlaceholder')}
-          maxLength={PLAN_NAME_MAX_LENGTH}
-          confirmLabel={t('common.save')}
-          cancelLabel={t('common.cancel')}
-          closeLabel={t('common.close')}
-          describeError={(failure) => describeTrainingError(failure, t, unit, locale)}
-          onSubmit={async (name) => {
-            const plan = await mutate((s, profileId) => s.plans.createPlan(profileId, name));
-            await navigate(TRAINING_LINKS.plan(plan.id));
-          }}
+      {starting ? (
+        <StartWorkoutSheet
+          error={error}
+          onStart={start}
+          onOpenPlans={() => void navigate(TRAINING_LINKS.plans)}
           onClose={() => {
-            setCreatingPlan(false);
+            setStarting(false);
+            setError(null);
           }}
         />
       ) : null}

@@ -201,6 +201,10 @@ UI). In der Datenbank steht die Art als Text; unbekannte Werte fallen auf `other
 **Neue Trainingsart:** Eintrag in `TRAINING_TYPES`, Übersetzung in `training.types`, bei neuem
 Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumbau.
 
+**Navigation.** Training (Start, Verlauf) → „Training starten“ bietet nur „Freies Training“ und
+„Aus Plan starten“ (Trainingstag wählen). Pläne werden ausschließlich unter „Pläne“
+(`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
+
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer
 tatsächlichen Einheit. Beim Start aus einem Plan werden Übungen kopiert und Sätze vorbelegt
@@ -263,6 +267,21 @@ type TranslateFn = (key: TranslationKey, params?: TranslationParams) => string;
 
 Tokens (`tokens.css`), Basis-Styles, Icons und gemeinsame Komponenten. Kennt keine Fachlogik und
 keinen App-Zustand. Beschreibung: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md).
+
+**Tastatur und Fokus (`ui/focus.ts`, `Sheet`).** Die Bildschirmtastatur folgt dem Fokus. Regeln:
+
+- Nur echte Texteingaben dürfen den Fokus bekommen. Buttons, Haken und Auswahlzeilen fokussieren
+  nie ein Textfeld und halten es nicht fest (kein `preventDefault` auf `mousedown`/`pointerdown`,
+  um ein Feld fokussiert zu lassen – auf Android öffnet das die Tastatur erneut).
+- Sheets öffnen ohne Tastatur: Der Fokus geht auf das Sheet selbst. Nur ein Feld, für das der
+  Dialog existiert (z. B. „Name des Plans“), wird mit `AUTOFOCUS` markiert. Beim Schließen wird
+  der Fokus nie an ein Textfeld zurückgegeben.
+- Sheets richten ihre Höhe am sichtbaren Bereich (`window.visualViewport`) aus, nicht an
+  `100dvh` – bei Android mit Edge-to-Edge und bei iOS liegt die Tastatur über der Seite. Lange
+  Listen (Übungsauswahl) nutzen `fill`: Kopf und Suche bleiben stehen, nur die Liste scrollt.
+- `dismissKeyboard()` schließt die Tastatur vor Aktionen, die gespeicherte Werte brauchen; das
+  Feld speichert dabei per Blur. Trainingsänderungen laufen über `mutate` strikt nacheinander,
+  daher ist der Blur-Speichervorgang vor der Aktion des Buttons abgeschlossen.
 
 ## Zustandsverwaltung
 

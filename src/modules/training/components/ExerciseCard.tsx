@@ -8,7 +8,7 @@ import {
   useTrainingData,
   type WorkoutExerciseWithSets,
 } from '@/core/training';
-import { ConfirmSheet, Icon } from '@/ui';
+import { ConfirmSheet, dismissKeyboard, Icon } from '@/ui';
 import { describeTrainingError } from '../domain/errors';
 import { formatSetShort } from '../domain/format';
 import { headerKey } from '../domain/setFields';
@@ -41,6 +41,8 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
   );
 
   function run(change: Parameters<typeof mutate>[0]) {
+    // A still-focused set field saves first (blur), then this change runs.
+    dismissKeyboard();
     setError(null);
     mutate(change).catch((failure: unknown) => {
       setError(describeTrainingError(failure, t, unit, locale));
