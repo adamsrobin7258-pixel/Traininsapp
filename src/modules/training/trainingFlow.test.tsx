@@ -94,7 +94,7 @@ describe('training', () => {
       expect(router.state.location.pathname).toBe('/training/workout');
     });
 
-    await pickExercise('bank', /^Bankdrücken/);
+    await pickExercise('bank', /^Langhantel-Bankdrücken/);
     await fill('Satz 1: Gewicht', '80');
     await fill('Satz 1: Wdh.', '8');
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
@@ -129,7 +129,7 @@ describe('training', () => {
   it('keeps a set open when required values are missing', async () => {
     const { db } = await renderApp('/training');
     await startFreeWorkout();
-    await pickExercise('kreuz', /^Kreuzheben/);
+    await pickExercise('kreuz', /^KreuzhebenLanghantel/);
     await fill('Satz 1: Gewicht', '120');
     await userEvent.clear(screen.getByLabelText('Satz 1: Wdh.'));
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
@@ -149,7 +149,9 @@ describe('training', () => {
     });
     expect(await screen.findByText('Laufendes Training')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Fortsetzen' }));
-    expect(await screen.findByRole('heading', { name: 'Kniebeugen' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('heading', { name: 'Langhantel-Kniebeugen' }),
+    ).toBeInTheDocument();
   });
 
   it('builds a plan and starts the next workout from it', async () => {
@@ -166,14 +168,14 @@ describe('training', () => {
     await userEvent.type(dialog().getByLabelText('Name des Trainingstags'), 'Push A');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
     await closedDialog();
-    await pickExercise('bank', /^Bankdrücken/);
-    await pickExercise('schulter', /^Schulterdrücken/);
+    await pickExercise('bank', /^Langhantel-Bankdrücken/);
+    await pickExercise('schulter', /^Langhantel-Schulterdrücken/);
     await pickExercise('trizeps', /^Trizepsdrücken am Kabel/);
     // Several exercises in a row, all kept in order.
     const day = within(screen.getByRole('region', { name: 'Push A' }));
     expect(day.getAllByRole('listitem').map((item) => item.textContent)).toEqual([
-      expect.stringContaining('Bankdrücken'),
-      expect.stringContaining('Schulterdrücken'),
+      expect.stringContaining('Langhantel-Bankdrücken'),
+      expect.stringContaining('Langhantel-Schulterdrücken'),
       expect.stringContaining('Trizepsdrücken am Kabel'),
     ]);
 
@@ -192,8 +194,8 @@ describe('training', () => {
       expect(router.state.location.pathname).toBe('/training/workout');
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Push A' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Bankdrücken' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Schulterdrücken' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Langhantel-Bankdrücken' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Langhantel-Schulterdrücken' })).toBeInTheDocument();
   });
 
   it('works in English with pounds and the dark theme', async () => {
@@ -208,7 +210,7 @@ describe('training', () => {
     await startFreeWorkout({ start: 'Start workout', free: /^Free workout/ });
     await userEvent.click(await screen.findByRole('button', { name: 'Add exercise' }));
     await userEvent.type(dialog().getByRole('searchbox'), 'bench');
-    await userEvent.click(dialog().getByRole('button', { name: /^Bench Press/ }));
+    await userEvent.click(dialog().getByRole('button', { name: /^Barbell Bench Press/ }));
     await closedDialog();
 
     await fill('Set 1: Weight', '225');
@@ -277,7 +279,7 @@ describe('training', () => {
     it('completes a set without focusing a text field and keeps the values', async () => {
       const { db } = await renderApp('/training');
       await startFreeWorkout();
-      await pickExercise('bank', /^Bankdrücken/);
+      await pickExercise('bank', /^Langhantel-Bankdrücken/);
       await fill('Satz 1: Gewicht', '82,5');
       await fill('Satz 1: Wdh.', '5');
       // The reps field still has focus (keyboard open) when the check is tapped.
@@ -307,10 +309,13 @@ describe('training', () => {
       expect(textFieldFocused()).toBe(false);
       const profileId = (await services.profile.ensureLocalProfile()).id;
       const active = await services.training.exercises.list(profileId);
-      const rows = within(dialog().getByRole('list', { name: 'Übungen' })).getAllByRole('button');
-      // One row per active exercise plus "create exercise".
-      expect(rows).toHaveLength(active.length + 1);
-      expect(active.length).toBeGreaterThan(8);
+      const rows = within(dialog().getByRole('list', { name: 'Alle Übungen' })).getAllByRole(
+        'button',
+      );
+      // One row per active exercise; "create exercise" sits above the list.
+      expect(rows).toHaveLength(active.length);
+      expect(active.length).toBeGreaterThan(190);
+      expect(dialog().getByRole('button', { name: 'Eigene Übung anlegen' })).toBeInTheDocument();
     });
 
     it('does not carry an open keyboard from a name prompt into the picker', async () => {
@@ -330,9 +335,9 @@ describe('training', () => {
       expect(textFieldFocused()).toBe(false);
 
       for (const [search, name] of [
-        ['bank', /^Bankdrücken/],
-        ['kreuz', /^Kreuzheben/],
-        ['klimm', /^Klimmzüge/],
+        ['bank', /^Langhantel-Bankdrücken/],
+        ['kreuz', /^KreuzhebenLanghantel/],
+        ['klimm', /^KlimmzügeKörpergewicht/],
       ] as const) {
         await userEvent.click(screen.getByRole('button', { name: 'Übung hinzufügen' }));
         expect(textFieldFocused()).toBe(false);
@@ -358,9 +363,9 @@ describe('training', () => {
       await userEvent.type(dialog().getByLabelText('Name des Trainingstags'), 'Tag A');
       await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
       await closedDialog();
-      await pickExercise('kniebeug', /^Kniebeugen/);
+      await pickExercise('kniebeug', /^Langhantel-Kniebeugen/);
 
-      await userEvent.click(screen.getByRole('button', { name: /^KniebeugenVorgabe/ }));
+      await userEvent.click(screen.getByRole('button', { name: /^Langhantel-KniebeugenVorgabe/ }));
       await userEvent.type(dialog().getByLabelText('Aufwärmsätze'), '2');
       await userEvent.type(dialog().getByLabelText('Arbeitssätze'), '3');
       await userEvent.type(dialog().getByLabelText('Wiederholungen'), '8');
@@ -370,7 +375,7 @@ describe('training', () => {
       expect(await screen.findByText('2 × Aufwärmen · 3 × 8 · 2 Drops')).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Starten' }));
-      const card = within(await screen.findByRole('article', { name: 'Kniebeugen' }));
+      const card = within(await screen.findByRole('article', { name: 'Langhantel-Kniebeugen' }));
       expect(card.getByRole('group', { name: 'Aufwärmen' })).toBeInTheDocument();
       expect(card.getByRole('group', { name: 'Arbeitssätze' })).toBeInTheDocument();
       expect(card.getByLabelText('Aufwärmsatz 2: Gewicht')).toBeInTheDocument();
@@ -405,8 +410,8 @@ describe('training', () => {
     it('adds warm-ups and drops during a free workout', async () => {
       const { db } = await renderApp('/training');
       await startFreeWorkout();
-      await pickExercise('bank', /^Bankdrücken/);
-      const card = within(screen.getByRole('article', { name: 'Bankdrücken' }));
+      await pickExercise('bank', /^Langhantel-Bankdrücken/);
+      const card = within(screen.getByRole('article', { name: 'Langhantel-Bankdrücken' }));
       await fill('Satz 1: Gewicht', '80');
 
       await userEvent.click(card.getByRole('button', { name: 'Aufwärmsatz hinzufügen' }));

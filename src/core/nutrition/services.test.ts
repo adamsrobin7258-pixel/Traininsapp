@@ -491,7 +491,7 @@ describe('schema', () => {
         duration_s, local_date, created_at, updated_at)
         VALUES ('wo', 'p', 'strength', 'completed', 'x', 'y', 60, '2026-10-01', 'x', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([6, 7, 8]);
+    expect(await migrate(db, migrations)).toEqual([6, 7, 8, 9]);
     expect(await db.query('SELECT value FROM weight_entries')).toEqual([{ value: 82.4 }]);
     expect(await db.query('SELECT id FROM workouts')).toEqual([{ id: 'wo' }]);
     expect(await db.query('SELECT COUNT(*) AS n FROM food_entries')).toEqual([{ n: 0 }]);

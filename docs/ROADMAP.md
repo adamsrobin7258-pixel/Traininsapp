@@ -48,7 +48,7 @@ aktualisierter Dokumentation.
 - Sportartunabhängiges Modell: Trainingsarten-Registry mit Workflows (Sätze, Ausdauer,
   Segmente, zeitbasiert); Krafttraining vollständig, übrige Arten nur als Architektur
 - Workout → Übung → Satz; Sätze mit Gewicht, Wdh., Dauer, Distanz, RPE, Abschluss, Reihenfolge
-- Übungsdatenbank: 21 Systemübungen (de/en, versioniert), eigene Übungen anlegen, bearbeiten,
+- Übungsdatenbank: 21 Systemübungen (de/en, versioniert; ab Phase 5: 201), eigene Übungen anlegen, bearbeiten,
   deaktivieren
 - Trainingspläne mit Trainingstagen, Übungen, Vorgaben und Reihenfolge
 - Training frei oder aus Plan starten, laufendes Training wird gespeichert und wiederhergestellt,
@@ -144,6 +144,22 @@ aktualisierter Dokumentation.
 - Datenschutztext präzisiert (Barcode an Open Food Facts, sonst nichts)
 - Details: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
 
+## Phase 5 – Übungsbibliothek für das Gym ✅ (Version 0.8.0)
+
+- 201 Systemübungen (Katalogversion 2) für Brust, Rücken, Schultern, Bizeps, Trizeps, Beine,
+  Gesäß, Waden, Bauch/Core, Unterarme und Ganzkörper; je Übung deutscher und englischer Name,
+  Haupt- und Hilfsmuskeln, Ausrüstung, Bewegungsmuster, Erfassungsart und Kurzbeschreibung
+  (de/en)
+- Ausrüstung neu: SZ-Stange, Multipresse (Smith), Schlingentrainer (TRX); Muskel neu: Adduktoren
+- Bestehende Systemübungen eindeutiger benannt (z. B. „Langhantel-Bankdrücken“), IDs unverändert;
+  alte Namen bleiben als Suchbegriffe (Aliase) auffindbar, frühere Workouts behalten ihren Namen
+- Suche über beide Sprachen und Aliase, unabhängig von Groß-/Kleinschreibung, Umlauten und
+  Bindestrichen, mit Teilbegriffen und Rangfolge
+- Filter nach Muskelgruppe (grob, 11 Gruppen) und Ausrüstung, kombinierbar mit der Suche
+- Favoriten je Profil (Migration 9), „Zuletzt genutzt“ aus der Trainingshistorie berechnet
+- Detailansicht mit Muskeln, Ausrüstung, Beschreibung und Favorit; keine Bilder oder Videos
+- Keine vorgefertigten Trainingspläne
+
 ## Phase 4.6 – Vorschlag
 
 - Rezepte in der Oberfläche (Erstellen, Anzeigen, Eintragen) im neuen Design
@@ -164,7 +180,7 @@ Reihenfolge noch offen; Vorschläge:
   Barcode-Scanner
 - Schritte und aktive Energie aus Apple HealthKit / Android Health Connect
 
-## Phase 5 – Konto, Synchronisierung, Monetarisierung
+## Phase 6 – Konto, Synchronisierung, Monetarisierung
 
 - Supabase-Auth (E-Mail, Sign in with Apple, Google), Kontoverknüpfung des lokalen Profils
 - Synchronisierung nach ADR-004

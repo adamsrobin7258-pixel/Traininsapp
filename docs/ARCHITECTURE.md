@@ -277,7 +277,7 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   `scripts/nutrition/import-bls.ts`). Reihenfolge: eigene → gespeicherte externe → BLS. Ein
   BLS-Lebensmittel wird beim ersten Benutzen über `FoodService.ensureReference` als
   unveränderliche Referenzzeile angelegt (`origin_*`, Migration 8); Bearbeiten erzeugt eine eigene
-  Kopie (`copied_from_food_id`). Gemeinsame Normalisierung in `core/nutrition/search.ts`.
+  Kopie (`copied_from_food_id`). Gemeinsame Normalisierung in `shared/lib/search.ts` (auch für die Übungssuche, `core/training/exerciseSearch.ts`).
   Details: [BLS.md](BLS.md).
 - **Barcode-Fallback (Phase 4.3, seit 4.4 ohne Online-Suche):** UI → `FoodLookupService`/`FoodService` →
   `FoodDataProvider` → `OpenFoodFactsProvider` (`core/nutrition/providers`) → `JsonHttpClient`

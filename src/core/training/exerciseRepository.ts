@@ -136,11 +136,13 @@ export class ExerciseRepository {
     for (const item of catalog) {
       await this.db.run(
         `INSERT INTO exercises (id, source, profile_id, name_de, name_en, exercise_type, equipment,
-           movement_pattern, active, created_at, updated_at)
-         VALUES (?, 'system', NULL, ?, ?, ?, ?, ?, 1, ?, ?)
+           movement_pattern, instructions_de, instructions_en, active, created_at, updated_at)
+         VALUES (?, 'system', NULL, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)
          ON CONFLICT(id) DO UPDATE SET name_de = excluded.name_de, name_en = excluded.name_en,
            exercise_type = excluded.exercise_type, equipment = excluded.equipment,
-           movement_pattern = excluded.movement_pattern, active = 1, updated_at = excluded.updated_at`,
+           movement_pattern = excluded.movement_pattern, instructions_de = excluded.instructions_de,
+           instructions_en = excluded.instructions_en, active = 1, updated_at = excluded.updated_at
+         WHERE exercises.source = 'system'`,
         [
           item.id,
           item.nameDe,
@@ -148,11 +150,13 @@ export class ExerciseRepository {
           item.exerciseType,
           item.equipment,
           item.movementPattern,
+          item.descriptionDe,
+          item.descriptionEn,
           now,
           now,
         ],
       );
-      await this.replaceMuscles(item.id, item.primary, item.secondary ?? []);
+      await this.replaceMuscles(item.id, item.primary, item.secondary);
     }
     const ids = catalog.map((item) => item.id);
     await this.db.run(
@@ -160,6 +164,42 @@ export class ExerciseRepository {
        WHERE source = 'system' AND active = 1 AND id NOT IN (${ids.map(() => '?').join(', ') || "''"})`,
       [now, ...ids],
     );
+  }
+
+  async favoriteIds(profileId: string): Promise<string[]> {
+    const rows = await this.db.query<{ exercise_id: string }>(
+      'SELECT exercise_id FROM exercise_favorites WHERE profile_id = ? ORDER BY created_at, rowid',
+      [profileId],
+    );
+    return rows.map((row) => row.exercise_id);
+  }
+
+  /** Idempotent: marking twice or removing a non-favourite changes nothing. */
+  async setFavorite(profileId: string, exerciseId: string, favorite: boolean, now: string) {
+    if (favorite) {
+      await this.db.run(
+        `INSERT INTO exercise_favorites (profile_id, exercise_id, created_at) VALUES (?, ?, ?)
+         ON CONFLICT(profile_id, exercise_id) DO NOTHING`,
+        [profileId, exerciseId, now],
+      );
+    } else {
+      await this.db.run('DELETE FROM exercise_favorites WHERE profile_id = ? AND exercise_id = ?', [
+        profileId,
+        exerciseId,
+      ]);
+    }
+  }
+
+  /** Exercises of the profile's workouts, most recently used first – derived, not stored. */
+  async recentIds(profileId: string, limit: number): Promise<string[]> {
+    const rows = await this.db.query<{ exercise_id: string }>(
+      `SELECT we.exercise_id, MAX(w.started_at) AS last_used
+       FROM workout_exercises we JOIN workouts w ON w.id = we.workout_id
+       WHERE w.profile_id = ? AND we.exercise_id IS NOT NULL
+       GROUP BY we.exercise_id ORDER BY last_used DESC LIMIT ?`,
+      [profileId, limit],
+    );
+    return rows.map((row) => row.exercise_id);
   }
 
   private async replaceMuscles(id: string, primary: MuscleGroup[], secondary: MuscleGroup[]) {

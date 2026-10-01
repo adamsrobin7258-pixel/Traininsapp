@@ -175,7 +175,7 @@ describe('system back', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Fortsetzen' }));
     expect(await screen.findByLabelText('Satz 1: Gewicht')).toHaveValue('80');
     expect(
-      within(screen.getByRole('article', { name: 'Bankdrücken' })).getByRole('button', {
+      within(screen.getByRole('article', { name: 'Langhantel-Bankdrücken' })).getByRole('button', {
         name: 'Satz 1 wieder öffnen',
       }),
     ).toBeInTheDocument();

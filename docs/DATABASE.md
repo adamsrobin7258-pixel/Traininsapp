@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 8)
+## Aktuelles Schema (Version 9)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -151,6 +151,7 @@ exercises ──< exercise_muscles
 | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | `exercises`          | System-Katalog (`source='system'`, `profile_id` NULL, stabile IDs wie `sys.bench-press`) und eigene Übungen (`source='user'`) |
 | `exercise_muscles`   | Primäre/sekundäre Muskelgruppen je Übung                                                                                      |
+| `exercise_favorites` | Favorisierte Übungen je Profil (Migration 9)                                                                                  |
 | `training_plans`     | Plan mit Name und Trainingsart                                                                                                |
 | `training_plan_days` | Trainingstage eines Plans, sortiert über `position`                                                                           |
 | `planned_exercises`  | Übung eines Tages mit optionalen Vorgaben (`target_sets` 1–20, `target_reps` 1–100)                                           |
@@ -334,6 +335,33 @@ bleiben unverändert):
 Ein BLS-Lebensmittel wird erst beim ersten Benutzen angelegt (die übrigen der 7.137 bleiben in
 den gebündelten Daten). Tagebuch, Favoriten, Vorlagen, Rezepte, eigene und Open-Food-Facts-
 Lebensmittel bleiben unberührt (per Test geprüft, `bls.test.ts` → „migration 8“).
+
+## Übungsbibliothek und Favoriten (Migration 9, Phase 5)
+
+```sql
+CREATE TABLE exercise_favorites (
+  profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  exercise_id TEXT NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+  created_at  TEXT NOT NULL,
+  PRIMARY KEY (profile_id, exercise_id)
+);
+```
+
+- **Rein additiv:** keine bestehende Zeile ändert sich.
+- **Eigene Tabelle statt Spalte:** Systemübungen gehören keinem Profil (`profile_id` NULL); ein
+  Favoriten-Flag an der Übung könnte daher nicht persönlich sein.
+- **„Zuletzt genutzt“ ohne Tabelle:** berechnet aus `workout_exercises` ⨝ `workouts`
+  (`MAX(started_at)` je Übung, nutzt `workouts_history`/`workout_exercises_exercise`).
+- **Katalog ohne Migration:** Die 201 Systemübungen kommen gebündelt aus
+  `src/core/training/catalog/` (`EXERCISE_CATALOG_VERSION = 2`) und werden beim Start per Upsert
+  abgeglichen – einmal pro Version, danach No-op. Beschreibungen landen in
+  `instructions_de`/`instructions_en`. Eigene Übungen werden dabei nie berührt.
+- **Aliase** (z. B. „Bankdrücken“, „RDL“, frühere Namen) sind reine Suchbegriffe im gebündelten
+  Katalog, nicht in der Datenbank, und erzeugen keine zusätzlichen Übungen.
+- **Umbenennungen:** Bestehende IDs bleiben; Pläne zeigen den neuen Namen, Workouts behalten ihren
+  Namens-Snapshot.
+- Datenkatalog: Kategorie `training`, Sensibilität `personal`, exportierbar, wird mit dem Profil
+  gelöscht, später synchronisierbar.
 
 ## Konventionen für Nutzerdaten-Tabellen
 

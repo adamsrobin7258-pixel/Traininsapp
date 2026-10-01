@@ -190,8 +190,8 @@ describe('exercises', () => {
   const exercise = { ...bench, nameDe: bench.nameDe, nameEn: bench.nameEn } as unknown as Exercise;
 
   it('shows translated names and searches both languages without accents', () => {
-    expect(exerciseDisplayName(exercise, 'de')).toBe('Bankdrücken');
-    expect(exerciseDisplayName(exercise, 'en')).toBe('Bench Press');
+    expect(exerciseDisplayName(exercise, 'de')).toBe('Langhantel-Bankdrücken');
+    expect(exerciseDisplayName(exercise, 'en')).toBe('Barbell Bench Press');
     expect(matchesExerciseSearch(exercise, 'bankdruck')).toBe(true);
     expect(matchesExerciseSearch(exercise, 'BENCH')).toBe(true);
     expect(matchesExerciseSearch(exercise, 'squat')).toBe(false);

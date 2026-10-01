@@ -297,7 +297,7 @@ describe('migration 5', () => {
         completed, created_at, updated_at) VALUES ('s1', 'we', 0, 80, 8, 8, 1, 'x', 'x');
     `);
 
-    expect(await migrate(db, migrations)).toEqual([5, 6, 7, 8]);
+    expect(await migrate(db, migrations)).toEqual([5, 6, 7, 8, 9]);
     expect(
       await db.query('SELECT id, weight_kg, reps, rpe, set_type, drop_of FROM workout_sets'),
     ).toEqual([{ id: 's1', weight_kg: 80, reps: 8, rpe: 8, set_type: 'working', drop_of: null }]);

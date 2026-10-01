@@ -1,6 +1,7 @@
 export * from './errors';
 export * from './exercise';
 export * from './exerciseCatalog';
+export * from './exerciseSearch';
 export { ExerciseService, type UserExerciseInput } from './exerciseService';
 export * from './metrics';
 export * from './plan';

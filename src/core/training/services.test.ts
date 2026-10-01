@@ -44,8 +44,8 @@ describe('exercise catalog and custom exercises', () => {
     const list = await exercises.list(profileId);
     expect(list).toHaveLength(EXERCISE_CATALOG.length);
     expect(list.find((e) => e.id === 'sys.bench-press')).toMatchObject({
-      nameDe: 'Bankdrücken',
-      nameEn: 'Bench Press',
+      nameDe: 'Langhantel-Bankdrücken',
+      nameEn: 'Barbell Bench Press',
       primaryMuscles: ['chest'],
       secondaryMuscles: ['triceps', 'shoulders'],
     });
@@ -212,7 +212,7 @@ describe('free strength workout', () => {
     const restarted = new WorkoutService(new TrainingStore(db), clock);
     const active = await restarted.getActive(profileId);
     expect(active?.id).toBe(workout.id);
-    expect(active?.exercises[0]?.nameEn).toBe('Back Squat');
+    expect(active?.exercises[0]?.nameEn).toBe('Barbell Back Squat');
   });
 
   it('shows the last performance and pre-fills from it', async () => {
@@ -343,9 +343,9 @@ describe('plans', () => {
       planDayName: 'Push A',
     });
     expect(active!.exercises.map((e) => e.nameEn)).toEqual([
-      'Bench Press',
-      'Overhead Press',
-      'Triceps Pushdown',
+      'Barbell Bench Press',
+      'Barbell Overhead Press',
+      'Cable Triceps Pushdown',
     ]);
     expect(active!.exercises[0]!.sets.map((s) => s.reps)).toEqual([8, 8, 8]);
     await ctx.workouts.finish(ctx.profileId, workout.id);
@@ -436,7 +436,7 @@ describe('training schema', () => {
     await db.run(
       "INSERT INTO weight_entries (id, profile_id, date, value, created_at, updated_at) VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x')",
     );
-    expect(await migrate(db, migrations)).toEqual([4, 5, 6, 7, 8]);
+    expect(await migrate(db, migrations)).toEqual([4, 5, 6, 7, 8, 9]);
     expect(await db.query('SELECT date, value FROM weight_entries')).toEqual([
       { date: '2026-10-01', value: 82.4 },
     ]);

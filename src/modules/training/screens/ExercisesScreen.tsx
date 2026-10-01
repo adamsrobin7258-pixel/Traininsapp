@@ -1,37 +1,43 @@
-import { useId, useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import { ROUTES } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import {
   exerciseDisplayName,
-  matchesExerciseSearch,
-  useTrainingData,
+  searchExercises,
+  type Equipment,
   type Exercise,
+  type MuscleFilter,
 } from '@/core/training';
 import { List, ListRow, Screen, Section } from '@/ui';
+import { ExerciseDetailSheet } from '../components/ExerciseDetailSheet';
+import { ExerciseFilters } from '../components/ExerciseFilters';
 import { ExerciseFormSheet } from '../components/ExerciseFormSheet';
+import { ExerciseRow } from '../components/ExerciseRow';
 import styles from '../components/ExercisePicker.module.css';
+import { useExerciseLibrary } from '../hooks/useExerciseLibrary';
 
-/** Custom exercises (create, edit, (de)activate) and the read-only exercise library. */
+/**
+ * Custom exercises (create, edit, (de)activate) and the read-only exercise library with
+ * search, filters, details and favourites.
+ */
 export function ExercisesScreen() {
   const { t, locale } = useI18n();
   const searchId = useId();
   const [query, setQuery] = useState('');
+  const [muscle, setMuscle] = useState<MuscleFilter | null>(null);
+  const [equipment, setEquipment] = useState<Equipment | null>(null);
   const [editing, setEditing] = useState<Exercise | 'new' | null>(null);
-  const all = useTrainingData(
-    (s, profileId) => s.exercises.list(profileId, { includeInactive: true }),
-    [],
-  );
+  const [viewing, setViewing] = useState<Exercise | null>(null);
+  const library = useExerciseLibrary({ includeInactive: true });
+  const ready = library.status === 'ready' ? library.data : null;
 
-  const sorted =
-    all.status === 'ready'
-      ? all.data
-          .filter((exercise) => matchesExerciseSearch(exercise, query))
-          .sort((a, b) =>
-            exerciseDisplayName(a, locale).localeCompare(exerciseDisplayName(b, locale), locale),
-          )
-      : [];
-  const own = sorted.filter((exercise) => exercise.source === 'user');
-  const library = sorted.filter((exercise) => exercise.source === 'system' && exercise.active);
+  const matches = useMemo(
+    () => (ready ? searchExercises(ready.index, { query, muscle, equipment }) : []),
+    [ready, query, muscle, equipment],
+  );
+  const own = matches.filter((exercise) => exercise.source === 'user');
+  const system = matches.filter((exercise) => exercise.source === 'system' && exercise.active);
+  const filtering = query.trim() !== '' || muscle !== null || equipment !== null;
 
   return (
     <Screen
@@ -48,11 +54,18 @@ export function ExercisesScreen() {
         value={query}
         placeholder={t('training.exercises.searchPlaceholder')}
         autoComplete="off"
+        enterKeyHint="search"
         onChange={(event) => {
           setQuery(event.target.value);
         }}
       />
-      {all.status === 'error' ? <p role="alert">{t('training.errors.loadFailed')}</p> : null}
+      <ExerciseFilters
+        muscle={muscle}
+        equipment={equipment}
+        onMuscleChange={setMuscle}
+        onEquipmentChange={setEquipment}
+      />
+      {library.status === 'error' ? <p role="alert">{t('training.errors.loadFailed')}</p> : null}
 
       <Section title={t('training.exercises.own')} footer={t('training.exercises.deactivateHint')}>
         <List label={t('training.exercises.own')}>
@@ -70,7 +83,7 @@ export function ExercisesScreen() {
               }}
             />
           ))}
-          {all.status === 'ready' && own.length === 0 ? (
+          {ready && own.length === 0 && !filtering ? (
             <ListRow title={t('training.exercises.ownEmpty')} />
           ) : null}
           <ListRow
@@ -84,20 +97,37 @@ export function ExercisesScreen() {
       </Section>
 
       <Section title={t('training.exercises.system')}>
+        {ready ? (
+          <p className={styles.count}>
+            {t('training.exercises.resultCount', { count: system.length })}
+          </p>
+        ) : null}
         <List label={t('training.exercises.system')}>
-          {library.map((exercise) => (
-            <ListRow
+          {system.map((exercise) => (
+            <ExerciseRow
               key={exercise.id}
-              title={exerciseDisplayName(exercise, locale)}
-              subtitle={[
-                t(`training.equipment.${exercise.equipment}`),
-                ...exercise.primaryMuscles.map((muscle) => t(`training.muscles.${muscle}`)),
-              ].join(' · ')}
+              exercise={exercise}
+              favorite={ready?.favoriteIds.has(exercise.id) ?? false}
+              onPress={() => {
+                setViewing(exercise);
+              }}
             />
           ))}
         </List>
+        {ready && system.length === 0 ? (
+          <p className={styles.empty}>{t('training.exercises.noResults')}</p>
+        ) : null}
       </Section>
 
+      {viewing ? (
+        <ExerciseDetailSheet
+          exercise={viewing}
+          favorite={ready?.favoriteIds.has(viewing.id) ?? false}
+          onClose={() => {
+            setViewing(null);
+          }}
+        />
+      ) : null}
       {editing ? (
         <ExerciseFormSheet
           exercise={editing === 'new' ? undefined : editing}

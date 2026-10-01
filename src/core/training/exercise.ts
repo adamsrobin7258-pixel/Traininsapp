@@ -28,6 +28,7 @@ export const MUSCLE_GROUPS = [
   'glutes',
   'quadriceps',
   'hamstrings',
+  'adductors',
   'calves',
   'fullBody',
 ] as const;
@@ -36,11 +37,14 @@ export type MuscleGroup = (typeof MUSCLE_GROUPS)[number];
 export const EQUIPMENT = [
   'barbell',
   'dumbbell',
+  'ezBar',
   'kettlebell',
   'machine',
+  'smithMachine',
   'cable',
   'bodyweight',
   'band',
+  'suspension',
   'other',
 ] as const;
 export type Equipment = (typeof EQUIPMENT)[number];

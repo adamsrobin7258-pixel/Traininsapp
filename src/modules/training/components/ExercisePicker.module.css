@@ -13,6 +13,20 @@
   border-color: var(--color-focus);
 }
 
+/* Brand-coloured clear button instead of the system default. */
+.search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--color-text-tertiary);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  cursor: pointer;
+}
+
 .empty {
   font-size: var(--font-size-subhead);
   color: var(--color-text-secondary);
@@ -31,4 +45,186 @@
 
 .empty {
   margin-top: var(--space-4);
+}
+
+/* ── Filters ─────────────────────────────────────────────────── */
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+/* One line per filter, scrolled sideways, so the list keeps most of the height. */
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  /* Let the chips run to the sheet edge while keeping the first one aligned. */
+  margin: 0 calc(var(--space-1) * -1);
+  padding: 0 var(--space-1) var(--space-1);
+}
+
+.chips::-webkit-scrollbar {
+  display: none;
+}
+
+.chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  white-space: nowrap;
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-subhead);
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.chip:active {
+  transform: scale(0.97);
+}
+
+/* ── Lists ───────────────────────────────────────────────────── */
+
+.listTitle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.count {
+  margin: 0 0 var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.listTitle .count {
+  margin: 0;
+  padding: 0;
+}
+
+.reset {
+  margin-top: var(--space-2);
+  min-height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-accent-text);
+  background: none;
+  cursor: pointer;
+}
+
+.favoriteMark {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-accent-text);
+}
+
+.favoriteMark svg path {
+  fill: currentColor;
+}
+
+/* ── Details ─────────────────────────────────────────────────── */
+
+.detailHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.detailName {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.favorite {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.favorite[aria-pressed='true'] {
+  color: var(--color-accent-text);
+}
+
+.favorite[aria-pressed='true'] svg path {
+  fill: currentColor;
+}
+
+/* Label above value: long German terms never break mid-word, also at 320 px. */
+.facts {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: var(--font-size-subhead);
+}
+
+.facts dt {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.facts dt:not(:first-child) {
+  margin-top: var(--space-2);
+}
+
+.facts dd {
+  margin: 0;
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
+
+.description {
+  margin: 0;
+  line-height: var(--line-height-body);
+}
+
+.hint {
+  margin-top: var(--space-4);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
 }

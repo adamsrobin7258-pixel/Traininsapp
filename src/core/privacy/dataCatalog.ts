@@ -82,6 +82,14 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    table: 'exercise_favorites',
+    category: 'training',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: true,
+  },
+  {
     table: 'training_plans',
     category: 'training',
     sensitivity: 'health',

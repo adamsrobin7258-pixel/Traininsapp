@@ -27,6 +27,7 @@ export interface UserExerciseInput {
 }
 
 const CATALOG_VERSION_KEY = 'system.exerciseCatalogVersion';
+const RECENT_LIMIT = 8;
 
 export class ExerciseService {
   constructor(
@@ -51,6 +52,25 @@ export class ExerciseService {
 
   get(id: string): Promise<Exercise | null> {
     return this.store.repos.exercises.findById(id);
+  }
+
+  favoriteIds(profileId: string): Promise<string[]> {
+    return this.store.repos.exercises.favoriteIds(profileId);
+  }
+
+  /** Works for system and user exercises; only the profile's own favourite list changes. */
+  async setFavorite(profileId: string, id: string, favorite: boolean): Promise<void> {
+    const exercise = await this.store.repos.exercises.findById(id);
+    if (!exercise || (exercise.source === 'user' && exercise.profileId !== profileId)) {
+      throw new TrainingError('not-found');
+    }
+    const now = this.clock().toISOString();
+    await this.store.repos.exercises.setFavorite(profileId, id, favorite, now);
+  }
+
+  /** Recently trained exercises, newest first, computed from the workout history. */
+  recentIds(profileId: string, limit = RECENT_LIMIT): Promise<string[]> {
+    return this.store.repos.exercises.recentIds(profileId, limit);
   }
 
   async create(profileId: string, input: UserExerciseInput): Promise<Exercise> {

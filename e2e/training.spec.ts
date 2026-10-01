@@ -54,7 +54,7 @@ function noHorizontalScroll(page: Page) {
 test('plan, workout, history and reopening a finished workout', async ({ page }) => {
   // Create a plan with one day and one exercise (plan management).
   await createPlan(page, 'Oberkörper', 'Tag A');
-  await pickExercise(page, 'bank', /^Bankdrücken/);
+  await pickExercise(page, 'bank', /^Langhantel-Bankdrücken/);
 
   // Start the workout from the plan and log two sets.
   await page.getByRole('button', { name: 'Starten' }).click();
@@ -99,7 +99,7 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
 test('A – the set check keeps values, focus and the workout', async ({ page }) => {
   await page.goto('/training');
   await startFreeWorkout(page);
-  await pickExercise(page, 'bank', /^Bankdrücken/);
+  await pickExercise(page, 'bank', /^Langhantel-Bankdrücken/);
   await page.getByLabel('Satz 1: Gewicht').fill('82,5');
   await page.getByLabel('Satz 1: Wdh.').fill('5');
   // Keyboard is "open": the reps field has focus when the check is tapped.
@@ -167,7 +167,7 @@ test('B – every exercise in the picker is reachable, also after the keyboard',
     const target = rows.nth(total - round);
     const name = (await target.locator('span > span').first().textContent()) ?? '';
     await list.hover();
-    for (let step = 0; step < 20; step++) await page.mouse.wheel(0, 400);
+    for (let step = 0; step < 60; step++) await page.mouse.wheel(0, 400);
     await expect(target).toBeInViewport({ ratio: 1 });
     await target.click();
     await expect(sheet(page)).toHaveCount(0);
@@ -222,8 +222,8 @@ test('does not scroll horizontally in the training area', async ({ page }) => {
 
 test('warm-ups and drops from the plan into the workout', async ({ page }) => {
   await createPlan(page, 'Beine', 'Tag A');
-  await pickExercise(page, 'kniebeug', /^Kniebeugen/);
-  await page.getByRole('button', { name: /^Kniebeugen\s*Vorgabe/ }).click();
+  await pickExercise(page, 'kniebeug', /^Langhantel-Kniebeugen/);
+  await page.getByRole('button', { name: /^Langhantel-Kniebeugen\s*Vorgabe/ }).click();
   await page.getByLabel('Aufwärmsätze').fill('1');
   await page.getByLabel('Arbeitssätze').fill('2');
   await page.getByLabel('Wiederholungen').fill('8');
@@ -246,4 +246,53 @@ test('warm-ups and drops from the plan into the workout', async ({ page }) => {
   // Survives a reload with types and values.
   await page.reload();
   await expect(page.getByLabel('Drop 1 zu Satz 2: Gewicht')).toHaveValue('70');
+});
+
+test('exercise library: filters, details and favourites without the keyboard', async ({ page }) => {
+  await page.goto('/training');
+  await page.getByRole('link', { name: /^Übungen verwalten/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Übungen' })).toBeVisible();
+  expect(await textFieldFocused(page)).toBe(false);
+
+  // Muscle and equipment filter combine; tapping a chip does not open the keyboard.
+  await page
+    .getByRole('group', { name: 'Nach Muskelgruppe filtern' })
+    .getByRole('button', { name: 'Schultern' })
+    .click();
+  await page
+    .getByRole('group', { name: 'Nach Ausrüstung filtern' })
+    .getByRole('button', { name: 'Kabelzug' })
+    .click();
+  expect(await textFieldFocused(page)).toBe(false);
+  const library = page.getByRole('list', { name: 'Übungsbibliothek' });
+  await expect(library.getByRole('button', { name: /^Face Pulls/ })).toBeVisible();
+  await expect(library.getByRole('button', { name: /Langhantel/ })).toHaveCount(0);
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  // Details and favourite.
+  await library.getByRole('button', { name: /^Face Pulls/ }).click();
+  await expect(sheet(page).getByRole('heading', { name: 'Face Pulls' })).toBeVisible();
+  await expect(sheet(page).getByText(/Seil zum Gesicht/)).toBeVisible();
+  await sheet(page).getByRole('button', { name: 'Als Favorit markieren' }).click();
+  await expect(sheet(page).getByRole('button', { name: 'Favorit entfernen' })).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(sheet(page)).toHaveCount(0);
+
+  // The favourite comes first in the picker; an alias finds the renamed exercise.
+  await tab(page, 'Training').click();
+  await startFreeWorkout(page);
+  await page.getByRole('button', { name: 'Übung hinzufügen' }).click();
+  expect(await textFieldFocused(page)).toBe(false);
+  await expect(sheet(page).getByRole('list', { name: 'Favoriten' })).toContainText('Face Pulls');
+  await sheet(page).getByRole('searchbox').fill('bankdrücken');
+  await expect(
+    sheet(page).getByRole('list', { name: 'Ergebnisse' }).getByRole('button').first(),
+  ).toContainText('Langhantel-Bankdrücken');
+  await sheet(page)
+    .getByRole('button', { name: /^Langhantel-Bankdrücken/ })
+    .click();
+  await expect(sheet(page)).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Langhantel-Bankdrücken' })).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
 });
