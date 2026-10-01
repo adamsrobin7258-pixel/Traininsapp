@@ -331,7 +331,7 @@ bleiben unverändert):
 | CUSTOM          | `source = 'custom'`                                                              |
 | Eigene Kopie    | `source = 'custom'` mit `copied_from_food_id`                                    |
 
-Ein BLS-Lebensmittel wird erst beim ersten Benutzen angelegt (die übrigen rund 7.000 bleiben in
+Ein BLS-Lebensmittel wird erst beim ersten Benutzen angelegt (die übrigen der 7.137 bleiben in
 den gebündelten Daten). Tagebuch, Favoriten, Vorlagen, Rezepte, eigene und Open-Food-Facts-
 Lebensmittel bleiben unberührt (per Test geprüft, `bls.test.ts` → „migration 8“).
 

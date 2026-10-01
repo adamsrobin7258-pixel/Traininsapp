@@ -4,7 +4,7 @@ import type { Food } from './food';
 import type { FoodService } from './foodService';
 import type { ExternalProduct, FoodDataProvider } from './provider';
 import type { ReferenceCatalog, ReferenceDatasetInfo, ReferenceFood } from './reference';
-import { compareMatches, matchScore, searchKey, searchWords } from './search';
+import { bestScore, compareMatches, matchScore, searchKey, searchWords } from './search';
 
 export type BarcodeLookup =
   /** Known on this device – no request was made. */
@@ -85,7 +85,8 @@ export class FoodLookupService {
     }
     for (const reference of references) {
       if (storedCodes.has(`${reference.dataset}:${reference.code}`)) continue;
-      const score = matchScore(searchKey(reference.name, reference.nameEn), words) ?? 3;
+      const keys = [searchKey(reference.name), searchKey(reference.nameEn)];
+      const score = bestScore(keys, words) ?? 5;
       ranked.push({
         group: GROUP.local,
         score,

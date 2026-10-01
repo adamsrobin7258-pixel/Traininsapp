@@ -121,7 +121,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     });
     expect(
       dialog().getByText(
-        /Bundeslebensmittelschlüssel \(BLS\) 4\.0, Max Rubner-Institut, Lizenz CC BY 4\.0/,
+        /Max Rubner-Institut \(2025\): Bundeslebensmittelschlüssel \(BLS\), Version 4\.0\. Karlsruhe\./,
       ),
     ).toBeInTheDocument();
     expect(dialog().queryByText(/Online suchen/)).not.toBeInTheDocument();

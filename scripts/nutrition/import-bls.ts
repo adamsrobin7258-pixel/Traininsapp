@@ -1,5 +1,6 @@
 /**
- * Reproducible import of the official BLS 4.0 data (Max Rubner-Institut, CC BY 4.0).
+ * Reproducible import of the official BLS 4.0 data (Max Rubner-Institut; free to use with attribution
+ * according to the official documentation, chapter 9.3).
  *
  *   node scripts/nutrition/import-bls.ts [path/to/BLS_4_0_Daten_2025_DE.xlsx]
  *
@@ -31,9 +32,9 @@ const meta = {
   dataset: 'BLS',
   version: '4.0',
   publisher: 'Max Rubner-Institut',
-  license: 'CC BY 4.0',
+  license: 'kostenfrei nutzbar laut MRI (Dokumentation BLS 4.0, Kap. 9.3), Quellenangabe',
   attribution:
-    'Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0 – Deutsche Nährstoffdatenbank. Lizenz: CC BY 4.0.',
+    'Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0. Karlsruhe.',
   sourceFile: basename(sourcePath),
   sha256,
   importedAt,

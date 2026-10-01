@@ -1,7 +1,7 @@
 import { NutritionError } from '../errors';
 import { areValidNutrients, type Nutrients } from '../nutrients';
 import type { ReferenceCatalog, ReferenceDatasetInfo, ReferenceFood } from '../reference';
-import { compareMatches, matchScore, searchKey, searchWords, type SearchKey } from '../search';
+import { bestScore, compareMatches, searchKey, searchWords, type SearchKey } from '../search';
 
 export const BLS_DATASET_ID = 'bls';
 
@@ -35,7 +35,8 @@ const FIELDS = [
 
 interface Entry {
   food: ReferenceFood;
-  key: SearchKey;
+  /** German name, plus the English one when the dataset has it. */
+  keys: SearchKey[];
 }
 
 interface Loaded {
@@ -76,7 +77,10 @@ export function parseBlsData(data: BlsDataFile): Loaded {
       nutrients,
     };
     byCode.set(code, food);
-    entries.push({ food, key: searchKey(name, food.nameEn) });
+    entries.push({
+      food,
+      keys: food.nameEn ? [searchKey(name), searchKey(food.nameEn)] : [searchKey(name)],
+    });
   }
   const info: ReferenceDatasetInfo | null =
     data.meta && entries.length > 0
@@ -124,8 +128,8 @@ export class BlsCatalog implements ReferenceCatalog {
     const words = searchWords(query);
     if (words.length === 0) return [];
     const matches: { score: number; name: string; food: ReferenceFood }[] = [];
-    for (const { food, key } of (await this.data()).entries) {
-      const score = matchScore(key, words);
+    for (const { food, keys } of (await this.data()).entries) {
+      const score = bestScore(keys, words);
       if (score !== null) matches.push({ score, name: food.name, food });
     }
     return matches

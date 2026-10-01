@@ -1,5 +1,5 @@
 /**
- * Mapping of the official BLS 4.0 table (Max Rubner-Institut, CC BY 4.0) to Kalethra's compact
+ * Mapping of the official BLS 4.0 table (Max Rubner-Institut) to Kalethra's compact
  * reference data. Pure functions – the CLI (import-bls.ts) does the file handling.
  *
  * Source structure (BLS_4_0_Daten_2025_DE.xlsx): one header row, then one row per food.

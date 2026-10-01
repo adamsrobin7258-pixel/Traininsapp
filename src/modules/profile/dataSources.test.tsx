@@ -21,7 +21,7 @@ describe('data sources', () => {
         /Max Rubner-Institut \(MRI\), Bundeslebensmittelschlüssel \(BLS\), Version 4\.0/,
       ),
     ).toBeInTheDocument();
-    expect(sheet.getByText(/CC BY 4\.0/)).toBeInTheDocument();
+    expect(sheet.getByText(/kostenfrei nutzbar, mit Angabe der Quelle/)).toBeInTheDocument();
     expect(sheet.getByText('6 Lebensmittel · importiert am 01.10.2026')).toBeInTheDocument();
     expect(sheet.getByText(/Open Database License \(ODbL\)/)).toBeInTheDocument();
     expect(sheet.getByText(/Gesendet wird ausschließlich der Barcode/)).toBeInTheDocument();

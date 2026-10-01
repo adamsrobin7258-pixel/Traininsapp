@@ -91,10 +91,22 @@ test('the food search is offline and never asks Open Food Facts', async ({ page 
   await sheet.getByLabel('Lebensmittel suchen').fill('apfel');
   await sheet.getByLabel('Lebensmittel suchen').press('Enter');
   const results = sheet.getByRole('list', { name: 'Suchergebnisse' });
-  await expect(results.getByRole('button', { name: 'Neues Lebensmittel anlegen' })).toBeVisible();
+  // Real BLS 4.0 data, bundled with the app: the raw apple comes first.
+  await expect(results.getByRole('button').nth(1)).toContainText('Apfel roh');
+  await expect(results.getByRole('button').nth(1)).toContainText('BLS 4.0');
+  await expect(sheet.getByText(/Max Rubner-Institut \(2025\)/)).toBeVisible();
   await expect(sheet.getByText(/Online suchen/)).toHaveCount(0);
-  expect(requests).toEqual([]);
   expect(await noHorizontalScroll(page)).toBe(true);
+
+  // Using it stores the reference once and logs it like any food.
+  await results.getByRole('button').nth(1).click();
+  await sheet.getByLabel('Menge', { exact: true }).fill('150');
+  await sheet.getByRole('button', { name: 'Eintragen' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await expect(
+    page.locator('main').getByRole('heading', { name: /^Snacks · \d+ kcal$/ }),
+  ).toBeVisible();
+  expect(requests).toEqual([]);
 });
 
 test('unknown barcode typed by hand leads to creating the food', async ({ page }) => {

@@ -7,7 +7,7 @@ import { createTestReferenceCatalog, TEST_BLS_DATA } from '@/test/testReferenceC
 import { BlsCatalog, createBlsCatalog, parseBlsData, type BlsDataFile } from './bls';
 import { NutritionError } from './errors';
 import type { FoodSearchResult } from './foodLookupService';
-import { normalizeSearchText } from './search';
+import { bestScore, normalizeSearchText, searchKey, searchWords } from './search';
 
 let now = new Date(2026, 9, 3, 12, 0);
 const clock = () => now;
@@ -58,10 +58,52 @@ describe('search text', () => {
   it('ignores case, accents, umlaut spellings, ß and punctuation', () => {
     expect(normalizeSearchText('Äpfel')).toBe('apfel');
     expect(normalizeSearchText('Aepfel')).toBe('apfel');
-    expect(normalizeSearchText('HÄHNCHEN-Brust')).toBe('hahnchen brust');
+    expect(normalizeSearchText('HÄHNCHEN Brust')).toBe('hahnchen brust');
+    expect(normalizeSearchText('Joghurt-Dip')).toBe('joghurtdip');
     expect(normalizeSearchText('Weißkohl')).toBe('weisskohl');
     expect(normalizeSearchText('Apfel, roh')).toBe('apfel roh');
     expect(normalizeSearchText('  ')).toBe('');
+  });
+});
+
+describe('search ranking', () => {
+  const rank = (query: string, names: string[][]) =>
+    names
+      .map((n) => ({
+        name: n[0] ?? '',
+        score: bestScore(
+          n.map((x) => searchKey(x)),
+          searchWords(query),
+        ),
+      }))
+      .filter((m) => m.score !== null)
+      .sort((a, b) => (a.score ?? 0) - (b.score ?? 0) || a.name.length - b.name.length)
+      .map((m) => m.name);
+
+  it('puts basic foods before compounds and finds names written apart', () => {
+    expect(rank('milch', [['Milchschokolade'], ['Milch fettarm, frisch'], ['Kuhmilch']])).toEqual([
+      'Milch fettarm, frisch',
+      'Milchschokolade',
+      'Kuhmilch',
+    ]);
+    expect(rank('joghurt', [['Joghurt-Dip'], ['Joghurt mild, 3,5 % Fett']])).toEqual([
+      'Joghurt mild, 3,5 % Fett',
+      'Joghurt-Dip',
+    ]);
+    expect(rank('haferflocken', [['Haferflockenplätzchen'], ['Hafer Flocken']])).toEqual([
+      'Hafer Flocken',
+      'Haferflockenplätzchen',
+    ]);
+  });
+
+  it('ranks matches on the English name after every German match', () => {
+    expect(
+      rank('butter', [
+        ['Joghurtbutter', 'Butter with yogurt'],
+        ['Butter gesalzen', 'Butter salted'],
+        ['Halbfettbutter', 'Half-fat butter'],
+      ]),
+    ).toEqual(['Butter gesalzen', 'Joghurtbutter', 'Halbfettbutter']);
   });
 });
 
@@ -132,8 +174,11 @@ describe('BLS catalog', () => {
     const info = await createBlsCatalog().info();
     // Before the official file is imported the bundled data is empty (see docs/BLS.md).
     if (info) {
-      expect(info).toMatchObject({ name: 'BLS', version: '4.0', license: 'CC BY 4.0' });
-      expect(info.attribution).toContain('Max Rubner-Institut');
+      expect(info).toMatchObject({ name: 'BLS', version: '4.0' });
+      expect(info.attribution).toBe(
+        'Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version 4.0. Karlsruhe.',
+      );
+      expect(info.count).toBe(7137);
       expect(info.count).toBeGreaterThan(1000);
     }
   });

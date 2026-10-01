@@ -10,7 +10,7 @@ export const TEST_BLS_DATA: BlsDataFile = {
     dataset: 'BLS',
     version: '4.0',
     publisher: 'Max Rubner-Institut',
-    license: 'CC BY 4.0',
+    license: 'kostenfrei nutzbar laut MRI (Dokumentation BLS 4.0, Kap. 9.3), Quellenangabe',
     attribution: 'Testdaten im BLS-Format (synthetisch)',
     importedAt: '2026-10-01',
     count: 6,

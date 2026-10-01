@@ -127,7 +127,7 @@ aktualisierter Dokumentation.
 
 ## Phase 4.4 – BLS 4.0 als primäre Lebensmitteldatenbank ✅ (Version 0.6.0)
 
-- Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0) in der App, reproduzierbarer
+- Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut) in der App, reproduzierbarer
   Import (`scripts/nutrition/import-bls.ts`), fehlende Werte bleiben fehlend
 - Offline-Suche: eigene → gespeicherte Produkte → BLS; Umlaute, Teilwörter, sinnvolle Sortierung
 - Open Food Facts nur noch als Barcode-Fallback (Online-Suche entfernt)

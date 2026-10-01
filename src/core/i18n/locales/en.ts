@@ -645,7 +645,7 @@ export const en: TranslationSchema = {
       bls: 'BLS {version}',
       openFoodFacts: 'Open Food Facts',
       blsAttribution:
-        'Data: German Nutrient Database (Bundeslebensmittelschlüssel, BLS) {version}, Max Rubner-Institut, CC BY 4.0 licence',
+        'Data: Max Rubner-Institut (2025): Bundeslebensmittelschlüssel (BLS), Version {version}. Karlsruhe.',
     },
     reference: {
       title: 'Food from the BLS',
@@ -777,7 +777,7 @@ export const en: TranslationSchema = {
       title: 'Data sources',
       blsTitle: 'German Nutrient Database (BLS)',
       blsBody:
-        'Nutrients of the food search: Max Rubner-Institut (MRI), Bundeslebensmittelschlüssel (BLS), version {version}. Licence: Creative Commons Attribution 4.0 (CC BY 4.0), blsdb.de. Reduced to the main nutrients for Kalethra; the values taken over are unchanged. The data is part of the app – the search works offline.',
+        'Nutrients of the food search: Max Rubner-Institut (MRI), Bundeslebensmittelschlüssel (BLS), version {version}. Free to use according to the Max Rubner-Institut, with the source stated (blsdb.de). Reduced to the main nutrients for Kalethra; the values taken over are unchanged. The data is part of the app – the search works offline.',
       blsDetails: '{count} foods · imported on {date}',
       blsMissing: 'This version does not contain BLS data yet.',
       offTitle: 'Open Food Facts',
