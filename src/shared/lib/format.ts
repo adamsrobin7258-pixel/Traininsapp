@@ -48,3 +48,11 @@ export function formatRelativeDay(
     .format(date)
     .replace(/\.$/, '.');
 }
+
+/** Water: millilitres below one litre, litres above, e.g. "750 ml", "1,5 l". */
+export function formatWater(ml: number, locale: string): string {
+  if (ml >= 1000) {
+    return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(ml / 1000)} l`;
+  }
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(ml)} ml`;
+}

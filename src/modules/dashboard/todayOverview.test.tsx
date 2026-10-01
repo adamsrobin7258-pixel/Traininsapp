@@ -76,11 +76,13 @@ describe('Today overview', () => {
     expect(health.queryByRole('img')).not.toBeInTheDocument();
 
     const nutrition = card(/^Ernährung/);
-    for (const label of ['Kalorien', 'Protein', 'Kohlenhydrate', 'Fett']) {
+    for (const label of ['Kalorien', 'Protein', /^Kohlen.?hydrate$/, 'Fett']) {
       expect(nutrition.getByText(label)).toBeInTheDocument();
     }
+    // Calories and the three macros stay empty – nothing is invented.
     expect(nutrition.getAllByText('–')).toHaveLength(4);
-    expect(nutrition.getByText('Noch keine Ernährungsdaten für heute')).toBeInTheDocument();
+    expect(nutrition.getByText('Noch nichts eingetragen')).toBeInTheDocument();
+    expect(nutrition.getByText('0 ml Wasser')).toBeInTheDocument();
   });
 
   it('summarises training from the training data', async () => {
@@ -217,11 +219,23 @@ describe('Today overview', () => {
       },
     });
     const nutrition = card(/^Ernährung/);
-    expect(await nutrition.findByText('740 kcal')).toBeInTheDocument();
+    // Calories are the one big number; the goal and what is left follow below.
+    expect(await nutrition.findByText('740')).toBeInTheDocument();
+    expect(nutrition.getByText('von 2.500 kcal · noch 1.760 kcal')).toBeInTheDocument();
+    expect(nutrition.getByRole('progressbar', { name: 'Kalorien' })).toHaveAttribute(
+      'aria-valuetext',
+      '740 kcal von 2.500 kcal',
+    );
     expect(nutrition.getByText('27 g')).toBeInTheDocument();
     expect(nutrition.getByText('117 g')).toBeInTheDocument();
     expect(nutrition.getByText('14 g')).toBeInTheDocument();
-    expect(nutrition.getByText('Kalorien · Ziel 2.500 kcal')).toBeInTheDocument();
-    expect(nutrition.queryByText('Noch keine Ernährungsdaten für heute')).not.toBeInTheDocument();
+    expect(nutrition.queryByText('Noch nichts eingetragen')).not.toBeInTheDocument();
+
+    // The meals of the day, with a preview of what was eaten (read only, opens the diary).
+    const meals = within(screen.getByRole('list', { name: 'Mahlzeiten' }));
+    expect(
+      meals.getByRole('link', { name: /^Frühstück\s*Haferflocken\s*740 kcal/ }),
+    ).toHaveAttribute('href', '/nutrition');
+    expect(meals.getByRole('link', { name: /^Abendessen\s*Noch nichts\s*–/ })).toBeInTheDocument();
   });
 });

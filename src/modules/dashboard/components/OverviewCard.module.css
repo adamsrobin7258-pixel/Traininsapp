@@ -27,8 +27,18 @@
 }
 
 .title {
-  font-size: var(--font-size-headline);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.titleIcon {
+  color: var(--color-accent-text);
 }
 
 .chevron {
@@ -85,20 +95,4 @@
 .note {
   font-size: var(--font-size-footnote);
   color: var(--color-text-secondary);
-}
-
-.track {
-  display: block;
-  margin-top: var(--space-1);
-  height: 0.375rem;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-muted);
-  overflow: hidden;
-}
-
-.bar {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--color-accent);
 }

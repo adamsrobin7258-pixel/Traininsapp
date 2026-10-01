@@ -28,7 +28,7 @@ export function HealthSummary({ now }: { now: Date }) {
   const ready = trend.status === 'ready' && latest.status === 'ready';
 
   return (
-    <OverviewCard title={t('dashboard.health.title')} to={ROUTES.health}>
+    <OverviewCard icon="scale" title={t('dashboard.health.title')} to={ROUTES.health}>
       <span className={styles.row}>
         <span className={styles.text}>
           <span className={styles.label}>{t('dashboard.health.weight')}</span>

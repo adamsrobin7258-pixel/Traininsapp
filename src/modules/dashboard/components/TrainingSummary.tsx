@@ -19,7 +19,7 @@ export function TrainingSummary({ now }: { now: Date }) {
   const typeLabel = (id: string) => t(`training.types.${getTrainingType(id).id}` as TranslationKey);
 
   return (
-    <OverviewCard title={t('dashboard.training.title')} to={ROUTES.training}>
+    <OverviewCard icon="training" title={t('dashboard.training.title')} to={ROUTES.training}>
       {data.status === 'error' ? <span role="alert">{t('training.errors.loadFailed')}</span> : null}
       {data.status === 'ready' ? (
         <>

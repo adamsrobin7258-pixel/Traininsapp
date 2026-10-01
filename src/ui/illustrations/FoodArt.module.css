@@ -1,0 +1,53 @@
+.art {
+  display: block;
+  flex: none;
+}
+
+.blob {
+  fill: var(--art-bg);
+}
+
+.line {
+  color: var(--art-ink);
+}
+
+.art[data-tint='rose'] {
+  --art-bg: var(--tint-rose-bg);
+  --art-ink: var(--tint-rose-ink);
+}
+.art[data-tint='leaf'] {
+  --art-bg: var(--tint-leaf-bg);
+  --art-ink: var(--tint-leaf-ink);
+}
+.art[data-tint='olive'] {
+  --art-bg: var(--tint-olive-bg);
+  --art-ink: var(--tint-olive-ink);
+}
+.art[data-tint='wheat'] {
+  --art-bg: var(--tint-wheat-bg);
+  --art-ink: var(--tint-wheat-ink);
+}
+.art[data-tint='earth'] {
+  --art-bg: var(--tint-earth-bg);
+  --art-ink: var(--tint-earth-ink);
+}
+.art[data-tint='sun'] {
+  --art-bg: var(--tint-sun-bg);
+  --art-ink: var(--tint-sun-ink);
+}
+.art[data-tint='clay'] {
+  --art-bg: var(--tint-clay-bg);
+  --art-ink: var(--tint-clay-ink);
+}
+.art[data-tint='sea'] {
+  --art-bg: var(--tint-sea-bg);
+  --art-ink: var(--tint-sea-ink);
+}
+.art[data-tint='milk'] {
+  --art-bg: var(--tint-milk-bg);
+  --art-ink: var(--tint-milk-ink);
+}
+.art[data-tint='sage'] {
+  --art-bg: var(--tint-sage-bg);
+  --art-ink: var(--tint-sage-ink);
+}

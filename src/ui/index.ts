@@ -3,6 +3,7 @@ export { ConfirmSheet } from './components/ConfirmSheet';
 export { EmptyState } from './components/EmptyState';
 export { EmptyValue } from './components/EmptyValue';
 export { List, ListRow } from './components/List';
+export { Meter } from './components/Meter';
 export { Screen } from './components/Screen';
 export { PromptSheet } from './components/PromptSheet';
 export { Sheet } from './components/Sheet';
@@ -11,5 +12,6 @@ export { SegmentedControl, type SegmentOption } from './components/SegmentedCont
 export { Stat } from './components/Stat';
 export { TextField } from './components/TextField';
 export { Icon, type IconName } from './icons/Icon';
+export { FoodArt, type FoodArtName } from './illustrations/FoodArt';
 export { AUTOFOCUS, dismissKeyboard, isTextEntry } from './focus';
 export { closeTopOverlay, registerBackHandler } from './backStack';

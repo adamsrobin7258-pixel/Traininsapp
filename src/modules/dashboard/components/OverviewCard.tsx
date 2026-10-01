@@ -1,22 +1,26 @@
 import type { ReactNode } from 'react';
 import { Link } from 'react-router';
-import { Icon } from '@/ui';
+import { Icon, type IconName } from '@/ui';
 import styles from './OverviewCard.module.css';
 
 interface OverviewCardProps {
   title: string;
+  icon: IconName;
   /** The area this summary comes from; the whole card opens it. */
   to: string;
   children: ReactNode;
 }
 
 /** A read-only summary of one area on Today. It never contains inputs or tracking actions. */
-export function OverviewCard({ title, to, children }: OverviewCardProps) {
+export function OverviewCard({ title, icon, to, children }: OverviewCardProps) {
   // The link's name is its whole content, so screen readers announce the summary itself.
   return (
     <Link to={to} className={styles.card}>
       <span className={styles.header}>
-        <span className={styles.title}>{title}</span>
+        <span className={styles.title}>
+          <Icon name={icon} size={18} className={styles.titleIcon} />
+          {title}
+        </span>
         <Icon name="chevronRight" size={18} className={styles.chevron} />
       </span>
       {children}
@@ -65,31 +69,6 @@ export function OverviewStats({
   return (
     <span className={styles.stats} data-pairs={pairs}>
       {children}
-    </span>
-  );
-}
-
-/** A slim, read-only progress bar towards a goal. */
-export function OverviewProgress({
-  label,
-  ratio,
-  valueText,
-}: {
-  label: string;
-  ratio: number;
-  valueText: string;
-}) {
-  return (
-    <span
-      className={styles.track}
-      role="progressbar"
-      aria-label={label}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={Math.round(ratio * 100)}
-      aria-valuetext={valueText}
-    >
-      <span className={styles.bar} style={{ width: `${String(ratio * 100)}%` }} />
     </span>
   );
 }

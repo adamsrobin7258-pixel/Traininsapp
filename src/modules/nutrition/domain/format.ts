@@ -21,13 +21,7 @@ export function formatGrams(value: number, locale: string): string {
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)} g`;
 }
 
-/** Water: millilitres below one litre, litres above, e.g. "750 ml", "1,5 l". */
-export function formatWater(ml: number, locale: string): string {
-  if (ml >= 1000) {
-    return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(ml / 1000)} l`;
-  }
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(ml)} ml`;
-}
+export { formatWater } from '@/shared/lib/format';
 
 /** "150 g", "2 Stück", "1 Portion". */
 export function formatQuantity(

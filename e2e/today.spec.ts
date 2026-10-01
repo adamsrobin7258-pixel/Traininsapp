@@ -6,7 +6,7 @@ test('Today is a read-only overview that opens the areas', async ({ page }) => {
   await expect(main.getByRole('link', { name: /^Training/ })).toBeVisible();
   await expect(main.locator('input, textarea, select')).toHaveCount(0);
   await expect(main.getByRole('button')).toHaveCount(0);
-  await expect(main.getByText('Noch keine Ernährungsdaten für heute')).toBeVisible();
+  await expect(main.getByText('Noch nichts eingetragen')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );

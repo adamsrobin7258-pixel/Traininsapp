@@ -10,7 +10,8 @@ import { useToday } from '../hooks/useToday';
 import styles from './DashboardScreen.module.css';
 
 /**
- * Today: a read-only overview. Every value comes from its own area (training, health,
+ * Today: a read-only overview. Nutrition comes first as the calm center of the day (calories,
+ * macros, water, meals); training and weight follow. Every value comes from its own area (training, health,
  * nutrition); nothing is entered or stored here. Each summary opens its area.
  */
 export function DashboardScreen() {
@@ -23,10 +24,10 @@ export function DashboardScreen() {
       eyebrow={formatLongDate(now, locale)}
       title={buildGreeting(t, now, profile.displayName)}
     >
+      <NutritionSummary now={now} />
       <div className={styles.cards}>
         <TrainingSummary now={now} />
         <HealthSummary now={now} />
-        <NutritionSummary now={now} />
       </div>
     </Screen>
   );

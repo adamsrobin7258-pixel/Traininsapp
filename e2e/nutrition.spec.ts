@@ -75,14 +75,15 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   await expect(overview.getByText('370 kcal', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Today shows calories and protein progress.
+  // Today shows calories as the big number with their progress.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Heute' })
     .click();
   const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText('370 kcal')).toBeVisible();
-  await expect(card.getByRole('progressbar')).toHaveCount(2);
+  await expect(card.getByText('370', { exact: true })).toBeVisible();
+  await expect(card.getByRole('progressbar', { name: 'Kalorien' })).toBeVisible();
+  await expect(card.getByRole('progressbar', { name: 'Protein' })).toBeVisible();
 });
 
 test('days: back to yesterday, never into the future', async ({ page }) => {
@@ -186,5 +187,5 @@ test('nutrition profile: personal data, goal and calculation', async ({ page }) 
     .getByRole('link', { name: 'Heute' })
     .click();
   const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText(/Kalorien · Ziel \d\.\d{3} kcal/)).toBeVisible();
+  await expect(card.getByText(/^von \d\.\d{3} kcal/)).toBeVisible();
 });

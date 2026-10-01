@@ -15,6 +15,7 @@
   --font-size-title: 1.375rem; /* 22 */
   --font-size-large-title: 2rem; /* 32 */
   --font-size-metric: 1.75rem; /* 28 */
+  --font-size-display: 3rem; /* 48 – the one big number of a screen */
   --line-height-tight: 1.15;
   --line-height-snug: 1.3;
   --line-height-body: 1.45;
@@ -24,6 +25,7 @@
   --font-weight-bold: 700;
   --letter-spacing-title: -0.022em;
   --letter-spacing-caps: 0.06em;
+  --letter-spacing-display: -0.035em;
 
   /* Spacing (4 pt grid) */
   --space-1: 0.25rem;
@@ -40,6 +42,7 @@
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
   --radius-full: 999px;
 
   /* Sizes */
@@ -54,7 +57,9 @@
   /* Motion */
   --duration-fast: 120ms;
   --duration-base: 200ms;
+  --duration-slow: 480ms; /* progress and water level */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
 
   /* Safe areas (Capacitor injects --safe-area-inset-* on Android) */
   --safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
@@ -62,52 +67,114 @@
   --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
 
-  /* Color – light theme (default) */
-  --color-bg: #f5f4f1;
+  /* Color – light theme (default). Kalethra: muted sage on warm paper. */
+  --color-bg: #f4f3ee;
   --color-surface: #ffffff;
-  --color-surface-muted: #ebe9e4;
-  --color-surface-pressed: #f0eeea;
+  --color-surface-elevated: #fbfaf7;
+  --color-surface-muted: #e9e8e1;
+  --color-surface-pressed: #efeee8;
   --color-control-selected: #ffffff;
-  --color-text: #15161a;
-  --color-text-secondary: #53555c;
-  --color-text-tertiary: #6e7077;
-  --color-separator: rgb(21 22 26 / 0.1);
-  --color-border: rgb(21 22 26 / 0.16);
-  --color-accent: #cc431c;
-  --color-accent-text: #b93d18;
-  --color-accent-subtle: rgb(204 67 28 / 0.1);
+  --color-text: #1b1f1c;
+  --color-text-secondary: #50574f;
+  --color-text-tertiary: #676e66;
+  --color-disabled: #8e948c;
+  --color-separator: rgb(27 31 28 / 0.1);
+  --color-border: rgb(27 31 28 / 0.16);
+  /* Primary (sage): active states, primary actions, progress. Never whole surfaces. */
+  --color-accent: #557a5b;
+  --color-accent-text: #45684b;
+  --color-accent-subtle: rgb(85 122 91 / 0.12);
   --color-on-accent: #ffffff;
-  --color-positive: #1d7f55;
-  --color-critical: #c0332b;
-  --color-tab-bar: rgb(245 244 241 / 0.86);
-  --color-scrim: rgb(21 22 26 / 0.32);
+  /* Semantic colors – each only for its meaning, never decoration. */
+  --color-positive: #23795a;
+  --color-positive-subtle: rgb(35 121 90 / 0.1);
+  --color-warning: #8f5d0f;
+  --color-warning-subtle: rgb(196 138 34 / 0.14);
+  --color-critical: #b23a2e;
+  --color-critical-subtle: rgb(178 58 46 / 0.1);
+  --color-water: #33719c;
+  --color-water-subtle: rgb(51 113 156 / 0.12);
+  --color-tab-bar: rgb(244 243 238 / 0.88);
+  --color-scrim: rgb(27 31 28 / 0.32);
   --color-focus: var(--color-accent);
+
+  /* Food illustration tints: a soft background and a line color per family. */
+  --tint-rose-bg: #f6e4df;
+  --tint-rose-ink: #a04738;
+  --tint-leaf-bg: #e2ecdc;
+  --tint-leaf-ink: #4a7640;
+  --tint-olive-bg: #eae9d8;
+  --tint-olive-ink: #6a6631;
+  --tint-wheat-bg: #f2e9d4;
+  --tint-wheat-ink: #8f6a26;
+  --tint-earth-bg: #eee4d8;
+  --tint-earth-ink: #80593a;
+  --tint-sun-bg: #f5ebca;
+  --tint-sun-ink: #8c6a16;
+  --tint-clay-bg: #f2e1d9;
+  --tint-clay-ink: #964d33;
+  --tint-sea-bg: #dde9f0;
+  --tint-sea-ink: #376a8b;
+  --tint-milk-bg: #e7ebee;
+  --tint-milk-ink: #556674;
+  --tint-sage-bg: #e4eae2;
+  --tint-sage-ink: #45684b;
 }
 
 :root[data-theme='dark'] {
-  --color-bg: #0e0f11;
-  --color-surface: #18191c;
-  --color-surface-muted: #232428;
-  --color-surface-pressed: #202125;
-  --color-control-selected: #37383d;
-  --color-text: #f2f1ee;
-  --color-text-secondary: #a3a4aa;
-  --color-text-tertiary: #888a91;
-  --color-separator: rgb(242 241 238 / 0.09);
-  --color-border: rgb(242 241 238 / 0.16);
-  --color-accent: #ff6a3d;
-  --color-accent-text: #ff8c66;
-  --color-accent-subtle: rgb(255 106 61 / 0.14);
-  --color-on-accent: #16100d;
-  --color-positive: #3fc68a;
-  --color-critical: #ff6b61;
-  --color-tab-bar: rgb(14 15 17 / 0.86);
+  --color-bg: #0f1210;
+  --color-surface: #181c19;
+  --color-surface-elevated: #1d211e;
+  --color-surface-muted: #252a26;
+  --color-surface-pressed: #212622;
+  --color-control-selected: #363c37;
+  --color-text: #eef0eb;
+  --color-text-secondary: #a8afa6;
+  --color-text-tertiary: #8b9289;
+  --color-disabled: #5d635c;
+  --color-separator: rgb(238 240 235 / 0.09);
+  --color-border: rgb(238 240 235 / 0.16);
+  --color-accent: #93b597;
+  --color-accent-text: #a8c8ab;
+  --color-accent-subtle: rgb(147 181 151 / 0.15);
+  --color-on-accent: #102014;
+  --color-positive: #5fc492;
+  --color-positive-subtle: rgb(95 196 146 / 0.14);
+  --color-warning: #e2ad55;
+  --color-warning-subtle: rgb(226 173 85 / 0.14);
+  --color-critical: #ff7b6e;
+  --color-critical-subtle: rgb(255 123 110 / 0.14);
+  --color-water: #7fb6dc;
+  --color-water-subtle: rgb(127 182 220 / 0.15);
+  --color-tab-bar: rgb(15 18 16 / 0.88);
   --color-scrim: rgb(0 0 0 / 0.55);
+
+  --tint-rose-bg: rgb(224 128 110 / 0.16);
+  --tint-rose-ink: #e9a597;
+  --tint-leaf-bg: rgb(130 184 112 / 0.16);
+  --tint-leaf-ink: #a6cf98;
+  --tint-olive-bg: rgb(176 172 104 / 0.16);
+  --tint-olive-ink: #cdc894;
+  --tint-wheat-bg: rgb(214 176 98 / 0.16);
+  --tint-wheat-ink: #ddc18a;
+  --tint-earth-bg: rgb(190 146 108 / 0.16);
+  --tint-earth-ink: #d4b496;
+  --tint-sun-bg: rgb(222 186 82 / 0.16);
+  --tint-sun-ink: #e5cd85;
+  --tint-clay-bg: rgb(212 128 98 / 0.16);
+  --tint-clay-ink: #e4a88f;
+  --tint-sea-bg: rgb(110 166 204 / 0.16);
+  --tint-sea-ink: #9cc6e2;
+  --tint-milk-bg: rgb(160 178 192 / 0.16);
+  --tint-milk-ink: #bfccd6;
+  --tint-sage-bg: rgb(147 181 151 / 0.15);
+  --tint-sage-ink: #a8c8ab;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
     --duration-fast: 0ms;
     --duration-base: 0ms;
+    --duration-slow: 0ms;
   }
 }

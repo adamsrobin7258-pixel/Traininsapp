@@ -5,6 +5,7 @@ import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from '@/test/database';
 import { externalProduct, FakeFoodProvider } from '@/test/fakeFoodProvider';
 import { createTestReferenceCatalog, TEST_BLS_DATA } from '@/test/testReferenceCatalog';
 import { BlsCatalog, createBlsCatalog, parseBlsData, type BlsDataFile } from './bls';
+import { blsCategory, foodCategory } from './category';
 import { NutritionError } from './errors';
 import type { FoodSearchResult } from './foodLookupService';
 import { bestScore, normalizeSearchText, searchKey, searchWords } from './search';
@@ -389,5 +390,21 @@ describe('migration 8', () => {
     ]);
     const day = await services.nutrition.diary.getDay('p', '2026-09-01');
     expect(day.entries.map((e) => [e.name, e.nutrients.energyKcal])).toEqual([['Müsli', 190]]);
+  });
+});
+
+describe('food families', () => {
+  it('reads the family from the BLS main group letter only', () => {
+    expect(blsCategory('F503100')).toBe('fruit');
+    expect(blsCategory('C133000')).toBe('grain');
+    expect(blsCategory('V413000')).toBe('poultry');
+    expect(blsCategory('R100000')).toBeNull(); // spices, sauces: too mixed
+    expect(blsCategory('Z000000')).toBeNull();
+    expect(foodCategory({ origin: { dataset: 'bls', code: 'T100000', version: '4.0' } })).toBe(
+      'fish',
+    );
+    expect(foodCategory({ dataset: 'bls', code: 'M111300' })).toBe('dairy');
+    // Own foods and Open Food Facts products never get a guessed family.
+    expect(foodCategory({ origin: null })).toBeNull();
   });
 });

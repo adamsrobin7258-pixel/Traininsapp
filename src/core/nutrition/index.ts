@@ -26,6 +26,7 @@ export {
   type NutritionProfileState,
 } from './goalService';
 export * from './calculation';
+export * from './category';
 export * from './meals';
 export { MealService } from './mealService';
 export * from './nutrients';
