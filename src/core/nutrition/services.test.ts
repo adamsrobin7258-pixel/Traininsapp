@@ -106,6 +106,54 @@ describe('foods', () => {
   });
 });
 
+describe('removing foods', () => {
+  it('deletes an unused food for good, including its serving sizes', async () => {
+    const { db, n, profileId } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    expect(await n.foods.remove(profileId, oats.id)).toBe('deleted');
+    expect(await n.foods.list(profileId, { includeInactive: true })).toEqual([]);
+    expect(await db.query('SELECT * FROM food_servings')).toEqual([]);
+    expect(await code(n.foods.remove(profileId, oats.id))).toBe('not-found');
+  });
+
+  it('only hides a food that is used in the diary or a template; history stays', async () => {
+    const { n, profileId, breakfast } = await setup();
+    const logged = await n.foods.create(profileId, oatsInput);
+    const inTemplate = await n.foods.create(profileId, { ...oatsInput, name: 'Milch' });
+    await n.diary.addFood(profileId, {
+      localDate: '2026-10-03',
+      mealId: breakfast.id,
+      foodId: logged.id,
+      amount: 50,
+      unit: 'g',
+    });
+    await n.meals.saveMeal(profileId, {
+      name: 'Frühstück',
+      items: [{ foodId: inTemplate.id, amount: 200, unit: 'g' }],
+    });
+
+    expect(await n.foods.remove(profileId, logged.id)).toBe('deactivated');
+    expect(await n.foods.remove(profileId, inTemplate.id)).toBe('deactivated');
+    expect(await n.foods.list(profileId)).toEqual([]);
+    expect((await n.foods.list(profileId, { includeInactive: true })).map((f) => f.active)).toEqual(
+      [false, false],
+    );
+    const day = await n.diary.getDay(profileId, '2026-10-03');
+    expect(day.entries.map((e) => [e.name, e.nutrients.energyKcal])).toEqual([
+      ['Haferflocken', 100],
+    ]);
+  });
+
+  it('loads several foods by id, hidden ones included', async () => {
+    const { n, profileId } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    await n.foods.setActive(profileId, oats.id, false);
+    expect((await n.foods.findMany(profileId, [oats.id])).map((f) => f.name)).toEqual([
+      'Haferflocken',
+    ]);
+  });
+});
+
 describe('diary and history', () => {
   it('logs quantities and keeps past values when a food is corrected', async () => {
     const { n, profileId, breakfast } = await setup();
@@ -338,6 +386,30 @@ describe('water', () => {
     expect(
       await code(n.diary.addWater(profileId, { localDate: '2026-10-03', amount: 0, unit: 'ml' })),
     ).toBe('invalid-value');
+  });
+});
+
+describe('water corrections', () => {
+  it('changes and deletes entries and never counts water as energy', async () => {
+    const { n, profileId } = await setup();
+    const glass = await n.diary.addWater(profileId, {
+      localDate: '2026-10-03',
+      amount: 250,
+      unit: 'ml',
+    });
+    await n.diary.addWater(profileId, { localDate: '2026-10-03', amount: 500, unit: 'ml' });
+    const updated = await n.diary.updateWater(profileId, glass.id, 330, 'ml');
+    expect(updated.amount).toBe(330);
+    const day = await n.diary.getDay(profileId, '2026-10-03');
+    expect(day.waterMl).toBe(830);
+    expect(day.summary.totals.totals.energyKcal).toBe(0);
+    expect(day.summary.entryCount).toBe(0);
+
+    expect(await code(n.diary.updateWater(profileId, glass.id, 0, 'ml'))).toBe('invalid-value');
+    expect(await code(n.diary.updateWater(profileId, glass.id, 6000, 'ml'))).toBe('invalid-value');
+    expect(await code(n.diary.updateWater(profileId, 'missing', 200, 'ml'))).toBe('not-found');
+    await n.diary.deleteWater(profileId, glass.id);
+    expect((await n.diary.getDay(profileId, '2026-10-03')).waterMl).toBe(500);
   });
 });
 

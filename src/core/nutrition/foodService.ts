@@ -44,6 +44,11 @@ export class FoodService {
     return food;
   }
 
+  /** Several foods by id, including hidden ones (e.g. the items of a saved meal). */
+  findMany(profileId: string, ids: readonly string[]): Promise<Food[]> {
+    return this.store.repos.foods.findManyById(profileId, ids);
+  }
+
   /** Locally stored foods with this barcode (offline lookup before asking a provider). */
   findByBarcode(profileId: string, barcode: string): Promise<Food[]> {
     return this.store.repos.foods.findByBarcode(profileId, barcode.trim());
@@ -80,10 +85,27 @@ export class FoodService {
     await this.store.repos.foods.setFlag(id, 'favorite', favorite, this.now());
   }
 
-  /** Foods are never deleted; deactivated ones stay usable in history, templates and recipes. */
+  /** Deactivated foods disappear from the search; history, templates and recipes keep them. */
   async setActive(profileId: string, id: string, active: boolean): Promise<void> {
     await this.owned(profileId, id);
     await this.store.repos.foods.setFlag(id, 'active', active, this.now());
+  }
+
+  /**
+   * "Deletes" a food: removed for good while nothing refers to it, otherwise only deactivated
+   * so logged days, saved meals and recipes stay intact.
+   */
+  async remove(profileId: string, id: string): Promise<'deleted' | 'deactivated'> {
+    await this.owned(profileId, id);
+    const now = this.now();
+    return this.store.atomic(async (repos) => {
+      if (await repos.foods.isReferenced(id)) {
+        await repos.foods.setFlag(id, 'active', false, now);
+        return 'deactivated';
+      }
+      await repos.foods.delete(id);
+      return 'deleted';
+    });
   }
 
   /**

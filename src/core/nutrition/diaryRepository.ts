@@ -175,6 +175,24 @@ export class DiaryRepository {
     );
   }
 
+  async findWater(profileId: string, id: string): Promise<WaterEntry | null> {
+    const rows = await this.db.query<WaterRow>(
+      'SELECT * FROM water_entries WHERE id = ? AND profile_id = ?',
+      [id, profileId],
+    );
+    const row = rows[0];
+    return row ? toWater(row) : null;
+  }
+
+  async updateWater(entry: WaterEntry): Promise<void> {
+    await this.db.run(
+      `UPDATE water_entries SET amount = ?, unit = ?, updated_at = ?,
+         sync_state = CASE sync_state WHEN 'synced' THEN 'pending' ELSE sync_state END
+       WHERE id = ?`,
+      [entry.amount, entry.unit, entry.updatedAt, entry.id],
+    );
+  }
+
   async deleteWater(profileId: string, id: string): Promise<boolean> {
     const result = await this.db.run('DELETE FROM water_entries WHERE id = ? AND profile_id = ?', [
       id,

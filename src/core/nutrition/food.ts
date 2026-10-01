@@ -109,8 +109,25 @@ export function nutrientsForQuantity(
   return scaleNutrients(food.nutrients, inReference / food.reference.amount);
 }
 
-/** Units a quantity of this food can be entered in (for the later UI). */
+/** Units a quantity of this food can be entered in. */
 export function unitsFor(food: Pick<Food, 'reference' | 'servings'>): QuantityUnit[] {
   const candidates: QuantityUnit[] = ['g', 'kg', 'ml', 'l', 'piece', 'serving'];
   return candidates.filter((unit) => toReferenceAmount(food, 1, unit) !== null);
+}
+
+const searchText = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+
+/**
+ * Local food search: every word of the query must appear in the name or the brand, ignoring
+ * case and accents ("muller joghurt" finds "Joghurt" by "Müller"). An empty query matches all.
+ */
+export function matchesFoodSearch(food: Pick<Food, 'name' | 'brand'>, query: string): boolean {
+  const words = searchText(query).split(/\s+/).filter(Boolean);
+  if (words.length === 0) return true;
+  const haystack = searchText(`${food.name} ${food.brand ?? ''}`);
+  return words.every((word) => haystack.includes(word));
 }

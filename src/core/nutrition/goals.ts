@@ -70,3 +70,22 @@ export const GOAL_LIMITS: Record<GoalTarget, { min: number; max: number }> = {
   fatG: { min: 0, max: 1_000 },
   waterMl: { min: 0, max: 10_000 },
 };
+
+export interface GoalProgress {
+  /** Share of the goal reached, 0–1 (capped; use `over` for the excess). */
+  ratio: number;
+  /** Still open up to the goal (0 once reached). */
+  remaining: number;
+  /** Amount above the goal (0 while below). */
+  over: number;
+}
+
+/** Progress of a day's value towards a goal. Neutral numbers, no judgement. */
+export function goalProgress(value: number, goal: number): GoalProgress {
+  const safeValue = Math.max(0, value);
+  return {
+    ratio: goal > 0 ? Math.min(1, safeValue / goal) : safeValue > 0 ? 1 : 0,
+    remaining: Math.max(0, goal - safeValue),
+    over: Math.max(0, safeValue - goal),
+  };
+}

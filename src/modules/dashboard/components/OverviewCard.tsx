@@ -35,11 +35,21 @@ export function OverviewLine({ label, children }: { label: string; children: Rea
 }
 
 /** Small number with a caption, e.g. "2 · Letzte 7 Tage". */
-export function OverviewStat({ value, label }: { value: ReactNode; label: string }) {
+export function OverviewStat({
+  value,
+  label,
+  progress,
+}: {
+  value: ReactNode;
+  label: string;
+  /** Optional progress bar shown below the label (see OverviewProgress). */
+  progress?: ReactNode;
+}) {
   return (
     <span className={styles.stat}>
       <span className={styles.statValue}>{value}</span>
       <span className={styles.statLabel}>{label}</span>
+      {progress}
     </span>
   );
 }
@@ -55,6 +65,31 @@ export function OverviewStats({
   return (
     <span className={styles.stats} data-pairs={pairs}>
       {children}
+    </span>
+  );
+}
+
+/** A slim, read-only progress bar towards a goal. */
+export function OverviewProgress({
+  label,
+  ratio,
+  valueText,
+}: {
+  label: string;
+  ratio: number;
+  valueText: string;
+}) {
+  return (
+    <span
+      className={styles.track}
+      role="progressbar"
+      aria-label={label}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(ratio * 100)}
+      aria-valuetext={valueText}
+    >
+      <span className={styles.bar} style={{ width: `${String(ratio * 100)}%` }} />
     </span>
   );
 }

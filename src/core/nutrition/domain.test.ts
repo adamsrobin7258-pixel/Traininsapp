@@ -1,7 +1,19 @@
 import { summarizeDay, type FoodEntry } from './diary';
 import { NutritionError } from './errors';
-import { nutrientsForQuantity, toReferenceAmount, unitsFor, type Food } from './food';
-import { effectiveTargets, effectiveValue, goalForDate, type NutritionGoal } from './goals';
+import {
+  matchesFoodSearch,
+  nutrientsForQuantity,
+  toReferenceAmount,
+  unitsFor,
+  type Food,
+} from './food';
+import {
+  effectiveTargets,
+  effectiveValue,
+  goalForDate,
+  goalProgress,
+  type NutritionGoal,
+} from './goals';
 import { mealDisplayName, orderedMeals } from './meals';
 import { scaleNutrients, sumNutrients, ZERO_NUTRIENTS, type Nutrients } from './nutrients';
 import { recipeNutrition } from './recipe';
@@ -242,5 +254,26 @@ describe('meals', () => {
       { id: 'x', position: 1, active: false },
     ];
     expect(orderedMeals(meals).map((m) => m.id)).toEqual(['a', 'c']);
+  });
+});
+
+describe('local food search', () => {
+  it('matches name and brand, ignoring case, accents and word order', () => {
+    const yoghurt = { name: 'Joghurt Natur', brand: 'Müller' };
+    expect(matchesFoodSearch(yoghurt, '')).toBe(true);
+    expect(matchesFoodSearch(yoghurt, 'joghurt')).toBe(true);
+    expect(matchesFoodSearch(yoghurt, 'MULLER')).toBe(true);
+    expect(matchesFoodSearch(yoghurt, 'natur müller')).toBe(true);
+    expect(matchesFoodSearch(yoghurt, 'quark')).toBe(false);
+    expect(matchesFoodSearch({ name: 'Crème fraîche', brand: null }, 'creme')).toBe(true);
+  });
+});
+
+describe('goal progress', () => {
+  it('reports progress, what is left and the excess neutrally', () => {
+    expect(goalProgress(500, 2000)).toEqual({ ratio: 0.25, remaining: 1500, over: 0 });
+    expect(goalProgress(2000, 2000)).toEqual({ ratio: 1, remaining: 0, over: 0 });
+    expect(goalProgress(2300, 2000)).toEqual({ ratio: 1, remaining: 0, over: 300 });
+    expect(goalProgress(0, 0)).toEqual({ ratio: 0, remaining: 0, over: 0 });
   });
 });

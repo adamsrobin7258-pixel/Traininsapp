@@ -39,6 +39,10 @@ describe('back target', () => {
     ['/training/workouts/xyz', '/training'],
     ['/training/exercises', '/training'],
     ['/training', '/'],
+    ['/nutrition/foods', '/nutrition'],
+    ['/nutrition/meals', '/nutrition'],
+    ['/nutrition/templates', '/nutrition'],
+    ['/nutrition', '/'],
     ['/health', '/'],
     ['/profile', '/'],
   ])('%s → %s', (from, to) => {
@@ -93,6 +97,28 @@ describe('system back', () => {
 
     await pressBack();
     expect(router.state.location.pathname).toBe('/training');
+  });
+
+  it('steps back through the nutrition add flow without leaving the diary', async () => {
+    const { router } = await renderApp('/nutrition?day=2026-01-02');
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück: hinzufügen' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Neues Lebensmittel anlegen' }));
+    expect(screen.getByRole('dialog', { name: 'Neues Lebensmittel' })).toBeInTheDocument();
+
+    // Back from the food form returns to the search, not out of the flow.
+    await pressBack();
+    expect(
+      await screen.findByRole('dialog', { name: 'Frühstück: hinzufügen' }),
+    ).toBeInTheDocument();
+    await pressBack();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(router.state.location.pathname).toBe('/nutrition');
+
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/');
+    expect(platform.exitApp).not.toHaveBeenCalled();
   });
 
   it('keeps an active workout when leaving it with back', async () => {

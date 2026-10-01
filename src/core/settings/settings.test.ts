@@ -21,13 +21,28 @@ describe('SettingsService', () => {
     await service.update('language', 'en');
     await service.update('theme', 'light');
 
-    expect(await service.load()).toEqual({ theme: 'light', language: 'en', weightUnit: 'kg' });
+    expect(await service.load()).toEqual({
+      theme: 'light',
+      language: 'en',
+      weightUnit: 'kg',
+      waterQuickAmountsMl: [250, 500, 750],
+    });
   });
 
   it('rejects invalid values', async () => {
     const { service } = await createService();
     // @ts-expect-error – deliberately invalid input
     await expect(service.update('theme', 'sepia')).rejects.toThrow(/Invalid value/);
+  });
+
+  it('stores water quick amounts and rejects implausible ones', async () => {
+    const { service } = await createService();
+    await service.update('waterQuickAmountsMl', [200, 330]);
+    expect((await service.load()).waterQuickAmountsMl).toEqual([200, 330]);
+    for (const invalid of [[], [0], [-250], [250.5], [6000], [100, 200, 300, 400, 500]]) {
+      await expect(service.update('waterQuickAmountsMl', invalid)).rejects.toThrow(/Invalid value/);
+    }
+    expect((await service.load()).waterQuickAmountsMl).toEqual([200, 330]);
   });
 
   it('ignores corrupt or unknown stored values', async () => {
@@ -53,6 +68,7 @@ describe('parseSettings', () => {
       theme: 'system',
       language: 'de',
       weightUnit: 'kg',
+      waterQuickAmountsMl: [250, 500, 750],
     });
   });
 });

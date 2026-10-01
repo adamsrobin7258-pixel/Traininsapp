@@ -91,11 +91,24 @@ aktualisierter Dokumentation.
 - Heute zeigt die Tageswerte aus dem Ernährungstagebuch
 - Noch ohne Ernährungs-Oberfläche
 
-## Phase 4.2 – Vorschlag
+## Phase 4.2.1 – Ernährungsoberfläche ✅
 
-- Ernährungsseite: Tagebuch nach Mahlzeiten, eigene Lebensmittel anlegen, Menge erfassen
+- Tagesansicht (Standard heute, Tagesnavigation und Datumsauswahl bis heute, vergangene Tage
+  bearbeitbar): kcal gegessen/Ziel/übrig, Makros mit Fortschritt, neutrale Überschreitung
+- Mahlzeiten in konfigurierter Reihenfolge; Verwaltung (anlegen, umbenennen, sortieren,
+  ausblenden, mindestens eine bleibt sichtbar)
+- Lokale Lebensmittelsuche (Name/Marke), eigene Lebensmittel anlegen/bearbeiten; Löschen
+  entfernt unbenutzte Lebensmittel, benutzte werden ausgeblendet
+- Hinzufügen mit Menge, Einheit und Live-Nährwerten; Einträge bearbeiten (Menge, g↔kg/ml↔l,
+  Mahlzeit) und löschen
+- Vorlagen: aus Mahlzeit speichern, eintragen (vorher anpassbar), umbenennen, löschen
+- Wasser: Schnellmengen (vom Nutzer einstellbar), eigene Menge, bearbeiten, löschen, Ziel
+- Ziele manuell festlegen (gelten ab heute); Heute-Karte mit kcal- und Protein-Fortschritt
+
+## Phase 4.2.2 – Vorschlag
+
 - Lebensmittelsuche mit externem Anbieter (Auswahl und Datenschutzprüfung), Barcode-Scanner
-- Wasser erfassen, Ziele einstellen
+- Favoriten/zuletzt verwendet in der Suche, Rezepte in der Oberfläche
 
 ## Phase 4 – Weitere Vorschläge
 

@@ -190,9 +190,7 @@ export class DiaryService {
     input: { localDate: string; amount: number; unit: WaterUnit; drankAt?: string | null },
   ): Promise<WaterEntry> {
     requireDay(input.localDate);
-    if (!['ml', 'l'].includes(input.unit) || !isValidWaterAmount(input.amount, input.unit)) {
-      throw new NutritionError('invalid-value');
-    }
+    requireWater(input.amount, input.unit);
     const now = this.now();
     const entry: WaterEntry = {
       id: createId(),
@@ -206,6 +204,21 @@ export class DiaryService {
     };
     await this.store.atomic((repos) => repos.diary.insertWater(entry));
     return entry;
+  }
+
+  /** Corrects the amount of a water entry. */
+  async updateWater(
+    profileId: string,
+    id: string,
+    amount: number,
+    unit: WaterUnit,
+  ): Promise<WaterEntry> {
+    requireWater(amount, unit);
+    const entry = await this.store.repos.diary.findWater(profileId, id);
+    if (!entry) throw new NutritionError('not-found');
+    const updated: WaterEntry = { ...entry, amount, unit, updatedAt: this.now() };
+    await this.store.atomic((repos) => repos.diary.updateWater(updated));
+    return updated;
   }
 
   async deleteWater(profileId: string, id: string): Promise<void> {
@@ -250,6 +263,12 @@ export class DiaryService {
     const entry = await this.store.repos.diary.findEntry(profileId, id);
     if (!entry) throw new NutritionError('not-found');
     return entry;
+  }
+}
+
+function requireWater(amount: number, unit: WaterUnit) {
+  if (!['ml', 'l'].includes(unit) || !isValidWaterAmount(amount, unit)) {
+    throw new NutritionError('invalid-value');
   }
 }
 

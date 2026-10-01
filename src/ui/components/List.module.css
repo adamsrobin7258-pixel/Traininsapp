@@ -76,6 +76,7 @@
 .title {
   font-size: var(--font-size-body);
   line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
 }
 
 .subtitle {
@@ -83,6 +84,7 @@
   font-size: var(--font-size-footnote);
   line-height: var(--line-height-snug);
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 
 .value {

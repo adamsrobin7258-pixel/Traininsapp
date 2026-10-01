@@ -1,8 +1,22 @@
 import { ROUTES } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
-import { useNutritionData, type GoalTarget, type MainNutrient } from '@/core/nutrition';
+import {
+  goalProgress,
+  useNutritionData,
+  type GoalTarget,
+  type MainNutrient,
+} from '@/core/nutrition';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { OverviewCard, OverviewNote, OverviewStat, OverviewStats } from './OverviewCard';
+import {
+  OverviewCard,
+  OverviewNote,
+  OverviewProgress,
+  OverviewStat,
+  OverviewStats,
+} from './OverviewCard';
+
+/** Values that get a progress bar when a goal is set (calories and protein matter most). */
+const WITH_PROGRESS: readonly MainNutrient[] = ['energyKcal', 'proteinG'];
 
 const VALUES: { key: MainNutrient; goal: GoalTarget; label: TranslationKey; unit: string }[] = [
   { key: 'energyKcal', goal: 'energyKcal', label: 'dashboard.nutrition.calories', unit: 'kcal' },
@@ -13,7 +27,8 @@ const VALUES: { key: MainNutrient; goal: GoalTarget; label: TranslationKey; unit
 
 /**
  * Nutrition at a glance: today's totals from the food diary (read only). Without entries the
- * values stay empty ("–") – nothing is invented. A goal in force is shown next to the value.
+ * values stay empty ("–") – nothing is invented. A goal in force is shown next to the value,
+ * and calories and protein get a progress bar (full, never red, when the goal is passed).
  */
 export function NutritionSummary({ now }: { now: Date }) {
   const { t, locale } = useI18n();
@@ -37,10 +52,23 @@ export function NutritionSummary({ now }: { now: Date }) {
           const value =
             hasEntries && day ? `${number.format(day.summary.totals.totals[key])} ${unit}` : '–';
           const aim = goal?.effective[target].value;
+          const eaten = day?.summary.totals.totals[key] ?? 0;
           return (
             <OverviewStat
               key={key}
               value={value}
+              progress={
+                aim != null && WITH_PROGRESS.includes(key) ? (
+                  <OverviewProgress
+                    label={t(label)}
+                    ratio={goalProgress(eaten, aim).ratio}
+                    valueText={t('dashboard.nutrition.progress', {
+                      value: `${number.format(eaten)} ${unit}`,
+                      goal: `${number.format(aim)} ${unit}`,
+                    })}
+                  />
+                ) : undefined
+              }
               label={
                 aim != null
                   ? t('dashboard.nutrition.ofGoal', {

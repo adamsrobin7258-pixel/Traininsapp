@@ -207,8 +207,8 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 (`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
 
 **Heute.** Reine Übersicht ohne Eingaben: Training (`WorkoutService.overview`, nächster Plan-Tag),
-Gesundheit (Gewicht mit kleinem Verlauf, aus `core/health`) und Ernährung (noch keine Daten, daher
-ehrlicher Leerzustand). „Heute“ speichert nichts und berechnet nichts Eigenes über die Darstellung
+Gesundheit (Gewicht mit kleinem Verlauf, aus `core/health`) und Ernährung (Tageswerte mit
+Ziel; Fortschrittsbalken für kcal und Protein, sobald Ziele gesetzt sind). „Heute“ speichert nichts und berechnet nichts Eigenes über die Darstellung
 hinaus; jede Karte öffnet ihren Bereich.
 
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
@@ -255,7 +255,16 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
 - **Gewicht:** `BodyWeightSource` in `core/nutrition`, umgesetzt im Composition Root über den
   `WeightService` – keine zweite Gewichtsdatenhaltung.
 - **Heute** liest die Tageswerte des Tagebuchs und das gültige Ziel, speichert nichts.
-- Oberflächen (Tagebuch, Suche, Rezepte) folgen ab Phase 4.2.
+- **Oberfläche (Phase 4.2.1)** in `modules/nutrition`: Tagesansicht `/nutrition?day=YYYY-MM-DD`
+  (zukünftige oder ungültige Tage fallen auf heute zurück), Unterseiten `/nutrition/foods`,
+  `/nutrition/meals`, `/nutrition/templates` (für die Zurück-Navigation als `subRoutes`
+  registriert). Der Hinzufügen-Ablauf ist eine Schrittfolge aus Sheets; „Zurück“ führt aus
+  jedem Schritt zur Suche statt den Ablauf zu verlassen. Nährwerte in der Vorschau rechnet
+  ausschließlich die Kernlogik (`nutrientsForQuantity`, `scaleNutrients`).
+- **Löschen von Lebensmitteln:** `FoodService.remove` löscht nur, wenn kein Eintrag, keine
+  Vorlage und kein Rezept darauf verweist; sonst wird ausgeblendet.
+- **Wasser-Schnellmengen** sind die Einstellung `waterQuickAmountsMl` (1–4 Werte, 10–5000 ml,
+  Standard 250/500/750) in `app_settings`.
 
 ### Zentrale Schnittstellen
 

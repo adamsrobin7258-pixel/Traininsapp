@@ -181,6 +181,22 @@ export class FoodRepository {
     ]);
   }
 
+  /** True when a diary entry, saved meal or recipe refers to the food. */
+  async isReferenced(id: string): Promise<boolean> {
+    const rows = await this.db.query<{ used: number }>(
+      `SELECT EXISTS (SELECT 1 FROM food_entries WHERE food_id = ?)
+         OR EXISTS (SELECT 1 FROM saved_meal_items WHERE food_id = ?)
+         OR EXISTS (SELECT 1 FROM recipe_ingredients WHERE food_id = ?) AS used`,
+      [id, id, id],
+    );
+    return (rows[0]?.used ?? 0) === 1;
+  }
+
+  /** Removes an unused food (its serving sizes go with it). */
+  async delete(id: string): Promise<void> {
+    await this.db.run('DELETE FROM foods WHERE id = ?', [id]);
+  }
+
   private async replaceServings(foodId: string, servings: readonly FoodServing[]) {
     await this.db.run('DELETE FROM food_servings WHERE food_id = ?', [foodId]);
     for (const serving of servings) {

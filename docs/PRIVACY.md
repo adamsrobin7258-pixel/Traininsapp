@@ -29,7 +29,7 @@ Pull Request und einen Eintrag in diesem Dokument.
 | Tabelle                                                                               | Inhalt                                                               | Sensibilität         |
 | ------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------- |
 | `schema_migrations`                                                                   | Technischer Stand der Datenbank                                      | technisch            |
-| `app_settings`                                                                        | Erscheinungsbild, Sprache, Gewichtseinheit                           | technisch            |
+| `app_settings`                                                                        | Erscheinungsbild, Sprache, Gewichtseinheit, Wasser-Schnellmengen     | technisch            |
 | `diagnostics`                                                                         | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
 | `weight_entries`                                                                      | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
 | `profiles`                                                                            | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |

@@ -1,6 +1,7 @@
 import type { SettingsRepository } from './settingsRepository';
 import {
   DEFAULT_SETTINGS,
+  isValidWaterQuickAmounts,
   LANGUAGE_PREFERENCES,
   THEME_PREFERENCES,
   WEIGHT_UNIT_PREFERENCES,
@@ -17,6 +18,7 @@ const validators: Validators = {
   theme: oneOf(THEME_PREFERENCES),
   language: oneOf(LANGUAGE_PREFERENCES),
   weightUnit: oneOf(WEIGHT_UNIT_PREFERENCES),
+  waterQuickAmountsMl: isValidWaterQuickAmounts,
 };
 
 /** Merges stored values with defaults. Unknown keys and invalid values are ignored. */
@@ -25,7 +27,7 @@ export function parseSettings(stored: ReadonlyMap<string, unknown>): AppSettings
   for (const key of Object.keys(validators) as (keyof AppSettings)[]) {
     const value = stored.get(key);
     if (validators[key](value)) {
-      Object.assign(settings, { [key]: value });
+      Object.assign(settings, { [key]: Array.isArray(value) ? [...value] : value });
     }
   }
   return settings;

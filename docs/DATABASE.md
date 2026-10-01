@@ -96,7 +96,8 @@ CREATE TABLE diagnostics (
 ```
 
 `app_settings` ist gerätebezogen und wird nicht synchronisiert (Theme und Sprache können je
-Gerät verschieden sein). Werte werden beim Laden validiert; ungültige Werte fallen auf
+Gerät verschieden sein). Schlüssel: `theme`, `language`, `weightUnit`, `waterQuickAmountsMl`
+(Wasser-Schnellmengen in ml, ab Phase 4.2.1; keine Schemaänderung). Werte werden beim Laden validiert; ungültige Werte fallen auf
 Standardwerte zurück.
 
 ## `weight_entries` (Migration 3)

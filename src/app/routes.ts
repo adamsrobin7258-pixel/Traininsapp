@@ -26,3 +26,11 @@ export const TRAINING_LINKS = {
   workout: (id: string) => `${ROUTES.training}/workouts/${id}`,
   plan: (id: string) => `${ROUTES.training}/plans/${id}`,
 } as const;
+
+/** Sub pages of the nutrition area; `day` opens the diary on a local day (YYYY-MM-DD). */
+export const NUTRITION_LINKS = {
+  day: (localDate: string) => `${ROUTES.nutrition}?day=${localDate}`,
+  foods: `${ROUTES.nutrition}/foods`,
+  meals: `${ROUTES.nutrition}/meals`,
+  templates: `${ROUTES.nutrition}/templates`,
+} as const;

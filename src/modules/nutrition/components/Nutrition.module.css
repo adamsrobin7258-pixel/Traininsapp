@@ -1,0 +1,385 @@
+/* Shared styles of the nutrition area: forms, progress, meal sections. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  margin-top: var(--space-2);
+  padding: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-1));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.field:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+/* Two fields side by side (amount + unit); stacks on very narrow screens. */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.pairItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.groupTitle {
+  padding: 0;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.fieldError {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.hint {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-subhead);
+  background: var(--color-accent-subtle);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* ── Day navigation ───────────────────────────────────────────── */
+
+.dayNav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.dayButton {
+  display: grid;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-accent-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.dayButton:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+}
+
+.dayCenter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.dayLabel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  text-align: center;
+}
+
+.dayLabel:focus-within {
+  outline: 2px solid var(--color-focus);
+}
+
+/* The native date picker sits invisibly over the label, so tapping the date opens it. */
+.dateInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.todayLink {
+  padding: 0;
+  border: 0;
+  font-size: var(--font-size-footnote);
+  color: var(--color-accent-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* ── Overview card ────────────────────────────────────────────── */
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.energy {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.figure {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.figureValue {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.figureLabel {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.macros {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.macro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.macroHead {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 var(--space-2);
+  font-size: var(--font-size-subhead);
+}
+
+.macroValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.track {
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  overflow: hidden;
+}
+
+/* Reaching or passing a goal is shown neutrally: the bar is simply full, never red. */
+.bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+  transition: width var(--duration-base) var(--ease-standard);
+}
+
+.cardActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* ── Meal sections ────────────────────────────────────────────── */
+
+.mealTotal {
+  font-size: var(--font-size-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.empty {
+  padding: var(--space-3) var(--space-4) 0;
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+/* ── Water ───────────────────────────────────────────────────── */
+
+.quick {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+.chip {
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-subhead);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.chip[data-selected='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.chip:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+}
+
+/* ── Search ──────────────────────────────────────────────────── */
+
+.search {
+  flex-shrink: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-2));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  background: var(--color-surface);
+}
+
+.search:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-2);
+}
+
+.preview {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.previewValue {
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.previewLabel {
+  font-size: var(--font-size-caption);
+  color: var(--color-text-secondary);
+}
+
+.foodName {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.itemRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(6rem, 8rem);
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+}
+
+.amountCell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.itemName {
+  font-size: var(--font-size-subhead);
+  overflow-wrap: anywhere;
+}
+
+.checkbox {
+  width: 1.375rem;
+  height: 1.375rem;
+  accent-color: var(--color-accent);
+}
+
+/* Choice chips that wrap on narrow screens (e.g. the goal type). */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
