@@ -4,10 +4,13 @@ import { useI18n } from '@/core/i18n';
 import { matchesFoodSearch, useNutritionData, type Food } from '@/core/nutrition';
 import { List, ListRow, Screen, Section } from '@/ui';
 import { FoodFormSheet } from '../components/FoodFormSheet';
-import { formatQuantity } from '../domain/format';
+import { foodSourceLabel, formatQuantity } from '../domain/format';
 import styles from '../components/Nutrition.module.css';
 
-/** The user's own foods: search, create, correct, hide or delete. */
+/**
+ * The stored foods: own foods, saved products and BLS foods used before. Own foods can be
+ * corrected, hidden or deleted; BLS foods open read-only (edit as own copy).
+ */
 export function FoodsScreen() {
   const { t, locale } = useI18n();
   const searchId = useId();
@@ -28,7 +31,7 @@ export function FoodsScreen() {
   const subtitle = (food: Food) =>
     [
       food.brand,
-      food.source === 'external' ? t('nutrition.lookup.onlineTitle') : null,
+      foodSourceLabel(food, t),
       t('nutrition.add.perReference', {
         kcal: kcal.format(food.nutrients.energyKcal),
         amount: formatQuantity(food.reference.amount, food.reference.unit, t, locale),

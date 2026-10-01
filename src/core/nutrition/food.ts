@@ -1,5 +1,6 @@
 import { NutritionError } from './errors';
 import { scaleNutrients, type Nutrients } from './nutrients';
+import { matchScore, searchKey, searchWords } from './search';
 import {
   convertQuantity,
   isCountUnit,
@@ -11,8 +12,9 @@ import {
 /**
  * Where a food's data comes from – deliberately abstract, no provider is built in:
  * - `custom`: created by the user,
- * - `local`: shipped with the app (reference data, no profile),
- * - `external`: copied from an external food database; `provider` names it (e.g. later
+ * - `local`: shipped with the app (reference data such as the BLS, no profile; `origin` names
+ *   the dataset and code),
+ * - `external`: copied from an external food database; `provider` names it (e.g.
  *   "openfoodfacts") and `externalId` identifies the product there. Stored locally, so it
  *   works offline afterwards.
  */
@@ -51,10 +53,25 @@ export interface Food {
   nutrients: Nutrients;
   servings: FoodServing[];
   favorite: boolean;
+  /**
+   * Reference dataset a food shipped with the app comes from (e.g. BLS code and version).
+   * Such foods belong to nobody and are never edited – users edit a copy instead.
+   */
+  origin: FoodOrigin | null;
+  /** For a user's own food made as an editable copy: the food it was copied from. */
+  copiedFromId: string | null;
   /** Foods are never deleted (templates and recipes refer to them), only deactivated. */
   active: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface FoodOrigin {
+  /** Dataset id, e.g. "bls". */
+  dataset: string;
+  /** Identifier in the dataset, e.g. the BLS code. */
+  code: string;
+  version: string;
 }
 
 export const FOOD_NAME_MAX_LENGTH = 120;
@@ -118,19 +135,11 @@ export function unitsFor(food: Pick<Food, 'reference' | 'servings'>): QuantityUn
   return candidates.filter((unit) => toReferenceAmount(food, 1, unit) !== null);
 }
 
-const searchText = (text: string) =>
-  text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-
 /**
  * Local food search: every word of the query must appear in the name or the brand, ignoring
- * case and accents ("muller joghurt" finds "Joghurt" by "Müller"). An empty query matches all.
+ * case, accents and umlauts ("muller joghurt" finds "Joghurt" by "Müller"). An empty query
+ * matches all.
  */
 export function matchesFoodSearch(food: Pick<Food, 'name' | 'brand'>, query: string): boolean {
-  const words = searchText(query).split(/\s+/).filter(Boolean);
-  if (words.length === 0) return true;
-  const haystack = searchText(`${food.name} ${food.brand ?? ''}`);
-  return words.every((word) => haystack.includes(word));
+  return matchScore(searchKey(food.name, food.brand), searchWords(query)) !== null;
 }

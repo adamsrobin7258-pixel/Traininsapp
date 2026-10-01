@@ -177,40 +177,10 @@ describe('OpenFoodFactsProvider', () => {
     expect(requests).toHaveLength(0);
   });
 
-  it('searches with the query, languages, page size and fields only', async () => {
-    const { http, requests } = client(
-      ok({ hits: [NUTELLA, { product_name: 'ohne code' }], count: 2 }),
-    );
+  it('offers no full-text search – Open Food Facts is only the barcode fallback', () => {
+    const { http } = client();
     const provider = new OpenFoodFactsProvider(http, UA);
-    const results = await provider.search('  nutella ', { limit: 20, locale: 'de' });
-    expect(results.map((r) => r.externalId)).toEqual(['3017624010701']);
-    const url = requests[0]?.url;
-    expect(url?.origin).toBe('https://search.openfoodfacts.org');
-    expect(url?.pathname).toBe('/search');
-    expect(Object.fromEntries(url?.searchParams ?? [])).toMatchObject({
-      q: 'nutella',
-      langs: 'de,en',
-      page_size: '20',
-    });
-    expect([...(url?.searchParams.keys() ?? [])].sort()).toEqual([
-      'fields',
-      'langs',
-      'page_size',
-      'q',
-    ]);
-  });
-
-  it('does not search for empty or one-letter queries', async () => {
-    const { http, requests } = client();
-    const provider = new OpenFoodFactsProvider(http, UA);
-    expect(await provider.search('', { limit: 20, locale: 'de' })).toEqual([]);
-    expect(await provider.search(' a ', { limit: 20, locale: 'de' })).toEqual([]);
-    expect(requests).toHaveLength(0);
-  });
-
-  it('returns no results when nothing matches', async () => {
-    const provider = new OpenFoodFactsProvider(client(ok({ hits: [] })).http, UA);
-    expect(await provider.search('xyz', { limit: 20, locale: 'de' })).toEqual([]);
+    expect('search' in provider).toBe(false);
   });
 
   const failures: [Reply, string][] = [
@@ -226,9 +196,7 @@ describe('OpenFoodFactsProvider', () => {
 
   it.each(failures)('turns failures into a clear error (%j)', async (reply, code) => {
     const provider = new OpenFoodFactsProvider(client(reply, reply).http, UA);
-    const error = await provider
-      .search('milch', { limit: 5, locale: 'de' })
-      .catch((e: unknown) => e);
+    const error = await provider.lookupBarcode('4000000000001').catch((e: unknown) => e);
     expect(error).toBeInstanceOf(FoodProviderError);
     expect((error as FoodProviderError).code).toBe(code);
   });

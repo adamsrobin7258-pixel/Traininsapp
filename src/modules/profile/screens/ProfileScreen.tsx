@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useI18n } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import {
@@ -9,6 +10,7 @@ import {
 } from '@/core/settings';
 import { DISPLAY_NAME_MAX_LENGTH, useProfile } from '@/core/user';
 import { List, ListRow, Screen, Section, SegmentedControl, TextField } from '@/ui';
+import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { PrivacySection } from '../components/PrivacySection';
 import { ProfileHeader } from '../components/ProfileHeader';
 
@@ -21,6 +23,7 @@ export function ProfileScreen() {
   const { settings, updateSetting } = useSettings();
   const { profile, rename } = useProfile();
   const deviceLocale = resolveLocale('system', getDeviceLanguages());
+  const [sourcesOpen, setSourcesOpen] = useState(false);
 
   const themeOptions = THEME_PREFERENCES.map((value) => ({
     value,
@@ -93,8 +96,21 @@ export function ProfileScreen() {
       <Section title={t('profile.aboutTitle', { appName: t('app.name') })}>
         <List>
           <ListRow title={t('profile.version')} value={__APP_VERSION__} />
+          <ListRow
+            title={t('profile.dataSources.title')}
+            onPress={() => {
+              setSourcesOpen(true);
+            }}
+          />
         </List>
       </Section>
+      {sourcesOpen ? (
+        <DataSourcesSheet
+          onClose={() => {
+            setSourcesOpen(false);
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

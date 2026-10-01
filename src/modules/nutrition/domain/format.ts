@@ -4,6 +4,7 @@ import {
   mealDisplayName,
   NutritionError,
   type DefaultMealKey,
+  type Food,
   type MealSlot,
   type NutritionErrorCode,
   type QuantityUnit,
@@ -72,4 +73,29 @@ const AMOUNT_ERRORS: Record<AmountError, TranslationKey> = {
 
 export function describeAmountError(error: AmountError, t: TranslateFn): string {
   return t(AMOUNT_ERRORS[error]);
+}
+
+/** BLS foods are reference data: shown read-only, edited only as an own copy. */
+export function isReferenceFood(food: Pick<Food, 'origin'>): boolean {
+  return food.origin !== null;
+}
+
+/** Where a food comes from: "BLS 4.0", "Open Food Facts", "Eigenes" or "Eigene Kopie". */
+export function foodSourceLabel(
+  food: Pick<Food, 'source' | 'origin' | 'copiedFromId'>,
+  t: TranslateFn,
+): string {
+  if (food.origin) return t('nutrition.sources.bls', { version: food.origin.version });
+  if (food.source === 'external') return t('nutrition.sources.openFoodFacts');
+  return t(food.copiedFromId ? 'nutrition.sources.copy' : 'nutrition.sources.own');
+}
+
+/** Required attribution of a food's data source, if it has one. */
+export function foodAttribution(
+  food: Pick<Food, 'source' | 'origin'>,
+  t: TranslateFn,
+): string | null {
+  if (food.origin) return t('nutrition.sources.blsAttribution', { version: food.origin.version });
+  if (food.source === 'external') return t('nutrition.lookup.attribution');
+  return null;
 }

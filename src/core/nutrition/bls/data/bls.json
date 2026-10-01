@@ -1,0 +1,16 @@
+{
+  "meta": null,
+  "fields": [
+    "code",
+    "name",
+    "nameEn",
+    "energyKcal",
+    "proteinG",
+    "carbsG",
+    "fatG",
+    "fiberG",
+    "sugarG",
+    "saturatedFatG"
+  ],
+  "foods": []
+}

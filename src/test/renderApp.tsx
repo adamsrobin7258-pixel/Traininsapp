@@ -4,8 +4,10 @@ import { AppProviders } from '@/app/AppProviders';
 import { createRoutes } from '@/app/router';
 import { createServices, loadInitialState, type AppServices } from '@/app/services';
 import type { DatabaseSecurity } from '@/core/database';
+import type { ReferenceCatalog } from '@/core/nutrition';
 import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from './database';
 import { FakeFoodProvider } from './fakeFoodProvider';
+import { createTestReferenceCatalog } from './testReferenceCatalog';
 
 interface RenderAppOptions {
   security?: DatabaseSecurity;
@@ -13,6 +15,8 @@ interface RenderAppOptions {
   prepare?: (services: AppServices, profileId: string) => Promise<void>;
   /** External food database stand-in (never the real one). */
   foodProvider?: FakeFoodProvider;
+  /** Reference data (BLS); synthetic test data unless a test passes its own. */
+  referenceCatalog?: ReferenceCatalog;
 }
 
 /**
@@ -26,6 +30,7 @@ export async function renderApp(initialPath = '/', options: RenderAppOptions = {
     { driver: db, security: options.security ?? ENCRYPTED_TEST_SECURITY },
     () => new Date(),
     foodProvider,
+    options.referenceCatalog ?? createTestReferenceCatalog(),
   );
   if (options.prepare) {
     const profile = await services.profile.ensureLocalProfile();

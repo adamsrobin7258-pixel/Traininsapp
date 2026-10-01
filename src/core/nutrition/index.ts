@@ -4,7 +4,12 @@ export { DiaryService, type DayData } from './diaryService';
 export * from './errors';
 export * from './food';
 export { FoodService, type FoodInput } from './foodService';
-export { FoodLookupService, type BarcodeLookup, type OnlineResult } from './foodLookupService';
+export {
+  FoodLookupService,
+  REFERENCE_RESULTS_LIMIT,
+  type BarcodeLookup,
+  type FoodSearchResult,
+} from './foodLookupService';
 export * from './barcode';
 export {
   mapOpenFoodFactsProduct,
@@ -26,6 +31,8 @@ export { MealService } from './mealService';
 export * from './nutrients';
 export { NutritionStore, type NutritionRepositories } from './nutritionStore';
 export * from './provider';
+export * from './reference';
+export * from './search';
 export * from './recipe';
 export { RecipeService, type RecipeInput } from './recipeService';
 export * from './savedMeal';

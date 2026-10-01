@@ -3,7 +3,6 @@ import {
   type ExternalProduct,
   type FoodDataProvider,
   type FoodProviderErrorCode,
-  type FoodSearchOptions,
 } from '@/core/nutrition';
 
 /**
@@ -13,21 +12,10 @@ import {
 export class FakeFoodProvider implements FoodDataProvider {
   readonly id = 'openfoodfacts';
   readonly displayName = 'Open Food Facts';
-  readonly calls: { method: 'search' | 'barcode' | 'product'; value: string }[] = [];
+  readonly calls: { method: 'barcode' | 'product'; value: string }[] = [];
   products: ExternalProduct[] = [];
   /** Makes every request fail with this error. */
   failWith: FoodProviderErrorCode | null = null;
-
-  search(query: string, options: FoodSearchOptions): Promise<ExternalProduct[]> {
-    this.calls.push({ method: 'search', value: query });
-    if (this.failWith) return Promise.reject(new FoodProviderError(this.failWith));
-    const needle = query.trim().toLowerCase();
-    return Promise.resolve(
-      this.products
-        .filter((p) => `${p.name} ${p.brand ?? ''}`.toLowerCase().includes(needle))
-        .slice(0, options.limit),
-    );
-  }
 
   lookupBarcode(barcode: string): Promise<ExternalProduct | null> {
     this.calls.push({ method: 'barcode', value: barcode });

@@ -22,7 +22,9 @@ import {
   type BodyWeightSource,
   type NutritionServices,
   type NutritionSources,
+  type ReferenceCatalog,
 } from '@/core/nutrition';
+import { createBlsCatalog } from '@/core/nutrition/bls';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -46,6 +48,8 @@ export function createServices(
   clock: Clock = systemClock,
   /** The external food database; tests pass a fake – real requests never run in tests. */
   foodProvider: FoodDataProvider = createFoodProvider(),
+  /** Bundled reference data (BLS) for the offline food search. */
+  referenceCatalog: ReferenceCatalog = createBlsCatalog(),
 ): AppServices {
   const weight = new WeightService(new WeightRepository(db), clock);
   const profile = new ProfileService(new ProfileRepository(db), clock);
@@ -77,7 +81,13 @@ export function createServices(
     storage: new StorageService(db, security, clock),
     weight,
     training,
-    nutrition: createNutritionServices(new NutritionStore(db), clock, sources, foodProvider),
+    nutrition: createNutritionServices(
+      new NutritionStore(db),
+      clock,
+      sources,
+      foodProvider,
+      referenceCatalog,
+    ),
     bodyWeight,
     settings: new SettingsService(new SettingsRepository(db, clock)),
     profile,
@@ -86,7 +96,7 @@ export function createServices(
 }
 
 /**
- * Open Food Facts over the platform's HTTP client. The User-Agent names the app, its version
+ * Open Food Facts (barcode fallback only) over the platform's HTTP client. The User-Agent names the app, its version
  * and platform – nothing about the user.
  */
 function createFoodProvider(): FoodDataProvider {
@@ -109,11 +119,12 @@ function createNutritionServices(
   clock: Clock,
   sources: NutritionSources,
   provider: FoodDataProvider,
+  reference: ReferenceCatalog,
 ): NutritionServices {
   const foods = new FoodService(store, clock);
   return {
     foods,
-    lookup: new FoodLookupService(foods, provider),
+    lookup: new FoodLookupService(foods, provider, reference),
     meals: new MealService(store, clock),
     diary: new DiaryService(store, clock),
     recipes: new RecipeService(store, clock),

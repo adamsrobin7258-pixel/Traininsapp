@@ -13,3 +13,6 @@ public/assets/sql-wasm.wasm
 # Playwright
 test-results
 playwright-report
+
+# Official BLS source file (not committed; see data/bls/README.md)
+data/bls/source/

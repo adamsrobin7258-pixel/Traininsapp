@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 7)
+## Aktuelles Schema (Version 8)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -308,6 +308,32 @@ Open Food Facts, Favoriten und „zuletzt verwendet“ nutzen das bestehende Sch
 - Zuletzt verwendet: abgeleitet aus `food_entries` (`MAX(created_at)` je `food_id`, Index
   `food_entries_food`), begrenzt auf `RECENT_FOODS_LIMIT` – keine zusätzliche Speicherung.
 - Barcodes werden beim Speichern normalisiert (nur Ziffern, 8–14 Stellen).
+
+## Herkunft von Lebensmitteln (Migration 8, Phase 4.4)
+
+Rein additiv – keine bestehende Zeile wird verändert, kein Tabellenumbau.
+
+| Spalte                      | Inhalt                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------- |
+| `foods.origin_dataset`      | Referenzdatensatz eines mitgelieferten Lebensmittels, z. B. `bls`; sonst `NULL`          |
+| `foods.origin_code`         | Kennung im Datensatz (BLS-Code)                                                          |
+| `foods.origin_version`      | Datensatzversion, z. B. `4.0`                                                            |
+| `foods.copied_from_food_id` | Bei einer eigenen Kopie: das Original (`REFERENCES foods(id) ON DELETE SET NULL`)        |
+| Index `foods_origin`        | eindeutig auf `(origin_dataset, origin_code)` für Zeilen mit Datensatz – keine Duplikate |
+
+Zuordnung der Herkunftsbegriffe auf das bestehende Schema (die CHECK-Regeln aus Migration 6
+bleiben unverändert):
+
+| Herkunft        | Speicherung                                                                      |
+| --------------- | -------------------------------------------------------------------------------- |
+| BLS             | `source = 'local'`, `profile_id = NULL`, `origin_dataset = 'bls'`, Code, Version |
+| OPEN_FOOD_FACTS | `source = 'external'`, `provider = 'openfoodfacts'`, `external_id` = Barcode     |
+| CUSTOM          | `source = 'custom'`                                                              |
+| Eigene Kopie    | `source = 'custom'` mit `copied_from_food_id`                                    |
+
+Ein BLS-Lebensmittel wird erst beim ersten Benutzen angelegt (die übrigen rund 7.000 bleiben in
+den gebündelten Daten). Tagebuch, Favoriten, Vorlagen, Rezepte, eigene und Open-Food-Facts-
+Lebensmittel bleiben unberührt (per Test geprüft, `bls.test.ts` → „migration 8“).
 
 ## Konventionen für Nutzerdaten-Tabellen
 

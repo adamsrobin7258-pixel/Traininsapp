@@ -14,6 +14,7 @@ import { areValidNutrients, type Nutrients } from './nutrients';
 import type { NutritionStore } from './nutritionStore';
 import { barcodeVariants, normalizeBarcode } from './barcode';
 import type { ExternalFood } from './provider';
+import type { ReferenceFood } from './reference';
 import { isQuantityUnit } from './units';
 
 export interface FoodInput {
@@ -108,6 +109,8 @@ export class FoodService {
         externalId: origin.externalId,
         ...data,
         favorite: false,
+        origin: null,
+        copiedFromId: null,
         active: true,
         createdAt: now,
         updatedAt: now,
@@ -117,7 +120,16 @@ export class FoodService {
     });
   }
 
-  async create(profileId: string, input: FoodInput): Promise<Food> {
+  /**
+   * Creates the user's own food. `copiedFromId` marks an editable copy of another food (e.g. a
+   * BLS food); the original stays unchanged.
+   */
+  async create(
+    profileId: string,
+    input: FoodInput,
+    { copiedFromId = null }: { copiedFromId?: string | null } = {},
+  ): Promise<Food> {
+    if (copiedFromId !== null) await this.get(profileId, copiedFromId);
     const now = this.now();
     const food: Food = {
       id: createId(),
@@ -127,6 +139,8 @@ export class FoodService {
       externalId: null,
       ...validated(input),
       favorite: false,
+      origin: null,
+      copiedFromId,
       active: true,
       createdAt: now,
       updatedAt: now,
@@ -143,8 +157,9 @@ export class FoodService {
     return food;
   }
 
+  /** Also for reference foods (e.g. BLS): marking one does not change its data. */
   async setFavorite(profileId: string, id: string, favorite: boolean): Promise<void> {
-    await this.owned(profileId, id);
+    await this.get(profileId, id);
     await this.store.repos.foods.setFlag(id, 'favorite', favorite, this.now());
   }
 
@@ -199,12 +214,65 @@ export class FoodService {
       externalId: external.externalId,
       ...data,
       favorite: false,
+      origin: null,
+      copiedFromId: null,
       active: true,
       createdAt: now,
       updatedAt: now,
     };
     await this.store.atomic((repos) => repos.foods.insert(food));
     return food;
+  }
+
+  /**
+   * The stored row of a reference food, created on its first use (diary entries, favourites
+   * and saved meals need a food id). Reference foods belong to no profile and cannot be edited
+   * or hidden; a newer dataset version only refreshes their values – diary entries keep their
+   * own snapshots, so past days never change.
+   */
+  async ensureReference(reference: ReferenceFood): Promise<Food> {
+    const now = this.now();
+    const origin = { dataset: reference.dataset, code: reference.code, version: reference.version };
+    return this.store.atomic(async (repos) => {
+      const existing = await repos.foods.findByOrigin(reference.dataset, reference.code);
+      if (existing) {
+        const unchanged =
+          existing.name === reference.name &&
+          existing.origin?.version === reference.version &&
+          JSON.stringify(existing.nutrients) === JSON.stringify(reference.nutrients);
+        if (unchanged) return existing;
+        const food: Food = {
+          ...existing,
+          name: reference.name,
+          nutrients: { ...reference.nutrients },
+          origin,
+          updatedAt: now,
+        };
+        await repos.foods.updateReference(food);
+        return food;
+      }
+      const food: Food = {
+        id: createId(),
+        profileId: null,
+        source: 'local',
+        provider: null,
+        externalId: null,
+        name: reference.name.trim(),
+        brand: null,
+        barcode: null,
+        reference: { amount: 100, unit: 'g' },
+        nutrients: { ...reference.nutrients },
+        servings: [],
+        favorite: false,
+        origin,
+        copiedFromId: null,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await repos.foods.insert(food);
+      return food;
+    });
   }
 
   private async owned(profileId: string, id: string): Promise<Food> {

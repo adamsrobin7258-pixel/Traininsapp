@@ -18,7 +18,7 @@ import type { RecipeService } from './recipeService';
 
 export interface NutritionServices {
   foods: FoodService;
-  /** Barcode and online search (external provider). */
+  /** Offline food search (own foods + BLS) and the barcode fallback (Open Food Facts). */
   lookup: FoodLookupService;
   meals: MealService;
   diary: DiaryService;

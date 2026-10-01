@@ -1,11 +1,15 @@
-# Open Food Facts, Barcode, Favoriten, zuletzt verwendet (Phase 4.3)
+# Open Food Facts, Barcode, Favoriten, zuletzt verwendet (Phase 4.3, angepasst in 4.4)
 
 ## Überblick
 
-Kalethra kann Lebensmittel zusätzlich zur lokalen Datenbank bei
-[Open Food Facts](https://world.openfoodfacts.org) suchen und per Barcode finden. Ein gefundenes
-Produkt wird **erst nach Prüfung durch den Nutzer** lokal gespeichert. Danach ist es ein normales
-lokales Lebensmittel und offline nutzbar.
+> **Seit Phase 4.4 ist Open Food Facts nur noch Barcode-Fallback.** Die normale Suche ist offline
+> (eigene Lebensmittel, gespeicherte Produkte, BLS 4.0 – siehe [BLS.md](BLS.md)). Die frühere
+> Online-Suche wurde vollständig entfernt (Provider-Methode, Endpunkt, Oberfläche).
+
+Kalethra findet Produkte per Barcode bei [Open Food Facts](https://world.openfoodfacts.org), wenn
+der Barcode auf dem Gerät unbekannt ist. Ein gefundenes Produkt wird **erst nach Prüfung durch
+den Nutzer** lokal gespeichert (Quelle Open Food Facts). Danach ist es ein normales lokales
+Lebensmittel, offline nutzbar und in der normalen Suche auffindbar.
 
 ```
 UI (AddSheet, Barcode-Dialoge, Food-Editor)
@@ -29,15 +33,14 @@ Stand Oktober 2026).
 > offiziellen Dokumentation entnommen, nicht live abgefragt. Der Parser ist bewusst tolerant
 > (z. B. `brands` als Text oder Liste, `hits` oder `products`, Zahlen als Text).
 
-| Zweck            | Endpunkt                                                         | Parameter                                    |
-| ---------------- | ---------------------------------------------------------------- | -------------------------------------------- |
-| Produkt per Code | `GET https://world.openfoodfacts.org/api/v2/product/{barcode}`   | `fields`                                     |
-| Volltextsuche    | `GET https://search.openfoodfacts.org/search` (Search-a-licious) | `q`, `langs=de,en`, `page_size=20`, `fields` |
+| Zweck            | Endpunkt                                                       | Parameter |
+| ---------------- | -------------------------------------------------------------- | --------- |
+| Produkt per Code | `GET https://world.openfoodfacts.org/api/v2/product/{barcode}` | `fields`  |
 
 - **API v2** für Produkte. Antwort: `status` (1 = gefunden, 0 = unbekannt; bei unbekannten
   Codes teils mit HTTP 404) und `product`.
-- **Volltextsuche** gibt es in API v2/v3 nicht. Der offizielle Suchdienst ist Search-a-licious.
-  Die alte `cgi/search.pl` wird bewusst nicht verwendet.
+- Eine Volltextsuche wird seit Phase 4.4 nicht mehr verwendet (`FoodDataProvider` hat keine
+  `search`-Methode mehr; ein Test stellt das sicher).
 - `fields` beschränkt die Antwort auf die genutzten Felder: `code`, `product_name`,
   `product_name_de`, `product_name_en`, `generic_name`, `brands`, `quantity`,
   `product_quantity_unit`, `serving_size`, `serving_quantity`, `serving_quantity_unit`,
@@ -56,11 +59,10 @@ Stand Oktober 2026).
 
 ## Rate Limits und User-Agent
 
-- **Limits laut Open Food Facts:** 15 Produktabfragen und 10 Suchen pro Minute und Nutzer bzw.
-  IP-Adresse. Wird ein Limit überschritten, antwortet der Dienst mit HTTP 503.
+- **Limits laut Open Food Facts:** 15 Produktabfragen pro Minute und Nutzer bzw. IP-Adresse.
+  Wird ein Limit überschritten, antwortet der Dienst mit HTTP 503.
 - **Kalethra:**
-  - sucht online nur auf ausdrücklichen Tipp („Online suchen“), nie beim Tippen
-  - startet keine parallelen Suchen
+  - fragt nur nach einem Scan oder einer Barcode-Eingabe, nie beim Tippen in der Suche
   - wiederholt keine Anfrage automatisch
   - fragt einen bereits lokal bekannten Barcode gar nicht erst ab
   - zeigt bei 503 oder 429 „Zu viele Anfragen“ an
@@ -76,7 +78,6 @@ Stand Oktober 2026).
 - Die Datenbank steht unter der **Open Database License (ODbL)**, einzelne Inhalte unter der
   Database Contents License.
 - Kalethra zeigt die Quelle sichtbar an:
-  - in der Online-Suche
   - in der Importprüfung
   - in der Mengenansicht und im Editor importierter Lebensmittel
 
@@ -93,7 +94,6 @@ Stand Oktober 2026).
   - negative Werte
   - mehr als 950 kcal pro 100 g
   - mehr als 100 g eines Nährstoffs pro 100 g
-- Suchergebnisse mit fehlenden Hauptwerten zeigen „Nährwerte unvollständig“.
 - In der Importprüfung bleiben fehlende Felder leer und sind markiert. Gespeichert werden kann
   erst, wenn alle Hauptwerte (kcal, Protein, Kohlenhydrate, Fett) eingetragen sind. Detailwerte
   wie Zucker dürfen weiter unbekannt bleiben.
@@ -122,8 +122,8 @@ Stand Oktober 2026).
      Ein ausgeblendetes Lebensmittel mit diesem Code wird wieder eingeblendet.
   3. Ist der Code lokal unbekannt, wird Open Food Facts gefragt:
      - gefunden → Importprüfung
-     - nicht gefunden → „Produkt wurde nicht gefunden.“ mit den Wegen „Selbst anlegen“
-       (Barcode vorausgefüllt) und „Nach Namen suchen“
+     - nicht gefunden → „Produkt nicht gefunden.“ mit „Eigenes Lebensmittel anlegen“
+       (Barcode vorausgefüllt) und „Nach Namen suchen“ (offline, inkl. BLS)
 - **Manuelle Eingabe:** „Barcode eingeben“ funktioniert ohne Kamera, bei verweigerter
   Berechtigung und bei beschädigten Codes.
 - **Test-Hook:** Im Web-Build ersetzt `window.__kalethraScanBarcode` den Scanner, nur für
@@ -141,8 +141,7 @@ Stand Oktober 2026).
 - **Duplikate:**
   - Erkannt werden sie über den lokalen Barcode und die Kombination Provider + externe ID,
     gesichert durch den eindeutigen Index `foods_external`.
-  - Ist ein Produkt schon gespeichert, wird es verwendet. In der Online-Suche erscheint es als
-    „Bereits gespeichert“.
+  - Ist ein Produkt schon gespeichert, wird es verwendet.
   - Name + Marke werden bewusst nicht als Erkennungsmerkmal genutzt, weil das zu unsicher ist.
 - **Keine automatische Aktualisierung:** Gespeicherte Werte werden nie ungefragt mit neuen Daten
   von Open Food Facts überschrieben. Eine manuelle Funktion „Daten aktualisieren“ mit Vorschau
@@ -175,12 +174,11 @@ Stand Oktober 2026).
 | Rate Limit (503/429)   | „Gerade wurden zu viele Anfragen … Bitte warte eine Minute …“                                     |
 | Serverfehler           | „Open Food Facts ist gerade nicht erreichbar. …“                                                  |
 | Ungültige Antwort      | „Die Antwort von Open Food Facts konnte nicht gelesen werden. …“                                  |
-| Produkt nicht gefunden | eigener Dialog mit „Selbst anlegen“ / „Nach Namen suchen“                                         |
+| Produkt nicht gefunden | „Produkt nicht gefunden.“ mit „Eigenes Lebensmittel anlegen“ / „Nach Namen suchen“                |
 | Fehlende Nährwerte     | „Nährwerte unvollständig“, leere markierte Felder in der Prüfung                                  |
 
 - Lokale Suche, Favoriten, zuletzt verwendet und „Neues Lebensmittel anlegen“ bleiben in jedem
   Fall nutzbar.
-- Laufende Online-Suchen lassen sich abbrechen.
-- Android-Zurück verhält sich so:
-  - schließt zuerst die Online-Ergebnisse, dann den Dialog
-  - führt aus Importprüfung, Barcode-Dialogen und Scanner zurück zur Suche
+- Laufende Barcode-Abfragen lassen sich abbrechen.
+- Android-Zurück führt aus Mengenansicht, Importprüfung, Barcode-Dialogen und Scanner zurück zur
+  Suche, danach schließt es den Dialog.

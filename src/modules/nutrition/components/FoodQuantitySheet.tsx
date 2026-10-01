@@ -10,7 +10,7 @@ import {
   type QuantityUnit,
 } from '@/core/nutrition';
 import { Button, Icon, Sheet } from '@/ui';
-import { describeAmountError, describeNutritionError } from '../domain/format';
+import { describeAmountError, describeNutritionError, foodAttribution } from '../domain/format';
 import { formatNumberInput, parseAmountInput } from '../domain/input';
 import { MealSelect } from './MealSelect';
 import { NutrientPreview } from './NutrientPreview';
@@ -157,8 +157,8 @@ export function FoodQuantitySheet({
         <MealSelect meals={meals} value={mealId} onChange={setMealId} />
         <p className={styles.label}>{t('nutrition.add.preview')}</p>
         <NutrientPreview nutrients={preview} />
-        {food.source === 'external' ? (
-          <p className={styles.hint}>{t('nutrition.lookup.attribution')}</p>
+        {foodAttribution(food, t) ? (
+          <p className={styles.hint}>{foodAttribution(food, t)}</p>
         ) : null}
         {error ? (
           <p id={errorId} className={styles.error} role="alert">

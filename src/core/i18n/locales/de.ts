@@ -371,7 +371,6 @@ export const de = {
       noResults: 'Nichts gefunden. Lege das Lebensmittel neu an.',
       noFoods: 'Noch keine Lebensmittel vorhanden. Lege dein erstes an.',
       create: 'Neues Lebensmittel anlegen',
-      own: 'Eigenes',
       perReference: '{kcal} kcal pro {amount}',
       quantityTitle: 'Menge eintragen',
       save: 'Eintragen',
@@ -605,7 +604,7 @@ export const de = {
       recent: 'Zuletzt verwendet',
       favorites: 'Favoriten',
       allFoods: 'Gespeicherte Lebensmittel',
-      localResults: 'Gespeicherte Lebensmittel',
+      results: 'Suchergebnisse',
       scan: 'Barcode scannen',
       enterBarcode: 'Barcode eingeben',
       barcodeTitle: 'Barcode eingeben',
@@ -614,18 +613,13 @@ export const de = {
       barcodeSearch: 'Produkt suchen',
       scanInstructions: 'Barcode in den Rahmen halten',
       searchingBarcode: 'Produkt wird gesucht …',
-      onlineSearch: 'Online suchen: „{query}“',
-      onlineTitle: 'Open Food Facts',
-      onlineLoading: 'Suche Lebensmittel …',
-      onlineEmpty: 'Keine Treffer bei Open Food Facts.',
-      onlineHint: 'Gesendet wird nur dein Suchbegriff.',
       incomplete: 'Nährwerte unvollständig',
-      alreadySaved: 'Bereits gespeichert',
       perReference: '{kcal} kcal pro {amount}',
-      notFoundTitle: 'Produkt wurde nicht gefunden.',
-      notFoundBody: 'Du kannst es selbst anlegen oder nach dem Namen suchen.',
+      notFoundTitle: 'Produkt nicht gefunden.',
+      notFoundBody:
+        'Der Barcode ist weder auf deinem Gerät noch bei Open Food Facts bekannt. Du kannst das Lebensmittel selbst anlegen – der Barcode ist schon eingetragen.',
       notFoundBarcode: 'Barcode {barcode}',
-      createOwn: 'Selbst anlegen',
+      createOwn: 'Eigenes Lebensmittel anlegen',
       searchByName: 'Nach Namen suchen',
       cameraDeniedTitle: 'Kein Kamerazugriff',
       cameraDeniedBody:
@@ -654,6 +648,24 @@ export const de = {
         'invalid-response':
           'Die Antwort von Open Food Facts konnte nicht gelesen werden. Bitte versuche es später erneut.',
       },
+    },
+    sources: {
+      own: 'Eigenes',
+      copy: 'Eigene Kopie',
+      bls: 'BLS {version}',
+      openFoodFacts: 'Open Food Facts',
+      blsAttribution:
+        'Daten: Bundeslebensmittelschlüssel (BLS) {version}, Max Rubner-Institut, Lizenz CC BY 4.0',
+    },
+    reference: {
+      title: 'Lebensmittel aus dem BLS',
+      readOnly:
+        'Referenzdaten aus dem Bundeslebensmittelschlüssel. Sie werden nicht verändert – zum Anpassen bearbeitest du eine eigene Kopie.',
+      per100: 'Nährwerte pro 100 g essbarem Anteil',
+      notStated: 'nicht angegeben',
+      editCopy: 'Als eigene Kopie bearbeiten',
+      copyTitle: 'Eigene Kopie bearbeiten',
+      copyNotice: 'Kopie von „{name}“ ({source}). Das Original bleibt unverändert.',
     },
     goals: {
       title: 'Ziele',
@@ -771,6 +783,17 @@ export const de = {
         fail: 'Fehlgeschlagen',
         pending: 'Nach Neustart prüfen',
       },
+    },
+    dataSources: {
+      title: 'Datenquellen',
+      blsTitle: 'Bundeslebensmittelschlüssel (BLS)',
+      blsBody:
+        'Nährwerte der Lebensmittelsuche: Max Rubner-Institut (MRI), Bundeslebensmittelschlüssel (BLS), Version {version}. Lizenz: Creative Commons Namensnennung 4.0 (CC BY 4.0), blsdb.de. Für Kalethra auf die Hauptnährwerte reduziert; die übernommenen Werte sind unverändert. Die Daten sind in der App enthalten – die Suche funktioniert offline.',
+      blsDetails: '{count} Lebensmittel · importiert am {date}',
+      blsMissing: 'In dieser Version sind noch keine BLS-Daten enthalten.',
+      offTitle: 'Open Food Facts',
+      offBody:
+        'Nur für Barcodes, die auf deinem Gerät unbekannt sind. Gesendet wird ausschließlich der Barcode. Daten: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
     },
     aboutTitle: 'Über {appName}',
     version: 'Version',

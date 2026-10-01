@@ -122,17 +122,15 @@ describe('system back', () => {
     expect(platform.exitApp).not.toHaveBeenCalled();
   });
 
-  it('closes online results first, then the add sheet', async () => {
+  it('returns from a chosen BLS food to the search, then closes the add sheet', async () => {
     const { router } = await renderApp('/nutrition');
     await userEvent.click(await screen.findByRole('button', { name: 'Frühstück: hinzufügen' }));
-    await userEvent.type(screen.getByLabelText('Lebensmittel suchen'), 'skyr');
-    await userEvent.click(screen.getByRole('button', { name: 'Online suchen: „skyr“' }));
-    expect(await screen.findByText('Keine Treffer bei Open Food Facts.')).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Lebensmittel suchen'), 'apfel');
+    await userEvent.click(await screen.findByRole('button', { name: /Apfel, roh/ }));
+    expect(await screen.findByLabelText('Menge')).toBeInTheDocument();
 
     await pressBack();
-    expect(
-      await screen.findByRole('button', { name: 'Online suchen: „skyr“' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByLabelText('Lebensmittel suchen')).toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await pressBack();
     await waitFor(() => {

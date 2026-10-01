@@ -1,6 +1,7 @@
 import { createServices } from '@/app/services';
 import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from '@/test/database';
 import { externalProduct, FakeFoodProvider } from '@/test/fakeFoodProvider';
+import { createTestReferenceCatalog } from '@/test/testReferenceCatalog';
 import { barcodeVariants, normalizeBarcode } from './barcode';
 import { NutritionError } from './errors';
 import { RECENT_FOODS_LIMIT } from './food';
@@ -17,6 +18,7 @@ async function setup() {
     { driver: db, security: ENCRYPTED_TEST_SECURITY },
     clock,
     provider,
+    createTestReferenceCatalog(),
   );
   const profile = await services.profile.ensureLocalProfile();
   await services.nutrition.meals.ensureDefaults(profile.id);
@@ -169,7 +171,7 @@ describe('importing', () => {
     expect(day.entries[0]?.nutrients.energyKcal).toBe(200);
   });
 
-  it('marks online results that already exist locally', async () => {
+  it('never searches Open Food Facts – a saved product is found locally, offline', async () => {
     const { n, provider, profileId } = await setup();
     provider.products = [
       externalProduct(),
@@ -180,11 +182,12 @@ describe('importing', () => {
       { provider: 'openfoodfacts', externalId: '4001234567890' },
       reviewed,
     );
-    const results = await n.lookup.searchOnline(profileId, 'skyr', { locale: 'de' });
-    expect(results.map((r) => [r.product.name, r.local?.name ?? null])).toEqual([
-      ['Skyr Natur', 'Skyr Natur'],
-      ['Skyr Vanille', null],
+    provider.failWith = 'offline';
+    const results = await n.lookup.search(profileId, 'skyr');
+    expect(results.map((r) => (r.kind === 'food' ? r.food.name : r.reference.name))).toEqual([
+      'Skyr Natur',
     ]);
+    expect(provider.calls).toEqual([]);
   });
 
   it('refuses incomplete imports instead of assuming 0', async () => {
@@ -250,7 +253,7 @@ describe('favourites and recently used', () => {
 });
 
 describe('privacy', () => {
-  it('sends only the barcode or the search text – nothing personal', async () => {
+  it('sends only the barcode – nothing personal, and never the search text', async () => {
     const { services, n, provider, profileId, mealId } = await setup();
     const profile = await services.profile.ensureLocalProfile();
     await services.profile.updateBodyData(profile, {
@@ -284,12 +287,10 @@ describe('privacy', () => {
     });
 
     await n.lookup.lookupBarcode(profileId, '4009999999999');
-    await n.lookup.searchOnline(profileId, 'haferflocken', { locale: 'de' });
+    await n.lookup.search(profileId, 'haferflocken');
 
-    expect(provider.calls).toEqual([
-      { method: 'barcode', value: '4009999999999' },
-      { method: 'search', value: 'haferflocken' },
-    ]);
+    // The food search is offline; only the unknown barcode reached the provider.
+    expect(provider.calls).toEqual([{ method: 'barcode', value: '4009999999999' }]);
     const sent = JSON.stringify(provider.calls);
     for (const secret of [
       '77.7',

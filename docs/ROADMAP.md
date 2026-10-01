@@ -125,7 +125,17 @@ aktualisierter Dokumentation.
 - Fehlende Nährwerte bleiben fehlend (nie 0), klare Fehlermeldungen, ODbL-Quellenangabe
 - Details: [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md)
 
-## Phase 4.4 – Vorschlag
+## Phase 4.4 – BLS 4.0 als primäre Lebensmitteldatenbank ✅ (Version 0.6.0)
+
+- Bundeslebensmittelschlüssel 4.0 (Max Rubner-Institut, CC BY 4.0) in der App, reproduzierbarer
+  Import (`scripts/nutrition/import-bls.ts`), fehlende Werte bleiben fehlend
+- Offline-Suche: eigene → gespeicherte Produkte → BLS; Umlaute, Teilwörter, sinnvolle Sortierung
+- Open Food Facts nur noch als Barcode-Fallback (Online-Suche entfernt)
+- BLS-Lebensmittel unveränderlich, „Als eigene Kopie bearbeiten“, Herkunft in Migration 8
+- Datenquellen unter Profil → Über Kalethra
+- Details: [BLS.md](BLS.md)
+
+## Phase 4.5 – Vorschlag
 
 - Manuelle „Daten aktualisieren“-Funktion für importierte Produkte (mit Änderungsvorschau)
 - Rezepte in der Oberfläche

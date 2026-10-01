@@ -366,7 +366,6 @@ export const en: TranslationSchema = {
       noResults: 'Nothing found. Create the food instead.',
       noFoods: 'No foods yet. Create your first one.',
       create: 'Create new food',
-      own: 'Own',
       perReference: '{kcal} kcal per {amount}',
       quantityTitle: 'Log amount',
       save: 'Log',
@@ -596,7 +595,7 @@ export const en: TranslationSchema = {
       recent: 'Recently used',
       favorites: 'Favourites',
       allFoods: 'Saved foods',
-      localResults: 'Saved foods',
+      results: 'Search results',
       scan: 'Scan barcode',
       enterBarcode: 'Enter barcode',
       barcodeTitle: 'Enter barcode',
@@ -605,18 +604,13 @@ export const en: TranslationSchema = {
       barcodeSearch: 'Find product',
       scanInstructions: 'Hold the barcode inside the frame',
       searchingBarcode: 'Looking up the product …',
-      onlineSearch: 'Search online: “{query}”',
-      onlineTitle: 'Open Food Facts',
-      onlineLoading: 'Searching foods …',
-      onlineEmpty: 'No results at Open Food Facts.',
-      onlineHint: 'Only your search term is sent.',
       incomplete: 'Nutrients incomplete',
-      alreadySaved: 'Already saved',
       perReference: '{kcal} kcal per {amount}',
       notFoundTitle: 'Product not found.',
-      notFoundBody: 'You can create it yourself or search by name.',
+      notFoundBody:
+        'The barcode is neither known on your device nor at Open Food Facts. You can create the food yourself – the barcode is already filled in.',
       notFoundBarcode: 'Barcode {barcode}',
-      createOwn: 'Create it yourself',
+      createOwn: 'Create your own food',
       searchByName: 'Search by name',
       cameraDeniedTitle: 'No camera access',
       cameraDeniedBody:
@@ -644,6 +638,24 @@ export const en: TranslationSchema = {
         'invalid-response':
           'The answer from Open Food Facts could not be read. Please try again later.',
       },
+    },
+    sources: {
+      own: 'Own',
+      copy: 'Own copy',
+      bls: 'BLS {version}',
+      openFoodFacts: 'Open Food Facts',
+      blsAttribution:
+        'Data: German Nutrient Database (Bundeslebensmittelschlüssel, BLS) {version}, Max Rubner-Institut, CC BY 4.0 licence',
+    },
+    reference: {
+      title: 'Food from the BLS',
+      readOnly:
+        'Reference data from the German Nutrient Database. It is never changed – to adjust it, edit your own copy.',
+      per100: 'Nutrients per 100 g edible portion',
+      notStated: 'not stated',
+      editCopy: 'Edit as own copy',
+      copyTitle: 'Edit own copy',
+      copyNotice: 'Copy of “{name}” ({source}). The original stays unchanged.',
     },
     goals: {
       title: 'Goals',
@@ -760,6 +772,17 @@ export const en: TranslationSchema = {
         fail: 'Failed',
         pending: 'Check after restart',
       },
+    },
+    dataSources: {
+      title: 'Data sources',
+      blsTitle: 'German Nutrient Database (BLS)',
+      blsBody:
+        'Nutrients of the food search: Max Rubner-Institut (MRI), Bundeslebensmittelschlüssel (BLS), version {version}. Licence: Creative Commons Attribution 4.0 (CC BY 4.0), blsdb.de. Reduced to the main nutrients for Kalethra; the values taken over are unchanged. The data is part of the app – the search works offline.',
+      blsDetails: '{count} foods · imported on {date}',
+      blsMissing: 'This version does not contain BLS data yet.',
+      offTitle: 'Open Food Facts',
+      offBody:
+        'Only for barcodes that are unknown on your device. Nothing but the barcode is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
     },
     aboutTitle: 'About {appName}',
     version: 'Version',

@@ -15,10 +15,16 @@ import {
   type QuantityUnit,
 } from '@/core/nutrition';
 import { AUTOFOCUS, Button, ConfirmSheet, Sheet } from '@/ui';
-import { describeNutritionError } from '../domain/format';
+import {
+  describeNutritionError,
+  foodAttribution,
+  foodSourceLabel,
+  isReferenceFood,
+} from '../domain/format';
 import { formatNumberInput, parseNumberInput, parseOptionalNumber } from '../domain/input';
 import { NumberField } from './NumberField';
 import styles from './Nutrition.module.css';
+import { ReferenceFoodSheet } from './ReferenceFoodSheet';
 
 const REFERENCE_UNITS: QuantityUnit[] = ['g', 'ml', 'piece', 'serving'];
 const SIZE_UNITS: MeasureUnit[] = ['g', 'ml'];
@@ -168,6 +174,8 @@ interface FoodFormSheetProps {
   food?: Food;
   /** Review a product from an external database before storing it locally. */
   product?: ExternalProduct;
+  /** Create the user's own, editable copy of this food (e.g. a BLS food). */
+  copyOf?: Food;
   initialName?: string;
   initialBarcode?: string;
   onSaved: (food: Food) => void;
@@ -179,10 +187,31 @@ interface FoodFormSheetProps {
 /**
  * Create or correct a custom food. Required: name, reference amount and unit, kcal and the
  * three macros. Corrections never change logged days (entries keep their snapshot).
+ * A reference food (BLS) opens read-only; "edit as own copy" switches to a copy form.
  */
-export function FoodFormSheet({
+export function FoodFormSheet(props: FoodFormSheetProps) {
+  const [copying, setCopying] = useState(false);
+  const { food } = props;
+  if (food && isReferenceFood(food)) {
+    return copying ? (
+      <FoodForm {...props} food={undefined} copyOf={food} />
+    ) : (
+      <ReferenceFoodSheet
+        food={food}
+        onEditCopy={() => {
+          setCopying(true);
+        }}
+        onClose={props.onClose}
+      />
+    );
+  }
+  return <FoodForm {...props} />;
+}
+
+function FoodForm({
   food,
   product,
+  copyOf,
   initialName = '',
   initialBarcode = '',
   onSaved,
@@ -200,7 +229,7 @@ export function FoodFormSheet({
     serving: useId(),
   };
   const [draft, setDraft] = useState(() =>
-    initialDraft(food ?? product, initialName, initialBarcode, locale),
+    initialDraft(food ?? product ?? copyOf, initialName, initialBarcode, locale),
   );
   // Values the database does not state are marked right away – they are never assumed 0.
   const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>(() =>
@@ -240,7 +269,7 @@ export function FoodFormSheet({
                 { provider: product.provider, externalId: product.externalId },
                 checked.input,
               )
-            : s.foods.create(profileId, checked.input),
+            : s.foods.create(profileId, checked.input, { copiedFromId: copyOf?.id ?? null }),
       );
       onSaved(saved);
     } catch (error) {
@@ -310,9 +339,11 @@ export function FoodFormSheet({
       title={
         product
           ? t('nutrition.lookup.importTitle')
-          : food
-            ? t('nutrition.foods.edit')
-            : t('nutrition.foods.create')
+          : copyOf
+            ? t('nutrition.reference.copyTitle')
+            : food
+              ? t('nutrition.foods.edit')
+              : t('nutrition.foods.create')
       }
       onClose={onClose}
       closeLabel={t('common.close')}
@@ -322,12 +353,20 @@ export function FoodFormSheet({
         {product && product.missing.length > 0 ? (
           <p className={styles.warning}>{t('nutrition.lookup.importIncomplete')}</p>
         ) : null}
+        {copyOf ? (
+          <p className={styles.notice}>
+            {t('nutrition.reference.copyNotice', {
+              name: copyOf.name,
+              source: foodSourceLabel(copyOf, t),
+            })}
+          </p>
+        ) : null}
         {food ? <p className={styles.hint}>{t('nutrition.foods.editHint')}</p> : null}
         <label htmlFor={ids.name} className={styles.label}>
           {t('nutrition.foods.name')}
         </label>
         <input
-          {...(food || product ? {} : AUTOFOCUS)}
+          {...(food || product || copyOf ? {} : AUTOFOCUS)}
           id={ids.name}
           className={styles.field}
           value={draft.name}
@@ -447,9 +486,11 @@ export function FoodFormSheet({
         ) : null}
         {external ? (
           <p className={styles.hint}>
-            {t('nutrition.lookup.source', { name: 'Open Food Facts' })} ·{' '}
+            {t('nutrition.lookup.source', { name: t('nutrition.sources.openFoodFacts') })} ·{' '}
             {t('nutrition.lookup.attribution')}
           </p>
+        ) : copyOf ? (
+          <p className={styles.hint}>{foodAttribution(copyOf, t)}</p>
         ) : null}
         <div className={styles.actions}>
           <Button variant="secondary" disabled={busy} onClick={onClose}>

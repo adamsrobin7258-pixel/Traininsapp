@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 
 /**
- * Open Food Facts and the camera are mocked: no real request leaves the test, and the scanner
+ * Open Food Facts (barcode fallback only) and the camera are mocked: no real request leaves the test, and the scanner
  * returns a fixed barcode (the web build reads `window.__kalethraScanBarcode`).
  */
 const SKYR = {
@@ -26,8 +26,6 @@ async function mockOpenFoodFacts(page: Page) {
       await route.fulfill({ json: { status: 1, product: SKYR } });
     } else if (url.pathname.startsWith('/api/v2/product/')) {
       await route.fulfill({ status: 404, json: { status: 0 } });
-    } else if (url.hostname === 'search.openfoodfacts.org') {
-      await route.fulfill({ json: { hits: [SKYR], count: 1 } });
     } else {
       await route.abort();
     }
@@ -77,7 +75,7 @@ test('scan, review, save, log – and find the product again offline', async ({ 
   await expect(sheet.getByRole('list', { name: 'Zuletzt verwendet' })).toContainText('Skyr Natur');
   await expect(sheet.getByRole('list', { name: 'Favoriten' })).toContainText('Skyr Natur');
   await sheet.getByLabel('Lebensmittel suchen').fill('skyr');
-  await expect(sheet.getByRole('list', { name: 'Lebensmittel' })).toContainText('Skyr Natur');
+  await expect(sheet.getByRole('list', { name: 'Suchergebnisse' })).toContainText('Skyr Natur');
   await sheet.getByRole('button', { name: 'Barcode scannen' }).click();
   await expect(sheet.getByLabel('Menge', { exact: true })).toBeVisible();
   await expect(sheet.getByText('Skyr Natur')).toBeVisible();
@@ -85,21 +83,17 @@ test('scan, review, save, log – and find the product again offline', async ({ 
   await context.setOffline(false);
 });
 
-test('online search shows Open Food Facts results separately', async ({ page }) => {
+test('the food search is offline and never asks Open Food Facts', async ({ page }) => {
   const requests = await mockOpenFoodFacts(page);
   await page.goto('/nutrition');
   await page.locator('main').getByRole('button', { name: 'Snacks: hinzufügen' }).click();
   const sheet = page.getByRole('dialog');
-  await sheet.getByLabel('Lebensmittel suchen').fill('skyr');
-  // Typing alone sends nothing.
+  await sheet.getByLabel('Lebensmittel suchen').fill('apfel');
+  await sheet.getByLabel('Lebensmittel suchen').press('Enter');
+  const results = sheet.getByRole('list', { name: 'Suchergebnisse' });
+  await expect(results.getByRole('button', { name: 'Neues Lebensmittel anlegen' })).toBeVisible();
+  await expect(sheet.getByText(/Online suchen/)).toHaveCount(0);
   expect(requests).toEqual([]);
-  await sheet.getByRole('button', { name: 'Online suchen: „skyr“' }).click();
-  const results = sheet.getByRole('list', { name: 'Open Food Facts' });
-  await expect(results).toContainText('Skyr Natur');
-  await expect(results).toContainText('Nährwerte unvollständig');
-  expect(requests).toHaveLength(1);
-  expect(new URL(requests[0] ?? '').searchParams.get('q')).toBe('skyr');
-  await expect(sheet.getByText(/Lizenz ODbL/)).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 });
 
@@ -111,7 +105,7 @@ test('unknown barcode typed by hand leads to creating the food', async ({ page }
   await sheet.getByRole('button', { name: 'Barcode eingeben' }).click();
   await sheet.getByLabel('Barcode (EAN oder UPC)').fill('4009999999999');
   await sheet.getByRole('button', { name: 'Produkt suchen' }).click();
-  await expect(sheet.getByText('Produkt wurde nicht gefunden.')).toBeVisible();
-  await sheet.getByRole('button', { name: 'Selbst anlegen' }).click();
+  await expect(sheet.getByText('Produkt nicht gefunden.')).toBeVisible();
+  await sheet.getByRole('button', { name: 'Eigenes Lebensmittel anlegen' }).click();
   await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue('4009999999999');
 });

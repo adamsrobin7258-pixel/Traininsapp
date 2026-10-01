@@ -38,13 +38,6 @@ export interface ExternalProduct {
   missing: MainNutrient[];
 }
 
-export interface FoodSearchOptions {
-  limit: number;
-  /** Language for product names, e.g. "de". */
-  locale: string;
-  signal?: AbortSignal;
-}
-
 export type FoodProviderErrorCode =
   /** No connection. */
   | 'offline'
@@ -65,19 +58,18 @@ export class FoodProviderError extends Error {
 }
 
 /**
- * Contract for an external food data source (search, barcode, product lookup). The rest of the
- * nutrition module never depends on a concrete provider.
+ * Contract for an external food data source (barcode and product lookup). The rest of the
+ * nutrition module never depends on a concrete provider. There is deliberately no full-text
+ * search: the normal search is offline (own foods and the bundled BLS).
  *
- * Privacy rule: a provider receives only the search text, the barcode or the product id –
- * never diary entries, goals, weight, profile or training data. The method signatures make
- * anything else impossible to pass.
+ * Privacy rule: a provider receives only the barcode or the product id – never diary entries,
+ * goals, weight, profile or training data. The method signatures make anything else
+ * impossible to pass.
  */
 export interface FoodDataProvider {
   readonly id: string;
   /** Name shown as data source, e.g. "Open Food Facts". */
   readonly displayName: string;
-  /** Full-text search; an empty or too short query returns [] without a request. */
-  search(query: string, options: FoodSearchOptions): Promise<ExternalProduct[]>;
   /** `null` when the barcode is unknown. */
   lookupBarcode(
     barcode: string,

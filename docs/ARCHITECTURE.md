@@ -271,7 +271,15 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   App-Komponente `NutritionGoalSync` löst das nach Gewichts-, Trainings- oder
   Körperdatenänderungen aus. Die Oberfläche (`/nutrition/profile`) zeigt nur Ergebnisse der
   Engine an.
-- **Externe Lebensmittel (Phase 4.3):** UI → `FoodLookupService`/`FoodService` →
+- **Lebensmittelsuche (Phase 4.4):** `FoodLookupService.search` kombiniert offline die
+  gespeicherten Lebensmittel (SQLite) und den gebündelten BLS 4.0 (`ReferenceCatalog` →
+  `core/nutrition/bls/BlsCatalog`, Daten als eigener Chunk `bls/data/bls.json`, erzeugt von
+  `scripts/nutrition/import-bls.ts`). Reihenfolge: eigene → gespeicherte externe → BLS. Ein
+  BLS-Lebensmittel wird beim ersten Benutzen über `FoodService.ensureReference` als
+  unveränderliche Referenzzeile angelegt (`origin_*`, Migration 8); Bearbeiten erzeugt eine eigene
+  Kopie (`copied_from_food_id`). Gemeinsame Normalisierung in `core/nutrition/search.ts`.
+  Details: [BLS.md](BLS.md).
+- **Barcode-Fallback (Phase 4.3, seit 4.4 ohne Online-Suche):** UI → `FoodLookupService`/`FoodService` →
   `FoodDataProvider` → `OpenFoodFactsProvider` (`core/nutrition/providers`) → `JsonHttpClient`
   → `core/platform/http.ts` (nativ `CapacitorHttp`, Web `fetch`). Der Barcode-Scanner ist in
   `core/platform/barcodeScanner.ts` gekapselt (`@capacitor/barcode-scanner`, Android ZXing).

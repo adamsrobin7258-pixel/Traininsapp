@@ -3,6 +3,8 @@ import { NutritionError } from './errors';
 import type { Food } from './food';
 import type { FoodService } from './foodService';
 import type { ExternalProduct, FoodDataProvider } from './provider';
+import type { ReferenceCatalog, ReferenceDatasetInfo, ReferenceFood } from './reference';
+import { compareMatches, matchScore, searchKey, searchWords } from './search';
 
 export type BarcodeLookup =
   /** Known on this device – no request was made. */
@@ -11,22 +13,30 @@ export type BarcodeLookup =
   | { kind: 'external'; product: ExternalProduct }
   | { kind: 'not-found'; barcode: string };
 
-export interface OnlineResult {
-  product: ExternalProduct;
-  /** The local food when this product was imported before (no duplicate is offered). */
-  local: Food | null;
-}
+export type FoodSearchResult =
+  /** A food stored on this device (own, saved product or a reference food used before). */
+  | { kind: 'food'; food: Food }
+  /** A reference food (BLS) not used yet; it is stored on first use. */
+  | { kind: 'reference'; reference: ReferenceFood };
+
+/** How many reference foods a search returns at most. */
+export const REFERENCE_RESULTS_LIMIT = 50;
+
+/** Search order: own foods, then saved products, then reference data (BLS). */
+const GROUP: Record<Food['source'], number> = { custom: 0, external: 1, local: 2 };
 
 /**
- * Finding foods beyond the user's own list: barcode lookup (local first, then the provider)
- * and an explicit online search. Only the barcode or the search text leaves the device – the
- * methods have no access to anything else. Provider failures surface as FoodProviderError;
- * local foods stay usable regardless.
+ * Finding foods. The normal search is completely offline: the user's foods and the bundled
+ * reference data (BLS). An external provider (Open Food Facts) is only asked for a barcode
+ * that is unknown on this device – and receives nothing but that barcode.
  */
 export class FoodLookupService {
   constructor(
     private readonly foods: FoodService,
+    /** Barcode fallback (Open Food Facts). */
     private readonly provider: FoodDataProvider,
+    /** Bundled reference data (BLS). */
+    private readonly reference: ReferenceCatalog,
   ) {}
 
   get providerName(): string {
@@ -35,6 +45,62 @@ export class FoodLookupService {
 
   get providerId(): string {
     return this.provider.id;
+  }
+
+  /** Attribution facts of the bundled reference data; `null` when none is bundled. */
+  referenceInfo(): Promise<ReferenceDatasetInfo | null> {
+    return this.reference.info();
+  }
+
+  /**
+   * Offline search over stored foods and the reference data. Every query word must appear
+   * (case, accents and umlauts ignored); within each group the best match comes first. A
+   * reference food that is already stored appears only once, as the stored food.
+   */
+  async search(
+    profileId: string,
+    query: string,
+    { referenceLimit = REFERENCE_RESULTS_LIMIT }: { referenceLimit?: number } = {},
+  ): Promise<FoodSearchResult[]> {
+    const words = searchWords(query);
+    if (words.length === 0) return [];
+    const [stored, references] = await Promise.all([
+      this.foods.list(profileId),
+      // Stored foods must stay searchable even if the reference data cannot be read.
+      this.reference.search(query, referenceLimit).catch(() => []),
+    ]);
+
+    const ranked: { group: number; score: number; name: string; result: FoodSearchResult }[] = [];
+    const storedCodes = new Set<string>();
+    for (const food of stored) {
+      if (food.origin) storedCodes.add(`${food.origin.dataset}:${food.origin.code}`);
+      const score = matchScore(searchKey(food.name, food.brand), words);
+      if (score === null) continue;
+      ranked.push({
+        group: GROUP[food.source],
+        score,
+        name: food.name,
+        result: { kind: 'food', food },
+      });
+    }
+    for (const reference of references) {
+      if (storedCodes.has(`${reference.dataset}:${reference.code}`)) continue;
+      const score = matchScore(searchKey(reference.name, reference.nameEn), words) ?? 3;
+      ranked.push({
+        group: GROUP.local,
+        score,
+        name: reference.name,
+        result: { kind: 'reference', reference },
+      });
+    }
+    return ranked.sort((a, b) => a.group - b.group || compareMatches(a, b)).map((r) => r.result);
+  }
+
+  /** Stores a reference food on first use (unchanged values) and returns the stored food. */
+  async useReference(reference: ReferenceFood): Promise<Food> {
+    const current = await this.reference.get(reference.code);
+    if (!current) throw new NutritionError('not-found');
+    return this.foods.ensureReference(current);
   }
 
   async lookupBarcode(
@@ -55,27 +121,6 @@ export class FoodLookupService {
     const imported = await this.foods.findImported(profileId, product.provider, product.externalId);
     if (imported) return { kind: 'local', food: await this.reactivated(profileId, imported) };
     return { kind: 'external', product };
-  }
-
-  /** Explicit online search; results that already exist locally are marked as such. */
-  async searchOnline(
-    profileId: string,
-    query: string,
-    options: { locale: string; limit?: number; signal?: AbortSignal },
-  ): Promise<OnlineResult[]> {
-    const products = await this.provider.search(query, {
-      limit: options.limit ?? 20,
-      locale: options.locale,
-      signal: options.signal,
-    });
-    const results: OnlineResult[] = [];
-    for (const product of products) {
-      const local =
-        (await this.foods.findImported(profileId, product.provider, product.externalId)) ??
-        (product.barcode ? await this.localByBarcode(profileId, product.barcode) : null);
-      results.push({ product, local });
-    }
-    return results;
   }
 
   /** Active local food with the barcode; a hidden one is shown again (the user scanned it). */

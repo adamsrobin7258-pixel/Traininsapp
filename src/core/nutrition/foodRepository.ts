@@ -16,6 +16,10 @@ interface FoodRow extends NutrientRow {
   reference_unit: string;
   favorite: number;
   active: number;
+  origin_dataset: string | null;
+  origin_code: string | null;
+  origin_version: string | null;
+  copied_from_food_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -45,6 +49,11 @@ const toFood = (row: FoodRow, servings: FoodServing[]): Food => ({
   servings,
   favorite: bool(row.favorite),
   active: bool(row.active),
+  origin:
+    row.origin_dataset && row.origin_code
+      ? { dataset: row.origin_dataset, code: row.origin_code, version: row.origin_version ?? '' }
+      : null,
+  copiedFromId: row.copied_from_food_id,
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
@@ -115,6 +124,31 @@ export class FoodRepository {
     return this.withServings(rows);
   }
 
+  /** The stored row of a reference food (e.g. BLS code), if it was used before. */
+  async findByOrigin(dataset: string, code: string): Promise<Food | null> {
+    const rows = await this.db.query<FoodRow>(
+      'SELECT * FROM foods WHERE origin_dataset = ? AND origin_code = ?',
+      [dataset, code],
+    );
+    return (await this.withServings(rows))[0] ?? null;
+  }
+
+  /** Stores newer values of a reference food (e.g. after a dataset update). */
+  async updateReference(food: Food): Promise<void> {
+    await this.db.run(
+      `UPDATE foods SET name = ?, energy_kcal = ?, protein_g = ?, carbs_g = ?, fat_g = ?,
+         fiber_g = ?, sugar_g = ?, saturated_fat_g = ?, origin_version = ?, updated_at = ?
+       WHERE id = ? AND source = 'local'`,
+      [
+        food.name,
+        ...nutrientParams(food.nutrients),
+        food.origin?.version ?? null,
+        food.updatedAt,
+        food.id,
+      ],
+    );
+  }
+
   async findExternal(profileId: string, provider: string, externalId: string) {
     const rows = await this.db.query<FoodRow>(
       `SELECT * FROM foods WHERE profile_id = ? AND source = 'external'
@@ -128,8 +162,9 @@ export class FoodRepository {
     await this.db.run(
       `INSERT INTO foods (id, profile_id, source, provider, external_id, name, brand, barcode,
          reference_amount, reference_unit, ${NUTRIENT_COLUMNS}, favorite, active,
+         origin_dataset, origin_code, origin_version, copied_from_food_id,
          created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         food.id,
         food.profileId,
@@ -144,6 +179,10 @@ export class FoodRepository {
         ...nutrientParams(food.nutrients),
         food.favorite ? 1 : 0,
         food.active ? 1 : 0,
+        food.origin?.dataset ?? null,
+        food.origin?.code ?? null,
+        food.origin?.version ?? null,
+        food.copiedFromId,
         food.createdAt,
         food.updatedAt,
       ],

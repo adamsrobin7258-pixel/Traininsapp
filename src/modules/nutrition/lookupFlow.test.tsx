@@ -55,7 +55,7 @@ async function withFoods(services: AppServices, profileId: string) {
   });
 }
 
-describe('adding foods: quick access, online search and barcode', () => {
+describe('adding foods: quick access, offline search (BLS) and barcode', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
@@ -105,46 +105,118 @@ describe('adding foods: quick access, online search and barcode', () => {
     });
   });
 
-  it('searches online only on request and labels the source', async () => {
+  it('searches own foods and the BLS offline – never Open Food Facts – and labels the source', async () => {
     const provider = new FakeFoodProvider();
-    provider.products = [
-      externalProduct(),
-      externalProduct({
-        externalId: '4002',
-        barcode: '4000000000022',
-        name: 'Skyr Vanille',
-        nutrients: { ...externalProduct().nutrients, fatG: null },
-        missing: ['fatG'],
-      }),
-    ];
-    await renderApp('/nutrition', { foodProvider: provider });
-    await openAdd();
-    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'skyr');
-    expect(provider.calls).toEqual([]);
-
-    await userEvent.click(dialog().getByRole('button', { name: 'Online suchen: „skyr“' }));
-    const results = within(await screen.findByRole('list', { name: 'Open Food Facts' }));
-    expect(await results.findByText('Skyr Natur')).toBeInTheDocument();
-    expect(results.getByText('Milbona · 63 kcal pro 100 g')).toBeInTheDocument();
-    expect(results.getByText('Milbona · Nährwerte unvollständig')).toBeInTheDocument();
-    expect(provider.calls).toEqual([{ method: 'search', value: 'skyr' }]);
-    expect(dialog().getByText(/Gesendet wird nur dein Suchbegriff/)).toBeInTheDocument();
-  });
-
-  it('keeps local foods usable when Open Food Facts cannot be reached', async () => {
-    const provider = new FakeFoodProvider();
-    provider.failWith = 'offline';
+    provider.products = [externalProduct({ name: 'Haferflocken Online' })];
     await renderApp('/nutrition', { prepare: withFoods, foodProvider: provider });
     await openAdd();
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'hafer');
-    await userEvent.click(dialog().getByRole('button', { name: /Online suchen/ }));
-    expect(await dialog().findByRole('alert')).toHaveTextContent(
-      'Keine Verbindung zu Open Food Facts. Deine gespeicherten Lebensmittel sind weiterhin verfügbar.',
-    );
-    const local = within(dialog().getByRole('list', { name: 'Lebensmittel' }));
-    expect(local.getByText('Haferflocken')).toBeInTheDocument();
-    await userEvent.click(local.getByRole('button', { name: /Haferflocken/ }));
-    expect(await dialog().findByLabelText('Menge')).toBeInTheDocument();
+    const results = within(await screen.findByRole('list', { name: 'Suchergebnisse' }));
+    await waitFor(() => {
+      expect(results.getAllByRole('button').map((b) => b.textContent)).toEqual([
+        'Neues Lebensmittel anlegen',
+        'HaferflockenEigenes · 370 kcal pro 100 g',
+        'HaferflockenBLS 4.0 · 370 kcal pro 100 g',
+      ]);
+    });
+    expect(
+      dialog().getByText(
+        /Bundeslebensmittelschlüssel \(BLS\) 4\.0, Max Rubner-Institut, Lizenz CC BY 4\.0/,
+      ),
+    ).toBeInTheDocument();
+    expect(dialog().queryByText(/Online suchen/)).not.toBeInTheDocument();
+    expect(dialog().queryByText('Haferflocken Online')).not.toBeInTheDocument();
+    expect(provider.calls).toEqual([]);
+  });
+
+  it('finds BLS foods regardless of umlaut spelling and logs one offline', async () => {
+    const provider = new FakeFoodProvider();
+    provider.failWith = 'offline';
+    const { db } = await renderApp('/nutrition', { foodProvider: provider });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'haehnchen');
+    const results = within(await screen.findByRole('list', { name: 'Suchergebnisse' }));
+    await userEvent.click(await results.findByRole('button', { name: /Hähnchenbrust, roh/ }));
+
+    const amount = await screen.findByLabelText('Menge');
+    expect(dialog().getByText(/Max Rubner-Institut/)).toBeInTheDocument();
+    await userEvent.clear(amount);
+    await userEvent.type(amount, '150');
+    await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
+    await closed();
+    expect(
+      await screen.findByRole('heading', { name: 'Frühstück · 165 kcal' }),
+    ).toBeInTheDocument();
+    expect(
+      await db.query(
+        'SELECT source, profile_id, origin_dataset, origin_code, origin_version, energy_kcal FROM foods',
+      ),
+    ).toEqual([
+      {
+        source: 'local',
+        profile_id: null,
+        origin_dataset: 'bls',
+        origin_code: 'T100003',
+        origin_version: '4.0',
+        energy_kcal: 110,
+      },
+    ]);
+    expect(provider.calls).toEqual([]);
+
+    // Used once, it is offered under "recently used" – as the same food, without a duplicate.
+    await openAdd();
+    const recent = within(await screen.findByRole('list', { name: 'Zuletzt verwendet' }));
+    expect(recent.getByText('Hähnchenbrust, roh')).toBeInTheDocument();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'hähnchen');
+    const again = within(await screen.findByRole('list', { name: 'Suchergebnisse' }));
+    await waitFor(() => {
+      expect(again.getAllByRole('button', { name: /Hähnchenbrust/ })).toHaveLength(1);
+    });
+  });
+
+  it('shows a BLS food read-only and edits it as an own copy', async () => {
+    const { db } = await renderApp('/nutrition/foods', {
+      prepare: async (s, profileId) => {
+        const [hit] = await s.nutrition.lookup.search(profileId, 'apfel roh');
+        if (hit?.kind !== 'reference') throw new Error('reference expected');
+        await s.nutrition.lookup.useReference(hit.reference);
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: /Apfel, roh/ }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Lebensmittel aus dem BLS' }),
+    ).toBeInTheDocument();
+    expect(
+      dialog().getByText(/Referenzdaten aus dem Bundeslebensmittelschlüssel/),
+    ).toBeInTheDocument();
+    expect(dialog().queryByLabelText('Name')).not.toBeInTheDocument();
+    expect(
+      dialog().queryByRole('button', { name: 'Lebensmittel löschen' }),
+    ).not.toBeInTheDocument();
+
+    await userEvent.click(dialog().getByRole('button', { name: 'Als eigene Kopie bearbeiten' }));
+    expect(
+      await screen.findByRole('dialog', { name: 'Eigene Kopie bearbeiten' }),
+    ).toBeInTheDocument();
+    expect(dialog().getByText(/Kopie von „Apfel, roh“ \(BLS 4\.0\)/)).toBeInTheDocument();
+    expect(dialog().getByLabelText('Name')).toHaveValue('Apfel, roh');
+    // Unknown detail values stay empty, never 0.
+    expect(dialog().getByLabelText('Kalorien (kcal)')).toHaveValue('52');
+    await userEvent.clear(dialog().getByLabelText('Name'));
+    await userEvent.type(dialog().getByLabelText('Name'), 'Mein Apfel');
+    await userEvent.clear(dialog().getByLabelText('Kalorien (kcal)'));
+    await userEvent.type(dialog().getByLabelText('Kalorien (kcal)'), '60');
+    await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+    await closed();
+
+    expect(await screen.findByText(/Eigene Kopie · 60 kcal pro 100 g/)).toBeInTheDocument();
+    expect(screen.getByText(/BLS 4\.0 · 52 kcal pro 100 g/)).toBeInTheDocument();
+    expect(
+      await db.query('SELECT name, source, energy_kcal, origin_code FROM foods ORDER BY name'),
+    ).toEqual([
+      { name: 'Apfel, roh', source: 'local', energy_kcal: 52, origin_code: 'T100001' },
+      { name: 'Mein Apfel', source: 'custom', energy_kcal: 60, origin_code: null },
+    ]);
   });
 
   it('imports a scanned product after review and logs it; later it is found offline', async () => {
@@ -209,11 +281,9 @@ describe('adding foods: quick access, online search and barcode', () => {
     await renderApp('/nutrition');
     await openAdd();
     await userEvent.click(dialog().getByRole('button', { name: 'Barcode scannen' }));
-    expect(await screen.findByText('Produkt wurde nicht gefunden.')).toBeInTheDocument();
-    expect(
-      dialog().getByText('Du kannst es selbst anlegen oder nach dem Namen suchen.'),
-    ).toBeInTheDocument();
-    await userEvent.click(dialog().getByRole('button', { name: 'Selbst anlegen' }));
+    expect(await screen.findByText('Produkt nicht gefunden.')).toBeInTheDocument();
+    expect(dialog().getByText(/der Barcode ist schon eingetragen/)).toBeInTheDocument();
+    await userEvent.click(dialog().getByRole('button', { name: 'Eigenes Lebensmittel anlegen' }));
     expect(await screen.findByLabelText('Barcode (optional)')).toHaveValue('4009999999999');
   });
 
