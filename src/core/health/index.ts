@@ -23,3 +23,25 @@ export {
   type ChartGeometry,
   type ChartPoint,
 } from './weightChart';
+export * from './importedHealth';
+export { ImportedHealthRepository } from './importedHealthRepository';
+export {
+  DISCONNECTED,
+  HealthConnectionRepository,
+  type HealthConnectionState,
+  type HealthSyncResult,
+} from './healthConnectionRepository';
+export {
+  HealthSyncService,
+  type ConnectOutcome,
+  type HealthConnectionStatus,
+  type SyncOutcome,
+} from './healthSyncService';
+export {
+  HealthSyncProvider,
+  useHealthAutoSync,
+  useHealthSync,
+  useImportedHealthData,
+  type HealthStatusView,
+  type ImportedLoadState,
+} from './HealthSyncProvider';

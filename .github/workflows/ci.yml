@@ -105,6 +105,13 @@ jobs:
           echo "Signer SHA-256: $ACTUAL"
           echo "Expected:       $EXPECTED"
           test -n "$ACTUAL" && test "$ACTUAL" = "$EXPECTED"
+
+          # Health Connect: exactly the four read permissions Kalethra uses – no write,
+          # history or background access, nothing the plugin declares on top (see manifest).
+          HEALTH=$("$BUILD_TOOLS/aapt2" dump permissions "$APK" \
+            | grep -o "android.permission.health\.[A-Z0-9_]*" | sort -u | tr '\n' ' ')
+          echo "Health permissions: $HEALTH"
+          test "$HEALTH" = "android.permission.health.READ_ACTIVE_CALORIES_BURNED android.permission.health.READ_EXERCISE android.permission.health.READ_STEPS android.permission.health.READ_WEIGHT "
           echo "file=$APK" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v5
         with:

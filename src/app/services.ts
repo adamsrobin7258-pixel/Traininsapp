@@ -1,6 +1,7 @@
 import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
-import { WeightRepository, WeightService } from '@/core/health';
+import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
+import { HealthSyncService, WeightRepository, WeightService } from '@/core/health';
 import {
   ExerciseService,
   getTrainingType,
@@ -37,6 +38,8 @@ export interface AppServices {
   sync: SyncService;
   storage: StorageService;
   weight: WeightService;
+  /** Health Connect import (read-only, local). Never writes Kalethra's own weight. */
+  healthSync: HealthSyncService;
   training: TrainingServices;
   nutrition: NutritionServices;
   /** Read-only view on body weight for nutrition (weight itself lives in health). */
@@ -50,6 +53,8 @@ export function createServices(
   foodProvider: FoodDataProvider = createFoodProvider(),
   /** Bundled reference data (BLS) for the offline food search. */
   referenceCatalog: ReferenceCatalog = createBlsCatalog(),
+  /** The device's health store; tests pass a fake. */
+  healthPlatform: HealthPlatform = createHealthPlatform(),
 ): AppServices {
   const weight = new WeightService(new WeightRepository(db), clock);
   const profile = new ProfileService(new ProfileRepository(db), clock);
@@ -80,6 +85,7 @@ export function createServices(
   return {
     storage: new StorageService(db, security, clock),
     weight,
+    healthSync: new HealthSyncService(healthPlatform, db, clock),
     training,
     nutrition: createNutritionServices(
       new NutritionStore(db),

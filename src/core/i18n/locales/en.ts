@@ -791,6 +791,88 @@ export const en: TranslationSchema = {
       sleep: 'Sleep',
     },
   },
+  healthConnect: {
+    name: 'Health Connect',
+    sectionTitle: 'Health data',
+    sectionFooter:
+      'Optional. Kalethra only reads, writes nothing and stores the values encrypted on this device.',
+    sheetTitle: 'Health Connect',
+    status: {
+      loading: 'Checking …',
+      unsupported: 'Not available',
+      needsInstall: 'Not installed',
+      disconnected: 'Not connected',
+      permissionRequired: 'Permission required',
+      connected: 'Connected',
+      syncing: 'Syncing …',
+      failed: 'Last update failed',
+    },
+    intro:
+      'Kalethra can read selected health data from Health Connect – from your scale or watch, for example. We use it only for your personal overview in Kalethra.',
+    readsTitle: 'What Kalethra reads',
+    kinds: {
+      weight: 'Weight',
+      steps: 'Steps',
+      activeEnergy: 'Active calories',
+      exercise: 'Workouts',
+    },
+    kindHints: {
+      weight: 'The earliest measurement of each day',
+      steps: 'Daily total',
+      activeEnergy: 'Daily total',
+      exercise: 'Prepared for a later version – not imported yet',
+    },
+    promises: {
+      readOnly: 'Kalethra writes nothing to Health Connect.',
+      local:
+        'The values are stored only in Kalethra on this device, encrypted. Kalethra sends them to no server and syncs them to no cloud.',
+      goals:
+        'Imported values are only shown. Your nutrition goals still follow only your own weight entries.',
+      window: 'The last 30 days are imported.',
+    },
+    connect: 'Connect Health Connect',
+    connecting: 'Opening Health Connect …',
+    denied: 'Without permission Kalethra cannot read any data. You can try again at any time.',
+    connectFailed: 'Connecting did not work. Please try again.',
+    unsupportedBody:
+      'Health Connect is not available on this device. Health Connect is available on Android phones.',
+    needsInstallBody:
+      'Health Connect is not installed on this device or is out of date. Install or update “Health Connect” from the Google Play Store, then come back here.',
+    lastSync: 'Last updated: {date}',
+    neverSynced: 'No successful update yet.',
+    failedBody: 'The last update did not work. Your imported values so far are kept unchanged.',
+    unavailableBody: 'Health Connect cannot be reached right now. Your imported values are kept.',
+    permissionBody:
+      'Kalethra no longer has access to your health data. Grant permission again in Health Connect. Values imported so far are kept.',
+    partialBody: 'Permission is missing for some data. Those values are not updated.',
+    kindActive: 'Active',
+    kindMissing: 'No access',
+    syncNow: 'Sync now',
+    syncing: 'Syncing …',
+    manage: 'Manage permissions in Health Connect',
+    disconnect: 'Disconnect',
+    disconnectTitle: 'Disconnect?',
+    disconnectBody:
+      'Kalethra will no longer read data from Health Connect. You can also revoke the permission in Health Connect.',
+    deleteImported: 'Delete data imported from Health Connect',
+    deleteImportedHint:
+      'Only the imported values are deleted. Your own weight entries, workouts and nutrition data stay.',
+    disconnectConfirm: 'Disconnect',
+    disconnectFailed: 'Disconnecting did not work. Please try again.',
+    overviewTitle: 'From Health Connect',
+    stepsToday: 'Steps today',
+    activeEnergyToday: 'Active calories today',
+    stepsAverage: 'Steps, 7-day average',
+    importedWeight: 'Weight',
+    importedWeightValue: '{weight} · {date}',
+    ownWins: 'Your own entry for this day takes precedence',
+    steps: '{count} steps',
+    kcal: '{count} kcal',
+    overviewFooter:
+      'For display only. These values change neither your weight entries nor your nutrition goals.',
+    overviewFooterSynced:
+      'For display only, last updated {date}. These values change neither your weight entries nor your nutrition goals.',
+  },
   profile: {
     title: 'Profile',
     localProfile: 'Local profile',
@@ -822,7 +904,7 @@ export const en: TranslationSchema = {
       encryptionOn: 'On',
       encryptionOff: 'Off',
       footerEncrypted:
-        'Your data is encrypted and stored only on this device. The food search works offline. Only for an unknown barcode is that barcode sent to Open Food Facts – never your diary, weight or goals.',
+        'Your data is encrypted and stored only on this device. The food search works offline. Only for an unknown barcode is that barcode sent to Open Food Facts – never your diary, weight or goals. Kalethra reads values from Health Connect only if you turn it on; they stay encrypted on this device.',
       footerDevelopment:
         'Browser development mode: data is stored unencrypted in the browser. The Android and iOS apps always encrypt.',
       runCheck: 'Check storage',
@@ -853,6 +935,9 @@ export const en: TranslationSchema = {
       offTitle: 'Open Food Facts',
       offBody:
         'Only for barcodes that are unknown on your device. Nothing but the barcode is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
+      healthTitle: 'Health Connect',
+      healthBody:
+        'Optional, only after you turn it on (Profile → Health data). Read-only: weight, steps and active calories of the last 30 days, stored encrypted on this device. Nothing is written to Health Connect or sent to a server.',
     },
     aboutTitle: 'About {appName}',
     version: 'Version',

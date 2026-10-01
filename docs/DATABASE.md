@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 9)
+## Aktuelles Schema (Version 10)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -363,6 +363,47 @@ CREATE TABLE exercise_favorites (
 - Datenkatalog: Kategorie `training`, Sensibilität `personal`, exportierbar, wird mit dem Profil
   gelöscht, später synchronisierbar.
 
+## Importierte Gesundheitsdaten (Migration 10, Phase 6.2)
+
+```sql
+CREATE TABLE imported_weights (
+  id TEXT PRIMARY KEY, profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL CHECK (platform IN ('healthConnect')),
+  date TEXT NOT NULL,                 -- lokaler Tag
+  value REAL NOT NULL CHECK (value >= 20 AND value <= 400), unit TEXT NOT NULL DEFAULT 'kg',
+  measured_at TEXT NOT NULL,          -- früheste Messung des Tages, UTC
+  external_id TEXT, source TEXT,      -- Health-Connect-ID, aufzeichnende App/Gerät
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX imported_weights_day ON imported_weights (profile_id, platform, date);
+CREATE INDEX imported_weights_profile_date ON imported_weights (profile_id, date);
+CREATE INDEX imported_weights_platform ON imported_weights (platform);
+
+CREATE TABLE daily_activity (
+  profile_id TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  platform TEXT NOT NULL CHECK (platform IN ('healthConnect')),
+  date TEXT NOT NULL,
+  steps INTEGER,                      -- NULL = keine Daten
+  active_kcal REAL,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+  PRIMARY KEY (profile_id, platform, date)
+);
+CREATE INDEX daily_activity_profile_date ON daily_activity (profile_id, date);
+CREATE INDEX daily_activity_platform ON daily_activity (platform);
+```
+
+- **Rein additiv;** keine bestehende Tabelle ändert sich.
+- **Getrennt von `weight_entries`:** Ein Import verändert nie eigene Gewichte; Ernährungsziele
+  lesen nur `weight_entries` (per Test geprüft).
+- **Ein Wert pro Profil, Plattform und Tag;** beim Gewicht die früheste Messung.
+- **Abgleich** der letzten 30 Tage nur nach vollständig erfolgreichem Lesen; außerhalb des
+  Fensters bleibt alles unverändert (siehe [HEALTH_CONNECT.md](HEALTH_CONNECT.md)).
+- **Kein Tombstone, kein `sync_state`:** Die Daten sind jederzeit neu importierbar und werden
+  nicht in eine Cloud synchronisiert (Datenkatalog: `syncable: false`).
+- Datenkatalog: `imported_weights` Kategorie `health`, `daily_activity` Kategorie `activity`,
+  beide Sensibilität `health`, exportierbar, mit dem Profil gelöscht.
+- Verbindungsstatus: `app_settings`, Schlüssel `healthConnect` (gerätebezogen).
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:
@@ -396,12 +437,11 @@ Training (Migration 4) und das Ernährungsfundament (Migration 6) sind umgesetzt
 
 Skizze zur Orientierung; die Tabellen entstehen mit dem jeweiligen Modul als eigene Migrationen.
 
-| Bereich      | Tabellen (vorläufig)                                                                     |
-| ------------ | ---------------------------------------------------------------------------------------- |
-| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                            |
-| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle: manuell/HealthKit/Health Connect) |
-| Aktivität    | `daily_activity` (Datum, Schritte, aktive Energie, Quelle)                               |
-| Regeneration | `sleep_sessions`                                                                         |
+| Bereich      | Tabellen (vorläufig)                                                                                                            |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                                                                   |
+| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle); Health-Connect-Gewicht und `daily_activity` seit Migration 10 umgesetzt |
+| Regeneration | `sleep_sessions`                                                                                                                |
 
 Leitidee: Messwerte generisch über `measurements(type, value, unit, measured_at, source)` statt
 einer Tabelle pro Messart – neue Messarten brauchen dann keinen Schemaumbau. Importierte Werte

@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { ROUTE_PARAMS } from '@/app/routes';
-import type { WeightEntry } from '@/core/health';
+import { useHealthAutoSync, type WeightEntry } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useStorage } from '@/core/storage';
 import { isLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { EmptyValue, List, ListRow, Screen, Section } from '@/ui';
 import { WeightChart } from '../components/WeightChart';
 import { WeightEntrySheet, type WeightSheetMode } from '../components/WeightEntrySheet';
+import { ImportedHealthOverview } from '../components/ImportedHealthOverview';
 import { WeightHistory } from '../components/WeightHistory';
 import { WeightOverview } from '../components/WeightOverview';
 
@@ -21,6 +22,8 @@ export function HealthScreen() {
   const [params, setParams] = useSearchParams();
   const [editing, setEditing] = useState<WeightEntry | null>(null);
   const { encrypted } = useStorage().security;
+  // Opening Health refreshes imported Health Connect data (throttled, only when connected).
+  useHealthAutoSync();
 
   const today = toLocalDateKey(new Date());
   const requested = params.get(ROUTE_PARAMS.addWeight);
@@ -70,6 +73,8 @@ export function HealthScreen() {
       <Section title={t('weight.history')}>
         <WeightHistory onEdit={setEditing} />
       </Section>
+
+      <ImportedHealthOverview today={new Date()} />
 
       <Section title={t('health.bodyTitle')}>
         <List>{renderPlaceholders(BODY_MEASUREMENTS)}</List>

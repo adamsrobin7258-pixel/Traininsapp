@@ -473,9 +473,11 @@ describe('body weight for nutrition', () => {
     expect(await services.bodyWeight.latestKgOnOrBefore(profileId, '2026-10-03')).toBe(83.5);
     expect(await services.bodyWeight.latestKgOnOrBefore(profileId, '2026-09-01')).toBeNull();
     const tables = await db.query<{ name: string }>(
-      "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%weight%'",
+      "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%weight%' ORDER BY name",
     );
-    expect(tables.map((t) => t.name)).toEqual(['weight_entries']);
+    // Nutrition keeps no weight table of its own. `imported_weights` belongs to the health
+    // import (Health Connect) and is display-only – nutrition never reads it.
+    expect(tables.map((t) => t.name)).toEqual(['imported_weights', 'weight_entries']);
   });
 });
 
@@ -491,7 +493,7 @@ describe('schema', () => {
         duration_s, local_date, created_at, updated_at)
         VALUES ('wo', 'p', 'strength', 'completed', 'x', 'y', 60, '2026-10-01', 'x', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([6, 7, 8, 9]);
+    expect(await migrate(db, migrations)).toEqual([6, 7, 8, 9, 10]);
     expect(await db.query('SELECT value FROM weight_entries')).toEqual([{ value: 82.4 }]);
     expect(await db.query('SELECT id FROM workouts')).toEqual([{ id: 'wo' }]);
     expect(await db.query('SELECT COUNT(*) AS n FROM food_entries')).toEqual([{ n: 0 }]);

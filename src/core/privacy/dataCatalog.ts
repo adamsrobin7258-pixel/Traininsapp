@@ -66,6 +66,23 @@ export const DATA_CATALOG: readonly TableClassification[] = [
   },
   // Catalog rows are technical; user rows are personal (custom exercise names).
   {
+    // Imported from Health Connect; re-importable, so not synced to a cloud.
+    table: 'imported_weights',
+    category: 'health',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
+    table: 'daily_activity',
+    category: 'activity',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     table: 'exercises',
     category: 'training',
     sensitivity: 'personal',

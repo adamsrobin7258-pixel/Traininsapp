@@ -803,6 +803,91 @@ export const de = {
       sleep: 'Schlaf',
     },
   },
+  healthConnect: {
+    name: 'Health Connect',
+    sectionTitle: 'Gesundheitsdaten',
+    sectionFooter:
+      'Optional. Kalethra liest nur, schreibt nichts und speichert die Werte verschlüsselt auf diesem Gerät.',
+    sheetTitle: 'Health Connect',
+    status: {
+      loading: 'Wird geprüft …',
+      unsupported: 'Nicht verfügbar',
+      needsInstall: 'Nicht installiert',
+      disconnected: 'Nicht verbunden',
+      permissionRequired: 'Berechtigung erforderlich',
+      connected: 'Verbunden',
+      syncing: 'Synchronisierung läuft …',
+      failed: 'Letzte Aktualisierung fehlgeschlagen',
+    },
+    intro:
+      'Kalethra kann ausgewählte Gesundheitsdaten aus Health Connect lesen – zum Beispiel von deiner Waage oder Uhr. Wir verwenden sie ausschließlich für deine persönliche Übersicht in Kalethra.',
+    readsTitle: 'Was Kalethra liest',
+    kinds: {
+      weight: 'Gewicht',
+      steps: 'Schritte',
+      activeEnergy: 'Aktive Kalorien',
+      exercise: 'Trainings',
+    },
+    kindHints: {
+      weight: 'Pro Tag die früheste Messung',
+      steps: 'Tagessumme',
+      activeEnergy: 'Tagessumme',
+      exercise: 'Für eine spätere Version vorbereitet – wird noch nicht importiert',
+    },
+    promises: {
+      readOnly: 'Kalethra schreibt nichts in Health Connect.',
+      local:
+        'Die Werte werden nur in Kalethra auf diesem Gerät gespeichert, verschlüsselt. Kalethra überträgt sie an keinen Server und synchronisiert sie in keine Cloud.',
+      goals:
+        'Importierte Werte werden nur angezeigt. Deine Ernährungsziele richten sich weiter nur nach deinen eigenen Gewichtseinträgen.',
+      window: 'Importiert werden die letzten 30 Tage.',
+    },
+    connect: 'Mit Health Connect verbinden',
+    connecting: 'Health Connect wird geöffnet …',
+    denied:
+      'Ohne Freigabe kann Kalethra keine Daten lesen. Du kannst die Verbindung jederzeit erneut versuchen.',
+    connectFailed: 'Die Verbindung hat nicht geklappt. Bitte versuche es erneut.',
+    unsupportedBody:
+      'Auf diesem Gerät gibt es Health Connect nicht. Health Connect ist auf Android-Smartphones verfügbar.',
+    needsInstallBody:
+      'Health Connect ist auf diesem Gerät nicht installiert oder zu alt. Installiere bzw. aktualisiere „Health Connect“ aus dem Google Play Store und kehre dann hierher zurück.',
+    lastSync: 'Zuletzt aktualisiert: {date}',
+    neverSynced: 'Noch keine erfolgreiche Aktualisierung.',
+    failedBody:
+      'Die letzte Aktualisierung hat nicht geklappt. Deine bisher importierten Werte bleiben unverändert erhalten.',
+    unavailableBody:
+      'Health Connect ist gerade nicht erreichbar. Deine bisher importierten Werte bleiben erhalten.',
+    permissionBody:
+      'Kalethra hat keinen Zugriff mehr auf deine Gesundheitsdaten. Erteile die Berechtigung in Health Connect erneut. Bereits importierte Werte bleiben erhalten.',
+    partialBody: 'Für einige Daten fehlt die Berechtigung. Diese werden nicht aktualisiert.',
+    kindActive: 'Aktiv',
+    kindMissing: 'Kein Zugriff',
+    syncNow: 'Jetzt synchronisieren',
+    syncing: 'Wird synchronisiert …',
+    manage: 'Berechtigungen in Health Connect verwalten',
+    disconnect: 'Verbindung trennen',
+    disconnectTitle: 'Verbindung trennen?',
+    disconnectBody:
+      'Kalethra liest danach keine Daten mehr aus Health Connect. Die Freigabe kannst du zusätzlich in Health Connect entziehen.',
+    deleteImported: 'Importierte Daten aus Health Connect löschen',
+    deleteImportedHint:
+      'Gelöscht werden nur die importierten Werte. Deine eigenen Gewichtseinträge, Trainings und Ernährungsdaten bleiben erhalten.',
+    disconnectConfirm: 'Trennen',
+    disconnectFailed: 'Das Trennen hat nicht geklappt. Bitte versuche es erneut.',
+    overviewTitle: 'Aus Health Connect',
+    stepsToday: 'Schritte heute',
+    activeEnergyToday: 'Aktive Kalorien heute',
+    stepsAverage: 'Schritte, Ø 7 Tage',
+    importedWeight: 'Gewicht',
+    importedWeightValue: '{weight} · {date}',
+    ownWins: 'Dein eigener Eintrag für diesen Tag hat Vorrang',
+    steps: '{count} Schritte',
+    kcal: '{count} kcal',
+    overviewFooter:
+      'Nur zur Ansicht. Diese Werte verändern weder deine Gewichtseinträge noch deine Ernährungsziele.',
+    overviewFooterSynced:
+      'Nur zur Ansicht, zuletzt aktualisiert {date}. Diese Werte verändern weder deine Gewichtseinträge noch deine Ernährungsziele.',
+  },
   profile: {
     title: 'Profil',
     localProfile: 'Lokales Profil',
@@ -834,7 +919,7 @@ export const de = {
       encryptionOn: 'Aktiv',
       encryptionOff: 'Nicht aktiv',
       footerEncrypted:
-        'Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche läuft offline. Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts gesendet – Tagebuch, Gewicht und Ziele nie.',
+        'Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche läuft offline. Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts gesendet – Tagebuch, Gewicht und Ziele nie. Werte aus Health Connect liest Kalethra nur, wenn du es einschaltest; sie bleiben verschlüsselt auf diesem Gerät.',
       footerDevelopment:
         'Browser-Entwicklungsmodus: Daten liegen unverschlüsselt im Browser. Die Android- und iOS-App speichern immer verschlüsselt.',
       runCheck: 'Speicher prüfen',
@@ -865,6 +950,9 @@ export const de = {
       offTitle: 'Open Food Facts',
       offBody:
         'Nur für Barcodes, die auf deinem Gerät unbekannt sind. Gesendet wird ausschließlich der Barcode. Daten: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
+      healthTitle: 'Health Connect',
+      healthBody:
+        'Optional, erst nachdem du es einschaltest (Profil → Gesundheitsdaten). Nur lesend: Gewicht, Schritte und aktive Kalorien der letzten 30 Tage, verschlüsselt auf diesem Gerät gespeichert. Nichts wird in Health Connect geschrieben oder an einen Server gesendet.',
     },
     aboutTitle: 'Über {appName}',
     version: 'Version',

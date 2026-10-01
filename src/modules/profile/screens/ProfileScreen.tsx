@@ -11,6 +11,7 @@ import {
 import { DISPLAY_NAME_MAX_LENGTH, useProfile } from '@/core/user';
 import { List, ListRow, Screen, Section, SegmentedControl, TextField } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
+import { HealthDataSection } from '../components/HealthDataSection';
 import { PrivacySection } from '../components/PrivacySection';
 import { ProfileHeader } from '../components/ProfileHeader';
 
@@ -90,6 +91,8 @@ export function ProfileScreen() {
           }}
         />
       </Section>
+
+      <HealthDataSection />
 
       <PrivacySection />
 

@@ -34,6 +34,8 @@ Pull Request und einen Eintrag in diesem Dokument.
 | `weight_entries`                                                                      | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings`                                              | **Gesundheitsdaten** |
 | `profiles`                                                                            | Lokale Profil-ID (UUID), optionaler Vorname; Geschlecht, Geburtsdatum, Körpergröße (für die Ernährungsberechnung) | **Gesundheitsdaten** |
 | `exercises`                                                                           | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)                                                          | personenbezogen      |
+| `imported_weights`                                                                    | Aus Health Connect importiertes Tagesgewicht (früheste Messung des Tages), nur Anzeige                            | **Gesundheitsdaten** |
+| `daily_activity`                                                                      | Aus Health Connect importierte Tageswerte: Schritte, aktive Kalorien, nur Anzeige                                 | **Gesundheitsdaten** |
 | `exercise_muscles`                                                                    | Muskelgruppen je Übung                                                                                            | technisch            |
 | `exercise_favorites`                                                                  | Favorisierte Übungen je Profil                                                                                    | personenbezogen      |
 | `training_plans`, `training_plan_days`, `planned_exercises`                           | Trainingspläne, Tage, Übungen mit Vorgaben                                                                        | **Gesundheitsdaten** |
@@ -44,16 +46,18 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** gespeichert – ausschließlich in der verschlüsselten Datenbank (per Test erzwungen). Die Trainingsfunktion nutzt kein Netzwerk, keine Analyse- und keine Tracking-Dienste. Seit Phase 4.1 existiert das Datenmodell für **Ernährung** (verschlüsselt, lokal). Die externe Lebensmitteldatenbank (seit Phase 4.3 Open Food Facts, seit Phase 4.4 nur noch für Barcodes) erhält ausschließlich Barcode bzw. Produkt-ID – niemals Suchtext, Tagebuch, Ziele, Gewicht oder Profildaten. Der Bundeslebensmittelschlüssel (BLS) ist Teil der App und wird ohne Netzwerk durchsucht. Standortdaten werden noch nicht gespeichert.
 
+Seit Phase 6.2 kann der Nutzer **Health Connect** (Android) ausdrücklich einschalten. Kalethra liest dann Gewicht, Schritte und aktive Kalorien der letzten 30 Tage – nur lesend, nur im Vordergrund, ohne Netzwerk – und speichert sie getrennt von den eigenen Daten verschlüsselt auf dem Gerät (`imported_weights`, `daily_activity`). Importierte Werte werden nur angezeigt und beeinflussen weder eigene Gewichtseinträge noch Ernährungsziele. Beim Trennen lassen sie sich löschen (voreingestellt). Die für Health Connect nötige Datenschutzerklärung liegt offline in der App (`public/privacypolicy.html`). Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md).
+
 ### Künftig (⏳ geplant, noch nicht implementiert)
 
-| Daten                                  | Kategorie        | Sensibilität                                                    |
-| -------------------------------------- | ---------------- | --------------------------------------------------------------- |
-| Gewicht, Körperfett, Muskelmasse       | Gesundheit       | Gesundheitsdaten (Art. 9 DSGVO)                                 |
-| Herzfrequenz, Ruhepuls                 | Gesundheit       | Gesundheitsdaten                                                |
-| Schlaf, Regeneration                   | Gesundheit       | Gesundheitsdaten                                                |
-| Schritte, aktive Energie               | Aktivität        | Gesundheitsdaten                                                |
-| GPS-Tracks, Routen                     | Standort         | Standortdaten – verraten Wohnort, Arbeitsplatz und Gewohnheiten |
-| Importe aus HealthKit / Health Connect | je nach Datenart | Gesundheitsdaten                                                |
+| Daten                            | Kategorie        | Sensibilität                                                    |
+| -------------------------------- | ---------------- | --------------------------------------------------------------- |
+| Gewicht, Körperfett, Muskelmasse | Gesundheit       | Gesundheitsdaten (Art. 9 DSGVO)                                 |
+| Herzfrequenz, Ruhepuls           | Gesundheit       | Gesundheitsdaten                                                |
+| Schlaf, Regeneration             | Gesundheit       | Gesundheitsdaten                                                |
+| Schritte, aktive Energie         | Aktivität        | Gesundheitsdaten                                                |
+| GPS-Tracks, Routen               | Standort         | Standortdaten – verraten Wohnort, Arbeitsplatz und Gewohnheiten |
+| Importe aus HealthKit (iOS)      | je nach Datenart | Gesundheitsdaten                                                |
 
 ## Datenkatalog (🟡 vorbereitet, ✅ erzwungen)
 
@@ -263,13 +267,14 @@ dem Gerät unbekannt ist. Details in [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 
 ## Berechtigungen
 
-| Berechtigung                  | Status                                                                                                                                                                                 |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Internet (Android `INTERNET`) | Nur für die Barcode-Abfrage bei Open Food Facts (lokal unbekannter Barcode). Die Lebensmittelsuche braucht kein Internet. Sonst keine Verbindungen.                                    |
-| Standort                      | nicht angefragt ⏳ (siehe [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))                                                                                                                  |
-| Health Connect / HealthKit    | nicht angefragt ⏳                                                                                                                                                                     |
-| Kamera                        | Nur für den Barcode-Scanner; angefragt erst beim Öffnen des Scanners. Das Bild wird auf dem Gerät ausgewertet (Android ZXing, iOS Apple Vision), nicht gespeichert und nicht gesendet. |
-| Benachrichtigungen            | nicht angefragt ⏳                                                                                                                                                                     |
+| Berechtigung                  | Status                                                                                                                                                                                                                                                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Internet (Android `INTERNET`) | Nur für die Barcode-Abfrage bei Open Food Facts (lokal unbekannter Barcode). Die Lebensmittelsuche braucht kein Internet. Sonst keine Verbindungen.                                                                                                    |
+| Standort                      | nicht angefragt ⏳ (siehe [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))                                                                                                                                                                                  |
+| Health Connect (Android)      | Nur nach Einschalten durch den Nutzer: Leserechte für Gewicht, Schritte, aktive Kalorien und Trainings (Trainings vorbereitet, noch nicht gelesen). Keine Schreib-, Verlaufs- oder Hintergrundrechte. Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md). |
+| HealthKit (iOS)               | nicht angefragt ⏳                                                                                                                                                                                                                                     |
+| Kamera                        | Nur für den Barcode-Scanner; angefragt erst beim Öffnen des Scanners. Das Bild wird auf dem Gerät ausgewertet (Android ZXing, iOS Apple Vision), nicht gespeichert und nicht gesendet.                                                                 |
+| Benachrichtigungen            | nicht angefragt ⏳                                                                                                                                                                                                                                     |
 
 ## Offene Punkte
 

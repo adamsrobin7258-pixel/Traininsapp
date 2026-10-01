@@ -1,3 +1,4 @@
+import { useHealthAutoSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useProfile } from '@/core/user';
 import { formatLongDate } from '@/shared/lib/format';
@@ -18,6 +19,8 @@ export function DashboardScreen() {
   const { locale, t } = useI18n();
   const { profile } = useProfile();
   const now = useToday();
+  // Refreshes imported Health Connect data when Today opens (throttled, only when connected).
+  useHealthAutoSync();
 
   return (
     <Screen

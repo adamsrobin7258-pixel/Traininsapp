@@ -160,6 +160,25 @@ aktualisierter Dokumentation.
 - Detailansicht mit Muskeln, Ausrüstung, Beschreibung und Favorit; keine Bilder oder Videos
 - Keine vorgefertigten Trainingspläne
 
+## Phase 6.2 – Health Connect (Android) ✅ (Version 0.9.0)
+
+- Optional, standardmäßig aus; eigene Erklärung vor dem Berechtigungsdialog
+- Nur Leserechte (Gewicht, Schritte, aktive Kalorien; Trainings vorbereitet), Manifest auf vier
+  Rechte bereinigt (CI prüft die APK)
+- Import der letzten 30 Tage in eigene Tabellen (Migration 10), früheste Tagesmessung beim Gewicht,
+  Schritte/Kalorien über die Health-Connect-Aggregation
+- Abgleich mit Löschungen nur nach vollständig erfolgreichem Lesen
+- Synchronisierung bei Verbinden, App-Start, Rückkehr, Öffnen von Heute/Gesundheit und manuell;
+  automatisch höchstens alle 15 Minuten; keine Hintergrundarbeit
+- Anzeige „Aus Health Connect“ in Gesundheit; Ernährungsziele unverändert
+- Trennen mit vorausgewähltem Löschen der importierten Daten
+- Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
+
+## Phase 6.3 / 6.4 – geplant
+
+- 6.3: externe Trainings aus Health Connect, getrennt von Kalethra-Trainings
+- 6.4: Apple Health (HealthKit) auf iOS
+
 ## Phase 4.6 – Vorschlag
 
 - Rezepte in der Oberfläche (Erstellen, Anzeigen, Eintragen) im neuen Design

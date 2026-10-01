@@ -51,6 +51,9 @@ export function DataSourcesSheet({ onClose }: { onClose: () => void }) {
       <Section title={t('profile.dataSources.offTitle')}>
         <p>{t('profile.dataSources.offBody')}</p>
       </Section>
+      <Section title={t('profile.dataSources.healthTitle')}>
+        <p>{t('profile.dataSources.healthBody')}</p>
+      </Section>
     </Sheet>
   );
 }

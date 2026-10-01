@@ -100,8 +100,46 @@ describe('Android privacy configuration', () => {
     expect(block).not.toContain('<include');
   });
 
-  it('does not request location or other sensitive permissions yet', () => {
+  it('does not request location permissions yet', () => {
     expect(manifest).not.toMatch(/ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION/);
-    expect(manifest).not.toMatch(/android\.permission\.health\./);
+  });
+
+  it('keeps only four Health Connect read permissions and removes everything else', () => {
+    // Every health permission the app keeps (not marked tools:node="remove").
+    const kept = [
+      ...manifest.matchAll(
+        /<uses-permission\s+android:name="(android\.permission\.health\.[A-Z0-9_]+)"\s*\/>/g,
+      ),
+    ]
+      .map((m) => m[1])
+      .sort();
+    expect(kept).toEqual([
+      'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
+      'android.permission.health.READ_EXERCISE',
+      'android.permission.health.READ_STEPS',
+      'android.permission.health.READ_WEIGHT',
+    ]);
+    expect(manifest).not.toMatch(/WRITE_[A-Z_]+"\s*\/>/);
+    expect(manifest).not.toMatch(/READ_HEALTH_DATA_(HISTORY|IN_BACKGROUND)/);
+
+    // Every permission the plugin declares is either kept above or removed by the merger.
+    const plugin = read(
+      'node_modules/@capgo/capacitor-health/android/src/main/AndroidManifest.xml',
+    );
+    const declared = [
+      ...plugin.matchAll(/android:name="(android\.permission\.health\.[A-Z0-9_]+)"/g),
+    ].map((m) => m[1] ?? '');
+    const removed = new Set(
+      [
+        ...manifest.matchAll(
+          /android:name="(android\.permission\.health\.[A-Z0-9_]+)"\s+tools:node="remove"/g,
+        ),
+      ].map((m) => m[1]),
+    );
+    expect(declared.filter((name) => !kept.includes(name) && !removed.has(name))).toEqual([]);
+  });
+
+  it('keeps the health plugin out of the iOS app until Apple Health is implemented', () => {
+    expect(capacitorConfig.ios?.includePlugins).not.toContain('@capgo/capacitor-health');
   });
 });

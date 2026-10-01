@@ -4,6 +4,11 @@ const config: CapacitorConfig = {
   appId: 'com.kalethra.app',
   appName: 'Kalethra',
   webDir: 'dist',
+  ios: {
+    // Health integration is Android-only for now (phase 6.2). Apple Health follows in its own
+    // phase with entitlement and usage texts; until then the iOS app must not link HealthKit.
+    includePlugins: ['@capacitor-community/sqlite', '@capacitor/app', '@capacitor/barcode-scanner'],
+  },
   plugins: {
     CapacitorSQLite: {
       iosDatabaseLocation: 'Library/CapacitorDatabase',

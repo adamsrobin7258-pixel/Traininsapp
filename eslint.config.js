@@ -12,7 +12,7 @@ const databaseDrivers = {
   message: 'Only src/core/database/drivers may use SQLite directly. Use a repository instead.',
 };
 const capacitor = {
-  group: ['@capacitor/*', '@capacitor-community/*'],
+  group: ['@capacitor/*', '@capacitor-community/*', '@capgo/*'],
   message: 'Native APIs belong in platform adapters (src/core/platform) or database drivers.',
 };
 const coreLayer = {
@@ -78,6 +78,9 @@ export default tseslint.config(
             'useTrainingData',
             'useNutrition',
             'useNutritionData',
+            'useHealthSync',
+            'useImportedHealthData',
+            'useHealthAutoSync',
           ],
         },
       ],

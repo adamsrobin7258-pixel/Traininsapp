@@ -2,13 +2,14 @@ import { useLayoutEffect, type ReactNode } from 'react';
 import { I18nProvider } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import { resolveLocale, resolveTheme, SettingsProvider, useSettings } from '@/core/settings';
-import { WeightProvider } from '@/core/health';
+import { HealthSyncProvider, WeightProvider } from '@/core/health';
 import { StorageProvider } from '@/core/storage';
 import { NutritionProvider } from '@/core/nutrition';
 import { TrainingProvider } from '@/core/training';
 import { SyncProvider } from '@/core/sync';
 import { applyTheme, useSystemPrefersDark } from '@/core/theme';
 import { ProfileProvider } from '@/core/user';
+import { HealthSyncTrigger } from './HealthSyncTrigger';
 import { NutritionGoalSync } from './NutritionGoalSync';
 import type { AppServices, InitialState } from './services';
 
@@ -26,12 +27,15 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
           <SyncProvider service={services.sync}>
             <StorageProvider service={services.storage}>
               <WeightProvider service={services.weight}>
-                <TrainingProvider services={services.training}>
-                  <NutritionProvider services={services.nutrition}>
-                    <NutritionGoalSync />
-                    {children}
-                  </NutritionProvider>
-                </TrainingProvider>
+                <HealthSyncProvider service={services.healthSync}>
+                  <TrainingProvider services={services.training}>
+                    <NutritionProvider services={services.nutrition}>
+                      <NutritionGoalSync />
+                      <HealthSyncTrigger />
+                      {children}
+                    </NutritionProvider>
+                  </TrainingProvider>
+                </HealthSyncProvider>
               </WeightProvider>
             </StorageProvider>
           </SyncProvider>
