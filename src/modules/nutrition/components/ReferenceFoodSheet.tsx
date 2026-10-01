@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useI18n, type TranslationKey } from '@/core/i18n';
-import { useNutrition, type Food, type NutrientKey } from '@/core/nutrition';
+import { foodCategory, useNutrition, type Food, type NutrientKey } from '@/core/nutrition';
 import { Button, List, ListRow, Sheet } from '@/ui';
 import {
   describeNutritionError,
@@ -9,6 +9,7 @@ import {
   formatGrams,
   formatKcal,
 } from '../domain/format';
+import { FoodThumb } from './FoodThumb';
 import styles from './Nutrition.module.css';
 
 const ROWS: { key: NutrientKey; label: TranslationKey }[] = [
@@ -38,13 +39,21 @@ export function ReferenceFoodSheet({
   const { mutate } = useNutrition();
   const [favorite, setFavorite] = useState(food.favorite);
   const [failure, setFailure] = useState<string | null>(null);
+  const category = foodCategory(food);
 
   return (
     <Sheet title={t('nutrition.reference.title')} onClose={onClose} closeLabel={t('common.close')}>
       <div className={styles.stack}>
-        <div>
-          <p className={styles.foodName}>{food.name}</p>
-          <p className={styles.hint}>{foodSourceLabel(food, t)}</p>
+        <div className={styles.titleRow}>
+          <FoodThumb food={food} size={56} labelled />
+          <div className={styles.titleText}>
+            <p className={styles.foodName}>{food.name}</p>
+            <p className={styles.hint}>
+              {[category ? t(`nutrition.categories.${category}`) : null, foodSourceLabel(food, t)]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
         </div>
         <p className={styles.notice}>{t('nutrition.reference.readOnly')}</p>
         <List label={t('nutrition.reference.per100')}>

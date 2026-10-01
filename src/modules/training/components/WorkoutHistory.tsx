@@ -3,7 +3,7 @@ import { TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useTrainingData, workoutDisplayTitle } from '@/core/training';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { List, ListRow } from '@/ui';
+import { EmptyState, List, ListRow } from '@/ui';
 import { formatDuration, relativeDay, trainingTypeLabel } from '../domain/format';
 
 const PAGE_SIZE = 10;
@@ -24,11 +24,7 @@ export function WorkoutHistory() {
   if (page.status === 'error') return <p role="alert">{t('training.errors.loadFailed')}</p>;
   if (page.status === 'loading') return null;
   if (page.data.items.length === 0) {
-    return (
-      <List>
-        <ListRow title={t('training.historyEmpty')} />
-      </List>
-    );
+    return <EmptyState icon="training" title={t('training.historyEmpty')} />;
   }
 
   return (

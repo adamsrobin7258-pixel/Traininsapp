@@ -17,6 +17,8 @@ interface ListRowProps {
   /** Right-aligned value, e.g. a measurement or a setting's current state. */
   value?: ReactNode;
   icon?: IconName;
+  /** Custom leading content instead of `icon`, e.g. a food illustration. */
+  leading?: ReactNode;
   /** Turns the row into a navigation link. */
   to?: string;
   /** Turns the row into a button. */
@@ -33,6 +35,7 @@ export function ListRow({
   subtitle,
   value,
   icon,
+  leading,
   to,
   onPress,
   action = false,
@@ -41,7 +44,9 @@ export function ListRow({
 }: ListRowProps) {
   const content = (
     <>
-      {icon ? (
+      {leading ? (
+        <span className={styles.leading}>{leading}</span>
+      ) : icon ? (
         <span className={styles.icon}>
           <Icon name={icon} size={20} />
         </span>

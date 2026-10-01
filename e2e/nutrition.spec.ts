@@ -72,7 +72,7 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   // Water.
   await main.getByRole('button', { name: '500 ml Wasser hinzufügen' }).click();
   await expect(main.getByText('500 ml von 2 l')).toBeVisible();
-  await expect(overview.getByText('370 kcal', { exact: true })).toBeVisible();
+  await expect(overview.getByText('370', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Today shows calories as the big number with their progress.

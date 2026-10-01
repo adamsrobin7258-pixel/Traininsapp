@@ -2,8 +2,9 @@ import { useId, useState } from 'react';
 import { ROUTES } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { matchesFoodSearch, useNutritionData, type Food } from '@/core/nutrition';
-import { List, ListRow, Screen, Section } from '@/ui';
+import { EmptyState, FoodArt, List, ListRow, Screen, Section } from '@/ui';
 import { FoodFormSheet } from '../components/FoodFormSheet';
+import { FavoriteMark, FoodThumb } from '../components/FoodThumb';
 import { foodSourceLabel, formatQuantity } from '../domain/format';
 import styles from '../components/Nutrition.module.css';
 
@@ -78,7 +79,7 @@ export function FoodsScreen() {
                 key={food.id}
                 title={food.name}
                 subtitle={subtitle(food)}
-                icon="star"
+                leading={<FoodThumb food={food} />}
                 onPress={() => {
                   setNotice(null);
                   setEditing(food);
@@ -104,6 +105,8 @@ export function FoodsScreen() {
               key={food.id}
               title={food.name}
               subtitle={subtitle(food)}
+              leading={<FoodThumb food={food} />}
+              trailing={food.favorite ? <FavoriteMark /> : undefined}
               onPress={() => {
                 setNotice(null);
                 setEditing(food);
@@ -112,9 +115,19 @@ export function FoodsScreen() {
           ))}
         </List>
         {foods.status === 'ready' && active.length === 0 ? (
-          <p className={styles.empty}>
-            {query.trim() ? t('nutrition.add.noResults') : t('nutrition.foods.empty')}
-          </p>
+          query.trim() ? (
+            <EmptyState
+              art={<FoodArt name="food" size={48} />}
+              title={t('nutrition.add.noResults')}
+              body={t('nutrition.add.noResultsBody')}
+            />
+          ) : (
+            <EmptyState
+              art={<FoodArt name="fruit" size={48} />}
+              title={t('nutrition.foods.empty')}
+              body={t('nutrition.foods.emptyBody')}
+            />
+          )
         ) : null}
       </Section>
       {hidden.length > 0 ? (
@@ -125,6 +138,7 @@ export function FoodsScreen() {
                 key={food.id}
                 title={food.name}
                 subtitle={subtitle(food)}
+                leading={<FoodThumb food={food} />}
                 onPress={() => {
                   setNotice(null);
                   setEditing(food);

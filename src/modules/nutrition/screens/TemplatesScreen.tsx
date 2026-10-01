@@ -7,7 +7,17 @@ import {
   useNutritionData,
   type SavedMeal,
 } from '@/core/nutrition';
-import { Button, ConfirmSheet, List, ListRow, PromptSheet, Screen, Section, Sheet } from '@/ui';
+import {
+  Button,
+  ConfirmSheet,
+  EmptyState,
+  List,
+  ListRow,
+  PromptSheet,
+  Screen,
+  Section,
+  Sheet,
+} from '@/ui';
 import { describeNutritionError, formatQuantity } from '../domain/format';
 import styles from '../components/Nutrition.module.css';
 
@@ -49,7 +59,11 @@ export function TemplatesScreen() {
         </p>
       ) : null}
       {data.status === 'ready' && templates.length === 0 ? (
-        <p className={styles.empty}>{t('nutrition.templates.empty')}</p>
+        <EmptyState
+          icon="plate"
+          title={t('nutrition.templates.empty')}
+          body={t('nutrition.templates.emptyBody')}
+        />
       ) : null}
       {templates.length > 0 ? (
         <Section>

@@ -3,9 +3,8 @@ import { NUTRITION_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useNutrition, type WaterEntry } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
-import { List, ListRow, Section } from '@/ui';
+import { Icon, List, ListRow, Meter, Section } from '@/ui';
 import { describeNutritionError, formatWater } from '../domain/format';
-import { ProgressBar } from './ProgressBar';
 import { QuickAmountsSheet, WaterSheet } from './WaterSheets';
 import styles from './Nutrition.module.css';
 
@@ -45,30 +44,29 @@ export function WaterSection({
   const total = formatWater(totalMl, locale);
   return (
     <Section title={t('nutrition.water.title')} footer={t('nutrition.water.notCounted')}>
-      <div className={styles.card}>
-        <div className={styles.macro}>
-          <div className={styles.macroHead}>
-            <span className={styles.figureValue}>{total}</span>
-            {goalMl !== null ? (
-              <span className={styles.macroValue}>
-                {t('nutrition.water.ofGoal', { value: total, goal: formatWater(goalMl, locale) })}
-              </span>
-            ) : null}
-          </div>
+      <div className={styles.waterCard}>
+        <div className={styles.waterHead}>
+          <Icon name="drop" size={22} className={styles.waterIcon} />
+          <span className={styles.figureValue}>{total}</span>
           {goalMl !== null ? (
-            <ProgressBar
-              value={totalMl}
-              goal={goalMl}
-              label={t('nutrition.water.title')}
-              valueText={t('nutrition.water.ofGoal', {
-                value: total,
-                goal: formatWater(goalMl, locale),
-              })}
-            />
-          ) : (
-            <p className={styles.hint}>{t('nutrition.water.noGoal')}</p>
-          )}
+            <span className={styles.macroValue}>
+              {t('nutrition.water.ofGoal', { value: total, goal: formatWater(goalMl, locale) })}
+            </span>
+          ) : null}
         </div>
+        {goalMl !== null ? (
+          <Meter
+            tone="water"
+            ratio={goalMl > 0 ? totalMl / goalMl : 0}
+            label={t('nutrition.water.title')}
+            valueText={t('nutrition.water.ofGoal', {
+              value: total,
+              goal: formatWater(goalMl, locale),
+            })}
+          />
+        ) : (
+          <p className={styles.hint}>{t('nutrition.water.noGoal')}</p>
+        )}
         <div className={styles.quick}>
           {waterQuickAmountsMl.map((amount, index) => (
             <button

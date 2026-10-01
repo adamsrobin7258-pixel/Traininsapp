@@ -12,7 +12,16 @@ import {
   type SavedMeal,
 } from '@/core/nutrition';
 import { scanBarcode } from '@/core/platform';
-import { dismissKeyboard, Icon, List, ListRow, SegmentedControl, Sheet } from '@/ui';
+import {
+  dismissKeyboard,
+  EmptyState,
+  FoodArt,
+  Icon,
+  List,
+  ListRow,
+  SegmentedControl,
+  Sheet,
+} from '@/ui';
 import {
   describeNutritionError,
   foodSourceLabel,
@@ -28,6 +37,7 @@ import {
 } from './BarcodeSheets';
 import { FoodFormSheet } from './FoodFormSheet';
 import { FoodQuantitySheet } from './FoodQuantitySheet';
+import { FavoriteMark, FoodThumb } from './FoodThumb';
 import styles from './Nutrition.module.css';
 
 type Tab = 'foods' | 'templates';
@@ -252,7 +262,8 @@ export function AddSheet({
       ]
         .filter(Boolean)
         .join(' · ')}
-      icon={food.favorite ? 'star' : undefined}
+      leading={<FoodThumb food={food} />}
+      trailing={food.favorite ? <FavoriteMark /> : undefined}
       onPress={() => {
         pick(food);
       }}
@@ -267,6 +278,7 @@ export function AddSheet({
         t('nutrition.sources.bls', { version: reference.version }),
         per100(reference.nutrients, { amount: 100, unit: 'g' }, t, locale),
       ].join(' · ')}
+      leading={<FoodThumb food={reference} />}
       disabled={picking !== null}
       onPress={() => {
         pickReference(reference);
@@ -292,7 +304,7 @@ export function AddSheet({
       />
       {tab === 'foods' ? (
         <>
-          <div className={styles.quick}>
+          <div className={`${styles.quick} ${styles.quickWide}`}>
             <button type="button" className={styles.chip} onClick={() => void scan()}>
               <Icon name="barcode" size={18} /> {t('nutrition.lookup.scan')}
             </button>
@@ -367,7 +379,11 @@ export function AddSheet({
                   )}
                 </List>
                 {results.status === 'ready' && matches.length === 0 ? (
-                  <p className={styles.empty}>{t('nutrition.add.noResults')}</p>
+                  <EmptyState
+                    art={<FoodArt name="food" size={48} />}
+                    title={t('nutrition.add.noResults')}
+                    body={t('nutrition.add.noResultsBody')}
+                  />
                 ) : null}
                 {referenceVersion ? (
                   <p className={styles.empty}>
@@ -390,7 +406,11 @@ export function AddSheet({
                   {ready ? ready.foods.map((food) => foodRow(food, food.id)) : null}
                 </List>
                 {ready && ready.foods.length === 0 ? (
-                  <p className={styles.empty}>{t('nutrition.add.noFoods')}</p>
+                  <EmptyState
+                    art={<FoodArt name="fruit" size={48} />}
+                    title={t('nutrition.add.noFoods')}
+                    body={t('nutrition.add.noFoodsBody')}
+                  />
                 ) : null}
               </section>
             )}
@@ -417,7 +437,11 @@ export function AddSheet({
               ))}
             </List>
           ) : ready ? (
-            <p className={styles.empty}>{t('nutrition.add.noTemplates')}</p>
+            <EmptyState
+              icon="plate"
+              title={t('nutrition.add.noTemplates')}
+              body={t('nutrition.add.noTemplatesBody')}
+            />
           ) : null}
         </div>
       )}

@@ -113,7 +113,7 @@ describe('nutrition diary', () => {
   it('creates a food in the add flow and logs it with live nutrients', async () => {
     const { db } = await renderApp('/nutrition');
     await userEvent.click(await screen.findByRole('button', { name: 'Frühstück: hinzufügen' }));
-    expect(dialog().getByText(/Noch keine Lebensmittel vorhanden/)).toBeInTheDocument();
+    expect(dialog().getByText(/Noch keine Lebensmittel gespeichert/)).toBeInTheDocument();
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Skyr');
     await userEvent.click(dialog().getByRole('button', { name: 'Neues Lebensmittel anlegen' }));
 
@@ -347,7 +347,8 @@ describe('water', () => {
     expect(await water().findByText('530 ml')).toBeInTheDocument();
 
     const overview = within(screen.getByRole('region', { name: 'Tagesübersicht' }));
-    expect(overview.getByText('0 kcal')).toBeInTheDocument();
+    // Eaten calories are the big number of the overview (unit shown separately).
+    expect(overview.getByText('0')).toBeInTheDocument();
     expect(await db.query('SELECT * FROM food_entries')).toEqual([]);
   });
 

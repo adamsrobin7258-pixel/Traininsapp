@@ -170,7 +170,7 @@
   cursor: pointer;
 }
 
-/* ── Overview card ────────────────────────────────────────────── */
+/* ── Day overview: on the page, no card ─────────────────────── */
 
 .card {
   display: flex;
@@ -181,9 +181,57 @@
   background: var(--color-surface);
 }
 
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.heroLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.heroIcon {
+  color: var(--color-accent-text);
+}
+
+.heroNumber {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.heroValue {
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  letter-spacing: var(--letter-spacing-display);
+  font-variant-numeric: tabular-nums;
+}
+
+.heroUnit {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
 .energy {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
 }
 
@@ -195,7 +243,7 @@
 }
 
 .figureValue {
-  font-size: var(--font-size-title);
+  font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   line-height: var(--line-height-tight);
@@ -211,12 +259,13 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
+  margin-top: var(--space-2);
 }
 
 .macro {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  gap: var(--space-2);
 }
 
 .macroHead {
@@ -232,25 +281,20 @@
   color: var(--color-text-secondary);
 }
 
-.track {
-  height: 0.5rem;
-  border-radius: var(--radius-full);
-  background: var(--color-surface-muted);
-  overflow: hidden;
-}
-
-/* Reaching or passing a goal is shown neutrally: the bar is simply full, never red. */
-.bar {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--color-accent);
-  transition: width var(--duration-base) var(--ease-standard);
-}
-
 .cardActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+/* A suggestion with its action (e.g. no goals yet): a soft sage surface, not a warning. */
+.callout {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-subtle);
 }
 
 /* ── Meal sections ────────────────────────────────────────────── */
@@ -269,14 +313,62 @@
 
 /* ── Water ───────────────────────────────────────────────────── */
 
+/* Water has its own calm blue world; the level grows softly (see Meter). */
+.waterCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.waterHead {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-3);
+}
+
+.waterHead .macroValue {
+  margin-left: auto;
+  font-size: var(--font-size-subhead);
+}
+
+.waterIcon {
+  flex: none;
+  color: var(--color-water);
+}
+
+.waterCard .chip {
+  border-color: var(--color-water-subtle);
+  background: var(--color-water-subtle);
+}
+
+.waterCard .chip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
 .quick {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
   gap: var(--space-2);
 }
 
+/* Longer labels (barcode actions): side by side when they fit, else stacked. */
+.quickWide {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+}
+
 .chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
   min-height: var(--size-tap-target);
+  transition: transform var(--duration-fast) var(--ease-standard);
   padding: 0 var(--space-3);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -313,6 +405,20 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+}
+
+/* The clear button in Kalethra's line style instead of the browser's default. */
+.search::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  background: var(--color-text-tertiary);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6.5 6.5l11 11M17.5 6.5l-11 11'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+  cursor: pointer;
 }
 
 .scroll {
@@ -529,7 +635,7 @@
 }
 
 .chip svg {
-  vertical-align: -0.2em;
+  flex: none;
 }
 
 .favorite {
@@ -553,9 +659,24 @@
   fill: currentColor;
 }
 
+.titleText {
+  flex: 1;
+  min-width: 0;
+}
+
 .titleRow {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+}
+
+.favoriteMark {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-accent-text);
+}
+
+.favoriteMark svg path {
+  fill: currentColor;
 }

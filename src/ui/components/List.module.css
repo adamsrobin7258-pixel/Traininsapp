@@ -66,6 +66,12 @@
   background: var(--color-accent-subtle);
 }
 
+.leading {
+  display: grid;
+  flex: none;
+  place-items: center;
+}
+
 .text {
   display: flex;
   flex: 1;

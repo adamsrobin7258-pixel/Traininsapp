@@ -1,9 +1,9 @@
-import { useI18n, type TranslationKey } from '@/core/i18n';
-import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
 import { Link } from 'react-router';
 import { NUTRITION_LINKS } from '@/app/routes';
+import { useI18n, type TranslationKey } from '@/core/i18n';
+import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
+import { Icon, Meter } from '@/ui';
 import { formatGrams, formatKcal } from '../domain/format';
-import { ProgressBar } from './ProgressBar';
 import styles from './Nutrition.module.css';
 
 const MACROS: { key: 'proteinG' | 'carbsG' | 'fatG'; label: TranslationKey }[] = [
@@ -13,8 +13,9 @@ const MACROS: { key: 'proteinG' | 'carbsG' | 'fatG'; label: TranslationKey }[] =
 ];
 
 /**
- * Energy and macros of the day against the goal that applied on that day. Without a goal the
- * eaten values are shown alone and the user is invited to set goals – none are invented.
+ * Energy and macros of the day against the goal that applied on that day. The eaten calories
+ * are the one big number; goal and remaining follow quietly. Without a goal the eaten values
+ * are shown alone and the user is invited to set goals – none are invented.
  */
 export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalForDay | null }) {
   const { t, locale } = useI18n();
@@ -25,14 +26,23 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
       (target) => goal.effective[target].value !== null,
     );
   const energy = energyGoal !== null ? goalProgress(totals.energyKcal, energyGoal) : null;
+  const eaten = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
+    totals.energyKcal,
+  );
 
   return (
-    <section className={styles.card} aria-label={t('nutrition.overview.title')}>
+    <section className={styles.overview} aria-label={t('nutrition.overview.title')}>
+      <div className={styles.hero}>
+        <span className={styles.heroLabel}>
+          <Icon name="flame" size={16} className={styles.heroIcon} />
+          {t('nutrition.overview.eaten')}
+        </span>
+        <span className={styles.heroNumber}>
+          <span className={styles.heroValue}>{eaten}</span>
+          <span className={styles.heroUnit}>{t('dashboard.nutrition.kcal')}</span>
+        </span>
+      </div>
       <div className={styles.energy}>
-        <Figure
-          label={t('nutrition.overview.eaten')}
-          value={formatKcal(totals.energyKcal, locale)}
-        />
         <Figure
           label={t('nutrition.overview.goal')}
           value={energyGoal !== null ? formatKcal(energyGoal, locale) : '–'}
@@ -47,9 +57,8 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
         )}
       </div>
       {energyGoal !== null ? (
-        <ProgressBar
-          value={totals.energyKcal}
-          goal={energyGoal}
+        <Meter
+          ratio={energy?.ratio ?? 0}
           label={t('nutrition.nutrients.energy')}
           valueText={t('nutrition.overview.ofGoal', {
             value: formatKcal(totals.energyKcal, locale),
@@ -75,7 +84,12 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
                 <span className={styles.macroValue}>{text}</span>
               </div>
               {target !== null ? (
-                <ProgressBar value={totals[key]} goal={target} label={t(label)} valueText={text} />
+                <Meter
+                  size="thin"
+                  ratio={goalProgress(totals[key], target).ratio}
+                  label={t(label)}
+                  valueText={text}
+                />
               ) : null}
             </div>
           );
@@ -89,7 +103,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
           </Link>
         </div>
       ) : (
-        <div className={styles.stack}>
+        <div className={styles.callout}>
           <div>
             <p className={styles.foodName}>{t('nutrition.overview.noGoalTitle')}</p>
             <p className={styles.hint}>{t('nutrition.overview.noGoalBody')}</p>

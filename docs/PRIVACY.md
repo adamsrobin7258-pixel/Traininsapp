@@ -224,6 +224,13 @@ synchronisiert sind – ohne Konto sofort.
   Nutzer, wohin die Datei geht; es gibt keinen freien Dateizugriff.
 - Import derselben Datei ermöglicht den Gerätewechsel ohne Cloud. ⏳
 
+## Hinweis in der App (Phase 4.5)
+
+Profil → Datenschutz & Sicherheit sagt seit Phase 4.5 statt „sendet keine Daten an Dritte“:
+„Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche
+läuft offline. Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts gesendet –
+Tagebuch, Gewicht und Ziele nie.“ Das deckt sich mit Profil → Über Kalethra → Datenquellen.
+
 ## Lebensmittelsuche (Phase 4.4): offline
 
 Die Suche nach Lebensmitteln läuft vollständig auf dem Gerät: eigene Lebensmittel, gespeicherte

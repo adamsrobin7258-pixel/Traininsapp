@@ -135,10 +135,20 @@ aktualisierter Dokumentation.
 - Datenquellen unter Profil → Über Kalethra
 - Details: [BLS.md](BLS.md)
 
-## Phase 4.5 – Vorschlag
+## Phase 4.5 – Visuelle Identität ✅ (Version 0.7.0)
 
+- Salbeigrüne Farbwelt mit vollständigem Hell-/Dunkel-Satz, semantische Farben inkl. Wasser
+- Heute: Kalorien als große Zahl, Makros, Wasser, Mahlzeiten; Training und Gewicht ruhiger
+- Eigene Icons (Kalorien, Wasser, Mahlzeiten, Gewicht), Lebensmittel-Illustrationen je BLS-Gruppe
+- Dünne Fortschrittslinien, weiche Übergänge (mit „Bewegung reduzieren“ aus), leere Zustände
+- Datenschutztext präzisiert (Barcode an Open Food Facts, sonst nichts)
+- Details: [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md)
+
+## Phase 4.6 – Vorschlag
+
+- Rezepte in der Oberfläche (Erstellen, Anzeigen, Eintragen) im neuen Design
+- Such-Synonyme für den BLS (z. B. „Brokkoli“ → „Broccoli“)
 - Manuelle „Daten aktualisieren“-Funktion für importierte Produkte (mit Änderungsvorschau)
-- Rezepte in der Oberfläche
 
 ## Phase 4 – Weitere Vorschläge
 

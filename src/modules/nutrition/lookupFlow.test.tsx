@@ -127,6 +127,11 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     expect(dialog().queryByText(/Online suchen/)).not.toBeInTheDocument();
     expect(dialog().queryByText('Haferflocken Online')).not.toBeInTheDocument();
     expect(provider.calls).toEqual([]);
+    // Illustrations: the BLS food shows its family (from the code), the own food the neutral
+    // symbol – a family is never guessed.
+    const [, own, bls] = results.getAllByRole('button');
+    expect(own?.querySelector('svg[data-tint]')).toHaveAttribute('data-tint', 'sage');
+    expect(bls?.querySelector('svg[data-tint]')).toHaveAttribute('data-tint', 'sea');
   });
 
   it('finds BLS foods regardless of umlaut spelling and logs one offline', async () => {

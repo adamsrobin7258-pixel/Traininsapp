@@ -12,6 +12,7 @@ import {
 import { Button, Icon, Sheet } from '@/ui';
 import { describeAmountError, describeNutritionError, foodAttribution } from '../domain/format';
 import { formatNumberInput, parseAmountInput } from '../domain/input';
+import { FoodThumb } from './FoodThumb';
 import { MealSelect } from './MealSelect';
 import { NutrientPreview } from './NutrientPreview';
 import styles from './Nutrition.module.css';
@@ -86,7 +87,8 @@ export function FoodQuantitySheet({
     <Sheet title={t('nutrition.add.quantityTitle')} onClose={onBack} closeLabel={t('common.close')}>
       <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
         <div className={styles.titleRow}>
-          <div>
+          <FoodThumb food={food} size={48} labelled />
+          <div className={styles.titleText}>
             <p className={styles.foodName}>{food.name}</p>
             {food.brand ? <p className={styles.hint}>{food.brand}</p> : null}
           </div>

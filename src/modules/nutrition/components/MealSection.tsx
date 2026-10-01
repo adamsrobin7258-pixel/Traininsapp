@@ -1,9 +1,16 @@
 import { useI18n } from '@/core/i18n';
-import { sumNutrients, type FoodEntry } from '@/core/nutrition';
-import { List, ListRow, Section } from '@/ui';
+import { sumNutrients, type DefaultMealKey, type FoodEntry } from '@/core/nutrition';
+import { List, ListRow, Section, type IconName } from '@/ui';
 import type { MealGroup } from '../domain/day';
 import { formatGrams, formatKcal, formatQuantity, mealName } from '../domain/format';
 import styles from './Nutrition.module.css';
+
+const MEAL_ICONS: Record<DefaultMealKey, IconName> = {
+  breakfast: 'cup',
+  lunch: 'plate',
+  dinner: 'moon',
+  snacks: 'apple',
+};
 
 /**
  * One meal of the day with its entries and kcal. Active meals offer "Add" (and saving the
@@ -31,7 +38,10 @@ export function MealSection({
     ].join(' · ');
 
   return (
-    <Section title={`${name} · ${formatKcal(totals.energyKcal, locale)}`}>
+    <Section
+      title={`${name} · ${formatKcal(totals.energyKcal, locale)}`}
+      icon={group.defaultKey ? MEAL_ICONS[group.defaultKey] : 'nutrition'}
+    >
       <List label={name}>
         {group.entries.map((entry) => (
           <ListRow

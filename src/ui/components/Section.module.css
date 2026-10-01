@@ -4,6 +4,9 @@
 }
 
 .title {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   margin-bottom: var(--space-3);
   font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
@@ -16,4 +19,9 @@
   font-size: var(--font-size-footnote);
   line-height: var(--line-height-snug);
   color: var(--color-text-secondary);
+}
+
+.icon {
+  flex: none;
+  color: var(--color-accent-text);
 }
