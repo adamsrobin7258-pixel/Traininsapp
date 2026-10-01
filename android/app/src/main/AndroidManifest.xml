@@ -45,21 +45,22 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!--
-      Health Connect (phase 6.2): read-only access to exactly these four data types. Exercise is
-      declared for the upcoming workout import (phase 6.3); nothing reads it yet. No write, history
-      or background permission. Requested only after the user turns the integration on.
+      Health Connect: read-only access to exactly these five data types – weight, steps, active
+      energy, exercise sessions (phase 6.3) and distance (the distance of those sessions; Health
+      Connect reports it together with their active energy). No write, history or background
+      permission. Requested only after the user turns the integration on.
     -->
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
     <uses-permission android:name="android.permission.health.READ_STEPS" />
     <uses-permission android:name="android.permission.health.READ_ACTIVE_CALORIES_BURNED" />
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
+    <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <!--
       @capgo/capacitor-health declares many more health permissions in its own manifest. Kalethra
       must request only what it uses (Google Play health policy), so the merger removes the rest.
-      CI checks the merged APK for exactly the four permissions above.
+      CI checks the merged APK for exactly the five permissions above.
     -->
     <uses-permission android:name="android.permission.health.WRITE_STEPS" tools:node="remove" />
-    <uses-permission android:name="android.permission.health.READ_DISTANCE" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_ACTIVE_CALORIES_BURNED" tools:node="remove" />
     <uses-permission android:name="android.permission.health.READ_HEART_RATE" tools:node="remove" />

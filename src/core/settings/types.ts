@@ -32,6 +32,11 @@ export interface AppSettings {
   weightUnit: WeightUnitPreference;
   /** Amounts of the water quick buttons (ml), in display order. */
   waterQuickAmountsMl: number[];
+  /**
+   * Adds 100 % of the active calories of imported activities (Health Connect) to the day's
+   * calorie budget. Off by default; the stored nutrition goal itself never changes.
+   */
+  countActivityCalories: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -39,4 +44,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   language: 'system',
   weightUnit: 'kg',
   waterQuickAmountsMl: [250, 500, 750],
+  countActivityCalories: false,
 };

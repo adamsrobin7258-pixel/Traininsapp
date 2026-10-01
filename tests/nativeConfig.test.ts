@@ -104,7 +104,7 @@ describe('Android privacy configuration', () => {
     expect(manifest).not.toMatch(/ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION/);
   });
 
-  it('keeps only four Health Connect read permissions and removes everything else', () => {
+  it('keeps only five Health Connect read permissions and removes everything else', () => {
     // Every health permission the app keeps (not marked tools:node="remove").
     const kept = [
       ...manifest.matchAll(
@@ -115,6 +115,8 @@ describe('Android privacy configuration', () => {
       .sort();
     expect(kept).toEqual([
       'android.permission.health.READ_ACTIVE_CALORIES_BURNED',
+      // Distance: needed so Health Connect returns distance and energy of each activity.
+      'android.permission.health.READ_DISTANCE',
       'android.permission.health.READ_EXERCISE',
       'android.permission.health.READ_STEPS',
       'android.permission.health.READ_WEIGHT',

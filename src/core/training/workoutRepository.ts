@@ -226,6 +226,22 @@ export class WorkoutRepository {
     }));
   }
 
+  /** Start and end of completed workouts between two local days (inclusive). */
+  async completedSpansBetween(
+    profileId: string,
+    fromLocalDate: string,
+    toLocalDate: string,
+  ): Promise<{ startedAt: string; endedAt: string }[]> {
+    const rows = await this.db.query<{ started_at: string; ended_at: string }>(
+      `SELECT started_at, ended_at FROM workouts
+       WHERE profile_id = ? AND status = 'completed' AND ended_at IS NOT NULL
+         AND local_date BETWEEN ? AND ?
+       ORDER BY started_at`,
+      [profileId, fromLocalDate, toLocalDate],
+    );
+    return rows.map((row) => ({ startedAt: row.started_at, endedAt: row.ended_at }));
+  }
+
   /** Sum of completed workout durations on a local day, `null` when nothing was trained. */
   async trainedSecondsOn(profileId: string, localDate: string): Promise<number | null> {
     const rows = await this.db.query<{ total: number | null }>(

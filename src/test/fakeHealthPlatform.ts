@@ -8,9 +8,10 @@ import {
   type HealthPlatform,
   type HealthTimeRange,
   type HealthWeightSample,
+  type HealthWorkout,
 } from '@/core/platform/health';
 
-type ReadKind = 'weight' | 'steps' | 'activeEnergy';
+type ReadKind = 'weight' | 'steps' | 'activeEnergy' | 'exercise';
 
 /**
  * In-memory Health Connect for tests. Holds weights and daily totals, grants or denies
@@ -25,6 +26,7 @@ export class FakeHealthPlatform implements HealthPlatform {
   weights: HealthWeightSample[] = [];
   steps: HealthDailyTotal[] = [];
   activeEnergy: HealthDailyTotal[] = [];
+  workouts: HealthWorkout[] = [];
   failures = new Map<ReadKind, HealthPlatformError>();
   /** While set, every read waits for it. */
   gate: Promise<void> | null = null;
@@ -73,6 +75,12 @@ export class FakeHealthPlatform implements HealthPlatform {
   ): Promise<HealthDailyTotal[]> {
     return this.read(kind, range, () =>
       this[kind].filter((d) => d.dayStart >= range.start && d.dayStart < range.end),
+    );
+  }
+
+  readWorkouts(range: HealthTimeRange): Promise<HealthWorkout[]> {
+    return this.read('exercise', range, () =>
+      this.workouts.filter((w) => w.start >= range.start && w.start < range.end),
     );
   }
 

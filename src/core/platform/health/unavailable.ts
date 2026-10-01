@@ -19,6 +19,7 @@ export function createUnavailableHealthPlatform(): HealthPlatform {
     requestAccess: (kinds) => Promise.resolve({ granted: [], denied: [...kinds] }),
     readWeights: none,
     readDailyTotals: none,
+    readWorkouts: none,
     openSettings: () => Promise.resolve(),
   };
 }

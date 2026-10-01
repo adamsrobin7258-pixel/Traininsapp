@@ -1,10 +1,5 @@
 import { useState } from 'react';
-import {
-  IMPORTED_KINDS,
-  useHealthSync,
-  type ConnectOutcome,
-  type HealthStatusView,
-} from '@/core/health';
+import { useHealthSync, type ConnectOutcome, type HealthStatusView } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { HEALTH_DATA_KINDS } from '@/core/platform/health';
 import { Button, Icon, List, ListRow, Sheet, type IconName } from '@/ui';
@@ -16,6 +11,7 @@ const KIND_ICONS = {
   steps: 'health',
   activeEnergy: 'flame',
   exercise: 'training',
+  distance: 'plan',
 } as const satisfies Record<(typeof HEALTH_DATA_KINDS)[number], IconName>;
 
 /**
@@ -30,7 +26,10 @@ export function HealthConnectSheet({
   onDisconnect: () => void;
 }) {
   const { t } = useI18n();
-  const { status, syncing, connect, syncNow, openSettings } = useHealthSync();
+  const { status, syncing, connect, syncNow, requestMissing, openSettings } = useHealthSync();
+  const missingAccess =
+    status.state === 'permissionRequired' ||
+    (status.state === 'connected' && status.missing.length > 0);
   const [connecting, setConnecting] = useState(false);
   const [outcome, setOutcome] = useState<ConnectOutcome['kind'] | null>(null);
 
@@ -91,6 +90,18 @@ export function HealthConnectSheet({
             >
               {syncing ? t('healthConnect.syncing') : t('healthConnect.syncNow')}
             </Button>
+            {missingAccess ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                disabled={syncing}
+                onClick={() => {
+                  void requestMissing().catch(() => undefined);
+                }}
+              >
+                {t('healthConnect.requestMissing')}
+              </Button>
+            ) : null}
             <button
               type="button"
               className={styles.link}
@@ -171,7 +182,7 @@ function ReadsList({ status }: { status?: HealthStatusView }) {
   const { t } = useI18n();
   const missing =
     status?.state === 'permissionRequired'
-      ? [...IMPORTED_KINDS]
+      ? [...HEALTH_DATA_KINDS]
       : status?.state === 'connected'
         ? status.missing
         : null;
@@ -186,7 +197,7 @@ function ReadsList({ status }: { status?: HealthStatusView }) {
             title={t(`healthConnect.kinds.${kind}`)}
             subtitle={t(`healthConnect.kindHints.${kind}`)}
             value={
-              missing && kind !== 'exercise'
+              missing
                 ? (missing as readonly string[]).includes(kind)
                   ? t('healthConnect.kindMissing')
                   : t('healthConnect.kindActive')

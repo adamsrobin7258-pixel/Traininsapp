@@ -1,6 +1,11 @@
 import type { SqlExecutor } from '@/core/database';
 import type { HealthPlatformId } from '@/core/platform/health';
 import { createId } from '@/shared/lib/id';
+import {
+  activityCategory,
+  type ExternalWorkout,
+  type ExternalWorkoutDraft,
+} from './externalWorkouts';
 import type {
   ActivityDay,
   DailyActivity,
@@ -25,6 +30,46 @@ interface ActivityRow {
   date: string;
   steps: number | null;
   active_kcal: number | null;
+}
+
+interface WorkoutRow {
+  id: string;
+  profile_id: string;
+  platform: HealthPlatformId;
+  external_id: string;
+  activity_type: string;
+  category: string;
+  started_at: string;
+  ended_at: string;
+  local_date: string;
+  duration_s: number;
+  active_kcal: number | null;
+  distance_m: number | null;
+  steps: number | null;
+  source: string | null;
+}
+
+const WORKOUT_COLUMNS = `id, profile_id, platform, external_id, activity_type, category,
+  started_at, ended_at, local_date, duration_s, active_kcal, distance_m, steps, source`;
+
+function toWorkout(row: WorkoutRow): ExternalWorkout {
+  return {
+    id: row.id,
+    profileId: row.profile_id,
+    platform: row.platform,
+    externalId: row.external_id,
+    activityType: row.activity_type,
+    // Re-derived, so an improved mapping applies to stored rows too.
+    category: activityCategory(row.activity_type),
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    localDate: row.local_date,
+    durationS: row.duration_s,
+    activeKcal: row.active_kcal,
+    distanceM: row.distance_m,
+    steps: row.steps,
+    source: row.source,
+  };
 }
 
 const WEIGHT_COLUMNS = 'profile_id, platform, date, value, measured_at, external_id, source';
@@ -163,6 +208,100 @@ export class ImportedHealthRepository {
     );
   }
 
+  /** Inserts new activities and updates known ones (same record ID); never duplicates. */
+  async upsertWorkouts(
+    profileId: string,
+    platform: HealthPlatformId,
+    workouts: readonly ExternalWorkoutDraft[],
+    now: string,
+  ): Promise<void> {
+    for (const w of workouts) {
+      await this.db.run(
+        `INSERT INTO external_workouts (id, profile_id, platform, external_id, activity_type,
+           category, started_at, ended_at, local_date, duration_s, active_kcal, distance_m, steps,
+           source, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(profile_id, platform, external_id) DO UPDATE SET
+           activity_type = excluded.activity_type, category = excluded.category,
+           started_at = excluded.started_at, ended_at = excluded.ended_at,
+           local_date = excluded.local_date, duration_s = excluded.duration_s,
+           active_kcal = excluded.active_kcal, distance_m = excluded.distance_m,
+           steps = excluded.steps, source = excluded.source, updated_at = excluded.updated_at
+         WHERE activity_type IS NOT excluded.activity_type OR started_at IS NOT excluded.started_at
+           OR ended_at IS NOT excluded.ended_at OR active_kcal IS NOT excluded.active_kcal
+           OR distance_m IS NOT excluded.distance_m OR steps IS NOT excluded.steps
+           OR source IS NOT excluded.source`,
+        [
+          createId(),
+          profileId,
+          platform,
+          w.externalId,
+          w.activityType,
+          w.category,
+          w.startedAt,
+          w.endedAt,
+          w.localDate,
+          w.durationS,
+          w.activeKcal,
+          w.distanceM,
+          w.steps,
+          w.source,
+          now,
+          now,
+        ],
+      );
+    }
+  }
+
+  /**
+   * Removes imported activities of the window the platform no longer returns. Call only after a
+   * complete, successful read of activities. Activities outside the window stay.
+   */
+  async removeWorkoutsMissingFrom(
+    profileId: string,
+    platform: HealthPlatformId,
+    window: SyncWindow,
+    keep: readonly ExternalWorkoutDraft[],
+  ): Promise<number> {
+    const ids = keep.map((w) => w.externalId);
+    const result = await this.db.run(
+      `DELETE FROM external_workouts
+       WHERE profile_id = ? AND platform = ? AND local_date >= ? AND local_date <= ?
+         AND external_id NOT IN (${ids.map(() => '?').join(', ') || "''"})`,
+      [profileId, platform, window.fromDate, window.toDate, ...ids],
+    );
+    return result.changes;
+  }
+
+  /** Activities between two local days, newest first. */
+  async listWorkouts(profileId: string, from: string, to: string): Promise<ExternalWorkout[]> {
+    const rows = await this.db.query<WorkoutRow>(
+      `SELECT ${WORKOUT_COLUMNS} FROM external_workouts
+       WHERE profile_id = ? AND local_date >= ? AND local_date <= ?
+       ORDER BY started_at DESC`,
+      [profileId, from, to],
+    );
+    return rows.map(toWorkout);
+  }
+
+  /** The most recent activities, newest first. */
+  async recentWorkouts(profileId: string, limit: number): Promise<ExternalWorkout[]> {
+    const rows = await this.db.query<WorkoutRow>(
+      `SELECT ${WORKOUT_COLUMNS} FROM external_workouts WHERE profile_id = ?
+       ORDER BY started_at DESC LIMIT ?`,
+      [profileId, limit],
+    );
+    return rows.map(toWorkout);
+  }
+
+  async findWorkout(profileId: string, id: string): Promise<ExternalWorkout | null> {
+    const rows = await this.db.query<WorkoutRow>(
+      `SELECT ${WORKOUT_COLUMNS} FROM external_workouts WHERE profile_id = ? AND id = ?`,
+      [profileId, id],
+    );
+    return rows[0] ? toWorkout(rows[0]) : null;
+  }
+
   /** Deletes every imported value of the platform – and nothing else. */
   async deleteAll(profileId: string, platform: HealthPlatformId): Promise<void> {
     await this.db.run('DELETE FROM imported_weights WHERE profile_id = ? AND platform = ?', [
@@ -170,6 +309,10 @@ export class ImportedHealthRepository {
       platform,
     ]);
     await this.db.run('DELETE FROM daily_activity WHERE profile_id = ? AND platform = ?', [
+      profileId,
+      platform,
+    ]);
+    await this.db.run('DELETE FROM external_workouts WHERE profile_id = ? AND platform = ?', [
       profileId,
       platform,
     ]);
@@ -206,8 +349,9 @@ export class ImportedHealthRepository {
   async hasData(profileId: string): Promise<boolean> {
     const rows = await this.db.query<{ n: number }>(
       `SELECT (SELECT COUNT(*) FROM imported_weights WHERE profile_id = ?)
-            + (SELECT COUNT(*) FROM daily_activity WHERE profile_id = ?) AS n`,
-      [profileId, profileId],
+            + (SELECT COUNT(*) FROM daily_activity WHERE profile_id = ?)
+            + (SELECT COUNT(*) FROM external_workouts WHERE profile_id = ?) AS n`,
+      [profileId, profileId, profileId],
     );
     return (rows[0]?.n ?? 0) > 0;
   }

@@ -26,6 +26,7 @@ describe('SettingsService', () => {
       language: 'en',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
+      countActivityCalories: false,
     });
   });
 
@@ -43,6 +44,19 @@ describe('SettingsService', () => {
       await expect(service.update('waterQuickAmountsMl', invalid)).rejects.toThrow(/Invalid value/);
     }
     expect((await service.load()).waterQuickAmountsMl).toEqual([200, 330]);
+  });
+
+  it('keeps "Aktivitätskalorien anrechnen" off by default and persists the choice', async () => {
+    const { db, service } = await createService();
+    expect((await service.load()).countActivityCalories).toBe(false);
+    await service.update('countActivityCalories', true);
+    // A new service (app restart) reads the stored choice.
+    const restarted = new SettingsService(new SettingsRepository(db, fixedClock()));
+    expect((await restarted.load()).countActivityCalories).toBe(true);
+    // @ts-expect-error – deliberately invalid input
+    await expect(service.update('countActivityCalories', 'yes')).rejects.toThrow(/Invalid value/);
+    await service.update('countActivityCalories', false);
+    expect((await restarted.load()).countActivityCalories).toBe(false);
   });
 
   it('ignores corrupt or unknown stored values', async () => {
@@ -69,6 +83,7 @@ describe('parseSettings', () => {
       language: 'de',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
+      countActivityCalories: false,
     });
   });
 });

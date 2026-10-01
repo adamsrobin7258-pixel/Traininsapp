@@ -57,6 +57,44 @@ export interface NutritionProfileState {
 export interface GoalForDay {
   goal: NutritionGoal;
   effective: Record<GoalTarget, EffectiveGoalValue>;
+  /** Active calories of the day's imported activities (only from `dayGoal`, when there are any). */
+  activity?: DayActivityCalories;
+}
+
+/**
+ * Imported activity calories of a day and whether they were added to the calorie budget. The
+ * stored goal stays untouched: `baseKcal` is its value, the bonus is computed per day.
+ */
+export interface DayActivityCalories {
+  kcal: number;
+  /** True when the setting is on and the bonus is part of `effective.energyKcal`. */
+  counted: boolean;
+  /** The day's calorie goal without the bonus (`null` without a calorie goal). */
+  baseKcal: number | null;
+  /** Activities left out because they duplicate a Kalethra workout. */
+  excluded: number;
+}
+
+/**
+ * Adds a day's activity calories to the calorie budget (100 %, no adjustment) when counting is
+ * on. Only the calorie budget changes – protein, fat and carbohydrate targets stay exactly as
+ * stored, custom values included.
+ */
+export function withActivityCalories(
+  day: GoalForDay,
+  activity: { kcal: number; excluded: number },
+  count: boolean,
+): GoalForDay {
+  if (activity.kcal <= 0 && activity.excluded === 0) return day;
+  const base = day.effective.energyKcal;
+  const counted = count && base.value !== null && activity.kcal > 0;
+  return {
+    ...day,
+    effective: counted
+      ? { ...day.effective, energyKcal: { ...base, value: (base.value ?? 0) + activity.kcal } }
+      : day.effective,
+    activity: { kcal: activity.kcal, counted, baseKcal: base.value, excluded: activity.excluded },
+  };
 }
 
 /**
@@ -82,6 +120,21 @@ export class GoalService {
   async goalFor(profileId: string, localDate: string): Promise<GoalForDay | null> {
     const goal = goalForDate(await this.list(profileId), localDate);
     return goal ? { goal, effective: effectiveTargets(goal) } : null;
+  }
+
+  /**
+   * The goal of a day as the daily views show it: the stored goal plus, when `countActivity` is
+   * on, the active calories of that day's imported activities on the calorie budget.
+   */
+  async dayGoal(
+    profileId: string,
+    localDate: string,
+    { countActivity }: { countActivity: boolean },
+  ): Promise<GoalForDay | null> {
+    const day = await this.goalFor(profileId, localDate);
+    if (!day || !this.sources.activity) return day;
+    const activity = await this.sources.activity.caloriesOn(profileId, localDate);
+    return withActivityCalories(day, activity, countActivity);
   }
 
   /** Saves the goal starting on a day; a goal for the same start day is replaced. */

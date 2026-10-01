@@ -102,6 +102,11 @@ export function TrainingScreen() {
             to={TRAINING_LINKS.plans}
           />
           <ListRow title={t('training.manageExercises')} to={TRAINING_LINKS.exercises} />
+          <ListRow
+            title={t('activities.title')}
+            subtitle={t('activities.linkHint')}
+            to={TRAINING_LINKS.activities}
+          />
         </List>
       </Section>
 

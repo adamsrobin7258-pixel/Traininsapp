@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { NUTRITION_LINKS } from '@/app/routes';
+import { useHealthSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import {
   SAVED_MEAL_NAME_MAX_LENGTH,
@@ -9,6 +10,7 @@ import {
   type FoodEntry,
   type MealSlot,
 } from '@/core/nutrition';
+import { useSettings } from '@/core/settings';
 import { toLocalDateKey } from '@/shared/lib/date';
 import { List, ListRow, PromptSheet, Screen, Section } from '@/ui';
 import { AddSheet } from '../components/AddSheet';
@@ -42,14 +44,17 @@ export function NutritionScreen() {
   const day = resolveDay(params.get(DAY_PARAM), today);
   const [open, setOpen] = useState<Open>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const { countActivityCalories } = useSettings().settings;
+  // Reloads after a Health Connect sync: imported activities can change the day's budget.
+  const { revision: healthRevision } = useHealthSync();
 
   const data = useNutritionData(
     async (s, profileId) => ({
       day: await s.diary.getDay(profileId, day),
-      goal: await s.goals.goalFor(profileId, day),
+      goal: await s.goals.dayGoal(profileId, day, { countActivity: countActivityCalories }),
       meals: await s.meals.listAll(profileId),
     }),
-    [day, today],
+    [day, today, countActivityCalories, healthRevision],
   );
 
   function changeDay(next: string) {

@@ -1,0 +1,5 @@
+.note {
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}

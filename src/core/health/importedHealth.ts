@@ -21,11 +21,12 @@ export const SYNC_WINDOW_DAYS = 30;
 /** Automatic syncs (app start, return to the app, opening a screen) run at most this often. */
 export const AUTO_SYNC_INTERVAL_MS = 15 * 60 * 1000;
 
-/** Kinds imported in this phase. `exercise` is requested but not imported yet. */
+/** Kinds imported into their own tables. `distance` is only read as part of activities. */
 export const IMPORTED_KINDS = [
   'weight',
   'steps',
   'activeEnergy',
+  'exercise',
 ] as const satisfies readonly HealthDataKind[];
 export type ImportedKind = (typeof IMPORTED_KINDS)[number];
 

@@ -1,6 +1,7 @@
 import type { AppModule } from '@/app/moduleTypes';
 import { ROUTES } from '@/app/routes';
 import { ActiveWorkoutScreen } from './screens/ActiveWorkoutScreen';
+import { ActivitiesScreen } from './screens/ActivitiesScreen';
 import { ExercisesScreen } from './screens/ExercisesScreen';
 import { PlanScreen } from './screens/PlanScreen';
 import { PlansScreen } from './screens/PlansScreen';
@@ -18,6 +19,7 @@ export const trainingModule: AppModule = {
     { path: 'plans', Screen: PlansScreen },
     { path: 'plans/:planId', Screen: PlanScreen },
     { path: 'exercises', Screen: ExercisesScreen },
+    { path: 'activities', Screen: ActivitiesScreen },
   ],
   tab: { labelKey: 'nav.training', icon: 'training' },
 };

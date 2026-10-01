@@ -317,7 +317,7 @@ describe('health sync service', () => {
     expect(await health.status()).toMatchObject({
       state: 'connected',
       lastResult: 'partial',
-      missing: ['steps', 'activeEnergy'],
+      missing: ['steps', 'activeEnergy', 'distance'],
     });
   });
 
@@ -330,7 +330,7 @@ describe('health sync service', () => {
     expect(await health.sync(profileId, { manual: false })).toEqual({ kind: 'skipped' });
     expect(platform.calls.reads).toBe(reads);
     expect(await health.sync(profileId, { manual: true })).toEqual({ kind: 'done', result: 'ok' });
-    expect(platform.calls.reads).toBe(reads + 3);
+    expect(platform.calls.reads).toBe(reads + 4);
     minutes(14);
     expect(await health.sync(profileId, { manual: false })).toEqual({ kind: 'skipped' });
     minutes(2);
@@ -501,7 +501,7 @@ describe('migration 10', () => {
         VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x');
       INSERT INTO app_settings (key, value, updated_at) VALUES ('theme', '"dark"', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([10]);
+    expect(await migrate(db, migrations)).toEqual([10, 11]);
     expect(await db.query('SELECT id, value FROM weight_entries')).toEqual([
       { id: 'w', value: 82.4 },
     ]);

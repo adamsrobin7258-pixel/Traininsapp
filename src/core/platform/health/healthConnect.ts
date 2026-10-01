@@ -13,7 +13,11 @@ const PLUGIN_TYPES: Record<HealthDataKind, HealthDataType> = {
   steps: 'steps',
   activeEnergy: 'calories',
   exercise: 'workouts',
+  distance: 'distance',
 };
+
+/** Kalethra writes nothing to Health Connect; anything attributed to it is skipped anyway. */
+const OWN_PACKAGE = 'com.kalethra.app';
 
 function toAccess(
   kinds: readonly HealthDataKind[],
@@ -101,6 +105,32 @@ export function createHealthConnectPlatform(): HealthPlatform {
           aggregation: 'sum',
         });
         return samples.map((sample) => ({ dayStart: sample.startDate, value: sample.value }));
+      }),
+    readWorkouts: (range) =>
+      call(async () => {
+        // limit 0 = every session in the range (the plugin pages through all of them). Energy
+        // and distance are aggregated by Health Connect over the session time.
+        const { workouts } = await Health.queryWorkouts({
+          startDate: range.start,
+          endDate: range.end,
+          limit: 0,
+          ascending: true,
+        });
+        return workouts.flatMap((workout) =>
+          workout.platformId && workout.sourceId !== OWN_PACKAGE
+            ? [
+                {
+                  id: workout.platformId,
+                  type: workout.workoutType,
+                  start: workout.startDate,
+                  end: workout.endDate,
+                  activeKcal: workout.totalEnergyBurned ?? null,
+                  distanceM: workout.totalDistance ?? null,
+                  source: workout.sourceName ?? workout.sourceId ?? null,
+                },
+              ]
+            : [],
+        );
       }),
     openSettings: () => call(() => Health.openHealthConnectSettings()),
   };

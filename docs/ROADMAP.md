@@ -164,7 +164,7 @@ aktualisierter Dokumentation.
 
 - Optional, standardmäßig aus; eigene Erklärung vor dem Berechtigungsdialog
 - Nur Leserechte (Gewicht, Schritte, aktive Kalorien; Trainings vorbereitet), Manifest auf vier
-  Rechte bereinigt (CI prüft die APK)
+  Rechte bereinigt (CI prüft die APK; seit 6.3 fünf Rechte)
 - Import der letzten 30 Tage in eigene Tabellen (Migration 10), früheste Tagesmessung beim Gewicht,
   Schritte/Kalorien über die Health-Connect-Aggregation
 - Abgleich mit Löschungen nur nach vollständig erfolgreichem Lesen
@@ -174,10 +174,20 @@ aktualisierter Dokumentation.
 - Trennen mit vorausgewähltem Löschen der importierten Daten
 - Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
 
-## Phase 6.3 / 6.4 – geplant
+## Phase 6.3 – Aktivitäten aus Health Connect ✅ (Version 0.10.0)
 
-- 6.3: externe Trainings aus Health Connect, getrennt von Kalethra-Trainings
-- 6.4: Apple Health (HealthKit) auf iOS
+- Import aller Aktivitätstypen der letzten 30 Tage in `external_workouts` (Migration 11),
+  Abgleich über die Record-ID; zusätzliches Leserecht `READ_DISTANCE`
+- Bereich „Training → Aktivitäten“ mit Liste und Details, getrennt von Kalethra-Trainings, Plänen
+  und Fortschritt; Typen übersetzt (de/en), unbekannte mit eigenem Namen
+- Einstellung „Aktivitätskalorien anrechnen“ (Standard aus): aktive Kalorien der Aktivitäten
+  zusätzlich zum Basisziel des Tages; keine Doppelzählung mit Kalethra-Trainings
+- Aufschlüsselung „Basisziel / Aktivitätskalorien“ in Ernährung und Heute
+- Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
+
+## Phase 6.4 – geplant
+
+- Apple Health (HealthKit) auf iOS
 
 ## Phase 4.6 – Vorschlag
 

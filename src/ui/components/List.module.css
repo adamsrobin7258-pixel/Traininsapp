@@ -91,6 +91,8 @@
   line-height: var(--line-height-snug);
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
+  /* A subtitle may span two lines ("Heute · 18:20" / "42 min · 386 kcal"). */
+  white-space: pre-line;
 }
 
 .value {

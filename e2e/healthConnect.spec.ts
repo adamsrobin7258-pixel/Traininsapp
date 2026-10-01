@@ -30,6 +30,27 @@ async function installFakeHealthConnect(page: Page) {
         ]),
       readDailyTotals: (kind: string) =>
         Promise.resolve([{ dayStart: day(0).toISOString(), value: kind === 'steps' ? 6543 : 321 }]),
+      readWorkouts: () =>
+        Promise.resolve([
+          {
+            id: 'run',
+            type: 'running',
+            start: day(-1, 18, 20).toISOString(),
+            end: day(-1, 19, 2).toISOString(),
+            activeKcal: 386,
+            distanceM: 5800,
+            source: 'Pixel Watch',
+          },
+          {
+            id: 'disc',
+            type: 'frisbeeDisc',
+            start: day(-2, 9, 0).toISOString(),
+            end: day(-2, 9, 30).toISOString(),
+            activeKcal: null,
+            distanceM: null,
+            source: null,
+          },
+        ]),
       openSettings: () => Promise.resolve(),
     };
   });
@@ -112,7 +133,7 @@ test('the connected Health Connect sheet scrolls to its last action on a small s
   // Every permission row keeps its full height – nothing is squeezed or clipped.
   const list = sheet.getByRole('list', { name: 'Was Kalethra liest' });
   const rows = list.getByRole('listitem');
-  await expect(rows).toHaveCount(4);
+  await expect(rows).toHaveCount(5);
   for (const row of await rows.all()) {
     const box = await row.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(48);
@@ -130,8 +151,8 @@ test('the connected Health Connect sheet scrolls to its last action on a small s
   }));
   expect(panel.scroll).toBeGreaterThan(panel.client);
   // … and the last permission and the last action can be reached.
-  await sheet.getByText('Trainings', { exact: true }).scrollIntoViewIfNeeded();
-  await expect(sheet.getByText('Trainings', { exact: true })).toBeInViewport();
+  await sheet.getByText('Distanz', { exact: true }).scrollIntoViewIfNeeded();
+  await expect(sheet.getByText('Distanz', { exact: true })).toBeInViewport();
   const disconnect = sheet.getByRole('button', { name: 'Verbindung trennen' });
   await disconnect.scrollIntoViewIfNeeded();
   await expect(disconnect).toBeInViewport({ ratio: 1 });
@@ -139,4 +160,54 @@ test('the connected Health Connect sheet scrolls to its last action on a small s
   await expect(
     page.getByRole('dialog').getByRole('heading', { name: 'Verbindung trennen?' }),
   ).toBeVisible();
+});
+
+test('shows imported activities apart from workouts and can count their calories', async ({
+  page,
+}) => {
+  // Runs in every project: light and dark, 390 and 320 px wide.
+  await installFakeHealthConnect(page);
+  await page.goto('/profile');
+  const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
+  await section.getByRole('button', { name: /^Health Connect/ }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('button', { name: 'Mit Health Connect verbinden' }).click();
+  await expect(sheet.getByRole('status')).toContainText('Verbunden');
+  await page.keyboard.press('Escape');
+
+  // Training → Aktivitäten: a list of its own, not part of the workout history.
+  const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+  await nav.getByRole('link', { name: 'Training' }).click();
+  await expect(page.getByText('Noch keine abgeschlossenen Trainings.')).toBeVisible();
+  await page.getByRole('link', { name: /Aktivitäten/ }).click();
+  const list = page.getByRole('list', { name: 'Aktivitäten' });
+  await expect(list.getByRole('listitem')).toHaveCount(2);
+  await expect(list.getByRole('listitem').first()).toContainText('Laufen');
+  await expect(list.getByRole('listitem').first()).toContainText('Gestern · 18:20');
+  await expect(list.getByRole('listitem').first()).toContainText('42 min · 5,8 km · 386 kcal');
+  await expect(list.getByRole('listitem').nth(1)).toContainText('Frisbee disc');
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  await list.getByRole('button', { name: /Laufen/ }).click();
+  const detail = page.getByRole('dialog', { name: 'Aktivität' });
+  await expect(detail.getByText('Health Connect · Pixel Watch')).toBeVisible();
+  await expect(detail.getByText('5,8 km')).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await page.keyboard.press('Escape');
+
+  // Off by default; turning it on is saved and explained.
+  await nav.getByRole('link', { name: 'Profil' }).click();
+  const toggle = page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' });
+  await expect(toggle).toHaveAttribute('aria-checked', 'false');
+  await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText(/100 % der von Health Connect gelieferten/)).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  // Reload: the choice stays.
+  await page.reload();
+  await expect(page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
 });

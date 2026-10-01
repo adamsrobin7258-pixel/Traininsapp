@@ -87,6 +87,24 @@ Bänder liegen bei etwa 1,2 bei überwiegend liegender oder sitzender Lebensweis
 
 `Erhaltungsbedarf = Grundumsatz × Alltagsfaktor + Training (falls einbezogen)`
 
+### Aktivitätskalorien aus Health Connect (Phase 6.3)
+
+Getrennt von der Berechnung oben und nur, wenn der Nutzer „Aktivitätskalorien anrechnen“
+einschaltet (**[Produkt]** Voreinstellung **aus**):
+
+- Das berechnete bzw. eigene Kalorienziel bleibt das **Basisziel** und wird nie überschrieben.
+- Für jeden Tag kommt die Summe der aktiven Kalorien der an diesem Tag begonnenen, aus Health
+  Connect importierten Aktivitäten hinzu – zu 100 %, ohne Abschlag
+  (`withActivityCalories`, `GoalService.dayGoal`). Beispiel: 2.300 kcal + 500 kcal = 2.800 kcal.
+- Grundlage sind die Kalorien der Aktivitäten, nicht die Tagessumme „aktive Kalorien“, weil diese
+  die Alltagsbewegung enthält, die der Alltagsfaktor (Abschnitt 3) bereits abdeckt.
+- **Keine Doppelzählung mit Kalethra-Trainings:** Überschneidet sich eine Aktivität zu mindestens
+  50 % (bezogen auf die kürzere Einheit) mit einem abgeschlossenen Kalethra-Training, gilt sie als
+  dieselbe Einheit und zählt nicht. Kalethra-Trainings fließen weiterhin nur über Abschnitt 4 ein.
+- Protein, Fett, Kohlenhydrate und Wasser bleiben unverändert – auch ein individuelles
+  Protein-Ziel. Ohne Kalorienziel wird nichts angerechnet.
+- Ist die Einstellung aus, zeigt Kalethra die Aktivitätskalorien nur zur Information.
+
 ## 6. Zielanpassung
 
 - **[Evidenz]** Etwa 7.700 kcal entsprechen ungefähr 1 kg Körpergewicht. Das ist eine

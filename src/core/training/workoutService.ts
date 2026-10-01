@@ -83,6 +83,11 @@ export class WorkoutService {
     return this.store.repos.workouts.completedBetween(profileId, fromLocalDate, toLocalDate);
   }
 
+  /** Start and end of completed workouts – to recognise the same session imported elsewhere. */
+  completedSpansBetween(profileId: string, fromLocalDate: string, toLocalDate: string) {
+    return this.store.repos.workouts.completedSpansBetween(profileId, fromLocalDate, toLocalDate);
+  }
+
   /** Trained minutes on a local day (for the Today screen); `null` if none. */
   async trainedMinutesOn(profileId: string, localDate: string): Promise<number | null> {
     const seconds = await this.store.repos.workouts.trainedSecondsOn(profileId, localDate);

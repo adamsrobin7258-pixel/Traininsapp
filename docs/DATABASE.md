@@ -404,6 +404,41 @@ CREATE INDEX daily_activity_platform ON daily_activity (platform);
   beide Sensibilität `health`, exportierbar, mit dem Profil gelöscht.
 - Verbindungsstatus: `app_settings`, Schlüssel `healthConnect` (gerätebezogen).
 
+## Importierte Aktivitäten (Migration 11, Phase 6.3)
+
+```sql
+CREATE TABLE external_workouts (
+  id             TEXT PRIMARY KEY NOT NULL,
+  profile_id     TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  platform       TEXT NOT NULL CHECK (platform IN ('healthConnect')),
+  external_id    TEXT NOT NULL,          -- Record-ID in Health Connect
+  activity_type  TEXT NOT NULL,          -- Typ wie geliefert, z. B. 'running'
+  category       TEXT NOT NULL,          -- strength | endurance | hybrid | flexibility | sport | other
+  started_at     TEXT NOT NULL,
+  ended_at       TEXT NOT NULL,
+  local_date     TEXT NOT NULL,          -- lokaler Tag des Starts
+  duration_s     INTEGER NOT NULL,       -- 1 … 86 400
+  active_kcal    REAL,                   -- NULL = nicht geliefert, 0 … 10 000
+  distance_m     REAL,                   -- NULL = nicht geliefert, 0 … 1 000 000
+  steps          INTEGER,                -- NULL (vom Plugin nicht geliefert)
+  source         TEXT,                   -- Gerät oder App laut Health Connect
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
+CREATE UNIQUE INDEX external_workouts_record ON external_workouts (profile_id, platform, external_id);
+CREATE INDEX external_workouts_profile_start ON external_workouts (profile_id, started_at);
+CREATE INDEX external_workouts_profile_date ON external_workouts (profile_id, local_date);
+CREATE INDEX external_workouts_profile_type ON external_workouts (profile_id, activity_type);
+```
+
+- **Rein additiv;** strikt getrennt von `workouts` (keine Fremdschlüssel, keine gemeinsame Sicht).
+- **Eindeutig je Record-ID:** Wiederholtes Lesen aktualisiert die Zeile statt sie zu verdoppeln.
+- **Abgleich** wie bei Migration 10, über `local_date` im 30-Tage-Fenster.
+- Datenkatalog: Kategorie `activity`, Sensibilität `health`, exportierbar, mit dem Profil
+  gelöscht, `syncable: false`. Wird beim Trennen mit „Importierte Daten löschen“ entfernt.
+- Einstellung „Aktivitätskalorien anrechnen“: `app_settings`, Schlüssel `countActivityCalories`
+  (Boolean, Standard `false`). Das Kalorienziel in `nutrition_goals` wird dadurch nie verändert.
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:
@@ -437,11 +472,11 @@ Training (Migration 4) und das Ernährungsfundament (Migration 6) sind umgesetzt
 
 Skizze zur Orientierung; die Tabellen entstehen mit dem jeweiligen Modul als eigene Migrationen.
 
-| Bereich      | Tabellen (vorläufig)                                                                                                            |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------- |
-| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                                                                   |
-| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle); Health-Connect-Gewicht und `daily_activity` seit Migration 10 umgesetzt |
-| Regeneration | `sleep_sessions`                                                                                                                |
+| Bereich      | Tabellen (vorläufig)                                                                                                                                                   |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                                                                                                          |
+| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle); Health-Connect-Gewicht und `daily_activity` seit Migration 10, `external_workouts` seit Migration 11 umgesetzt |
+| Regeneration | `sleep_sessions`                                                                                                                                                       |
 
 Leitidee: Messwerte generisch über `measurements(type, value, unit, measured_at, source)` statt
 einer Tabelle pro Messart – neue Messarten brauchen dann keinen Schemaumbau. Importierte Werte

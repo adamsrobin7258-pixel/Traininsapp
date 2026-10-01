@@ -21,6 +21,8 @@ export const ROUTE_PARAMS = {
 /** Sub pages of the training area. */
 export const TRAINING_LINKS = {
   activeWorkout: `${ROUTES.training}/workout`,
+  /** Activities imported from Health Connect – kept apart from Kalethra's own workouts. */
+  activities: `${ROUTES.training}/activities`,
   exercises: `${ROUTES.training}/exercises`,
   plans: `${ROUTES.training}/plans`,
   workout: (id: string) => `${ROUTES.training}/workouts/${id}`,

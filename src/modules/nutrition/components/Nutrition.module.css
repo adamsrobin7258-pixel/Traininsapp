@@ -680,3 +680,29 @@
 .favoriteMark svg path {
   fill: currentColor;
 }
+
+/* Base goal and imported activity calories below the calorie figures. */
+.activityBudget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.activityBudgetLine {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.activityBudgetValue {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+}
+
+.activityBudgetNote {
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}

@@ -24,6 +24,7 @@ export {
   type ChartPoint,
 } from './weightChart';
 export * from './importedHealth';
+export * from './externalWorkouts';
 export { ImportedHealthRepository } from './importedHealthRepository';
 export {
   DISCONNECTED,

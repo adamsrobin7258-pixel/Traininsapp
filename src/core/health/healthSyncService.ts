@@ -26,6 +26,11 @@ import {
   type ImportedWeightDay,
   type SyncWindow,
 } from './importedHealth';
+import {
+  importableWorkouts,
+  type ExternalWorkout,
+  type ExternalWorkoutDraft,
+} from './externalWorkouts';
 import { ImportedHealthRepository } from './importedHealthRepository';
 
 /** What the settings screen shows. "Syncing" is added by the provider while a sync runs. */
@@ -41,7 +46,8 @@ export type HealthConnectionStatus =
       state: 'connected';
       lastSuccessAt: string | null;
       lastResult: HealthSyncResult | null;
-      missing: ImportedKind[];
+      /** Kinds without access (including `distance`, read only for activities). */
+      missing: HealthDataKind[];
     };
 
 export type SyncOutcome =
@@ -60,6 +66,7 @@ export type ConnectOutcome =
 type KindRead =
   | { kind: 'weight'; ok: true; days: ImportedWeightDay[] }
   | { kind: 'steps' | 'activeEnergy'; ok: true; days: ActivityDay[] }
+  | { kind: 'exercise'; ok: true; workouts: ExternalWorkoutDraft[] }
   | { kind: ImportedKind; ok: false; permission: boolean };
 
 const isImported = (kind: HealthDataKind): kind is ImportedKind =>
@@ -108,7 +115,7 @@ export class HealthSyncService {
       state: 'connected',
       lastSuccessAt: state.lastSuccessAt,
       lastResult: state.lastResult,
-      missing: state.missing.filter(isImported),
+      missing: state.missing,
     };
   }
 
@@ -183,6 +190,32 @@ export class HealthSyncService {
     return this.repository.listActivity(profileId, from, to);
   }
 
+  /** Imported activities between two local days, newest first. */
+  workoutsBetween(profileId: string, from: string, to: string): Promise<ExternalWorkout[]> {
+    return this.repository.listWorkouts(profileId, from, to);
+  }
+
+  recentWorkouts(profileId: string, limit = 100): Promise<ExternalWorkout[]> {
+    return this.repository.recentWorkouts(profileId, limit);
+  }
+
+  workout(profileId: string, id: string): Promise<ExternalWorkout | null> {
+    return this.repository.findWorkout(profileId, id);
+  }
+
+  /**
+   * Shows the permission dialog again – e.g. for data added in a newer version (activities,
+   * distance) or after the user declined some kinds – and syncs right after.
+   */
+  async requestMissingAccess(profileId: string): Promise<SyncOutcome> {
+    try {
+      await this.platform.requestAccess(HEALTH_DATA_KINDS);
+    } catch {
+      return { kind: 'done', result: 'failed' };
+    }
+    return this.sync(profileId, { manual: true });
+  }
+
   hasImportedData(profileId: string): Promise<boolean> {
     return this.repository.hasData(profileId);
   }
@@ -214,15 +247,15 @@ export class HealthSyncService {
       const availability = await this.platform.availability();
       if (availability.kind !== 'available') return await finish('unavailable');
 
-      const access = await this.platform.checkAccess(IMPORTED_KINDS);
+      const access = await this.platform.checkAccess(HEALTH_DATA_KINDS);
       const permitted = access.granted.filter(isImported);
       if (permitted.length === 0)
-        return await finish('permission', { missing: [...IMPORTED_KINDS] });
+        return await finish('permission', { missing: [...HEALTH_DATA_KINDS] });
 
       const window = syncWindow(now);
       const reads = await Promise.all(permitted.map((kind) => this.read(kind, window, now)));
-      const missing = [
-        ...IMPORTED_KINDS.filter((kind) => !permitted.includes(kind)),
+      const missing: HealthDataKind[] = [
+        ...HEALTH_DATA_KINDS.filter((kind) => !access.granted.includes(kind)),
         ...reads.filter((read) => !read.ok && read.permission).map((read) => read.kind),
       ];
       if (reads.every((read) => !read.ok && read.permission)) {
@@ -235,7 +268,17 @@ export class HealthSyncService {
         const repository = new ImportedHealthRepository(tx);
         for (const read of reads) {
           if (!read.ok) continue;
-          if (read.kind === 'weight') {
+          if (read.kind === 'exercise') {
+            await repository.upsertWorkouts(profileId, this.platformId, read.workouts, nowIso);
+            if (complete) {
+              await repository.removeWorkoutsMissingFrom(
+                profileId,
+                this.platformId,
+                window,
+                read.workouts,
+              );
+            }
+          } else if (read.kind === 'weight') {
             await repository.upsertWeights(profileId, this.platformId, read.days, nowIso);
             if (complete) {
               await repository.removeWeightsMissingFrom(
@@ -287,6 +330,10 @@ export class HealthSyncService {
   private async read(kind: ImportedKind, window: SyncWindow, now: Date): Promise<KindRead> {
     const range = { start: window.start, end: window.end };
     try {
+      if (kind === 'exercise') {
+        const workouts = await this.platform.readWorkouts(range);
+        return { kind, ok: true, workouts: importableWorkouts(workouts, window, now) };
+      }
       if (kind === 'weight') {
         const samples = await this.platform.readWeights(range);
         return { kind, ok: true, days: earliestWeightPerDay(samples, window, now) };

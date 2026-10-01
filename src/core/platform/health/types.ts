@@ -13,8 +13,18 @@
 /** Platforms with a health store. Stored with every imported value. */
 export type HealthPlatformId = 'healthConnect';
 
-/** Data Kalethra asks to read. `exercise` is requested now, imported only in a later phase. */
-export const HEALTH_DATA_KINDS = ['weight', 'steps', 'activeEnergy', 'exercise'] as const;
+/**
+ * Data Kalethra asks to read. `distance` is only read together with exercise sessions (the
+ * distance of a run or ride); Health Connect reports a session's distance and active energy in
+ * one request, so both permissions are needed for those values.
+ */
+export const HEALTH_DATA_KINDS = [
+  'weight',
+  'steps',
+  'activeEnergy',
+  'exercise',
+  'distance',
+] as const;
 export type HealthDataKind = (typeof HEALTH_DATA_KINDS)[number];
 
 export type HealthAvailability =
@@ -55,6 +65,24 @@ export interface HealthDailyTotal {
   value: number;
 }
 
+/** One exercise session recorded by another app or device (watch, running app, …). */
+export interface HealthWorkout {
+  /** The platform's record ID (Health Connect metadata ID); stable across reads. */
+  id: string;
+  /**
+   * The provider's activity type as reported, e.g. "running", "strengthTraining". Types the
+   * plugin does not know arrive as "other" – never mapped to a different sport here.
+   */
+  type: string;
+  start: string;
+  end: string;
+  /** Active energy during the session (all sources, de-duplicated by the platform). */
+  activeKcal: number | null;
+  distanceM: number | null;
+  /** Recording app (package name) or device, as reported. */
+  source: string | null;
+}
+
 export type HealthPlatformErrorCode =
   /** The health store is not available (anymore). */
   | 'unavailable'
@@ -86,6 +114,8 @@ export interface HealthPlatform {
     kind: 'steps' | 'activeEnergy',
     range: HealthTimeRange,
   ): Promise<HealthDailyTotal[]>;
+  /** Every exercise session that started in the range, all sources. */
+  readWorkouts(range: HealthTimeRange): Promise<HealthWorkout[]>;
   /** Opens the platform's permission management (Health Connect settings). */
   openSettings(): Promise<void>;
 }

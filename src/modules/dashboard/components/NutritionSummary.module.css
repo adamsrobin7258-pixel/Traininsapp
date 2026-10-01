@@ -159,3 +159,10 @@
   font-size: var(--font-size-footnote);
   color: var(--color-text-secondary);
 }
+
+/* "Basisziel 2.300 kcal · Aktivitätskalorien +500 kcal" below the goal line. */
+.activityLine {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+  font-variant-numeric: tabular-nums;
+}

@@ -375,7 +375,7 @@ describe('migration 8', () => {
          energy_kcal, protein_g, carbs_g, fat_g, created_at, updated_at)
        VALUES ('e1', 'p', '2026-09-01', 'f1', 'Müsli', 50, 'g', 190, 5, 30, 4, 'x', 'x')`,
     );
-    expect(await migrate(db, migrations)).toEqual([8, 9, 10]);
+    expect(await migrate(db, migrations)).toEqual([8, 9, 10, 11]);
 
     const services = createServices(
       { driver: db, security: ENCRYPTED_TEST_SECURITY },

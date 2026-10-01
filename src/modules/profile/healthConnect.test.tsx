@@ -50,12 +50,12 @@ describe('Health Connect settings', () => {
     expect(sheet.getByText('Kalethra schreibt nichts in Health Connect.')).toBeVisible();
     expect(sheet.getByText(/an keinen Server/)).toBeVisible();
     expect(
-      sheet.getByText(/Ernährungsziele richten sich weiter nur nach deinen eigenen/),
+      sheet.getByText(/richten sich weiter nur nach deinen eigenen Gewichtseinträgen/),
     ).toBeVisible();
-    for (const kind of ['Gewicht', 'Schritte', 'Aktive Kalorien', 'Trainings']) {
+    for (const kind of ['Gewicht', 'Schritte', 'Aktive Kalorien', 'Aktivitäten', 'Distanz']) {
       expect(sheet.getByText(kind)).toBeInTheDocument();
     }
-    expect(sheet.getByText(/wird noch nicht importiert/)).toBeInTheDocument();
+    expect(sheet.getByText(/getrennt von deinen Trainings/)).toBeInTheDocument();
     // Nothing was asked from Health Connect yet.
     expect(platform.calls.request).toBe(0);
 
@@ -63,7 +63,7 @@ describe('Health Connect settings', () => {
     expect(platform.calls.request).toBe(1);
     expect(await dialog().findByText('Verbunden')).toBeInTheDocument();
     expect(dialog().getByText(/Zuletzt aktualisiert:/)).toBeInTheDocument();
-    expect(dialog().getAllByText('Aktiv')).toHaveLength(3);
+    expect(dialog().getAllByText('Aktiv')).toHaveLength(5);
     expect(section().getByText('Verbunden')).toBeInTheDocument();
   });
 
@@ -154,10 +154,14 @@ describe('Health Connect settings', () => {
       expect.stringContaining('Gewicht'),
       expect.stringContaining('Schritte'),
       expect.stringContaining('Aktive Kalorien'),
-      expect.stringContaining('Trainings'),
+      expect.stringContaining('Aktivitäten'),
+      expect.stringContaining('Distanz'),
     ]);
     expect(rows[2]).toHaveTextContent('Kein Zugriff');
+    expect(rows[3]).toHaveTextContent('Aktiv');
+    expect(rows[4]).toHaveTextContent('Kein Zugriff');
     for (const name of [
+      'Fehlende Berechtigungen erteilen',
       'Jetzt synchronisieren',
       'Berechtigungen in Health Connect verwalten',
       'Verbindung trennen',

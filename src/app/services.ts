@@ -1,7 +1,12 @@
 import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
 import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
-import { HealthSyncService, WeightRepository, WeightService } from '@/core/health';
+import {
+  countableActivityCalories,
+  HealthSyncService,
+  WeightRepository,
+  WeightService,
+} from '@/core/health';
 import {
   ExerciseService,
   getTrainingType,
@@ -30,6 +35,7 @@ import { SettingsRepository, SettingsService, type AppSettings } from '@/core/se
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
 import { systemClock, type Clock } from '@/shared/lib/clock';
+import { addDays, parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 
 /** Composition root: wires repositories and services to one database connection. */
 export interface AppServices {
@@ -59,6 +65,7 @@ export function createServices(
   const weight = new WeightService(new WeightRepository(db), clock);
   const profile = new ProfileService(new ProfileRepository(db), clock);
   const training = createTrainingServices(new TrainingStore(db), clock);
+  const healthSync = new HealthSyncService(healthPlatform, db, clock);
   const bodyWeight: BodyWeightSource = {
     latestKgOnOrBefore: async (profileId, localDate) =>
       (await weight.getLatestOnOrBefore(profileId, localDate))?.kg ?? null,
@@ -81,11 +88,29 @@ export function createServices(
           category: getTrainingType(w.trainingType).category,
         })),
     },
+    // Imported activities of a day, without sessions that are the same as a completed Kalethra
+    // workout (e.g. a watch recording the gym session that was also logged here).
+    activity: {
+      caloriesOn: async (profileId, localDate) => {
+        const day = parseLocalDateKey(localDate);
+        if (!day) return { kcal: 0, counted: 0, excluded: 0 };
+        // Neighbouring days too: a Kalethra workout may have started before midnight.
+        const [activities, own] = await Promise.all([
+          healthSync.workoutsBetween(profileId, localDate, localDate),
+          training.workouts.completedSpansBetween(
+            profileId,
+            toLocalDateKey(addDays(day, -1)),
+            toLocalDateKey(addDays(day, 1)),
+          ),
+        ]);
+        return countableActivityCalories(activities, own);
+      },
+    },
   };
   return {
     storage: new StorageService(db, security, clock),
     weight,
-    healthSync: new HealthSyncService(healthPlatform, db, clock),
+    healthSync,
     training,
     nutrition: createNutritionServices(
       new NutritionStore(db),

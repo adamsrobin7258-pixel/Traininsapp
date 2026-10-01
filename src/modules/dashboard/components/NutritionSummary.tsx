@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { ROUTES } from '@/app/routes';
+import { useHealthSync } from '@/core/health';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import {
   goalProgress,
@@ -10,6 +11,7 @@ import {
   type MainNutrient,
   type MealSlot,
 } from '@/core/nutrition';
+import { useSettings } from '@/core/settings';
 import { toLocalDateKey } from '@/shared/lib/date';
 import { formatWater } from '@/shared/lib/format';
 import { Icon, List, ListRow, Meter, Section, type IconName } from '@/ui';
@@ -40,13 +42,15 @@ const PREVIEW_FOODS = 2;
 export function NutritionSummary({ now }: { now: Date }) {
   const { t, locale } = useI18n();
   const today = toLocalDateKey(now);
+  const { countActivityCalories } = useSettings().settings;
+  const { revision: healthRevision } = useHealthSync();
   const data = useNutritionData(
     async (s, profileId) => ({
       day: await s.diary.getDay(profileId, today),
-      goal: await s.goals.goalFor(profileId, today),
+      goal: await s.goals.dayGoal(profileId, today, { countActivity: countActivityCalories }),
       meals: await s.meals.listActive(profileId),
     }),
-    [today],
+    [today, countActivityCalories, healthRevision],
   );
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const ready = data.status === 'ready' ? data.data : null;
@@ -58,6 +62,7 @@ export function NutritionSummary({ now }: { now: Date }) {
   const kcal = (value: number) => `${number.format(value)} ${t('dashboard.nutrition.kcal')}`;
   const grams = (value: number) => `${number.format(value)} g`;
 
+  const activity = goal?.activity ?? null;
   const waterGoal = goal?.effective.waterMl.value ?? null;
   const waterMl = ready?.day.waterMl ?? 0;
 
@@ -85,6 +90,17 @@ export function NutritionSummary({ now }: { now: Date }) {
                     : t('dashboard.nutrition.remaining', { value: kcal(energy.remaining) })
                 }`
               : null}
+          </span>
+        ) : null}
+        {activity && activity.kcal > 0 ? (
+          <span className={styles.activityLine}>
+            {activity.counted && activity.baseKcal !== null
+              ? `${t('nutrition.activityBudget.base')} ${kcal(activity.baseKcal)} · ${t(
+                  'nutrition.activityBudget.added',
+                )} +${kcal(activity.kcal)}`
+              : `${t('nutrition.activityBudget.info')} ${kcal(activity.kcal)} · ${t(
+                  'nutrition.activityBudget.notCounted',
+                )}`}
           </span>
         ) : null}
         {energyGoal !== null && totals ? (

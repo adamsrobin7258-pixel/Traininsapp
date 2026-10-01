@@ -26,9 +26,23 @@ export interface PersonalDataSource {
   get(profileId: string): Promise<PersonalData>;
 }
 
+/**
+ * Active calories of imported activities (Health Connect) on a local day, already without
+ * sessions that duplicate a Kalethra workout. Display and the optional budget only – never
+ * part of the stored goal or its calculation.
+ */
+export interface ActivityCaloriesSource {
+  caloriesOn(
+    profileId: string,
+    localDate: string,
+  ): Promise<{ kcal: number; counted: number; excluded: number }>;
+}
+
 /** Everything the nutrition calculation reads from other areas of the app. */
 export interface NutritionSources {
   bodyWeight: BodyWeightSource;
   training: TrainingActivitySource;
   personal: PersonalDataSource;
+  /** Optional: without it there is never an activity bonus. */
+  activity?: ActivityCaloriesSource;
 }

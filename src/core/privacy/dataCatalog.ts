@@ -75,6 +75,15 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    // Imported from Health Connect; kept apart from Kalethra's own workouts.
+    table: 'external_workouts',
+    category: 'activity',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     table: 'daily_activity',
     category: 'activity',
     sensitivity: 'health',

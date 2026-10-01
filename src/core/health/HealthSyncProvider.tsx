@@ -28,6 +28,8 @@ interface HealthSyncContextValue {
   revision: number;
   connect: () => Promise<ConnectOutcome>;
   syncNow: () => Promise<SyncOutcome>;
+  /** Shows the permission dialog again for kinds without access, then syncs. */
+  requestMissing: () => Promise<SyncOutcome>;
   /** Throttled sync for app start, return to the app and opening a health view. */
   autoSync: () => void;
   disconnect: (deleteImported: boolean) => Promise<void>;
@@ -111,6 +113,7 @@ export function HealthSyncProvider({
       revision,
       connect: () => track(() => service.connect(profile.id), true),
       syncNow: () => track(() => service.sync(profile.id, { manual: true }), true),
+      requestMissing: () => track(() => service.requestMissingAccess(profile.id), true),
       autoSync,
       disconnect: (deleteImported) =>
         track(() => service.disconnect(profile.id, { deleteImported }), false),

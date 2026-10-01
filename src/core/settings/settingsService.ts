@@ -19,6 +19,7 @@ const validators: Validators = {
   language: oneOf(LANGUAGE_PREFERENCES),
   weightUnit: oneOf(WEIGHT_UNIT_PREFERENCES),
   waterQuickAmountsMl: isValidWaterQuickAmounts,
+  countActivityCalories: (value: unknown): value is boolean => typeof value === 'boolean',
 };
 
 /** Merges stored values with defaults. Unknown keys and invalid values are ignored. */

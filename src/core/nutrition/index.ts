@@ -20,6 +20,8 @@ export {
 export * from './goals';
 export {
   GoalService,
+  withActivityCalories,
+  type DayActivityCalories,
   type GoalForDay,
   type GoalInput,
   type NutritionProfileInput,

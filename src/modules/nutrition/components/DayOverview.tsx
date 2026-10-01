@@ -4,6 +4,7 @@ import { useI18n, type TranslationKey } from '@/core/i18n';
 import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
 import { Icon, Meter } from '@/ui';
 import { formatGrams, formatKcal } from '../domain/format';
+import { ActivityBudget } from './ActivityBudget';
 import styles from './Nutrition.module.css';
 
 const MACROS: { key: 'proteinG' | 'carbsG' | 'fatG'; label: TranslationKey }[] = [
@@ -56,6 +57,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
           />
         )}
       </div>
+      <ActivityBudget goal={goal} />
       {energyGoal !== null ? (
         <Meter
           ratio={energy?.ratio ?? 0}
