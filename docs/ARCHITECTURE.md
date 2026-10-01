@@ -263,6 +263,14 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   ausschließlich die Kernlogik (`nutrientsForQuantity`, `scaleNutrients`).
 - **Löschen von Lebensmitteln:** `FoodService.remove` löscht nur, wenn kein Eintrag, keine
   Vorlage und kein Rezept darauf verweist; sonst wird ausgeblendet.
+- **Ernährungsprofil (Phase 4.2.2):** `core/nutrition/calculation/` ist der einzige Ort der
+  Bedarfsberechnung (rein funktional, Parameter zentral in `parameters.ts`, siehe
+  [NUTRITION_CALCULATION.md](NUTRITION_CALCULATION.md)). `GoalService` liest Gewicht, Workouts
+  und Körperdaten über `NutritionSources` (im Composition Root verdrahtet, keine Kopien),
+  speichert Profilversionen mit Herleitung und berechnet über `refreshAutomatic` neu. Die
+  App-Komponente `NutritionGoalSync` löst das nach Gewichts-, Trainings- oder
+  Körperdatenänderungen aus. Die Oberfläche (`/nutrition/profile`) zeigt nur Ergebnisse der
+  Engine an.
 - **Wasser-Schnellmengen** sind die Einstellung `waterQuickAmountsMl` (1–4 Werte, 10–5000 ml,
   Standard 250/500/750) in `app_settings`.
 

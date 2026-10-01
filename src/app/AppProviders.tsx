@@ -9,6 +9,7 @@ import { TrainingProvider } from '@/core/training';
 import { SyncProvider } from '@/core/sync';
 import { applyTheme, useSystemPrefersDark } from '@/core/theme';
 import { ProfileProvider } from '@/core/user';
+import { NutritionGoalSync } from './NutritionGoalSync';
 import type { AppServices, InitialState } from './services';
 
 interface AppProvidersProps {
@@ -26,7 +27,10 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
             <StorageProvider service={services.storage}>
               <WeightProvider service={services.weight}>
                 <TrainingProvider services={services.training}>
-                  <NutritionProvider services={services.nutrition}>{children}</NutritionProvider>
+                  <NutritionProvider services={services.nutrition}>
+                    <NutritionGoalSync />
+                    {children}
+                  </NutritionProvider>
                 </TrainingProvider>
               </WeightProvider>
             </StorageProvider>

@@ -1,6 +1,7 @@
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
-import { Button } from '@/ui';
+import { Link } from 'react-router';
+import { NUTRITION_LINKS } from '@/app/routes';
 import { formatGrams, formatKcal } from '../domain/format';
 import { ProgressBar } from './ProgressBar';
 import styles from './Nutrition.module.css';
@@ -15,15 +16,7 @@ const MACROS: { key: 'proteinG' | 'carbsG' | 'fatG'; label: TranslationKey }[] =
  * Energy and macros of the day against the goal that applied on that day. Without a goal the
  * eaten values are shown alone and the user is invited to set goals – none are invented.
  */
-export function DayOverview({
-  totals,
-  goal,
-  onEditGoal,
-}: {
-  totals: Nutrients;
-  goal: GoalForDay | null;
-  onEditGoal: () => void;
-}) {
+export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalForDay | null }) {
   const { t, locale } = useI18n();
   const energyGoal = goal?.effective.energyKcal.value ?? null;
   const hasAnyGoal =
@@ -91,9 +84,9 @@ export function DayOverview({
 
       {hasAnyGoal ? (
         <div className={styles.cardActions}>
-          <Button variant="secondary" onClick={onEditGoal}>
-            {t('nutrition.overview.editGoal')}
-          </Button>
+          <Link to={NUTRITION_LINKS.profile} className={styles.linkButton}>
+            {t('nutrition.profile.open')}
+          </Link>
         </div>
       ) : (
         <div className={styles.stack}>
@@ -101,7 +94,9 @@ export function DayOverview({
             <p className={styles.foodName}>{t('nutrition.overview.noGoalTitle')}</p>
             <p className={styles.hint}>{t('nutrition.overview.noGoalBody')}</p>
           </div>
-          <Button onClick={onEditGoal}>{t('nutrition.overview.setGoal')}</Button>
+          <Link to={NUTRITION_LINKS.profile} className={styles.linkButtonPrimary}>
+            {t('nutrition.profile.setup')}
+          </Link>
         </div>
       )}
     </section>

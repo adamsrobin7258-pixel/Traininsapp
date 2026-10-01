@@ -15,7 +15,6 @@ import { AddSheet } from '../components/AddSheet';
 import { DayNavigator } from '../components/DayNavigator';
 import { DayOverview } from '../components/DayOverview';
 import { EntrySheet } from '../components/EntrySheet';
-import { GoalSheet } from '../components/GoalSheet';
 import { MealSection } from '../components/MealSection';
 import { WaterSection } from '../components/WaterSection';
 import { groupDay, resolveDay, type MealGroup } from '../domain/day';
@@ -27,7 +26,6 @@ const DAY_PARAM = 'day';
 type Open =
   | { kind: 'add'; meal: MealSlot }
   | { kind: 'entry'; entry: FoodEntry }
-  | { kind: 'goal' }
   | { kind: 'template'; group: MealGroup }
   | null;
 
@@ -49,7 +47,6 @@ export function NutritionScreen() {
     async (s, profileId) => ({
       day: await s.diary.getDay(profileId, day),
       goal: await s.goals.goalFor(profileId, day),
-      todayGoal: await s.goals.goalFor(profileId, today),
       meals: await s.meals.listAll(profileId),
     }),
     [day, today],
@@ -84,13 +81,7 @@ export function NutritionScreen() {
       ) : null}
       {ready ? (
         <>
-          <DayOverview
-            totals={ready.day.summary.totals.totals}
-            goal={ready.goal}
-            onEditGoal={() => {
-              setOpen({ kind: 'goal' });
-            }}
-          />
+          <DayOverview totals={ready.day.summary.totals.totals} goal={ready.goal} />
           {groups.map((group) => (
             <MealSection
               key={group.key}
@@ -111,12 +102,10 @@ export function NutritionScreen() {
             entries={ready.day.water}
             totalMl={ready.day.waterMl}
             goalMl={ready.goal?.effective.waterMl.value ?? null}
-            onSetGoal={() => {
-              setOpen({ kind: 'goal' });
-            }}
           />
           <Section title={t('nutrition.more')}>
             <List label={t('nutrition.more')}>
+              <ListRow title={t('nutrition.profile.title')} to={NUTRITION_LINKS.profile} />
               <ListRow title={t('nutrition.foods.manage')} to={NUTRITION_LINKS.foods} />
               <ListRow title={t('nutrition.mealsManage.manage')} to={NUTRITION_LINKS.meals} />
               <ListRow title={t('nutrition.templates.manage')} to={NUTRITION_LINKS.templates} />
@@ -130,9 +119,6 @@ export function NutritionScreen() {
       ) : null}
       {open?.kind === 'entry' ? (
         <EntrySheet entry={open.entry} meals={activeMeals} onClose={close} />
-      ) : null}
-      {open?.kind === 'goal' && ready ? (
-        <GoalSheet current={ready.todayGoal} onClose={close} />
       ) : null}
       {open?.kind === 'template' ? (
         <PromptSheet

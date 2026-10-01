@@ -78,6 +78,11 @@ export class WorkoutService {
     return this.store.repos.workouts.listCompleted(profileId, options);
   }
 
+  /** Completed workouts between two local days (e.g. for the nutrition calculation). */
+  completedBetween(profileId: string, fromLocalDate: string, toLocalDate: string) {
+    return this.store.repos.workouts.completedBetween(profileId, fromLocalDate, toLocalDate);
+  }
+
   /** Trained minutes on a local day (for the Today screen); `null` if none. */
   async trainedMinutesOn(profileId: string, localDate: string): Promise<number | null> {
     const seconds = await this.store.repos.workouts.trainedSecondsOn(profileId, localDate);

@@ -26,20 +26,20 @@ Pull Request und einen Eintrag in diesem Dokument.
 
 ### Aktuell gespeichert (Schema-Version 6)
 
-| Tabelle                                                                               | Inhalt                                                               | Sensibilität         |
-| ------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | -------------------- |
-| `schema_migrations`                                                                   | Technischer Stand der Datenbank                                      | technisch            |
-| `app_settings`                                                                        | Erscheinungsbild, Sprache, Gewichtseinheit, Wasser-Schnellmengen     | technisch            |
-| `diagnostics`                                                                         | Prüfwerte des Speicher-Selbsttests                                   | technisch            |
-| `weight_entries`                                                                      | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings` | **Gesundheitsdaten** |
-| `profiles`                                                                            | Lokale Profil-ID (UUID), optionaler Vorname                          | personenbezogen      |
-| `exercises`                                                                           | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)             | personenbezogen      |
-| `exercise_muscles`                                                                    | Muskelgruppen je Übung                                               | technisch            |
-| `training_plans`, `training_plan_days`, `planned_exercises`                           | Trainingspläne, Tage, Übungen mit Vorgaben                           | **Gesundheitsdaten** |
-| `workouts`                                                                            | Trainingseinheiten: Art, Zeitpunkt, Dauer, Titel, Notizen            | **Gesundheitsdaten** |
-| `workout_exercises`, `workout_sets`                                                   | Übungen und Sätze (Gewicht, Wdh., Dauer, Distanz, RPE)               | **Gesundheitsdaten** |
-| `foods`, `food_servings`, `meal_slots`, `recipes`, `recipe_ingredients`               | Lebensmittel, Portionsgrößen, Mahlzeiten-Einstellung, Rezepte        | personenbezogen      |
-| `food_entries`, `saved_meals`, `saved_meal_items`, `nutrition_goals`, `water_entries` | Ernährungstagebuch, Vorlagen, Ziele, Wasser                          | **Gesundheitsdaten** |
+| Tabelle                                                                               | Inhalt                                                                                                            | Sensibilität         |
+| ------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `schema_migrations`                                                                   | Technischer Stand der Datenbank                                                                                   | technisch            |
+| `app_settings`                                                                        | Erscheinungsbild, Sprache, Gewichtseinheit, Wasser-Schnellmengen                                                  | technisch            |
+| `diagnostics`                                                                         | Prüfwerte des Speicher-Selbsttests                                                                                | technisch            |
+| `weight_entries`                                                                      | Körpergewicht je Tag (in kg), Einheiteneinstellung in `app_settings`                                              | **Gesundheitsdaten** |
+| `profiles`                                                                            | Lokale Profil-ID (UUID), optionaler Vorname; Geschlecht, Geburtsdatum, Körpergröße (für die Ernährungsberechnung) | **Gesundheitsdaten** |
+| `exercises`                                                                           | Übungskatalog und eigene Übungen (Name, Typ, Ausrüstung)                                                          | personenbezogen      |
+| `exercise_muscles`                                                                    | Muskelgruppen je Übung                                                                                            | technisch            |
+| `training_plans`, `training_plan_days`, `planned_exercises`                           | Trainingspläne, Tage, Übungen mit Vorgaben                                                                        | **Gesundheitsdaten** |
+| `workouts`                                                                            | Trainingseinheiten: Art, Zeitpunkt, Dauer, Titel, Notizen                                                         | **Gesundheitsdaten** |
+| `workout_exercises`, `workout_sets`                                                   | Übungen und Sätze (Gewicht, Wdh., Dauer, Distanz, RPE)                                                            | **Gesundheitsdaten** |
+| `foods`, `food_servings`, `meal_slots`, `recipes`, `recipe_ingredients`               | Lebensmittel, Portionsgrößen, Mahlzeiten-Einstellung, Rezepte                                                     | personenbezogen      |
+| `food_entries`, `saved_meals`, `saved_meal_items`, `nutrition_goals`, `water_entries` | Ernährungstagebuch, Vorlagen, Ziele, Wasser                                                                       | **Gesundheitsdaten** |
 
 Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** gespeichert – ausschließlich in der verschlüsselten Datenbank (per Test erzwungen). Die Trainingsfunktion nutzt kein Netzwerk, keine Analyse- und keine Tracking-Dienste. Seit Phase 4.1 existiert das Datenmodell für **Ernährung** (verschlüsselt, lokal). Eine künftige externe Lebensmitteldatenbank (`FoodDataProvider`) erhält ausschließlich Suchtext, Barcode oder Produkt-ID – niemals Tagebuch, Ziele, Gewicht oder Profildaten. Standortdaten werden noch nicht gespeichert.
 

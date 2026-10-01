@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { NUTRITION_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useNutrition, type WaterEntry } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
@@ -16,13 +17,11 @@ export function WaterSection({
   entries,
   totalMl,
   goalMl,
-  onSetGoal,
 }: {
   day: string;
   entries: readonly WaterEntry[];
   totalMl: number;
   goalMl: number | null;
-  onSetGoal: () => void;
 }) {
   const { t, locale } = useI18n();
   const { mutate } = useNutrition();
@@ -114,7 +113,7 @@ export function WaterSection({
           }}
         />
         {goalMl === null ? (
-          <ListRow title={t('nutrition.water.setGoal')} action onPress={onSetGoal} />
+          <ListRow title={t('nutrition.water.setGoal')} to={NUTRITION_LINKS.profile} />
         ) : null}
         <ListRow
           title={t('nutrition.water.quickEdit')}

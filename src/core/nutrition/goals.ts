@@ -1,3 +1,6 @@
+import type { Calculation } from './calculation/calculate';
+import type { ActivityLevel, GoalLevel } from './calculation/parameters';
+
 /**
  * Daily nutrition goals. Each value keeps an automatically calculated and a manual part:
  * the manual value overrides the automatic one, so a later automatic calculation can run
@@ -15,6 +18,11 @@ export interface GoalValue {
   manual: number | null;
 }
 
+/**
+ * One version of the nutrition profile, valid from `effectiveFrom` until the next version
+ * starts (there is no stored end date – the next start is the end). Past days are always judged
+ * by the version that applied then.
+ */
 export interface NutritionGoal {
   id: string;
   profileId: string;
@@ -22,6 +30,16 @@ export interface NutritionGoal {
   effectiveFrom: string;
   goalType: GoalType;
   targets: Record<GoalTarget, GoalValue>;
+  /** Pace of the goal (`null` for maintain or goals from before the nutrition profile). */
+  goalLevel: GoalLevel | null;
+  activityLevel: ActivityLevel | null;
+  /** Whether logged workouts count towards the energy need (off by default). */
+  includeTraining: boolean;
+  targetWeightKg: number | null;
+  /** Automatic values come from the calculation; `false` for purely manual goals. */
+  autoEnabled: boolean;
+  /** How the automatic values came about (inputs, intermediate values, results). */
+  calculation: Calculation | null;
   createdAt: string;
   updatedAt: string;
 }

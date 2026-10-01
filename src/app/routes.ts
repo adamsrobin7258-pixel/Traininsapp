@@ -33,4 +33,5 @@ export const NUTRITION_LINKS = {
   foods: `${ROUTES.nutrition}/foods`,
   meals: `${ROUTES.nutrition}/meals`,
   templates: `${ROUTES.nutrition}/templates`,
+  profile: `${ROUTES.nutrition}/profile`,
 } as const;

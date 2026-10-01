@@ -52,6 +52,13 @@ export class WeightService {
     return this.repository.findLatest(profileId, this.todayKey());
   }
 
+  /** Entries between two local days (inclusive), oldest first. */
+  listBetween(profileId: string, from: string, to: string): Promise<WeightEntry[]> {
+    this.assertDate(from);
+    this.assertDate(to);
+    return this.repository.listRange(profileId, from, to);
+  }
+
   getHistory(profileId: string, limit: number, offset = 0): Promise<WeightEntry[]> {
     return this.repository.listRecent(profileId, limit, offset);
   }

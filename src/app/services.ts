@@ -2,6 +2,7 @@ import { StorageService, type OpenedDatabase } from '@/core/database';
 import { WeightRepository, WeightService } from '@/core/health';
 import {
   ExerciseService,
+  getTrainingType,
   PlanService,
   TrainingStore,
   WorkoutService,
@@ -16,6 +17,7 @@ import {
   RecipeService,
   type BodyWeightSource,
   type NutritionServices,
+  type NutritionSources,
 } from '@/core/nutrition';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
@@ -40,17 +42,39 @@ export function createServices(
   clock: Clock = systemClock,
 ): AppServices {
   const weight = new WeightService(new WeightRepository(db), clock);
+  const profile = new ProfileService(new ProfileRepository(db), clock);
+  const training = createTrainingServices(new TrainingStore(db), clock);
+  const bodyWeight: BodyWeightSource = {
+    latestKgOnOrBefore: async (profileId, localDate) =>
+      (await weight.getLatestOnOrBefore(profileId, localDate))?.kg ?? null,
+    latestOnOrBefore: async (profileId, localDate) => {
+      const entry = await weight.getLatestOnOrBefore(profileId, localDate);
+      return entry ? { date: entry.date, kg: entry.kg } : null;
+    },
+    pointsBetween: async (profileId, from, to) =>
+      (await weight.listBetween(profileId, from, to)).map((e) => ({ date: e.date, kg: e.kg })),
+  };
+  // Nutrition reads weight, workouts and body data from their owners – it copies nothing.
+  const sources: NutritionSources = {
+    bodyWeight,
+    personal: { get: (profileId) => profile.getBodyData(profileId) },
+    training: {
+      sessionsBetween: async (profileId, from, to) =>
+        (await training.workouts.completedBetween(profileId, from, to)).map((w) => ({
+          localDate: w.localDate,
+          durationMinutes: (w.durationS ?? 0) / 60,
+          category: getTrainingType(w.trainingType).category,
+        })),
+    },
+  };
   return {
     storage: new StorageService(db, security, clock),
     weight,
-    training: createTrainingServices(new TrainingStore(db), clock),
-    nutrition: createNutritionServices(new NutritionStore(db), clock),
-    bodyWeight: {
-      latestKgOnOrBefore: async (profileId, localDate) =>
-        (await weight.getLatestOnOrBefore(profileId, localDate))?.kg ?? null,
-    },
+    training,
+    nutrition: createNutritionServices(new NutritionStore(db), clock, sources),
+    bodyWeight,
     settings: new SettingsService(new SettingsRepository(db, clock)),
-    profile: new ProfileService(new ProfileRepository(db), clock),
+    profile,
     sync: new LocalOnlySyncService(),
   };
 }
@@ -63,13 +87,17 @@ function createTrainingServices(store: TrainingStore, clock: Clock): TrainingSer
   };
 }
 
-function createNutritionServices(store: NutritionStore, clock: Clock): NutritionServices {
+function createNutritionServices(
+  store: NutritionStore,
+  clock: Clock,
+  sources: NutritionSources,
+): NutritionServices {
   return {
     foods: new FoodService(store, clock),
     meals: new MealService(store, clock),
     diary: new DiaryService(store, clock),
     recipes: new RecipeService(store, clock),
-    goals: new GoalService(store, clock),
+    goals: new GoalService(store, clock, sources),
   };
 }
 
@@ -87,5 +115,7 @@ export async function loadInitialState(services: AppServices): Promise<InitialSt
   await services.training.exercises.ensureCatalog();
   // Every profile starts with the four default meals; a no-op once they exist.
   await services.nutrition.meals.ensureDefaults(profile.id);
+  // Automatic nutrition goals follow the weight trend; only a relevant change is stored.
+  await services.nutrition.goals.refreshAutomatic(profile.id);
   return { settings, profile };
 }

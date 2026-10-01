@@ -35,6 +35,16 @@ async function prepareBasics(services: AppServices, profileId: string) {
   return { n, food, meals: byKey as Record<string, string> };
 }
 
+/** Sets an own value for a goal on the nutrition profile page. */
+async function setOwnValue(row: RegExp, value: string) {
+  await userEvent.click(await screen.findByRole('button', { name: row }));
+  const field = dialog().getByLabelText(/^Eigener Wert/);
+  await userEvent.clear(field);
+  await userEvent.type(field, value);
+  await userEvent.click(dialog().getByRole('button', { name: 'Eigenen Wert verwenden' }));
+  await closed();
+}
+
 function section(name: RegExp) {
   const heading = screen.getByRole('heading', { level: 2, name });
   const element = heading.closest('section');
@@ -65,7 +75,7 @@ describe('nutrition diary', () => {
     }
     expect(screen.getAllByText('Noch nichts eingetragen.')).toHaveLength(4);
     expect(screen.getByText('Noch keine Ziele festgelegt')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Ziele festlegen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ernährungsprofil einrichten' })).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText('Noch kein Wasserziel festgelegt.')).toBeInTheDocument();
   });
@@ -255,13 +265,17 @@ describe('nutrition diary', () => {
         });
       },
     });
-    await userEvent.click(await screen.findByRole('button', { name: 'Ziele festlegen' }));
-    await userEvent.click(dialog().getByRole('radio', { name: 'Muskelaufbau' }));
-    await userEvent.type(dialog().getByLabelText('Kalorien (kcal)'), '1500');
-    await userEvent.type(dialog().getByLabelText('Protein (g)'), '120');
-    await userEvent.type(dialog().getByLabelText('Wasser (ml)'), '2500');
-    await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
-    await closed();
+    // Goals are set in the nutrition profile; without personal data they are manual values.
+    await userEvent.click(await screen.findByRole('link', { name: 'Ernährungsprofil einrichten' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Muskelaufbau' }));
+    await setOwnValue(/^Kalorienziel/, '1500');
+    await setOwnValue(/^Protein/, '120');
+    await userEvent.type(screen.getByLabelText('Wasserziel (ml, optional)'), '2500');
+    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(await screen.findByText(/Ernährungsprofil gespeichert/)).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('main')).getByRole('link', { name: 'Ernährung' }),
+    );
 
     const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
     expect(await overview.findByText('1.500 kcal')).toBeInTheDocument();
@@ -269,7 +283,9 @@ describe('nutrition diary', () => {
     expect(overview.getByText('Über dem Ziel')).toBeInTheDocument();
     expect(overview.getByText('350 kcal')).toBeInTheDocument();
     expect(overview.getByText('67,5 g von 120 g')).toBeInTheDocument();
-    expect(overview.getAllByRole('progressbar')).toHaveLength(2);
+    // Fat and carbohydrates follow automatically from the manual calories and protein.
+    expect(overview.getAllByRole('progressbar')).toHaveLength(4);
+    expect(overview.getByText('35 g von 42 g')).toBeInTheDocument();
     expect(screen.getByText('0 ml von 2,5 l')).toBeInTheDocument();
     expect(
       await db.query('SELECT goal_type, effective_from, energy_kcal_manual FROM nutrition_goals'),
@@ -277,10 +293,10 @@ describe('nutrition diary', () => {
   });
 
   it('rejects implausible goals', async () => {
-    const { db } = await renderApp('/nutrition');
-    await userEvent.click(await screen.findByRole('button', { name: 'Ziele festlegen' }));
-    await userEvent.type(dialog().getByLabelText('Kalorien (kcal)'), '100');
-    await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+    const { db } = await renderApp('/nutrition/profile');
+    await userEvent.click(await screen.findByRole('button', { name: /^Kalorienziel/ }));
+    await userEvent.type(dialog().getByLabelText('Eigener Wert (kcal)'), '100');
+    await userEvent.click(dialog().getByRole('button', { name: 'Eigenen Wert verwenden' }));
     expect(
       dialog().getByText('Bitte einen Wert zwischen 500 und 10.000 eingeben.'),
     ).toBeInTheDocument();

@@ -203,6 +203,29 @@ export class WorkoutRepository {
     return rows[0]?.n ?? 0;
   }
 
+  /** Completed workouts between two local days (inclusive): day, type and duration only. */
+  async completedBetween(
+    profileId: string,
+    fromLocalDate: string,
+    toLocalDate: string,
+  ): Promise<{ localDate: string; trainingType: string; durationS: number | null }[]> {
+    const rows = await this.db.query<{
+      local_date: string;
+      training_type: string;
+      duration_s: number | null;
+    }>(
+      `SELECT local_date, training_type, duration_s FROM workouts
+       WHERE profile_id = ? AND status = 'completed' AND local_date BETWEEN ? AND ?
+       ORDER BY local_date`,
+      [profileId, fromLocalDate, toLocalDate],
+    );
+    return rows.map((row) => ({
+      localDate: row.local_date,
+      trainingType: row.training_type,
+      durationS: row.duration_s,
+    }));
+  }
+
   /** Sum of completed workout durations on a local day, `null` when nothing was trained. */
   async trainedSecondsOn(profileId: string, localDate: string): Promise<number | null> {
     const rows = await this.db.query<{ total: number | null }>(

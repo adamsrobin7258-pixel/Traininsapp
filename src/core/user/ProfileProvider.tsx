@@ -1,10 +1,11 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 import type { ProfileService } from './profileService';
-import type { Profile } from './types';
+import type { BodyData, Profile } from './types';
 
 interface ProfileContextValue {
   profile: Profile;
   rename: (displayName: string) => Promise<void>;
+  updateBodyData: (data: BodyData) => Promise<void>;
 }
 
 const ProfileContext = createContext<ProfileContextValue | null>(null);
@@ -25,7 +26,17 @@ export function ProfileProvider({ service, initialProfile, children }: ProfilePr
     [service, profile],
   );
 
-  const value = useMemo(() => ({ profile, rename }), [profile, rename]);
+  const updateBodyData = useCallback(
+    async (data: BodyData) => {
+      setProfile(await service.updateBodyData(profile, data));
+    },
+    [service, profile],
+  );
+
+  const value = useMemo(
+    () => ({ profile, rename, updateBodyData }),
+    [profile, rename, updateBodyData],
+  );
   return <ProfileContext.Provider value={value}>{children}</ProfileContext.Provider>;
 }
 

@@ -64,7 +64,7 @@ Hinweis Web: Nach jedem Schreibvorgang bzw. Commit wird die Datenbank in Indexed
      „neue Tabelle anlegen → Daten kopieren → alte löschen → umbenennen“.
   3. Jede Migration bekommt einen Test, wenn sie Daten verändert.
 
-## Aktuelles Schema (Version 6)
+## Aktuelles Schema (Version 7)
 
 Basistabellen (Migrationen 1–2); Gewicht und Training folgen in eigenen Abschnitten.
 
@@ -271,6 +271,31 @@ verschlüsselten Datenbank.
 | Externe Produkte | Eindeutig je Profil über `(profile_id, provider, external_id)`; erneuter Import aktualisiert die lokale Kopie, danach offline nutzbar.                                                                                    |
 | Gewicht          | Keine eigene Speicherung: Ernährung liest über `BodyWeightSource` aus `weight_entries`.                                                                                                                                   |
 | Indizes          | `food_entries_day`, `water_entries_day` (Tagesabfragen, per Test geprüft), `foods_profile`, `foods_barcode`, `foods_external`, `recipe_ingredients_recipe`, `saved_meal_items_meal`.                                      |
+
+## Ernährungsprofil (Migration 7)
+
+Rein additiv, bestehende Ziele bleiben vollständig erhalten.
+
+| Tabelle / Spalte                   | Inhalt                                                                                                                                                                                                                                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `profiles.sex`                     | `male` / `female` / `unspecified` (optional)                                                                                                                                                                                                                                   |
+| `profiles.birth_date`              | Geburtsdatum `YYYY-MM-DD`; das Alter wird je Berechnung abgeleitet, nie gespeichert                                                                                                                                                                                            |
+| `profiles.height_cm`               | Körpergröße in cm                                                                                                                                                                                                                                                              |
+| `nutrition_goals.goal_level`       | Tempo: `slow`/`moderate`/`fast` (Abnehmen), `moderate`/`higher` (Muskelaufbau), `NULL` (Halten)                                                                                                                                                                                |
+| `nutrition_goals.activity_level`   | Alltagsaktivität ohne Sport (`sedentary` … `veryActive`)                                                                                                                                                                                                                       |
+| `nutrition_goals.include_training` | Training in die Kalorienberechnung einbeziehen (Standard 0)                                                                                                                                                                                                                    |
+| `nutrition_goals.target_weight_kg` | Wunschgewicht (optional)                                                                                                                                                                                                                                                       |
+| `nutrition_goals.auto_enabled`     | 1 = Werte stammen aus der Berechnung; bestehende Ziele lesen sich als 0 (rein manuell)                                                                                                                                                                                         |
+| `nutrition_goals.calculation`      | JSON-Momentaufnahme der Berechnung: Formelversion, Eingaben (Trendgewicht und Methode, Alter, Größe, Geschlecht, Aktivität, Training, Ziel, Tempo, Wunschgewicht), Grundumsatz, Erhaltungsbedarf, Zielanpassung samt Grenzen, Protein-/Fett-/Kohlenhydrat-Herleitung, Hinweise |
+
+**Versionen statt Tageszielen.** Jede Zeile in `nutrition_goals` ist eine Version des
+Ernährungsprofils, gültig ab `effective_from` bis zum Beginn der nächsten Version (kein
+gespeichertes Enddatum, keine Lücken). Eine Änderung – durch den Nutzer oder eine relevante
+Gewichtsänderung – legt eine Version ab dem aktuellen Tag an (am selben Tag wird sie ersetzt).
+Vergangene Tage behalten so die damals gültigen Werte. Je Wert gibt es weiterhin `*_auto` und
+`*_manual`; manuelle Werte bleiben bei Neuberechnungen unverändert. Das Gewicht wird nicht
+kopiert: Die Momentaufnahme enthält nur das für die Berechnung verwendete Trendgewicht.
+Details zur Berechnung: [NUTRITION_CALCULATION.md](NUTRITION_CALCULATION.md).
 
 ## Konventionen für Nutzerdaten-Tabellen
 

@@ -105,10 +105,21 @@ aktualisierter Dokumentation.
 - Wasser: Schnellmengen (vom Nutzer einstellbar), eigene Menge, bearbeiten, löschen, Ziel
 - Ziele manuell festlegen (gelten ab heute); Heute-Karte mit kcal- und Protein-Fortschritt
 
-## Phase 4.2.2 – Vorschlag
+## Phase 4.2.2 – Adaptives Ernährungsprofil ✅ (Version 0.4.0)
 
-- Lebensmittelsuche mit externem Anbieter (Auswahl und Datenschutzprüfung), Barcode-Scanner
-- Favoriten/zuletzt verwendet in der Suche, Rezepte in der Oberfläche
+- Ernährungsprofil: Geschlecht, Geburtsdatum, Größe (im Profil), Wunschgewicht,
+  Alltagsaktivität, Training einbeziehen (Standard aus), Ziel mit Tempo
+- Berechnungskern (Mifflin-St Jeor, Aktivität, Training aus echten Workouts, Zielanpassung mit
+  Sicherheitsgrenzen, Protein/Fett/Kohlenhydrate), dokumentiert in
+  [NUTRITION_CALCULATION.md](NUTRITION_CALCULATION.md)
+- Trendgewicht (Median 7 Tage), automatische Neuberechnung bei relevanter Änderung
+- Einzeln überschreibbare Werte, versionierte Zielprofile mit gespeicherter Herleitung
+  (Migration 7), Zieländerung mit Zusammenfassung
+
+## Phase 4.3 – Vorschlag
+
+- Lebensmittelsuche mit Open Food Facts (Datenschutzprüfung), Barcode-Scanner
+- Favoriten und zuletzt verwendete Lebensmittel, Rezepte in der Oberfläche
 
 ## Phase 4 – Weitere Vorschläge
 

@@ -84,6 +84,9 @@ export function NutritionSummary({ now }: { now: Date }) {
       {data.status === 'ready' && !hasEntries ? (
         <OverviewNote>{t('dashboard.nutrition.none')}</OverviewNote>
       ) : null}
+      {data.status === 'ready' && !goal ? (
+        <OverviewNote>{t('dashboard.nutrition.setup')}</OverviewNote>
+      ) : null}
     </OverviewCard>
   );
 }

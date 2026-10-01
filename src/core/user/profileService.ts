@@ -1,7 +1,22 @@
 import type { Clock } from '@/shared/lib/clock';
+import { isLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { createId } from '@/shared/lib/id';
 import type { ProfileRepository } from './profileRepository';
-import { DISPLAY_NAME_MAX_LENGTH, type Profile } from './types';
+import {
+  BODY_DATA_LIMITS,
+  DISPLAY_NAME_MAX_LENGTH,
+  PROFILE_SEXES,
+  type BodyData,
+  type Profile,
+} from './types';
+
+/** Rejected body data (the UI shows the matching message). */
+export class BodyDataError extends Error {
+  constructor(readonly field: 'sex' | 'birthDate' | 'heightCm') {
+    super(`Invalid body data: ${field}`);
+    this.name = 'BodyDataError';
+  }
+}
 
 /** Trims and limits a display name. Empty input clears the name. */
 export function normalizeDisplayName(input: string): string | null {
@@ -33,7 +48,15 @@ export class ProfileService {
     if (existing) return existing;
 
     const now = this.clock().toISOString();
-    const profile: Profile = { id: createId(), displayName: null, createdAt: now, updatedAt: now };
+    const profile: Profile = {
+      id: createId(),
+      displayName: null,
+      sex: null,
+      birthDate: null,
+      heightCm: null,
+      createdAt: now,
+      updatedAt: now,
+    };
     await this.repository.insert(profile);
     return profile;
   }
@@ -44,5 +67,39 @@ export class ProfileService {
     const updatedAt = this.clock().toISOString();
     await this.repository.updateDisplayName(profile.id, displayName, updatedAt);
     return { ...profile, displayName, updatedAt };
+  }
+
+  /** Body data of a profile (for nutrition estimates), empty when unknown. */
+  async getBodyData(profileId: string): Promise<BodyData> {
+    const profile = await this.repository.findById(profileId);
+    return {
+      sex: profile?.sex ?? null,
+      birthDate: profile?.birthDate ?? null,
+      heightCm: profile?.heightCm ?? null,
+    };
+  }
+
+  /** Saves sex, birth date and height; each may be cleared with `null`. */
+  async updateBodyData(profile: Profile, data: BodyData): Promise<Profile> {
+    const today = toLocalDateKey(this.clock());
+    if (data.sex !== null && !PROFILE_SEXES.includes(data.sex)) throw new BodyDataError('sex');
+    if (
+      data.birthDate !== null &&
+      (!isLocalDateKey(data.birthDate) ||
+        data.birthDate < BODY_DATA_LIMITS.earliestBirthDate ||
+        data.birthDate > today)
+    ) {
+      throw new BodyDataError('birthDate');
+    }
+    const { min, max } = BODY_DATA_LIMITS.heightCm;
+    if (
+      data.heightCm !== null &&
+      (!Number.isFinite(data.heightCm) || data.heightCm < min || data.heightCm > max)
+    ) {
+      throw new BodyDataError('heightCm');
+    }
+    const updatedAt = this.clock().toISOString();
+    await this.repository.updateBodyData(profile.id, data, updatedAt);
+    return { ...profile, ...data, updatedAt };
   }
 }

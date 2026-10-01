@@ -42,6 +42,7 @@ describe('back target', () => {
     ['/nutrition/foods', '/nutrition'],
     ['/nutrition/meals', '/nutrition'],
     ['/nutrition/templates', '/nutrition'],
+    ['/nutrition/profile', '/nutrition'],
     ['/nutrition', '/'],
     ['/health', '/'],
     ['/profile', '/'],

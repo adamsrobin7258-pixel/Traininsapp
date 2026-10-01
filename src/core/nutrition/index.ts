@@ -5,7 +5,14 @@ export * from './errors';
 export * from './food';
 export { FoodService, type FoodInput } from './foodService';
 export * from './goals';
-export { GoalService, type GoalForDay, type GoalInput } from './goalService';
+export {
+  GoalService,
+  type GoalForDay,
+  type GoalInput,
+  type NutritionProfileInput,
+  type NutritionProfileState,
+} from './goalService';
+export * from './calculation';
 export * from './meals';
 export { MealService } from './mealService';
 export * from './nutrients';
