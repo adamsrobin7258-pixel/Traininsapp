@@ -134,6 +134,38 @@ describe('Health Connect settings', () => {
     expect(sheet.getByText(/bisher importierten Werte bleiben unverändert erhalten/)).toBeVisible();
   });
 
+  it('keeps every permission and action of the connected sheet in the scrollable sheet', async () => {
+    const platform = filled();
+    platform.grantOnRequest = ['weight', 'steps', 'exercise'];
+    await renderApp('/profile', {
+      healthPlatform: platform,
+      prepare: async (services, profileId) => {
+        await services.healthSync.connect(profileId);
+      },
+    });
+    const sheet = await openConnection();
+    expect(await sheet.findByText('Verbunden')).toBeInTheDocument();
+    // The dialog itself is the scroll container (no fixed-height inner scroll area).
+    expect(screen.getByRole('dialog')).toHaveAttribute('data-fill', 'false');
+    const rows = within(sheet.getByRole('list', { name: 'Was Kalethra liest' })).getAllByRole(
+      'listitem',
+    );
+    expect(rows.map((row) => row.textContent)).toEqual([
+      expect.stringContaining('Gewicht'),
+      expect.stringContaining('Schritte'),
+      expect.stringContaining('Aktive Kalorien'),
+      expect.stringContaining('Trainings'),
+    ]);
+    expect(rows[2]).toHaveTextContent('Kein Zugriff');
+    for (const name of [
+      'Jetzt synchronisieren',
+      'Berechtigungen in Health Connect verwalten',
+      'Verbindung trennen',
+    ]) {
+      expect(sheet.getByRole('button', { name })).toBeEnabled();
+    }
+  });
+
   it('asks before disconnecting, with deleting pre-selected', async () => {
     const platform = filled();
     const { db } = await renderApp('/profile', {

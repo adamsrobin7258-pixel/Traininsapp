@@ -96,3 +96,47 @@ test('explains that Health Connect is not available in the browser', async ({ pa
     page.getByRole('dialog').getByText(/Auf diesem Gerät gibt es Health Connect nicht/),
   ).toBeVisible();
 });
+
+test('the connected Health Connect sheet scrolls to its last action on a small screen', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await installFakeHealthConnect(page);
+  await page.goto('/profile');
+  const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
+  await section.getByRole('button', { name: /^Health Connect/ }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByRole('button', { name: 'Mit Health Connect verbinden' }).click();
+  await expect(sheet.getByRole('status')).toContainText('Verbunden');
+
+  // Every permission row keeps its full height – nothing is squeezed or clipped.
+  const list = sheet.getByRole('list', { name: 'Was Kalethra liest' });
+  const rows = list.getByRole('listitem');
+  await expect(rows).toHaveCount(4);
+  for (const row of await rows.all()) {
+    const box = await row.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(48);
+  }
+  const listBox = await list.evaluate((el) => ({
+    client: el.clientHeight,
+    scroll: el.scrollHeight,
+  }));
+  expect(listBox.scroll).toBeLessThanOrEqual(listBox.client + 1);
+
+  // The sheet itself scrolls: the content is taller than the visible sheet …
+  const panel = await sheet.evaluate((el) => ({
+    client: el.clientHeight,
+    scroll: el.scrollHeight,
+  }));
+  expect(panel.scroll).toBeGreaterThan(panel.client);
+  // … and the last permission and the last action can be reached.
+  await sheet.getByText('Trainings', { exact: true }).scrollIntoViewIfNeeded();
+  await expect(sheet.getByText('Trainings', { exact: true })).toBeInViewport();
+  const disconnect = sheet.getByRole('button', { name: 'Verbindung trennen' });
+  await disconnect.scrollIntoViewIfNeeded();
+  await expect(disconnect).toBeInViewport({ ratio: 1 });
+  await disconnect.click();
+  await expect(
+    page.getByRole('dialog').getByRole('heading', { name: 'Verbindung trennen?' }),
+  ).toBeVisible();
+});

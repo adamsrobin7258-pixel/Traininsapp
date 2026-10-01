@@ -38,6 +38,15 @@
   outline: none;
 }
 
+/*
+ * Default sheets scroll as a whole. As flex items, children would otherwise shrink to fit the
+ * max-height – and a child with `overflow: hidden` (a List with rounded corners) gets clipped
+ * instead of making the sheet scroll. Keep every child at its natural height.
+ */
+.panel:not([data-fill='true']) > * {
+  flex-shrink: 0;
+}
+
 /* Fixed header, scrolling content: the sheet keeps its height, a child scrolls (see .scroll). */
 .panel[data-fill='true'] {
   height: calc(100% - var(--safe-top) - var(--space-8));
