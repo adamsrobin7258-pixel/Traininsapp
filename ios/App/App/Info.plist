@@ -66,5 +66,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Kalethra benötigt Kamerazugriff, um Barcodes von Lebensmitteln zu scannen. Das Kamerabild wird nur auf dem Gerät ausgewertet.</string>
 </dict>
 </plist>

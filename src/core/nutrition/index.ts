@@ -4,6 +4,14 @@ export { DiaryService, type DayData } from './diaryService';
 export * from './errors';
 export * from './food';
 export { FoodService, type FoodInput } from './foodService';
+export { FoodLookupService, type BarcodeLookup, type OnlineResult } from './foodLookupService';
+export * from './barcode';
+export {
+  mapOpenFoodFactsProduct,
+  OPEN_FOOD_FACTS,
+  OpenFoodFactsProvider,
+  type JsonHttpClient,
+} from './providers/openFoodFacts';
 export * from './goals';
 export {
   GoalService,

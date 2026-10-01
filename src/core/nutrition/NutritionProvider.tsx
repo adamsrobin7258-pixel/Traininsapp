@@ -10,6 +10,7 @@ import {
 } from 'react';
 import { useProfile } from '@/core/user';
 import type { DiaryService } from './diaryService';
+import type { FoodLookupService } from './foodLookupService';
 import type { FoodService } from './foodService';
 import type { GoalService } from './goalService';
 import type { MealService } from './mealService';
@@ -17,6 +18,8 @@ import type { RecipeService } from './recipeService';
 
 export interface NutritionServices {
   foods: FoodService;
+  /** Barcode and online search (external provider). */
+  lookup: FoodLookupService;
   meals: MealService;
   diary: DiaryService;
   recipes: RecipeService;

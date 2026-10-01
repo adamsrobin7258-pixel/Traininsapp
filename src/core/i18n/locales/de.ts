@@ -601,6 +601,60 @@ export const de = {
         override: 'Bitte einen Wert zwischen {min} und {max} eingeben.',
       },
     },
+    lookup: {
+      recent: 'Zuletzt verwendet',
+      favorites: 'Favoriten',
+      allFoods: 'Gespeicherte Lebensmittel',
+      localResults: 'Gespeicherte Lebensmittel',
+      scan: 'Barcode scannen',
+      enterBarcode: 'Barcode eingeben',
+      barcodeTitle: 'Barcode eingeben',
+      barcodeLabel: 'Barcode (EAN oder UPC)',
+      barcodeHint: '8 bis 14 Ziffern, wie unter dem Strichcode aufgedruckt.',
+      barcodeSearch: 'Produkt suchen',
+      scanInstructions: 'Barcode in den Rahmen halten',
+      searchingBarcode: 'Produkt wird gesucht …',
+      onlineSearch: 'Online suchen: „{query}“',
+      onlineTitle: 'Open Food Facts',
+      onlineLoading: 'Suche Lebensmittel …',
+      onlineEmpty: 'Keine Treffer bei Open Food Facts.',
+      onlineHint: 'Gesendet wird nur dein Suchbegriff.',
+      incomplete: 'Nährwerte unvollständig',
+      alreadySaved: 'Bereits gespeichert',
+      perReference: '{kcal} kcal pro {amount}',
+      notFoundTitle: 'Produkt wurde nicht gefunden.',
+      notFoundBody: 'Du kannst es selbst anlegen oder nach dem Namen suchen.',
+      notFoundBarcode: 'Barcode {barcode}',
+      createOwn: 'Selbst anlegen',
+      searchByName: 'Nach Namen suchen',
+      cameraDeniedTitle: 'Kein Kamerazugriff',
+      cameraDeniedBody:
+        'Kalethra benötigt Kamerazugriff, um Barcodes zu scannen. Du kannst ihn in den Einstellungen deines Geräts unter Apps → Kalethra → Berechtigungen erlauben.',
+      retry: 'Erneut versuchen',
+      scannerUnavailable: 'Der Scanner ist hier nicht verfügbar. Gib den Barcode stattdessen ein.',
+      importTitle: 'Produkt prüfen',
+      importSource: 'Aus Open Food Facts übernommen – bitte prüfe die Werte vor dem Speichern.',
+      importIncomplete:
+        'Nicht alle Nährwerte sind angegeben. Bitte fehlende Werte ergänzen – sie werden nicht als 0 gewertet.',
+      attribution: 'Daten: Open Food Facts (openfoodfacts.org), Lizenz ODbL',
+      source: 'Quelle: {name}',
+      barcode: 'Barcode (optional)',
+      favorite: 'Favorit',
+      addFavorite: 'Als Favorit markieren',
+      removeFavorite: 'Favorit entfernen',
+      errors: {
+        offline:
+          'Keine Verbindung zu Open Food Facts. Deine gespeicherten Lebensmittel sind weiterhin verfügbar.',
+        timeout:
+          'Open Food Facts antwortet gerade nicht. Deine gespeicherten Lebensmittel sind weiterhin verfügbar.',
+        'rate-limited':
+          'Gerade wurden zu viele Anfragen an Open Food Facts gestellt. Bitte warte eine Minute und versuche es dann erneut.',
+        unavailable:
+          'Open Food Facts ist gerade nicht erreichbar. Deine gespeicherten Lebensmittel sind weiterhin verfügbar.',
+        'invalid-response':
+          'Die Antwort von Open Food Facts konnte nicht gelesen werden. Bitte versuche es später erneut.',
+      },
+    },
     goals: {
       title: 'Ziele',
       energy: 'Kalorien (kcal)',
@@ -626,6 +680,7 @@ export const de = {
       water: 'Bitte eine Menge zwischen 1 und 5000 ml eingeben.',
       quickAmounts: 'Bitte ganze Zahlen zwischen 10 und 5000 ml eingeben (mindestens eine).',
       checkFields: 'Bitte prüfe die markierten Felder.',
+      barcode: 'Bitte einen Barcode mit 8 bis 14 Ziffern eingeben.',
       futureDay: 'Für zukünftige Tage kann nichts eingetragen werden.',
     },
     units: {

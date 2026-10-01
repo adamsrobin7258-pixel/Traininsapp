@@ -59,6 +59,9 @@ export interface Food {
 
 export const FOOD_NAME_MAX_LENGTH = 120;
 
+/** How many recently used foods are offered for quick re-use. */
+export const RECENT_FOODS_LIMIT = 30;
+
 /** Reference amounts are positive and plausible (up to 10 kg / 10 l / 1000 pieces). */
 export function isValidAmount(amount: number): boolean {
   return Number.isFinite(amount) && amount > 0 && amount <= 10_000;

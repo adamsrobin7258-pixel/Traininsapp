@@ -3,6 +3,9 @@ import { useI18n, type TranslateFn, type TranslationKey } from '@/core/i18n';
 import {
   FOOD_NAME_MAX_LENGTH,
   isValidAmount,
+  normalizeBarcode,
+  type ExternalNutrients,
+  type ExternalProduct,
   useNutrition,
   type CountUnit,
   type Food,
@@ -53,19 +56,31 @@ const AMOUNTS = new Set<NumberKey>(['referenceAmount', 'pieceAmount', 'servingAm
 interface Draft {
   name: string;
   brand: string;
+  barcode: string;
   referenceUnit: QuantityUnit;
   pieceUnit: MeasureUnit;
   servingUnit: MeasureUnit;
   numbers: Record<NumberKey, string>;
 }
 
-function initialDraft(food: Food | undefined, initialName: string, locale: string): Draft {
+/** What a form can start from: a stored food or a product from an external database. */
+type FoodSource = Pick<Food, 'name' | 'brand' | 'barcode' | 'reference' | 'servings'> & {
+  nutrients: ExternalNutrients;
+};
+
+function initialDraft(
+  food: FoodSource | undefined,
+  initialName: string,
+  initialBarcode: string,
+  locale: string,
+): Draft {
   const piece = food?.servings.find((s) => s.unit === 'piece');
   const serving = food?.servings.find((s) => s.unit === 'serving');
   const n = (value: number | null | undefined) => formatNumberInput(value, locale);
   return {
-    name: food?.name ?? initialName,
+    name: food?.name || initialName,
     brand: food?.brand ?? '',
+    barcode: food?.barcode ?? initialBarcode,
     referenceUnit: food?.reference.unit ?? 'g',
     pieceUnit: piece?.amountUnit ?? 'g',
     servingUnit: serving?.amountUnit ?? 'g',
@@ -84,15 +99,17 @@ function initialDraft(food: Food | undefined, initialName: string, locale: strin
   };
 }
 
+type FieldKey = NumberKey | 'name' | 'barcode';
 type Checked =
-  | { ok: true; input: FoodInput }
-  | { ok: false; errors: Partial<Record<NumberKey | 'name', string>> };
+  { ok: true; input: FoodInput } | { ok: false; errors: Partial<Record<FieldKey, string>> };
 
 /** Validates the whole form at once so every problem is shown next to its field. */
 function checkFoodDraft(draft: Draft, t: TranslateFn): Checked {
-  const errors: Partial<Record<NumberKey | 'name', string>> = {};
+  const errors: Partial<Record<FieldKey, string>> = {};
   const values: Partial<Record<NumberKey, number | null>> = {};
   if (draft.name.trim() === '') errors.name = t('nutrition.errors.required');
+  const barcode = draft.barcode.trim() ? normalizeBarcode(draft.barcode) : null;
+  if (draft.barcode.trim() && !barcode) errors.barcode = t('nutrition.errors.barcode');
   for (const key of Object.keys(draft.numbers) as NumberKey[]) {
     const required = REQUIRED.includes(key);
     const parsed = required
@@ -130,6 +147,7 @@ function checkFoodDraft(draft: Draft, t: TranslateFn): Checked {
     input: {
       name: draft.name,
       brand: draft.brand,
+      barcode,
       reference: { amount: num('referenceAmount'), unit: draft.referenceUnit },
       nutrients: {
         energyKcal: num('energyKcal'),
@@ -148,7 +166,10 @@ function checkFoodDraft(draft: Draft, t: TranslateFn): Checked {
 interface FoodFormSheetProps {
   /** Edit this food; omit to create one. */
   food?: Food;
+  /** Review a product from an external database before storing it locally. */
+  product?: ExternalProduct;
   initialName?: string;
+  initialBarcode?: string;
   onSaved: (food: Food) => void;
   /** Called after "delete": removed for good, or only hidden because it is in use. */
   onRemoved?: (result: 'deleted' | 'deactivated', food: Food) => void;
@@ -161,16 +182,35 @@ interface FoodFormSheetProps {
  */
 export function FoodFormSheet({
   food,
+  product,
   initialName = '',
+  initialBarcode = '',
   onSaved,
   onRemoved,
   onClose,
 }: FoodFormSheetProps) {
   const { t, locale } = useI18n();
   const { mutate } = useNutrition();
-  const ids = { name: useId(), brand: useId(), unit: useId(), piece: useId(), serving: useId() };
-  const [draft, setDraft] = useState(() => initialDraft(food, initialName, locale));
-  const [errors, setErrors] = useState<Partial<Record<NumberKey | 'name', string>>>({});
+  const ids = {
+    name: useId(),
+    brand: useId(),
+    barcode: useId(),
+    unit: useId(),
+    piece: useId(),
+    serving: useId(),
+  };
+  const [draft, setDraft] = useState(() =>
+    initialDraft(food ?? product, initialName, initialBarcode, locale),
+  );
+  // Values the database does not state are marked right away – they are never assumed 0.
+  const [errors, setErrors] = useState<Partial<Record<FieldKey, string>>>(() =>
+    Object.fromEntries(
+      (product?.missing ?? []).map((key) => [key, t('nutrition.lookup.incomplete')]),
+    ),
+  );
+  const [favorite, setFavorite] = useState(food?.favorite ?? false);
+  const [attempted, setAttempted] = useState(false);
+  const external = product ?? (food?.source === 'external' ? food : null);
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -183,6 +223,7 @@ export function FoodFormSheet({
 
   async function submit(event: SyntheticEvent) {
     event.preventDefault();
+    setAttempted(true);
     const checked = checkFoodDraft(draft, t);
     if (!checked.ok) {
       setErrors(checked.errors);
@@ -193,7 +234,13 @@ export function FoodFormSheet({
       const saved = await mutate((s, profileId) =>
         food
           ? s.foods.update(profileId, food.id, checked.input)
-          : s.foods.create(profileId, checked.input),
+          : product
+            ? s.foods.saveImported(
+                profileId,
+                { provider: product.provider, externalId: product.externalId },
+                checked.input,
+              )
+            : s.foods.create(profileId, checked.input),
       );
       onSaved(saved);
     } catch (error) {
@@ -260,17 +307,27 @@ export function FoodFormSheet({
 
   return (
     <Sheet
-      title={food ? t('nutrition.foods.edit') : t('nutrition.foods.create')}
+      title={
+        product
+          ? t('nutrition.lookup.importTitle')
+          : food
+            ? t('nutrition.foods.edit')
+            : t('nutrition.foods.create')
+      }
       onClose={onClose}
       closeLabel={t('common.close')}
     >
       <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
+        {product ? <p className={styles.notice}>{t('nutrition.lookup.importSource')}</p> : null}
+        {product && product.missing.length > 0 ? (
+          <p className={styles.warning}>{t('nutrition.lookup.importIncomplete')}</p>
+        ) : null}
         {food ? <p className={styles.hint}>{t('nutrition.foods.editHint')}</p> : null}
         <label htmlFor={ids.name} className={styles.label}>
           {t('nutrition.foods.name')}
         </label>
         <input
-          {...(food ? {} : AUTOFOCUS)}
+          {...(food || product ? {} : AUTOFOCUS)}
           id={ids.name}
           className={styles.field}
           value={draft.name}
@@ -298,6 +355,23 @@ export function FoodFormSheet({
             setDraft((current) => ({ ...current, brand: event.target.value }));
           }}
         />
+        <label htmlFor={ids.barcode} className={styles.label}>
+          {t('nutrition.lookup.barcode')}
+        </label>
+        <input
+          id={ids.barcode}
+          className={styles.field}
+          value={draft.barcode}
+          inputMode="numeric"
+          autoComplete="off"
+          enterKeyHint="next"
+          aria-invalid={Boolean(errors.barcode)}
+          onChange={(event) => {
+            setDraft((current) => ({ ...current, barcode: event.target.value }));
+            setErrors((current) => ({ ...current, barcode: undefined }));
+          }}
+        />
+        {errors.barcode ? <p className={styles.fieldError}>{errors.barcode}</p> : null}
 
         <fieldset className={styles.group}>
           <legend className={styles.groupTitle}>{t('nutrition.foods.basics')}</legend>
@@ -366,9 +440,15 @@ export function FoodFormSheet({
           <p className={styles.error} role="alert">
             {failure}
           </p>
-        ) : Object.values(errors).some(Boolean) ? (
+        ) : attempted && Object.values(errors).some(Boolean) ? (
           <p className={styles.error} role="alert">
             {t('nutrition.errors.checkFields')}
+          </p>
+        ) : null}
+        {external ? (
+          <p className={styles.hint}>
+            {t('nutrition.lookup.source', { name: 'Open Food Facts' })} ·{' '}
+            {t('nutrition.lookup.attribution')}
           </p>
         ) : null}
         <div className={styles.actions}>
@@ -379,6 +459,25 @@ export function FoodFormSheet({
             {t('common.save')}
           </Button>
         </div>
+        {food ? (
+          <Button
+            variant="secondary"
+            fullWidth
+            aria-pressed={favorite}
+            onClick={() => {
+              const next = !favorite;
+              setFavorite(next);
+              mutate((s, profileId) => s.foods.setFavorite(profileId, food.id, next)).catch(
+                (error: unknown) => {
+                  setFavorite(!next);
+                  setFailure(describeNutritionError(error, t));
+                },
+              );
+            }}
+          >
+            {favorite ? t('nutrition.lookup.removeFavorite') : t('nutrition.lookup.addFavorite')}
+          </Button>
+        ) : null}
         {food && !food.active ? (
           <Button
             variant="secondary"

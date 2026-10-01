@@ -1,4 +1,5 @@
 import { StorageService, type OpenedDatabase } from '@/core/database';
+import { getPlatform, httpGetJson } from '@/core/platform';
 import { WeightRepository, WeightService } from '@/core/health';
 import {
   ExerciseService,
@@ -10,7 +11,10 @@ import {
 } from '@/core/training';
 import {
   DiaryService,
+  FoodLookupService,
   FoodService,
+  OpenFoodFactsProvider,
+  type FoodDataProvider,
   GoalService,
   MealService,
   NutritionStore,
@@ -40,6 +44,8 @@ export interface AppServices {
 export function createServices(
   { driver: db, security }: OpenedDatabase,
   clock: Clock = systemClock,
+  /** The external food database; tests pass a fake – real requests never run in tests. */
+  foodProvider: FoodDataProvider = createFoodProvider(),
 ): AppServices {
   const weight = new WeightService(new WeightRepository(db), clock);
   const profile = new ProfileService(new ProfileRepository(db), clock);
@@ -71,12 +77,23 @@ export function createServices(
     storage: new StorageService(db, security, clock),
     weight,
     training,
-    nutrition: createNutritionServices(new NutritionStore(db), clock, sources),
+    nutrition: createNutritionServices(new NutritionStore(db), clock, sources, foodProvider),
     bodyWeight,
     settings: new SettingsService(new SettingsRepository(db, clock)),
     profile,
     sync: new LocalOnlySyncService(),
   };
+}
+
+/**
+ * Open Food Facts over the platform's HTTP client. The User-Agent names the app, its version
+ * and platform – nothing about the user.
+ */
+function createFoodProvider(): FoodDataProvider {
+  return new OpenFoodFactsProvider(
+    { getJson: (url, options) => httpGetJson(url, options) },
+    `Kalethra/${__APP_VERSION__} (${getPlatform()})`,
+  );
 }
 
 function createTrainingServices(store: TrainingStore, clock: Clock): TrainingServices {
@@ -91,9 +108,12 @@ function createNutritionServices(
   store: NutritionStore,
   clock: Clock,
   sources: NutritionSources,
+  provider: FoodDataProvider,
 ): NutritionServices {
+  const foods = new FoodService(store, clock);
   return {
-    foods: new FoodService(store, clock),
+    foods,
+    lookup: new FoodLookupService(foods, provider),
     meals: new MealService(store, clock),
     diary: new DiaryService(store, clock),
     recipes: new RecipeService(store, clock),

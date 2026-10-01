@@ -122,6 +122,25 @@ describe('system back', () => {
     expect(platform.exitApp).not.toHaveBeenCalled();
   });
 
+  it('closes online results first, then the add sheet', async () => {
+    const { router } = await renderApp('/nutrition');
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück: hinzufügen' }));
+    await userEvent.type(screen.getByLabelText('Lebensmittel suchen'), 'skyr');
+    await userEvent.click(screen.getByRole('button', { name: 'Online suchen: „skyr“' }));
+    expect(await screen.findByText('Keine Treffer bei Open Food Facts.')).toBeInTheDocument();
+
+    await pressBack();
+    expect(
+      await screen.findByRole('button', { name: 'Online suchen: „skyr“' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await pressBack();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(router.state.location.pathname).toBe('/nutrition');
+  });
+
   it('keeps an active workout when leaving it with back', async () => {
     const { router, services } = await renderApp('/training', {
       prepare: async (s, profileId) => {

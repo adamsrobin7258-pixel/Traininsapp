@@ -22,11 +22,13 @@ export function FoodsScreen() {
   const matches =
     foods.status === 'ready' ? foods.data.filter((food) => matchesFoodSearch(food, query)) : [];
   const active = matches.filter((food) => food.active);
+  const favorites = active.filter((food) => food.favorite);
   const hidden = matches.filter((food) => !food.active);
   const kcal = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   const subtitle = (food: Food) =>
     [
       food.brand,
+      food.source === 'external' ? t('nutrition.lookup.onlineTitle') : null,
       t('nutrition.add.perReference', {
         kcal: kcal.format(food.nutrients.energyKcal),
         amount: formatQuantity(food.reference.amount, food.reference.unit, t, locale),
@@ -64,6 +66,24 @@ export function FoodsScreen() {
         <p className={styles.notice} role="status">
           {notice}
         </p>
+      ) : null}
+      {favorites.length > 0 ? (
+        <Section title={t('nutrition.lookup.favorites')}>
+          <List label={t('nutrition.lookup.favorites')}>
+            {favorites.map((food) => (
+              <ListRow
+                key={food.id}
+                title={food.name}
+                subtitle={subtitle(food)}
+                icon="star"
+                onPress={() => {
+                  setNotice(null);
+                  setEditing(food);
+                }}
+              />
+            ))}
+          </List>
+        </Section>
       ) : null}
       <Section title={t('nutrition.foods.own')}>
         <List label={t('nutrition.foods.own')}>

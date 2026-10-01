@@ -5,7 +5,8 @@ export type NutritionErrorCode =
   | 'invalid-unit'
   | 'incompatible-unit'
   | 'food-inactive'
-  | 'last-meal';
+  | 'last-meal'
+  | 'invalid-barcode';
 
 /** Rejected nutrition operation; the code is translated by the UI. */
 export class NutritionError extends Error {

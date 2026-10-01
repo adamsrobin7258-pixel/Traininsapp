@@ -3,6 +3,7 @@ import { createId } from '@/shared/lib/id';
 import { NutritionError } from './errors';
 import {
   FOOD_NAME_MAX_LENGTH,
+  RECENT_FOODS_LIMIT,
   isValidAmount,
   type Food,
   type FoodServing,
@@ -11,6 +12,7 @@ import {
 import { optionalText, requireName } from './names';
 import { areValidNutrients, type Nutrients } from './nutrients';
 import type { NutritionStore } from './nutritionStore';
+import { barcodeVariants, normalizeBarcode } from './barcode';
 import type { ExternalFood } from './provider';
 import { isQuantityUnit } from './units';
 
@@ -50,8 +52,69 @@ export class FoodService {
   }
 
   /** Locally stored foods with this barcode (offline lookup before asking a provider). */
-  findByBarcode(profileId: string, barcode: string): Promise<Food[]> {
-    return this.store.repos.foods.findByBarcode(profileId, barcode.trim());
+  async findByBarcode(profileId: string, barcode: string): Promise<Food[]> {
+    const code = normalizeBarcode(barcode) ?? barcode.trim();
+    const found: Food[] = [];
+    for (const variant of barcodeVariants(code)) {
+      for (const food of await this.store.repos.foods.findByBarcode(profileId, variant)) {
+        if (!found.some((f) => f.id === food.id)) found.push(food);
+      }
+    }
+    return found;
+  }
+
+  /** Recently used foods, newest use first (see FoodRepository.listRecent). */
+  recent(profileId: string, limit: number = RECENT_FOODS_LIMIT): Promise<Food[]> {
+    return this.store.repos.foods.listRecent(profileId, limit);
+  }
+
+  /** A product already imported from this provider, if any. */
+  findImported(profileId: string, provider: string, externalId: string): Promise<Food | null> {
+    return this.store.repos.foods.findExternal(profileId, provider, externalId);
+  }
+
+  /**
+   * Stores a product from an external provider after the user reviewed (and maybe corrected)
+   * its values. The result is an ordinary local food (source `external`), usable offline. If
+   * the product was imported before, that food is updated instead of creating a duplicate.
+   */
+  async saveImported(
+    profileId: string,
+    origin: { provider: string; externalId: string },
+    input: FoodInput,
+  ): Promise<Food> {
+    if (!origin.provider.trim() || !origin.externalId.trim()) {
+      throw new NutritionError('invalid-value');
+    }
+    const data = validated(input);
+    const now = this.now();
+    return this.store.atomic(async (repos) => {
+      const existing = await repos.foods.findExternal(
+        profileId,
+        origin.provider,
+        origin.externalId,
+      );
+      if (existing) {
+        const food: Food = { ...existing, ...data, active: true, updatedAt: now };
+        await repos.foods.update(food);
+        if (!existing.active) await repos.foods.setFlag(food.id, 'active', true, now);
+        return food;
+      }
+      const food: Food = {
+        id: createId(),
+        profileId,
+        source: 'external',
+        provider: origin.provider,
+        externalId: origin.externalId,
+        ...data,
+        favorite: false,
+        active: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await repos.foods.insert(food);
+      return food;
+    });
   }
 
   async create(profileId: string, input: FoodInput): Promise<Food> {
@@ -169,9 +232,17 @@ function validated(input: FoodInput) {
   return {
     name: requireName(input.name, FOOD_NAME_MAX_LENGTH),
     brand: optionalText(input.brand, FOOD_NAME_MAX_LENGTH),
-    barcode: optionalText(input.barcode, 32),
+    barcode: checkedBarcode(input.barcode),
     reference: { ...reference },
     nutrients: { ...nutrients },
     servings: servings.map((s) => ({ ...s, label: optionalText(s.label, 40) })),
   };
+}
+
+function checkedBarcode(input: string | null | undefined): string | null {
+  const text = input?.trim() ?? '';
+  if (text === '') return null;
+  const code = normalizeBarcode(text);
+  if (!code) throw new NutritionError('invalid-barcode');
+  return code;
 }

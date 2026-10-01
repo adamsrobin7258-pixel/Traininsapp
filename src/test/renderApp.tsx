@@ -5,11 +5,14 @@ import { createRoutes } from '@/app/router';
 import { createServices, loadInitialState, type AppServices } from '@/app/services';
 import type { DatabaseSecurity } from '@/core/database';
 import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from './database';
+import { FakeFoodProvider } from './fakeFoodProvider';
 
 interface RenderAppOptions {
   security?: DatabaseSecurity;
   /** Runs against the services before the app starts, e.g. to store settings or data. */
   prepare?: (services: AppServices, profileId: string) => Promise<void>;
+  /** External food database stand-in (never the real one). */
+  foodProvider?: FakeFoodProvider;
 }
 
 /**
@@ -18,9 +21,11 @@ interface RenderAppOptions {
  */
 export async function renderApp(initialPath = '/', options: RenderAppOptions = {}) {
   const db = await createTestDatabase();
+  const foodProvider = options.foodProvider ?? new FakeFoodProvider();
   const services = createServices(
     { driver: db, security: options.security ?? ENCRYPTED_TEST_SECURITY },
     () => new Date(),
+    foodProvider,
   );
   if (options.prepare) {
     const profile = await services.profile.ensureLocalProfile();
@@ -33,5 +38,5 @@ export async function renderApp(initialPath = '/', options: RenderAppOptions = {
       <RouterProvider router={router} />
     </AppProviders>,
   );
-  return { ...view, db, services, router };
+  return { ...view, db, services, router, foodProvider };
 }

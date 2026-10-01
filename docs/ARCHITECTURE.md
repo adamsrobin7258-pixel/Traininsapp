@@ -271,6 +271,12 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   App-Komponente `NutritionGoalSync` löst das nach Gewichts-, Trainings- oder
   Körperdatenänderungen aus. Die Oberfläche (`/nutrition/profile`) zeigt nur Ergebnisse der
   Engine an.
+- **Externe Lebensmittel (Phase 4.3):** UI → `FoodLookupService`/`FoodService` →
+  `FoodDataProvider` → `OpenFoodFactsProvider` (`core/nutrition/providers`) → `JsonHttpClient`
+  → `core/platform/http.ts` (nativ `CapacitorHttp`, Web `fetch`). Der Barcode-Scanner ist in
+  `core/platform/barcodeScanner.ts` gekapselt (`@capacitor/barcode-scanner`, Android ZXing).
+  Lokale Lebensmittel sind der Cache: importierte Produkte sind normale Einträge in `foods`.
+  Details: [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 - **Wasser-Schnellmengen** sind die Einstellung `waterQuickAmountsMl` (1–4 Werte, 10–5000 ml,
   Standard 250/500/750) in `app_settings`.
 

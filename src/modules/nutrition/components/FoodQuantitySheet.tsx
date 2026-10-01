@@ -9,7 +9,7 @@ import {
   type MealSlot,
   type QuantityUnit,
 } from '@/core/nutrition';
-import { AUTOFOCUS, Button, Sheet } from '@/ui';
+import { Button, Icon, Sheet } from '@/ui';
 import { describeAmountError, describeNutritionError } from '../domain/format';
 import { formatNumberInput, parseAmountInput } from '../domain/input';
 import { MealSelect } from './MealSelect';
@@ -46,6 +46,7 @@ export function FoodQuantitySheet({
   const [mealId, setMealId] = useState(initialMealId);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [favorite, setFavorite] = useState(food.favorite);
 
   const parsed = parseAmountInput(amount, isValidAmount);
   let preview = null;
@@ -84,15 +85,39 @@ export function FoodQuantitySheet({
   return (
     <Sheet title={t('nutrition.add.quantityTitle')} onClose={onBack} closeLabel={t('common.close')}>
       <form className={styles.form} noValidate onSubmit={(event) => void submit(event)}>
-        <p className={styles.foodName}>{food.name}</p>
-        {food.brand ? <p className={styles.hint}>{food.brand}</p> : null}
+        <div className={styles.titleRow}>
+          <div>
+            <p className={styles.foodName}>{food.name}</p>
+            {food.brand ? <p className={styles.hint}>{food.brand}</p> : null}
+          </div>
+          <button
+            type="button"
+            className={styles.favorite}
+            aria-pressed={favorite}
+            aria-label={
+              favorite ? t('nutrition.lookup.removeFavorite') : t('nutrition.lookup.addFavorite')
+            }
+            onClick={() => {
+              const next = !favorite;
+              setFavorite(next);
+              mutate((s, profileId) => s.foods.setFavorite(profileId, food.id, next)).catch(
+                (failure: unknown) => {
+                  setFavorite(!next);
+                  setError(describeNutritionError(failure, t));
+                },
+              );
+            }}
+          >
+            <Icon name="star" size={22} />
+          </button>
+        </div>
         <div className={styles.pair}>
           <div className={styles.pairItem}>
             <label htmlFor={amountId} className={styles.label}>
               {t('nutrition.entry.amount')}
             </label>
+            {/* No autofocus: choosing a food never opens the keyboard by itself. */}
             <input
-              {...AUTOFOCUS}
               id={amountId}
               className={styles.field}
               type="text"
@@ -132,6 +157,9 @@ export function FoodQuantitySheet({
         <MealSelect meals={meals} value={mealId} onChange={setMealId} />
         <p className={styles.label}>{t('nutrition.add.preview')}</p>
         <NutrientPreview nutrients={preview} />
+        {food.source === 'external' ? (
+          <p className={styles.hint}>{t('nutrition.lookup.attribution')}</p>
+        ) : null}
         {error ? (
           <p id={errorId} className={styles.error} role="alert">
             {error}

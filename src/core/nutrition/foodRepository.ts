@@ -181,6 +181,23 @@ export class FoodRepository {
     ]);
   }
 
+  /**
+   * Active foods by their latest use in the diary (newest first). "Use" is logging the food –
+   * directly or through a saved meal – so a food moves up again every time it is eaten.
+   */
+  async listRecent(profileId: string, limit: number): Promise<Food[]> {
+    const rows = await this.db.query<FoodRow & { last_used: string }>(
+      `SELECT f.*, u.last_used FROM foods f
+       JOIN (SELECT food_id, MAX(created_at) AS last_used FROM food_entries
+             WHERE profile_id = ? AND food_id IS NOT NULL GROUP BY food_id) u ON u.food_id = f.id
+       WHERE f.active = 1 AND (f.profile_id = ? OR f.profile_id IS NULL)
+       ORDER BY u.last_used DESC, f.name COLLATE NOCASE
+       LIMIT ?`,
+      [profileId, profileId, limit],
+    );
+    return this.withServings(rows);
+  }
+
   /** True when a diary entry, saved meal or recipe refers to the food. */
   async isReferenced(id: string): Promise<boolean> {
     const rows = await this.db.query<{ used: number }>(

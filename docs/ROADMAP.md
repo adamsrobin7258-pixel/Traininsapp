@@ -116,10 +116,19 @@ aktualisierter Dokumentation.
 - Einzeln überschreibbare Werte, versionierte Zielprofile mit gespeicherter Herleitung
   (Migration 7), Zieländerung mit Zusammenfassung
 
-## Phase 4.3 – Vorschlag
+## Phase 4.3 – Open Food Facts, Barcode, Favoriten ✅ (Version 0.5.0)
 
-- Lebensmittelsuche mit Open Food Facts (Datenschutzprüfung), Barcode-Scanner
-- Favoriten und zuletzt verwendete Lebensmittel, Rezepte in der Oberfläche
+- Online-Suche bei Open Food Facts (nur auf Tipp), Barcode-Abfrage (lokal zuerst), Importprüfung
+  im Lebensmittel-Editor, lokale Speicherung (offline nutzbar), Duplikaterkennung
+- Barcode-Scanner (offizielles Capacitor-Plugin, Android ZXing, iOS Vision) und manuelle Eingabe
+- Favoriten und zuletzt verwendete Lebensmittel im Hinzufügen-Dialog
+- Fehlende Nährwerte bleiben fehlend (nie 0), klare Fehlermeldungen, ODbL-Quellenangabe
+- Details: [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md)
+
+## Phase 4.4 – Vorschlag
+
+- Manuelle „Daten aktualisieren“-Funktion für importierte Produkte (mit Änderungsvorschau)
+- Rezepte in der Oberfläche
 
 ## Phase 4 – Weitere Vorschläge
 

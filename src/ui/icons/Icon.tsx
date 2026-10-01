@@ -35,6 +35,18 @@ const paths = {
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
   plan: <path d="M9 6.75h10.25M9 12h10.25M9 17.25h10.25M4.75 6.75h.5M4.75 12h.5M4.75 17.25h.5" />,
   chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,
+  star: (
+    <path d="m12 3.75 2.5 5.3 5.75.7-4.25 3.95 1.1 5.7L12 16.6l-5.1 2.8 1.1-5.7-4.25-3.95 5.75-.7Z" />
+  ),
+  barcode: (
+    <path d="M4.75 6.25v11.5M7.75 6.25v11.5M11.25 6.25v11.5M13.75 6.25v11.5M16.25 6.25v11.5M19.25 6.25v11.5" />
+  ),
+  search: (
+    <>
+      <circle cx="10.75" cy="10.75" r="5.5" />
+      <path d="m15 15 4.25 4.25" />
+    </>
+  ),
 } satisfies Record<string, ReactElement>;
 
 export type IconName = keyof typeof paths;

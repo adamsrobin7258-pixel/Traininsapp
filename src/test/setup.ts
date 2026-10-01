@@ -28,3 +28,14 @@ if (typeof window !== 'undefined') {
   // jsdom does not implement scrolling (used by React Router's <ScrollRestoration>).
   window.scrollTo = () => undefined;
 }
+
+// Tests never talk to real services (e.g. Open Food Facts): external requests fail loudly.
+const realFetch = globalThis.fetch as typeof fetch | undefined;
+globalThis.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+  if (/^https?:\/\//.test(url) && !/^https?:\/\/(localhost|127\.0\.0\.1)/.test(url)) {
+    return Promise.reject(new Error(`External request blocked in tests: ${url}`));
+  }
+  if (!realFetch) return Promise.reject(new Error('fetch unavailable'));
+  return realFetch(input, init);
+};

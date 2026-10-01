@@ -297,6 +297,18 @@ Vergangene Tage behalten so die damals gültigen Werte. Je Wert gibt es weiterhi
 kopiert: Die Momentaufnahme enthält nur das für die Berechnung verwendete Trendgewicht.
 Details zur Berechnung: [NUTRITION_CALCULATION.md](NUTRITION_CALCULATION.md).
 
+## Phase 4.3 – keine Schemaänderung
+
+Open Food Facts, Favoriten und „zuletzt verwendet“ nutzen das bestehende Schema (Version 7):
+
+- Importierte Produkte: `foods.source = 'external'`, `provider = 'openfoodfacts'`,
+  `external_id` = Barcode; Duplikate verhindert der eindeutige Index `foods_external`
+  (`profile_id, provider, external_id`) sowie die Barcode-Suche über `foods_barcode`.
+- Favoriten: `foods.favorite`.
+- Zuletzt verwendet: abgeleitet aus `food_entries` (`MAX(created_at)` je `food_id`, Index
+  `food_entries_food`), begrenzt auf `RECENT_FOODS_LIMIT` – keine zusätzliche Speicherung.
+- Barcodes werden beim Speichern normalisiert (nur Ziffern, 8–14 Stellen).
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:

@@ -1,5 +1,6 @@
 import type { TranslateFn, TranslationKey } from '@/core/i18n';
 import {
+  FoodProviderError,
   mealDisplayName,
   NutritionError,
   type DefaultMealKey,
@@ -53,10 +54,12 @@ const ERRORS: Record<NutritionErrorCode, TranslationKey> = {
   'incompatible-unit': 'nutrition.errors.incompatibleUnit',
   'food-inactive': 'nutrition.errors.foodInactive',
   'last-meal': 'nutrition.errors.lastMeal',
+  'invalid-barcode': 'nutrition.errors.barcode',
 };
 
 /** User-facing text for a failed nutrition action (never the technical message). */
 export function describeNutritionError(error: unknown, t: TranslateFn): string {
+  if (error instanceof FoodProviderError) return t(`nutrition.lookup.errors.${error.code}`);
   return t(error instanceof NutritionError ? ERRORS[error.code] : 'nutrition.errors.saveFailed');
 }
 

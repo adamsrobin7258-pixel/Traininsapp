@@ -10,3 +10,5 @@ export type {
   TrackingOptions,
   TrackingSession,
 } from './location/types';
+export { scanBarcode, type BarcodeScanOutcome, type BarcodeScanTexts } from './barcodeScanner';
+export { httpGetJson, type HttpGetOptions, type HttpJsonResult } from './http';

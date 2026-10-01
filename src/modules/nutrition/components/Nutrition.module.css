@@ -517,3 +517,45 @@
   color: var(--color-on-accent);
   background: var(--color-accent);
 }
+
+.listTitle {
+  margin: var(--space-4) 0 var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.chip svg {
+  vertical-align: -0.2em;
+}
+
+.favorite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.favorite[aria-pressed='true'] {
+  color: var(--color-accent-text);
+}
+
+.favorite[aria-pressed='true'] svg path {
+  fill: currentColor;
+}
+
+.titleRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
