@@ -89,6 +89,21 @@ export const GOAL_LIMITS: Record<GoalTarget, { min: number; max: number }> = {
   waterMl: { min: 0, max: 10_000 },
 };
 
+/**
+ * Range for values the user sets as their own goal (a stricter subset of GOAL_LIMITS). Protein
+ * allows individual targets well above the automatic one – e.g. 210–250 g for very muscular
+ * people – without accepting extreme entries.
+ */
+export const OVERRIDE_LIMITS: Record<
+  Exclude<GoalTarget, 'waterMl'>,
+  { min: number; max: number }
+> = {
+  energyKcal: GOAL_LIMITS.energyKcal,
+  proteinG: { min: 30, max: 400 },
+  carbsG: GOAL_LIMITS.carbsG,
+  fatG: GOAL_LIMITS.fatG,
+};
+
 export interface GoalProgress {
   /** Share of the goal reached, 0–1 (capped; use `over` for the excess). */
   ratio: number;

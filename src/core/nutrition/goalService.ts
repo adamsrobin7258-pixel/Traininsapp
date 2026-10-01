@@ -7,6 +7,7 @@ import {
   EMPTY_GOAL_VALUE,
   GOAL_LIMITS,
   GOAL_TARGETS,
+  OVERRIDE_LIMITS,
   GOAL_TYPES,
   goalForDate,
   type EffectiveGoalValue,
@@ -20,6 +21,7 @@ import {
   calculateNutrition,
   levelFor,
   MACRO_TARGETS,
+  type MacroTarget,
   type Calculation,
   type Overrides,
   type PersonalData,
@@ -187,6 +189,43 @@ export class GoalService {
   }
 
   /**
+   * Sets an own value for one target of the stored profile – or with `null` returns it to the
+   * automatic calculation – and saves it right away as today's version. Everything else (goal,
+   * activity, other own values, water) stays as stored; the automatic values are recalculated
+   * from the current weight trend. A later recalculation keeps the own value (see
+   * refreshAutomatic); only the user removes it again.
+   */
+  async setProfileOverride(
+    profileId: string,
+    target: MacroTarget,
+    value: number | null,
+  ): Promise<NutritionGoal> {
+    const current = (await this.goalFor(profileId, this.today()))?.goal;
+    if (!current?.autoEnabled) throw new NutritionError('not-found');
+    const params: ProfileParams = {
+      goalType: current.goalType,
+      goalLevel: current.goalLevel,
+      activityLevel: current.activityLevel,
+      includeTraining: current.includeTraining,
+      targetWeightKg: current.targetWeightKg,
+    };
+    const overrides = checkedOverrides({
+      ...(Object.fromEntries(
+        MACRO_TARGETS.map((key) => [key, current.targets[key].manual]),
+      ) as Overrides),
+      [target]: value,
+    });
+    const calculation = await this.calculate(profileId, params, overrides);
+    return this.storeVersion(
+      profileId,
+      params,
+      overrides,
+      current.targets.waterMl.manual,
+      calculation,
+    );
+  }
+
+  /**
    * Re-calculates today's automatic values after new weight, training or personal data. A new
    * version is stored only when the weight trend moved by at least 0.5 kg or the calorie target
    * by at least 50 kcal (or the calculation became possible), so a single weighing or small
@@ -274,11 +313,15 @@ function checkedParams(params: ProfileParams): ProfileParams {
   return { ...params, goalLevel: levelFor(params.goalType, params.goalLevel) };
 }
 
+/** Own values the user enters; protein has its own, narrower range (OVERRIDE_LIMITS). */
 function checkedOverrides(overrides: Overrides): Overrides {
   const result: Overrides = {};
   for (const target of MACRO_TARGETS) {
     const value = overrides[target] ?? null;
-    checked(target, { auto: null, manual: value });
+    const { min, max } = OVERRIDE_LIMITS[target];
+    if (value !== null && (!Number.isFinite(value) || value < min || value > max)) {
+      throw new NutritionError('invalid-value');
+    }
     result[target] = value;
   }
   return result;

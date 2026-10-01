@@ -591,10 +591,19 @@ export const de = {
       energyGoal: 'Kalorienziel',
       origin: {
         auto: 'Automatisch',
-        manual: 'Manuell',
+        manual: 'Individuell',
       },
-      proteinExplain:
-        'Berechnet aus {gPerKg} g pro kg ({weight}) nach Ziel, Aktivität und Training.',
+      proteinExplain: '{gPerKg} g pro kg Körpergewicht · {weight}',
+      proteinExplainCapped: '{gPerKg} g pro kg Referenzgewicht · {weight}',
+      proteinCappedNote:
+        'Protein: Dein Trendgewicht liegt bei {current}. Das Referenzgewicht für Protein ist bei BMI 27,5 begrenzt ({reference}). Du kannst ein individuelles Protein-Ziel festlegen.',
+      manualExplain: 'automatisch wären {value}',
+      proteinAutoMode:
+        'Automatisch: Kalethra berechnet dein Protein-Ziel anhand deines aktuellen Referenzgewichts.',
+      proteinManualMode: 'Individuell: Du legst dein persönliches Protein-Ziel selbst fest.',
+      manualCurrent: 'Individuelles Ziel: {value}',
+      overrideSavedNow: 'Dein eigener Wert wird sofort gespeichert.',
+      overrideFailed: 'Das hat nicht geklappt. Bitte versuche es erneut.',
       fatExplain: '{percent} % der Energie',
       carbsExplain: 'Rest der Energie · {percent} %',
       noValue: 'Noch nicht berechenbar',

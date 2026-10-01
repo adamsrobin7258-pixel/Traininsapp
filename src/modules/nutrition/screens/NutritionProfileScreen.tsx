@@ -14,6 +14,7 @@ import {
   useNutrition,
   useNutritionData,
   type ActivityLevel,
+  type Calculation,
   type GoalLevel,
   type GoalType,
   type MacroTarget,
@@ -470,8 +471,18 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
           unit={editing.target === 'energyKcal' ? 'kcal' : 'g'}
           autoValue={calculation.auto[editing.target]}
           manualValue={draft.overrides[editing.target] ?? null}
-          onApply={(value) => {
-            change({ overrides: { ...draft.overrides, [editing.target]: value } });
+          details={
+            editing.target === 'proteinG' ? <ProteinModes calculation={calculation} /> : null
+          }
+          savesNow={state.current?.autoEnabled === true}
+          onApply={async (value) => {
+            const target = editing.target;
+            // With a saved profile the own value is stored at once (it must not get lost when
+            // leaving without "Save"); before the first setup it is saved with the profile.
+            if (state.current?.autoEnabled) {
+              await mutate((s, profileId) => s.goals.setProfileOverride(profileId, target, value));
+            }
+            change({ overrides: { ...draft.overrides, [target]: value } });
             setEditing(null);
           }}
           onClose={() => {
@@ -535,4 +546,27 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
 function kcalOf(goal: NutritionGoal, locale: string, fallback: string): string {
   const value = goal.targets.energyKcal.manual ?? goal.targets.energyKcal.auto;
   return value === null ? fallback : formatKcal(value, locale);
+}
+
+/** Automatic vs. custom protein target, with the reference weight when it is capped. */
+function ProteinModes({ calculation }: { calculation: Calculation }) {
+  const { t, locale } = useI18n();
+  const { weightUnit } = useSettings().settings;
+  const { protein } = calculation;
+  const manual = calculation.manual.proteinG !== null;
+  return (
+    <>
+      <p className={styles.hint}>
+        {t(manual ? 'nutrition.profile.proteinManualMode' : 'nutrition.profile.proteinAutoMode')}
+      </p>
+      {protein?.referenceCapped && calculation.inputs.weight ? (
+        <p className={styles.hint}>
+          {t('nutrition.profile.proteinCappedNote', {
+            current: formatWeight(calculation.inputs.weight.kg, weightUnit, locale),
+            reference: formatWeight(protein.referenceWeightKg, weightUnit, locale),
+          })}
+        </p>
+      ) : null}
+    </>
+  );
 }

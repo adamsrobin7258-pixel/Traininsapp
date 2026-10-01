@@ -582,10 +582,19 @@ export const en: TranslationSchema = {
       energyGoal: 'Calorie goal',
       origin: {
         auto: 'Automatic',
-        manual: 'Manual',
+        manual: 'Custom',
       },
-      proteinExplain:
-        'Calculated from {gPerKg} g per kg ({weight}) by goal, activity and training.',
+      proteinExplain: '{gPerKg} g per kg body weight · {weight}',
+      proteinExplainCapped: '{gPerKg} g per kg reference weight · {weight}',
+      proteinCappedNote:
+        'Protein: your trend weight is {current}. The reference weight for protein is capped at BMI 27.5 ({reference}). You can set a custom protein target.',
+      manualExplain: 'automatic would be {value}',
+      proteinAutoMode:
+        'Automatic: Kalethra calculates your protein target from your current reference weight.',
+      proteinManualMode: 'Custom: you set your personal protein target yourself.',
+      manualCurrent: 'Custom target: {value}',
+      overrideSavedNow: 'Your own value is saved right away.',
+      overrideFailed: 'That did not work. Please try again.',
       fatExplain: '{percent} % of energy',
       carbsExplain: 'Remaining energy · {percent} %',
       noValue: 'Cannot be calculated yet',

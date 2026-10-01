@@ -152,6 +152,11 @@ Protein wird pro kg **Referenzgewicht** berechnet, nicht als Anteil der Kalorien
   dieser nur die Energie betrifft.
 - **[Produkt]** Referenzgewicht ist das Trendgewicht, bei einem BMI über 27,5 jedoch das
   Gewicht bei BMI 27,5. So entstehen bei hohem Körpergewicht keine unnötig extremen Werte.
+- Die Anzeige trennt beides: ohne Begrenzung „1,6 g pro kg Körpergewicht · 75,0 kg“, mit
+  Begrenzung „1,6 g pro kg Referenzgewicht · 86,2 kg“ plus Hinweis auf das tatsächliche
+  Trendgewicht und die BMI-Grenze. So wirkt das Referenzgewicht nicht wie das Körpergewicht.
+- Bei viel Muskelmasse passt der BMI als Grundlage oft nicht; dafür gibt es das individuelle
+  Protein-Ziel (siehe „Manuelle Werte“). Die automatische Regel selbst bleibt unverändert.
 
 ## 9. Fett
 
@@ -171,10 +176,19 @@ Protein wird pro kg **Referenzgewicht** berechnet, nicht als Anteil der Kalorien
 
 ## Manuelle Werte
 
-- Kalorien, Protein, Fett und Kohlenhydrate lassen sich einzeln überschreiben. Die übrigen
-  Werte bleiben automatisch.
-- Manuelle Werte werden bei Gewichts- oder Trainingsänderungen nie verändert.
-- Mit „Automatisch berechnen“ wird wieder der aktuelle berechnete Wert übernommen.
+- Kalorien, Protein, Fett und Kohlenhydrate lassen sich einzeln überschreiben („Individuell“).
+  Die übrigen Werte bleiben automatisch; Fett und Kohlenhydrate richten sich nach den Kalorien
+  und dem Protein, die tatsächlich gelten.
+- Gespeichert wird der eigene Wert als `…_manual` der Zielversion neben dem weiter berechneten
+  automatischen Wert. Ist ein Ernährungsprofil gespeichert, wird er sofort übernommen
+  (`GoalService.setProfileOverride`, neue Version ab heute); vor der ersten Einrichtung mit dem
+  Profil.
+- Manuelle Werte werden bei Gewichts- oder Trainingsänderungen, beim App-Start und durch
+  Health-Connect-Importe nie verändert (`refreshAutomatic` übernimmt sie unverändert).
+- Mit „Automatisch berechnen“ wird der eigene Wert entfernt und wieder der aktuelle berechnete
+  Wert verwendet; spätere Gewichtsänderungen wirken dann wieder.
+- **[Produkt]** Eingabebereich für eigene Werte: Protein 30–400 g (auch 210–250 g bei viel
+  Muskelmasse, aber keine extremen Werte); Kalorien 500–10.000 kcal.
 - Das Wasserziel ist immer ein eigener Wert.
 
 ## Historisierung

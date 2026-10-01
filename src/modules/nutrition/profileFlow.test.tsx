@@ -125,7 +125,9 @@ describe('nutrition profile', () => {
     await userEvent.type(field, '170');
     await userEvent.click(dialog().getByRole('button', { name: 'Eigenen Wert verwenden' }));
     await closed();
-    expect(screen.getByRole('button', { name: /^Protein\s*Manuell.*170 g$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /^Protein\s*Individuell.*170 g$/ }),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
     await screen.findByText(/Ernährungsprofil gespeichert/);
     const profileId = (await services.profile.ensureLocalProfile()).id;

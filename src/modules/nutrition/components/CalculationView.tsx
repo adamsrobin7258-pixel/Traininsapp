@@ -43,11 +43,24 @@ export function CalculationView({
     if (key === 'energyKcal' && energy) {
       return `${t('nutrition.profile.maintenance')}: ${formatKcal(Math.round(energy.maintenanceKcal), locale)} · ${t('nutrition.profile.adjustment')}: ${signedKcal(energy.adjustment.appliedKcal)}`;
     }
-    if (key === 'proteinG' && protein && calculation.manual.proteinG === null) {
-      return t('nutrition.profile.proteinExplain', {
-        gPerKg: number(protein.gPerKg, 1),
-        weight: formatWeightKg(protein.referenceWeightKg),
-      });
+    if (key === 'proteinG' && protein) {
+      // Own value: show what the automatic calculation would give, for comparison.
+      if (calculation.manual.proteinG !== null) {
+        return calculation.auto.proteinG !== null
+          ? t('nutrition.profile.manualExplain', {
+              value: formatGrams(calculation.auto.proteinG, locale),
+            })
+          : undefined;
+      }
+      return t(
+        protein.referenceCapped
+          ? 'nutrition.profile.proteinExplainCapped'
+          : 'nutrition.profile.proteinExplain',
+        {
+          gPerKg: number(protein.gPerKg, 1),
+          weight: formatWeightKg(protein.referenceWeightKg),
+        },
+      );
     }
     if (key === 'fatG' && macros)
       return t('nutrition.profile.fatExplain', { percent: percent(macros.fatShare) });
@@ -119,6 +132,16 @@ export function CalculationView({
             );
           })}
         </List>
+        {protein?.referenceCapped &&
+        calculation.manual.proteinG === null &&
+        calculation.inputs.weight ? (
+          <p className={styles.hint}>
+            {t('nutrition.profile.proteinCappedNote', {
+              current: formatWeightKg(calculation.inputs.weight.kg),
+              reference: formatWeightKg(protein.referenceWeightKg),
+            })}
+          </p>
+        ) : null}
       </Section>
 
       {calculation.missing.length > 0 || calculation.invalid.length > 0 ? (
