@@ -206,8 +206,13 @@ test('progress over a day: food, workout, activity calories and period', async (
 
   // Scroll to the very end: the last card is fully reachable above the tab bar.
   await tab('Fortschritt').click();
-  await page.mouse.wheel(0, 5000);
-  await expect(activities).toBeInViewport({ ratio: 1 });
+  await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
+  // The cards load one after another and can still grow the page after a single wheel on a slow
+  // runner, so scroll to the end again until the last card has settled.
+  await expect(async () => {
+    await page.mouse.wheel(0, 5000);
+    await expect(activities).toBeInViewport({ ratio: 1, timeout: 500 });
+  }).toPass({ timeout: 10_000 });
   const cardBox = await activities.boundingBox();
   const tabBarBox = await page.getByRole('navigation', { name: 'Hauptnavigation' }).boundingBox();
   expect((cardBox?.y ?? 0) + (cardBox?.height ?? 0)).toBeLessThanOrEqual(tabBarBox?.y ?? 0);
