@@ -86,6 +86,7 @@ export const TRAINING = {
 export const GOAL_LEVELS = {
   lose: ['slow', 'moderate', 'fast'],
   maintain: [],
+  fitness: [],
   gain: ['moderate', 'higher'],
 } as const;
 export type LoseLevel = (typeof GOAL_LEVELS.lose)[number];
@@ -124,9 +125,9 @@ export const PROTEIN_G_PER_KG = {
   /** Without regular strength training, by everyday activity. */
   base: { low: 1.2, high: 1.4 },
   /** Extra for a goal when not strength training. */
-  goalBonus: { lose: 0.2, maintain: 0, gain: 0.2 },
+  goalBonus: { lose: 0.2, maintain: 0, fitness: 0, gain: 0.2 },
   /** With regular strength training. */
-  strength: { lose: 2.0, maintain: 1.6, gain: 1.8 },
+  strength: { lose: 2.0, maintain: 1.6, fitness: 1.6, gain: 1.8 },
   max: 2.2,
 } as const;
 

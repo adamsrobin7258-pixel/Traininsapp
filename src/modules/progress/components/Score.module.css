@@ -1,0 +1,272 @@
+/* The Kalethra score: the one big number of the progress page, then its four areas. */
+.wrap {
+  display: block;
+}
+
+.placeholder {
+  min-height: 13.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+/* The whole card is one target that opens the explanation. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--size-tap-target);
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card:active {
+  background: var(--color-surface-pressed);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.eyebrow {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.figure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.number {
+  font-size: var(--font-size-display);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--letter-spacing-display);
+  line-height: var(--line-height-tight);
+  color: var(--color-text);
+}
+
+.number[data-empty] {
+  color: var(--color-text-secondary);
+}
+
+.outOf {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+/* "Vorläufig": a text label with an outline – never only a colour. */
+.badge {
+  align-self: center;
+  padding: 0.125rem var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text);
+}
+
+.band {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.note {
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+/* Trend: arrow plus words – the direction never depends on colour. */
+.trend {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.trend svg {
+  flex: none;
+  margin-top: 0.1em;
+}
+
+.areas {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: var(--border-hairline) solid var(--color-separator);
+}
+
+/* Small phones: one area per line, so no name is ever broken inside a word. */
+@media (max-width: 359px) {
+  .areas,
+  .weights {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.area {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.areaName {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.areaValue {
+  flex: none;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.areaValue[data-empty] {
+  font-weight: var(--font-weight-regular);
+  color: var(--color-text-secondary);
+}
+
+/* Explanation sheet */
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.detailPeriod {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.detailFigure {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
+}
+
+.detailNumber {
+  font-size: var(--font-size-metric);
+  font-weight: var(--font-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.detailBand {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-semibold);
+}
+
+.text {
+  font-size: var(--font-size-subhead);
+  line-height: var(--line-height-body);
+}
+
+.subtitle {
+  margin: var(--space-4) 0 0;
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.weights {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-subhead);
+  font-variant-numeric: tabular-nums;
+}
+
+.explanations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.explanation {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.explanationTitle {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+.explanationText {
+  font-size: var(--font-size-subhead);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-3);
+}
+
+.linkButton {
+  display: flex;
+  align-items: center;
+  min-height: var(--size-tap-target);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-accent-text);
+  text-decoration: none;
+}
+
+.linkButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}

@@ -38,9 +38,98 @@ export const en: TranslationSchema = {
     },
     greetingWithName: '{greeting}, {name}',
     periodLabel: 'Period',
-    periods: { week: 'Week', month: 'Month' },
+    periods: { today: 'Today', week: '7 days', month: '30 days' },
     range: '{from} – {to}',
-    rangeHint: { week: 'Last 7 days', month: 'Last 30 days' },
+    rangeHint: { today: 'Today', week: 'Last 7 days', month: 'Last 30 days' },
+    rangeDay: '{day}',
+    score: {
+      title: 'Kalethra score',
+      outOf: 'of 100',
+      empty: 'No data for this period yet.',
+      emptyHint:
+        'Log nutrition, training, activities or your recovery – that is what your score is made of.',
+      bands: {
+        excellent: 'Doing very well',
+        good: 'On a good track',
+        partial: 'Partly on track',
+        low: 'Room to grow',
+      },
+      preliminary: 'Preliminary',
+      preliminaryHint: 'Not all data for this period is in yet.',
+      trend: {
+        up: 'Improved',
+        down: 'Declined',
+        steady: 'About the same',
+        none: 'Not enough data to compare yet',
+      },
+      trendVs: {
+        today: 'compared with yesterday',
+        week: 'compared with the 7 days before',
+        month: 'compared with the 30 days before',
+      },
+      trendDelta: '{delta} points',
+      areas: {
+        nutrition: 'Nutrition',
+        training: 'Training',
+        activity: 'Activities',
+        recovery: 'Recovery',
+      },
+      noRating: 'Not rated',
+      areaLabel: '{area}: {value}',
+      openDetails: 'Kalethra score details',
+      a11y: 'Kalethra score {score} of 100, {band}.',
+      a11yEmpty: 'Kalethra score: no data yet.',
+      detail: {
+        intro:
+          'The score shows how well what you logged matches your personal goal. It only rates your goal progress in Kalethra – not your health, and nothing medical.',
+        period: { today: 'Today', week: 'Last 7 days', month: 'Last 30 days' },
+        goal: 'Main goal: {goal}',
+        goalUnset: 'No main goal set yet – the areas count as for “General fitness”.',
+        weightsTitle: 'How it is weighted',
+        weight: '{area} {share} %',
+        weightsNote:
+          'The weighting is a Kalethra product choice, not a scientifically validated formula. Areas without a rating are left out – they make the score neither better nor worse.',
+        preliminaryRule:
+          'The score is preliminary while fewer than half of the days have entries or fewer than two areas are rated. So far: {days} of {total} days.',
+        notCounted: 'Not counted.',
+        areasTitle: 'The four areas',
+        nutrition: {
+          none: 'No food logged in this period.',
+          notRated: 'Not rateable yet – no nutrition goal, or the day is still running.',
+          near: 'On average you are close to your calorie goal.',
+          over: 'On average {value} % above your calorie goal.',
+          under: 'On average {value} % below your calorie goal.',
+          protein: 'Protein goal reached on {reached} of {total} rated days.',
+          logged: 'Logged on {count} of {total} days.',
+        },
+        training: {
+          noTarget: 'No weekly training target set. Kalethra workouts in this period: {done}.',
+          todayDone: 'Trained today.',
+          todayOpen: 'No workout yet today – that does not count against you.',
+          progress: '{done} of {expected} planned sessions done (target: {target} per week).',
+          restDays: 'Rest days: {count} – they never count against you.',
+          separate: 'Only Kalethra workouts count, not activities.',
+        },
+        activity: {
+          noTarget: 'No activity target set. Active minutes in this period: {minutes}.',
+          none: 'No activities in this period.',
+          progress:
+            '{minutes} of {expected} active minutes (target: {target} per week) · active days: {days}.',
+          capped: 'More than the target gives no extra points.',
+        },
+        recovery: {
+          none: 'No recovery notes in this period.',
+          mostlyGood: 'Your logged recovery was mostly good.',
+          mixed: 'Your logged recovery was mixed.',
+          mostlyPoor: 'You often felt poorly recovered.',
+          counts: 'Good: {good} · Moderate: {moderate} · Poor: {poor}',
+          restDays: 'Rest days: {count}.',
+        },
+        recordRecovery: 'Log recovery',
+        setTargets: 'Set weekly targets',
+        setGoal: 'Change main goal',
+      },
+    },
     training: {
       title: 'Training',
       workoutsOne: '1 workout',
@@ -62,7 +151,7 @@ export const en: TranslationSchema = {
     },
     weight: {
       title: 'Weight',
-      change: { week: '{value} in 7 days', month: '{value} in 30 days' },
+      change: { today: '{value} today', week: '{value} in 7 days', month: '{value} in 30 days' },
       noChange: 'No comparison in this period yet',
       imported: 'Value from Health Connect',
       empty: 'No weight data yet.',
@@ -573,6 +662,8 @@ export const en: TranslationSchema = {
       goal: 'Goal',
       goalType: 'Choose goal',
       goalLevel: 'Pace',
+      fitnessHint:
+        'Calories and macros are calculated as for “Maintain weight”. In the Kalethra score nutrition, training, activities and recovery count in a balanced way.',
       levels: {
         slow: 'Slow',
         moderate: 'Moderate',
@@ -795,6 +886,7 @@ export const en: TranslationSchema = {
       lose: 'Lose weight',
       maintain: 'Maintain weight',
       gain: 'Build muscle',
+      fitness: 'General fitness',
     },
     goalOrigin: {
       auto: 'Calculated automatically',
@@ -805,6 +897,20 @@ export const en: TranslationSchema = {
     title: 'Health',
     bodyTitle: 'Body',
     recoveryTitle: 'Recovery',
+    recovery: {
+      question: 'How recovered do you feel today?',
+      hint: 'Your own assessment – not a medical rating. It counts towards your Kalethra score.',
+      states: {
+        poor: 'Poorly recovered',
+        moderate: 'Moderately recovered',
+        good: 'Well recovered',
+      },
+      restDay: 'Rest day',
+      restDayHint: 'A rest day never counts against your score.',
+      clearHint: 'Tap again to clear the choice.',
+      saved: 'Saved for today.',
+      failed: 'Saving did not work. Please try again.',
+    },
     measurements: {
       bodyFat: 'Body fat',
       muscleMass: 'Muscle mass',
@@ -1096,6 +1202,23 @@ export const en: TranslationSchema = {
       'For display only, last updated {date}. These values change neither your weight entries nor your nutrition goals.',
   },
   profile: {
+    scoreTargets: {
+      title: 'Kalethra score',
+      footer:
+        'Targets for your score. Without a target the area is left out – it makes the score neither better nor worse.',
+      mainGoal: 'Main goal',
+      mainGoalUnset: 'Not set',
+      trainings: 'Workouts per week',
+      minutes: 'Active minutes per week',
+      none: 'No target',
+      trainingsValue: '{count}× per week',
+      minutesValue: '{count} min',
+      trainingsHint:
+        'How many Kalethra workouts you plan per week. Days without training in between are part of the plan and never count against you.',
+      minutesHint:
+        'Active minutes from your activities (logged yourself and Health Connect). For orientation: the WHO recommends 150–300 minutes of moderate activity per week for adults.',
+      failed: 'Saving did not work. Please try again.',
+    },
     title: 'Profile',
     localProfile: 'Local profile',
     localProfileHint: 'Your data stays on this device.',

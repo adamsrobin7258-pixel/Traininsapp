@@ -27,6 +27,8 @@ describe('SettingsService', () => {
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
       countActivityCalories: false,
+      trainingsPerWeek: null,
+      activeMinutesPerWeek: null,
     });
   });
 
@@ -84,6 +86,8 @@ describe('parseSettings', () => {
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
       countActivityCalories: false,
+      trainingsPerWeek: null,
+      activeMinutesPerWeek: null,
     });
   });
 });

@@ -373,7 +373,7 @@ describe('migration 12', () => {
       INSERT INTO weight_entries (id, profile_id, date, value, created_at, updated_at)
         VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([12]);
+    expect(await migrate(db, migrations)).toEqual([12, 13]);
     expect(await db.query('SELECT id, value FROM weight_entries')).toEqual([
       { id: 'w', value: 82.4 },
     ]);

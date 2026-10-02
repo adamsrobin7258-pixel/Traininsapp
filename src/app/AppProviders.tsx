@@ -10,6 +10,8 @@ import { TrainingProvider } from '@/core/training';
 import { SyncProvider } from '@/core/sync';
 import { applyTheme, useSystemPrefersDark } from '@/core/theme';
 import { ProfileProvider } from '@/core/user';
+import { RecoveryProvider } from '@/core/recovery';
+import { ScoreProvider } from '@/core/score';
 import { HealthSyncTrigger } from './HealthSyncTrigger';
 import { NutritionGoalSync } from './NutritionGoalSync';
 import type { AppServices, InitialState } from './services';
@@ -32,9 +34,13 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
                   <TrainingProvider services={services.training}>
                     <NutritionProvider services={services.nutrition}>
                       <ActivityProvider service={services.activities}>
-                        <NutritionGoalSync />
-                        <HealthSyncTrigger />
-                        {children}
+                        <RecoveryProvider service={services.recovery}>
+                          <ScoreProvider service={services.score}>
+                            <NutritionGoalSync />
+                            <HealthSyncTrigger />
+                            {children}
+                          </ScoreProvider>
+                        </RecoveryProvider>
                       </ActivityProvider>
                     </NutritionProvider>
                   </TrainingProvider>

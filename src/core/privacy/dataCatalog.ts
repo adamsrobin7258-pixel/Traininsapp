@@ -75,6 +75,15 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    // The user's own daily recovery note (subjective) and rest days – input of the score.
+    table: 'recovery_entries',
+    category: 'health',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     // Logged by hand; kept apart from Kalethra workouts and Health Connect activities.
     table: 'manual_activities',
     category: 'activity',

@@ -119,19 +119,23 @@ describe('Fortschritt – the main page', () => {
         'aria-current',
         'page',
       );
-      expect(screen.queryByText(/\bHeute\b/)).not.toBeInTheDocument();
+      // "Heute" is no tab (Phase 7.1) – since Phase 9 only a period of the score and cards.
+      expect(nav.queryByRole('link', { name: /Heute/ })).not.toBeInTheDocument();
     });
 
-    it('is read-only: no inputs, no buttons – only the period switch', async () => {
+    it('is read-only: no inputs – only the period switch and the score details', async () => {
       const { container } = await renderApp('/');
       await main().findByRole('link', { name: /^Training/ });
       expect(container.querySelectorAll('main input, main textarea, main select')).toHaveLength(0);
-      expect(main().queryAllByRole('button')).toHaveLength(0);
+      // The one button opens the explanation of the Kalethra score (Phase 9).
+      const buttons = await main().findAllByRole('button');
+      expect(buttons).toHaveLength(1);
+      expect(buttons[0]).toHaveAccessibleName(/Details zum Kalethra-Score$/);
       expect(
         main()
           .getAllByRole('radio')
           .map((radio) => radio.textContent),
-      ).toEqual(['Woche', 'Monat']);
+      ).toEqual(['Heute', '7 Tage', '30 Tage']);
     });
 
     it.each([
@@ -168,24 +172,29 @@ describe('Fortschritt – the main page', () => {
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Progress' }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: 'Week' })).toHaveAttribute('aria-checked', 'true');
+      expect(screen.getByRole('radio', { name: '7 days' })).toHaveAttribute('aria-checked', 'true');
       expect(await main().findByText('No training data yet.')).toBeInTheDocument();
-      expect(screen.queryByText(/\bToday\b/)).not.toBeInTheDocument();
+      expect(await main().findByText('Kalethra score')).toBeInTheDocument();
+      const nav = within(screen.getByRole('navigation', { name: 'Main navigation' }));
+      expect(nav.queryByRole('link', { name: /Today/ })).not.toBeInTheDocument();
     });
   });
 
   describe('period', () => {
     it('defaults to the last 7 days and switches to 30 days and back', async () => {
       await renderApp('/');
-      const week = await main().findByRole('radio', { name: 'Woche' });
+      const week = await main().findByRole('radio', { name: '7 Tage' });
       expect(week).toHaveAttribute('aria-checked', 'true');
       expect(main().getByText(/27\.09\. – 03\.10\./)).toBeInTheDocument();
 
-      await userEvent.click(main().getByRole('radio', { name: 'Monat' }));
-      expect(main().getByRole('radio', { name: 'Monat' })).toHaveAttribute('aria-checked', 'true');
+      await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
+      expect(main().getByRole('radio', { name: '30 Tage' })).toHaveAttribute(
+        'aria-checked',
+        'true',
+      );
       expect(main().getByText(/04\.09\. – 03\.10\./)).toBeInTheDocument();
 
-      await userEvent.click(main().getByRole('radio', { name: 'Woche' }));
+      await userEvent.click(main().getByRole('radio', { name: '7 Tage' }));
       expect(main().getByText(/27\.09\. – 03\.10\./)).toBeInTheDocument();
     });
   });
@@ -264,7 +273,7 @@ describe('Fortschritt – the main page', () => {
       ).toBeInTheDocument();
       expect(await (await findCard(/^Aktivitäten/)).findByText('1 Aktivität')).toBeInTheDocument();
 
-      await userEvent.click(main().getByRole('radio', { name: 'Monat' }));
+      await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
       expect(await card(/^Training/).findByText('3 Einheiten')).toBeInTheDocument();
       expect(card(/^Training/).getByText('Ø 0,7 pro Woche')).toBeInTheDocument();
       expect(card(/^Training/).getByText('1.920 kg Volumen')).toBeInTheDocument();
@@ -350,7 +359,7 @@ describe('Fortschritt – the main page', () => {
       expect(await week.findByText('91,8 kg')).toBeInTheDocument();
       expect(week.getByText('Noch kein Vergleich im Zeitraum')).toBeInTheDocument();
 
-      await userEvent.click(main().getByRole('radio', { name: 'Monat' }));
+      await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
       const month = card(/^Gewicht/);
       expect(await month.findByText(/^[-−]1,2 kg in 30 Tagen$/)).toBeInTheDocument();
       expect(

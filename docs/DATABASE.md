@@ -452,6 +452,30 @@ und verwendeten kcal sowie `kcal_overridden`. Vollständiges Schema, Berechnung 
 - Datenkatalog: Kategorie `activity`, Sensibilität `health`, exportierbar, mit dem Profil
   gelöscht (`ON DELETE CASCADE`), `syncable: false`.
 
+## Regeneration und Hauptziel „Allgemeine Fitness“ (Migration 13, Phase 9)
+
+```sql
+CREATE TABLE recovery_entries (
+  id          TEXT PRIMARY KEY NOT NULL,
+  profile_id  TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  local_date  TEXT NOT NULL,              -- ein Eintrag je Profil und Tag
+  state       TEXT,                       -- poor | moderate | good | NULL
+  rest_day    INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL,
+  updated_at  TEXT NOT NULL,
+  CHECK (state IS NOT NULL OR rest_day = 1)
+);
+CREATE UNIQUE INDEX recovery_entries_day ON recovery_entries (profile_id, local_date);
+```
+
+- Subjektive Tagesangabe für den Kalethra-Score ([SCORE.md](SCORE.md)); Kategorie `health`,
+  Sensibilität `health`, exportierbar, mit dem Profil gelöscht, `syncable: false`.
+- `nutrition_goals.goal_type` erlaubt zusätzlich `fitness`. Weil SQLite `CHECK`-Bedingungen nicht
+  ändern kann, wird die Tabelle mit identischen Spalten neu angelegt, jede Zeile unverändert
+  kopiert und der Index `nutrition_goals_day` neu erstellt (getestet: Zeilen vorher = nachher).
+- Der Score selbst wird **nicht** gespeichert. Wochenziele `trainingsPerWeek` und
+  `activeMinutesPerWeek` liegen in `app_settings`.
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:

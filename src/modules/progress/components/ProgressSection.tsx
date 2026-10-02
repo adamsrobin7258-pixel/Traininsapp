@@ -24,7 +24,14 @@ import { summarizeTraining, useTrainingData } from '@/core/training';
 import { parseLocalDateKey } from '@/shared/lib/date';
 import { formatDayMonth, formatDuration } from '@/shared/lib/format';
 import { Icon, SegmentedControl, type IconName } from '@/ui';
-import { periodRange, perWeek, PROGRESS_PERIODS, type ProgressPeriod } from '../domain/period';
+import {
+  periodRange,
+  perWeek,
+  previousPeriodRange,
+  PROGRESS_PERIODS,
+  type ProgressPeriod,
+} from '../domain/period';
+import { ScoreCard } from './ScoreCard';
 import { DayBars, WeightLine } from './ProgressCharts';
 import styles from './Progress.module.css';
 
@@ -32,8 +39,8 @@ import styles from './Progress.module.css';
 const MIN_CHART_DAYS = 2;
 
 /**
- * The progress figures over the last 7 or 30 days – Kalethra training, nutrition, weight and
- * imported activities, in this order. Each area is one card that opens its detail screen.
+ * The Kalethra score first, then the progress figures of today or the last 7 or 30 days –
+ * Kalethra training, nutrition, weight and activities, in this order. Each area is one card that opens its detail screen.
  * Values are only described, never judged; missing data stays missing (no invented zeros).
  */
 export function ProgressSection({ now }: { now: Date }) {
@@ -42,6 +49,8 @@ export function ProgressSection({ now }: { now: Date }) {
   const todayKey = now.toDateString();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per day, not per minute
   const range = useMemo(() => periodRange(now, period), [todayKey, period]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per day, not per minute
+  const previous = useMemo(() => previousPeriodRange(now, period), [todayKey, period]);
   const day = (date: string) => formatDayMonth(parseLocalDateKey(date) ?? now, locale);
 
   return (
@@ -57,8 +66,11 @@ export function ProgressSection({ now }: { now: Date }) {
       />
       <p className={styles.range}>
         <span className="visually-hidden">{t(`progress.rangeHint.${period}`)} </span>
-        {t('progress.range', { from: day(range.from), to: day(range.to) })}
+        {range.from === range.to
+          ? t('progress.rangeDay', { day: day(range.to) })
+          : t('progress.range', { from: day(range.from), to: day(range.to) })}
       </p>
+      <ScoreCard period={period} range={range} previous={previous} />
       <ul className={styles.list} aria-label={t('progress.title')}>
         <TrainingProgress range={range} period={period} day={day} />
         <NutritionProgress range={range} day={day} />
@@ -124,11 +136,13 @@ function TrainingProgress({
                 ? t('progress.training.workoutsOne')
                 : t('progress.training.workouts', { count: summary.workouts })}
             </span>
-            <span className={styles.secondary}>
-              {t('progress.training.perWeek', {
-                value: number.format(perWeek(summary.workouts, period)),
-              })}
-            </span>
+            {period !== 'today' ? (
+              <span className={styles.secondary}>
+                {t('progress.training.perWeek', {
+                  value: number.format(perWeek(summary.workouts, period)),
+                })}
+              </span>
+            ) : null}
           </span>
           {summary.volumeKg !== null ? (
             <span className={styles.secondary}>
@@ -137,15 +151,17 @@ function TrainingProgress({
               })}
             </span>
           ) : null}
-          <DayBars
-            values={summary.perDay.map((entry) => entry.workouts)}
-            label={t('progress.training.chart', {
-              days: summary.trainingDays,
-              total: range.dates.length,
-            })}
-            from={day(range.from)}
-            to={day(range.to)}
-          />
+          {range.dates.length >= MIN_CHART_DAYS ? (
+            <DayBars
+              values={summary.perDay.map((entry) => entry.workouts)}
+              label={t('progress.training.chart', {
+                days: summary.trainingDays,
+                total: range.dates.length,
+              })}
+              from={day(range.from)}
+              to={day(range.to)}
+            />
+          ) : null}
         </>
       ) : summary ? (
         <span className={styles.note}>{t('progress.training.empty')}</span>

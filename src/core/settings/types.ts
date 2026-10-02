@@ -37,7 +37,17 @@ export interface AppSettings {
    * calorie budget. Off by default; the stored nutrition goal itself never changes.
    */
   countActivityCalories: boolean;
+  /** Kalethra score: completed Kalethra workouts the user plans per week (`null` = no target). */
+  trainingsPerWeek: number | null;
+  /** Kalethra score: active minutes per week from activities (`null` = no target). */
+  activeMinutesPerWeek: number | null;
 }
+
+/** Limits of the two weekly score targets. */
+export const WEEKLY_TARGET_LIMITS = {
+  trainingsPerWeek: { min: 1, max: 14 },
+  activeMinutesPerWeek: { min: 10, max: 2000 },
+} as const;
 
 export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
@@ -45,4 +55,6 @@ export const DEFAULT_SETTINGS: AppSettings = {
   weightUnit: 'kg',
   waterQuickAmountsMl: [250, 500, 750],
   countActivityCalories: false,
+  trainingsPerWeek: null,
+  activeMinutesPerWeek: null,
 };

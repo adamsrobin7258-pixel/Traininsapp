@@ -9,6 +9,7 @@ import { EmptyValue, List, ListRow, Screen, Section } from '@/ui';
 import { WeightChart } from '../components/WeightChart';
 import { WeightEntrySheet, type WeightSheetMode } from '../components/WeightEntrySheet';
 import { ImportedHealthOverview } from '../components/ImportedHealthOverview';
+import { RecoveryCheckIn } from '../components/RecoveryCheckIn';
 import { WeightHistory } from '../components/WeightHistory';
 import { WeightOverview } from '../components/WeightOverview';
 
@@ -66,6 +67,11 @@ export function HealthScreen() {
         />
       </Section>
 
+      <Section title={t('health.recoveryTitle')}>
+        <RecoveryCheckIn />
+        <List>{renderPlaceholders(RECOVERY_MEASUREMENTS)}</List>
+      </Section>
+
       <Section title={t('weight.trend')}>
         <WeightChart />
       </Section>
@@ -78,9 +84,6 @@ export function HealthScreen() {
 
       <Section title={t('health.bodyTitle')}>
         <List>{renderPlaceholders(BODY_MEASUREMENTS)}</List>
-      </Section>
-      <Section title={t('health.recoveryTitle')}>
-        <List>{renderPlaceholders(RECOVERY_MEASUREMENTS)}</List>
       </Section>
 
       {sheet ? (

@@ -1,0 +1,120 @@
+/* Today's recovery: three choices and the rest day – large targets, no text input. */
+.checkIn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.question {
+  font-weight: var(--font-weight-semibold);
+}
+
+.states {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.state {
+  min-height: var(--size-tap-target);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: inherit;
+  font-size: var(--font-size-subhead);
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Chosen: filled and bold – not only a colour change. */
+.state[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.state:focus-visible,
+.restDay:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.state:disabled,
+.restDay:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.restDay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.toggle {
+  position: relative;
+  flex: none;
+  width: 3.25rem;
+  height: 2rem;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-bg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.restDay[aria-checked='true'] .toggle {
+  background: var(--color-accent);
+}
+
+.restDay[aria-checked='true'] .toggle::after {
+  transform: translateX(1.25rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toggle::after {
+    transition: none;
+  }
+}
+
+.hint {
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.status {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}

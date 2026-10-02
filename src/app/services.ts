@@ -2,6 +2,7 @@ import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
 import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
 import {
+  countableActivityMinutes,
   dayActivityCalories,
   ManualActivityService,
   type ActivityWeightSource,
@@ -31,6 +32,8 @@ import {
   type ReferenceCatalog,
 } from '@/core/nutrition';
 import { createBlsCatalog } from '@/core/nutrition/bls';
+import { RecoveryService } from '@/core/recovery';
+import { ScoreService } from '@/core/score';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -52,6 +55,10 @@ export interface AppServices {
   bodyWeight: BodyWeightSource;
   /** Sport activities logged by hand – apart from workouts and Health Connect. */
   activities: ManualActivityService;
+  /** The user's own daily recovery note (Kalethra score). */
+  recovery: RecoveryService;
+  /** Kalethra score – calculated from the data above, never stored. */
+  score: ScoreService;
 }
 
 export function createServices(
@@ -152,19 +159,55 @@ export function createServices(
       caloriesBetween: activityCaloriesBetween,
     },
   };
+  const nutrition = createNutritionServices(
+    new NutritionStore(db),
+    clock,
+    sources,
+    foodProvider,
+    referenceCatalog,
+  );
+  const recovery = new RecoveryService(db, clock);
+  // The score reads the existing services; it has no data of its own.
+  const score = new ScoreService({
+    goalTypeOn: async (profileId, localDate) =>
+      (await nutrition.goals.goalFor(profileId, localDate))?.goal.goalType ?? null,
+    nutritionTotals: (profileId, from, to) =>
+      nutrition.diary.dailyTotalsBetween(profileId, from, to),
+    nutritionGoals: (profileId, dates, options) =>
+      nutrition.goals.dayGoalsBetween(profileId, dates, options),
+    workoutsPerDay: (profileId, from, to) =>
+      training.workouts.dailyStatsBetween(profileId, from, to),
+    activityMinutesPerDay: async (profileId, from, to) => {
+      const first = parseLocalDateKey(from);
+      const last = parseLocalDateKey(to);
+      if (!first || !last) return [];
+      const [imported, manual, own] = await Promise.all([
+        healthSync.workoutsBetween(profileId, from, to),
+        activities.listBetween(profileId, from, to),
+        training.workouts.completedSpansBetween(
+          profileId,
+          toLocalDateKey(addDays(first, -1)),
+          toLocalDateKey(addDays(last, 1)),
+        ),
+      ]);
+      return countableActivityMinutes(imported, manual, own);
+    },
+    recovery: async (profileId, from, to) =>
+      (await recovery.listBetween(profileId, from, to)).map((entry) => ({
+        localDate: entry.localDate,
+        state: entry.state,
+        restDay: entry.restDay,
+      })),
+  });
   return {
     activities,
+    recovery,
+    score,
     storage: new StorageService(db, security, clock),
     weight,
     healthSync,
     training,
-    nutrition: createNutritionServices(
-      new NutritionStore(db),
-      clock,
-      sources,
-      foodProvider,
-      referenceCatalog,
-    ),
+    nutrition,
     bodyWeight,
     settings: new SettingsService(new SettingsRepository(db, clock)),
     profile,

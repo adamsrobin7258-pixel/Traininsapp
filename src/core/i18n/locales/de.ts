@@ -40,9 +40,101 @@ export const de = {
     },
     greetingWithName: '{greeting}, {name}',
     periodLabel: 'Zeitraum',
-    periods: { week: 'Woche', month: 'Monat' },
+    periods: { today: 'Heute', week: '7 Tage', month: '30 Tage' },
     range: '{from} – {to}',
-    rangeHint: { week: 'Letzte 7 Tage', month: 'Letzte 30 Tage' },
+    rangeHint: { today: 'Heute', week: 'Letzte 7 Tage', month: 'Letzte 30 Tage' },
+    rangeDay: '{day}',
+    score: {
+      title: 'Kalethra-Score',
+      outOf: 'von 100',
+      empty: 'Noch keine Daten für diesen Zeitraum.',
+      emptyHint:
+        'Trage Ernährung, Training, Aktivitäten oder deine Regeneration ein – daraus entsteht dein Score.',
+      bands: {
+        excellent: 'Sehr gut unterwegs',
+        good: 'Auf gutem Weg',
+        partial: 'Teilweise auf Kurs',
+        low: 'Noch Luft nach oben',
+      },
+      preliminary: 'Vorläufig',
+      preliminaryHint: 'Noch nicht alle Daten für diesen Zeitraum sind vorhanden.',
+      trend: {
+        up: 'Verbessert',
+        down: 'Verschlechtert',
+        steady: 'Ungefähr gleich',
+        none: 'Noch keine ausreichenden Vergleichsdaten',
+      },
+      trendVs: {
+        today: 'gegenüber gestern',
+        week: 'gegenüber den 7 Tagen davor',
+        month: 'gegenüber den 30 Tagen davor',
+      },
+      trendDelta: '{delta} Punkte',
+      areas: {
+        nutrition: 'Ernährung',
+        training: 'Training',
+        activity: 'Aktivitäten',
+        recovery: 'Regeneration',
+      },
+      noRating: 'Ohne Bewertung',
+      areaLabel: '{area}: {value}',
+      openDetails: 'Details zum Kalethra-Score',
+      a11y: 'Kalethra-Score {score} von 100, {band}.',
+      a11yEmpty: 'Kalethra-Score: noch keine Daten.',
+      detail: {
+        intro:
+          'Der Score zeigt, wie gut deine dokumentierten Einträge zu deinem persönlichen Ziel passen. Er bewertet nur deine Zielerreichung in Kalethra – keine Gesundheit und nichts Medizinisches.',
+        period: { today: 'Heute', week: 'Letzte 7 Tage', month: 'Letzte 30 Tage' },
+        goal: 'Hauptziel: {goal}',
+        goalUnset:
+          'Noch kein Hauptziel festgelegt – die Bereiche zählen wie bei „Allgemeine Fitness“.',
+        weightsTitle: 'So wird gewichtet',
+        weight: '{area} {share} %',
+        weightsNote:
+          'Die Gewichtung ist eine Kalethra-Festlegung, keine wissenschaftlich belegte Formel. Bereiche ohne Bewertung zählen nicht mit – sie machen den Score weder besser noch schlechter.',
+        preliminaryRule:
+          'Vorläufig ist der Score, solange weniger als die Hälfte der Tage Einträge hat oder weniger als zwei Bereiche bewertet sind. Bisher: {days} von {total} Tagen.',
+        notCounted: 'Zählt nicht mit.',
+        areasTitle: 'Die vier Bereiche',
+        nutrition: {
+          none: 'Keine Ernährungseinträge in diesem Zeitraum.',
+          notRated: 'Noch nicht bewertbar – ohne Ernährungsziel oder weil der Tag noch läuft.',
+          near: 'Du liegst im Schnitt nah an deinem Kalorienziel.',
+          over: 'Im Schnitt {value} % über deinem Kalorienziel.',
+          under: 'Im Schnitt {value} % unter deinem Kalorienziel.',
+          protein: 'Proteinziel an {reached} von {total} bewerteten Tagen erreicht.',
+          logged: 'An {count} von {total} Tagen erfasst.',
+        },
+        training: {
+          noTarget:
+            'Kein Wochenziel für Trainings festgelegt. Kalethra-Trainings im Zeitraum: {done}.',
+          todayDone: 'Heute trainiert.',
+          todayOpen: 'Heute noch kein Training – das zählt nicht als Minus.',
+          progress:
+            '{done} von {expected} geplanten Einheiten absolviert (Ziel: {target} pro Woche).',
+          restDays: 'Ruhetage: {count} – sie zählen nie negativ.',
+          separate: 'Nur Kalethra-Trainings zählen, keine Aktivitäten.',
+        },
+        activity: {
+          noTarget: 'Kein Aktivitätsziel festgelegt. Aktive Minuten im Zeitraum: {minutes}.',
+          none: 'Keine Aktivitäten in diesem Zeitraum.',
+          progress:
+            '{minutes} von {expected} aktiven Minuten (Ziel: {target} pro Woche) · aktive Tage: {days}.',
+          capped: 'Mehr als das Ziel bringt keine Extrapunkte.',
+        },
+        recovery: {
+          none: 'Keine Angaben zur Regeneration in diesem Zeitraum.',
+          mostlyGood: 'Deine dokumentierte Erholung war überwiegend gut.',
+          mixed: 'Deine dokumentierte Erholung war gemischt.',
+          mostlyPoor: 'Du hast dich oft schlecht erholt gefühlt.',
+          counts: 'Gut: {good} · Mittelmäßig: {moderate} · Schlecht: {poor}',
+          restDays: 'Ruhetage: {count}.',
+        },
+        recordRecovery: 'Regeneration eintragen',
+        setTargets: 'Wochenziele festlegen',
+        setGoal: 'Hauptziel ändern',
+      },
+    },
     training: {
       title: 'Training',
       workoutsOne: '1 Einheit',
@@ -64,7 +156,7 @@ export const de = {
     },
     weight: {
       title: 'Gewicht',
-      change: { week: '{value} in 7 Tagen', month: '{value} in 30 Tagen' },
+      change: { today: '{value} heute', week: '{value} in 7 Tagen', month: '{value} in 30 Tagen' },
       noChange: 'Noch kein Vergleich im Zeitraum',
       imported: 'Wert aus Health Connect',
       empty: 'Noch keine Gewichtsdaten.',
@@ -581,6 +673,8 @@ export const de = {
       goal: 'Ziel',
       goalType: 'Ziel wählen',
       goalLevel: 'Tempo',
+      fitnessHint:
+        'Kalorien und Makros werden wie bei „Gewicht halten“ berechnet. Im Kalethra-Score zählen Ernährung, Training, Aktivitäten und Regeneration ausgewogen.',
       levels: {
         slow: 'Langsam',
         moderate: 'Moderat',
@@ -807,6 +901,7 @@ export const de = {
       lose: 'Abnehmen',
       maintain: 'Gewicht halten',
       gain: 'Muskelaufbau',
+      fitness: 'Allgemeine Fitness',
     },
     goalOrigin: {
       auto: 'Automatisch berechnet',
@@ -816,7 +911,17 @@ export const de = {
   health: {
     title: 'Gesundheit',
     bodyTitle: 'Körper',
-    recoveryTitle: 'Erholung',
+    recoveryTitle: 'Regeneration',
+    recovery: {
+      question: 'Wie erholt fühlst du dich heute?',
+      hint: 'Deine eigene Einschätzung – keine medizinische Bewertung. Sie fließt in deinen Kalethra-Score ein.',
+      states: { poor: 'Schlecht erholt', moderate: 'Mittelmäßig erholt', good: 'Gut erholt' },
+      restDay: 'Ruhetag',
+      restDayHint: 'Ein Ruhetag zählt im Score nie negativ.',
+      clearHint: 'Nochmal tippen hebt die Auswahl auf.',
+      saved: 'Für heute gespeichert.',
+      failed: 'Das Speichern hat nicht geklappt. Bitte versuche es erneut.',
+    },
     measurements: {
       bodyFat: 'Körperfett',
       muscleMass: 'Muskelmasse',
@@ -1115,6 +1220,23 @@ export const de = {
       'Nur zur Ansicht, zuletzt aktualisiert {date}. Diese Werte verändern weder deine Gewichtseinträge noch deine Ernährungsziele.',
   },
   profile: {
+    scoreTargets: {
+      title: 'Kalethra-Score',
+      footer:
+        'Ziele für deinen Score. Ohne Ziel zählt der Bereich nicht mit – er macht den Score weder besser noch schlechter.',
+      mainGoal: 'Hauptziel',
+      mainGoalUnset: 'Nicht festgelegt',
+      trainings: 'Trainings pro Woche',
+      minutes: 'Aktive Minuten pro Woche',
+      none: 'Kein Ziel',
+      trainingsValue: '{count}× pro Woche',
+      minutesValue: '{count} min',
+      trainingsHint:
+        'Wie viele Kalethra-Trainings du pro Woche einplanst. Tage ohne Training dazwischen sind Teil des Plans und zählen nicht negativ.',
+      minutesHint:
+        'Aktive Minuten aus deinen Aktivitäten (selbst erfasst und Health Connect). Zur Orientierung: Die WHO empfiehlt Erwachsenen 150–300 Minuten moderate Bewegung pro Woche.',
+      failed: 'Das Speichern hat nicht geklappt. Bitte versuche es erneut.',
+    },
     title: 'Profil',
     localProfile: 'Lokales Profil',
     localProfileHint: 'Deine Daten bleiben auf diesem Gerät.',

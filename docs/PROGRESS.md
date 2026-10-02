@@ -9,7 +9,10 @@ Zeitraum. Über dem Titel steht klein die Begrüßung (mit dem Namen aus dem Pro
 
 ## Zeitraum
 
-**Woche** (Standard) = die letzten 7 Tage einschließlich heute, **Monat** = die letzten 30 Tage.
+**Heute** = der aktuelle Tag (seit Phase 9), **7 Tage** (Standard) = die letzten 7 Tage
+einschließlich heute, **30 Tage** = die letzten 30 Tage. Ganz oben steht der Kalethra-Score des
+gewählten Zeitraums ([SCORE.md](SCORE.md)); er ist neben der Zeitraumwahl das einzige
+Bedienelement (öffnet die Erklärung).
 Bewusst gleitend statt Kalenderwoche/-monat, damit Montag oder der Monatserste nicht fast leer
 sind. Der Zeitraum steht sichtbar unter der Auswahl („27.09. – 03.10.“).
 

@@ -548,7 +548,7 @@ describe('Fortschritt: Aktivitäten', () => {
     });
     const card = await findCard();
     expect(await card.findByText('1 Aktivität')).toBeInTheDocument();
-    await userEvent.click(main().getByRole('radio', { name: 'Monat' }));
+    await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
     expect(await (await findCard()).findByText('2 Aktivitäten')).toBeInTheDocument();
     expect((await findCard()).getByText('300 aktive kcal')).toBeInTheDocument();
   });

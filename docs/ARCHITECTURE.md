@@ -211,6 +211,11 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 Tage aus aggregierten Abfragen der Bereiche und reinen Auswertungsfunktionen in
 `core/*/progress.ts`. Keine Tagesübersicht; jede Karte öffnet ihren Bereich.
 
+**Kalethra-Score.** Seit Phase 9 in `core/score` (reine Berechnung, zentrale Konfiguration in
+`config.ts`) und `core/recovery` (tägliche Regeneration). Der `ScoreService` liest nur die
+bestehenden Services über `ScoreSources` (verdrahtet in `app/services.ts`), speichert nichts und
+rechnet bei jeder Änderung neu (`useScore`). Details: [SCORE.md](SCORE.md).
+
 **Manuelle Aktivitäten.** Seit Phase 8 in `core/activity`: Sportartenkatalog mit MET-Werten
 (`catalog.ts`), reine Kalorienberechnung (`calories.ts`), Repository/Service für
 `manual_activities` und das Zusammenführen mit Health-Connect-Aktivitäten inkl.

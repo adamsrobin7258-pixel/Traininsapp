@@ -220,6 +220,17 @@ aktualisierter Dokumentation.
 - Offen: MET-Werte und Codes vollständig gegen das Original-Compendium prüfen (Quelle war aus der
   Entwicklungsumgebung nicht abrufbar, siehe ACTIVITIES.md)
 
+## Phase 9 – Kalethra-Score ✅ (Version 0.13.0)
+
+- Score 0–100 ganz oben auf Fortschritt, mit Wortlaut, Tendenz und vier Teilwerten (Ernährung,
+  Training, Aktivitäten, Regeneration); Details mit Gewichtung und Erklärung je Bereich
+- Gewichtung nach Hauptziel; neues Hauptziel „Allgemeine Fitness“ (rechnet wie „Gewicht halten“)
+- Zeitraum „Heute“ zusätzlich zu 7 und 30 Tagen; Tendenz gegen den Vorzeitraum
+- Regeneration unter Gesundheit (schlecht/mittelmäßig/gut, Ruhetag), Migration 13
+- Wochenziele „Trainings pro Woche“ und „Aktive Minuten pro Woche“ im Profil
+- Fehlende Daten neutral, „Vorläufig“ bei dünner Datenbasis; nichts gespeichert, alles offline
+- Details: [SCORE.md](SCORE.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

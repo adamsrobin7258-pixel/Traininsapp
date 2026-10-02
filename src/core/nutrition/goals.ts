@@ -7,7 +7,11 @@ import type { ActivityLevel, GoalLevel } from './calculation/parameters';
  * without discarding the user's own numbers. Goals are dated (`effectiveFrom`): a past day is
  * judged by the goal that applied then.
  */
-export const GOAL_TYPES = ['lose', 'maintain', 'gain'] as const;
+/**
+ * The user's main goal. `fitness` (general fitness, Phase 9) has no calorie adjustment – for
+ * the calculation it behaves exactly like `maintain`; it only changes the score weighting.
+ */
+export const GOAL_TYPES = ['lose', 'maintain', 'gain', 'fitness'] as const;
 export type GoalType = (typeof GOAL_TYPES)[number];
 
 export const GOAL_TARGETS = ['energyKcal', 'proteinG', 'carbsG', 'fatG', 'waterMl'] as const;

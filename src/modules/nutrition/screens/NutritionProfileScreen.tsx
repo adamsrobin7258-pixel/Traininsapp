@@ -402,6 +402,9 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
               change({ goalType, goalLevel: levelFor(goalType, draft.goalLevel) });
             }}
           />
+          {draft.goalType === 'fitness' ? (
+            <p className={styles.hint}>{t('nutrition.profile.fitnessHint')}</p>
+          ) : null}
           {levels.length > 0 ? (
             <>
               <p className={styles.label}>{t('nutrition.profile.goalLevel')}</p>

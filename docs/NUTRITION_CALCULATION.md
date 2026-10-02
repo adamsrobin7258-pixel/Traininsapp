@@ -112,6 +112,12 @@ einschaltet (**[Produkt]** Voreinstellung **aus**):
 - Die Mainpage „Fortschritt“ vergleicht mit denselben Tageszielen (`dayGoalsBetween`): mit
   Aktivitätskalorien nur bei eingeschalteter Einstellung, Durchschnitt nur über erfasste Tage.
 
+### Allgemeine Fitness (Phase 9)
+
+Das Hauptziel „Allgemeine Fitness“ (`fitness`) hat keine Zielanpassung und keine Stufen: Kalorien,
+Protein (Faktoren wie „Gewicht halten“), Fett und Kohlenhydrate werden genau wie bei „Gewicht
+halten“ berechnet. Es wirkt nur auf die Gewichtung des Kalethra-Scores ([SCORE.md](SCORE.md)).
+
 ## 6. Zielanpassung
 
 - **[Evidenz]** Etwa 7.700 kcal entsprechen ungefähr 1 kg Körpergewicht. Das ist eine

@@ -160,3 +160,32 @@ export function summarizeAllActivities(
     dates,
   );
 }
+
+/**
+ * Active minutes per local day that count for the Kalethra score: both sources, a manual
+ * duplicate of an import once, and no session that is the same as a completed Kalethra workout
+ * (that one already counts as training). Same rules as `dayActivityCalories`.
+ */
+export function countableActivityMinutes(
+  imported: readonly ExternalWorkout[],
+  manual: readonly ManualActivity[],
+  own: readonly OwnWorkoutSpan[],
+): { localDate: string; minutes: number }[] {
+  const minutes = new Map<string, number>();
+  const add = (localDate: string, durationS: number) => {
+    minutes.set(localDate, (minutes.get(localDate) ?? 0) + durationS / 60);
+  };
+  for (const activity of imported) {
+    if (own.some((workout) => isSameSession(activity, workout))) continue;
+    add(activity.localDate, activity.durationS);
+  }
+  for (const activity of manual) {
+    const span = manualSpan(activity);
+    if (imported.some((candidate) => isLikelySameActivity(activity, candidate))) continue;
+    if (span !== null && own.some((workout) => isSameSession(span, workout))) continue;
+    add(activity.localDate, activity.durationS);
+  }
+  return [...minutes]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([localDate, value]) => ({ localDate, minutes: Math.round(value) }));
+}

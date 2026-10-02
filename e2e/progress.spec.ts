@@ -18,9 +18,10 @@ test('Fortschritt is the read-only main page that opens the areas', async ({ pag
     'Profil',
   ]);
   await expect(main.locator('input, textarea, select')).toHaveCount(0);
-  await expect(main.getByRole('button')).toHaveCount(0);
-  // The only control: the period.
-  await expect(main.getByRole('radio')).toHaveCount(2);
+  // The only controls: the period and the Kalethra score (opens its explanation).
+  await expect(main.getByRole('button')).toHaveCount(1);
+  await expect(main.getByRole('button')).toHaveAccessibleName(/Details zum Kalethra-Score$/);
+  await expect(main.getByRole('radio')).toHaveCount(3);
   await expect(main.getByText('Noch keine Trainingsdaten.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
@@ -154,16 +155,16 @@ test('progress over a day: food, workout, activity calories and period', async (
   // Fortschritt: the workout and the logged day, by period (week is the default).
   await tab('Fortschritt').click();
   const nutrition = main.getByRole('link', { name: /^Ernährung/ });
-  await expect(main.getByRole('radio', { name: 'Woche' })).toHaveAttribute('aria-checked', 'true');
+  await expect(main.getByRole('radio', { name: '7 Tage' })).toHaveAttribute('aria-checked', 'true');
   await expect(main.getByText('1 Einheit')).toBeVisible();
   await expect(main.getByText('600 kg Volumen')).toBeVisible();
   await expect(nutrition.getByText('Ø 370 kcal / Tag')).toBeVisible();
   await expect(nutrition.getByText('Tagesziel Ø 2.000 kcal · 120 g Protein')).toBeVisible();
   await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
-  await main.getByRole('radio', { name: 'Monat' }).click();
+  await main.getByRole('radio', { name: '30 Tage' }).click();
   await expect(nutrition.getByText('An 1 von 30 Tagen erfasst')).toBeVisible();
   await expect(main.getByText('1 Einheit')).toBeVisible();
-  await main.getByRole('radio', { name: 'Woche' }).click();
+  await main.getByRole('radio', { name: '7 Tage' }).click();
   await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
   // No daily content on the main page.
   await expect(main.getByText('Training fortsetzen')).toHaveCount(0);
