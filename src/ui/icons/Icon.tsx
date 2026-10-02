@@ -5,12 +5,8 @@ import type { ReactElement } from 'react';
  * dependency and to guarantee a consistent visual weight.
  */
 const paths = {
-  today: (
-    <>
-      <circle cx="12" cy="12" r="3.75" />
-      <path d="M12 2.75v2M12 19.25v2M2.75 12h2M19.25 12h2M5.46 5.46l1.41 1.41M17.13 17.13l1.41 1.41M5.46 18.54l1.41-1.41M17.13 6.87l1.41-1.41" />
-    </>
-  ),
+  /** A gently rising line over a baseline – the progress main page. */
+  progress: <path d="M3.75 20.25h16.5M4.75 15.75l4.5-4.5 3.5 3 6.5-7.5M15.25 6.75h4v4" />,
   training: <path d="M6.75 6.25v11.5M17.25 6.25v11.5M3.75 9v6M20.25 9v6M6.75 12h10.5" />,
   nutrition: (
     <>

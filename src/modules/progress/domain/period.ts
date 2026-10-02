@@ -1,6 +1,6 @@
 import { addDays, startOfDay, toLocalDateKey } from '@/shared/lib/date';
 
-/** "Woche" and "Monat" on Today: the last 7 or 30 local days including today. */
+/** "Woche" and "Monat" on the progress page: the last 7 or 30 local days including today. */
 export const PROGRESS_PERIODS = ['week', 'month'] as const;
 export type ProgressPeriod = (typeof PROGRESS_PERIODS)[number];
 

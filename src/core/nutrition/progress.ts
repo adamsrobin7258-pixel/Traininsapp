@@ -1,5 +1,5 @@
 /**
- * Compact nutrition figures for the Today screen. Pure. Averages only cover days on which
+ * Compact nutrition figures for the progress main page. Pure. Averages only cover days on which
  * something was logged – a day without entries is unknown, not 0 kcal.
  */
 

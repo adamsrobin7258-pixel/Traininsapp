@@ -1,5 +1,5 @@
 /**
- * Compact weight and activity figures for the Today screen. Pure.
+ * Compact weight and activity figures for the progress main page. Pure.
  *
  * Weight: one value per day – the user's own entry wins over a value imported from Health
  * Connect (`dayWeight`). This is display only; nutrition goals keep reading the own entries.

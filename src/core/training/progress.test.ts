@@ -1,7 +1,7 @@
 import { createServices } from '@/app/services';
 import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from '@/test/database';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
-import { summarizeTraining, workoutProgress } from './progress';
+import { summarizeTraining } from './progress';
 import { EMPTY_SET_VALUES } from './sets';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -123,18 +123,5 @@ describe('training progress', () => {
     expect(
       summarizeTraining([{ localDate: '2026-10-01', workouts: 1, volumeKg: 0 }], dates),
     ).toMatchObject({ workouts: 1, volumeKg: null });
-  });
-
-  it('counts an exercise as done when all its sets are completed', () => {
-    const set = (completed: boolean) => ({ completed });
-    expect(
-      workoutProgress({
-        exercises: [
-          { sets: [set(true), set(true)] },
-          { sets: [set(true), set(false)] },
-          { sets: [] },
-        ] as never,
-      }),
-    ).toEqual({ done: 1, total: 3 });
   });
 });

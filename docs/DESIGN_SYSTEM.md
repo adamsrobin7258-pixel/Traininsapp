@@ -6,8 +6,8 @@ Dashboard-Template. Inhalte tragen die Gestaltung; Farbe, Illustration und Form 
 sparsam.
 
 Festgelegte Richtung: **A1** Salbeigrün, warm und natürlich · **B2** kleine, erkennbare
-Lebensmittel-Illustrationen · **C1** organische Formen sehr dezent · **D1** Heute ruhig und
-minimal, aber visuell angereichert.
+Lebensmittel-Illustrationen · **C1** organische Formen sehr dezent · **D1** die Mainpage
+(seit 7.1 „Fortschritt“) ruhig und minimal, aber visuell angereichert.
 
 ## Prinzipien
 
@@ -187,8 +187,8 @@ Lebensmittelliste, Favoriten, Detail- und Mengenansicht, leere Zustände – nic
 
 ### Organische Formen
 
-Genau zwei, sehr dezent: die blasse Fläche hinter der Kalorienzahl auf Heute und die leicht
-unregelmäßige Fläche hinter Illustrationen und Leer-Icons. Weitere nur, wenn sie nichts unruhiger
+Sehr dezent: die leicht unregelmäßige Fläche hinter Illustrationen und Leer-Icons (die frühere
+Fläche hinter der Kalorienzahl auf „Heute“ ist mit Phase 7.1 entfallen). Weitere nur, wenn sie nichts unruhiger
 machen.
 
 ## Barrierefreiheit

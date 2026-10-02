@@ -229,10 +229,10 @@ describe('nutrition profile', () => {
     expect(today?.goal.calculation?.inputs.weight?.kg).toBe(86);
   });
 
-  it('shows the setup hint on Today without a profile', async () => {
-    await renderApp('/');
-    expect(
-      await screen.findByText('Ernährungsprofil einrichten, um Tagesziele zu sehen'),
-    ).toBeInTheDocument();
+  // Formerly on the Today card; since Phase 7.1 the hint lives in the diary.
+  it('shows the setup hint in the diary without a profile', async () => {
+    await renderApp('/nutrition');
+    expect(await screen.findByText('Noch keine Ziele festgelegt')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ernährungsprofil einrichten' })).toBeInTheDocument();
   });
 });

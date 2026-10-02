@@ -1,20 +1,7 @@
-import type { WorkoutDetail } from './workout';
-
 /**
- * Compact training figures for the Today screen. Pure; only Kalethra's own completed workouts
+ * Compact training figures for the progress main page. Pure; only Kalethra's own completed workouts
  * count – activities imported from Health Connect never appear here.
  */
-
-/** Exercises of a workout in progress: an exercise is done when every one of its sets is. */
-export function workoutProgress(workout: Pick<WorkoutDetail, 'exercises'>): {
-  done: number;
-  total: number;
-} {
-  const done = workout.exercises.filter(
-    (exercise) => exercise.sets.length > 0 && exercise.sets.every((set) => set.completed),
-  ).length;
-  return { done, total: workout.exercises.length };
-}
 
 export interface TrainingDayStats {
   localDate: string;

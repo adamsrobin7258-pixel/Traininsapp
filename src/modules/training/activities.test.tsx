@@ -48,6 +48,33 @@ async function withGoal(services: AppServices, profileId: string) {
   });
 }
 
+/** One logged meal today, so the progress page has a day to compare with its goal. */
+async function logToday(services: AppServices, profileId: string) {
+  const n = services.nutrition;
+  await n.meals.ensureDefaults(profileId);
+  const [meal] = await n.meals.listActive(profileId);
+  const food = await n.foods.create(profileId, {
+    name: 'Porridge',
+    reference: { amount: 100, unit: 'g' },
+    nutrients: {
+      energyKcal: 370,
+      proteinG: 13.5,
+      carbsG: 58.7,
+      fatG: 7,
+      fiberG: null,
+      sugarG: null,
+      saturatedFatG: null,
+    },
+  });
+  await n.diary.addFood(profileId, {
+    localDate: '2026-10-03',
+    mealId: meal?.id ?? '',
+    foodId: food.id,
+    amount: 100,
+    unit: 'g',
+  });
+}
+
 describe('Aktivitäten', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -264,32 +291,28 @@ describe('Aktivitätskalorien anrechnen', () => {
     expect(overview.queryByText('Basisziel')).not.toBeInTheDocument();
   });
 
-  it('today: shows the breakdown under the calorie goal', async () => {
+  it('progress main page: on, the daily goal of the same days includes the activity calories', async () => {
     await renderApp('/', {
       healthPlatform: platformWith([session('a', [3, 7, 0], 45, { activeKcal: 500 })]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
+        await logToday(services, profileId);
         await services.settings.update('countActivityCalories', true);
         await connect(services, profileId);
       },
     });
-    expect(
-      await screen.findByText('Basisziel 2.300 kcal · Aktivitätskalorien +500 kcal'),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/von 2\.800 kcal/)).toBeInTheDocument();
+    expect(await screen.findByText('Tagesziel Ø 2.800 kcal · 160 g Protein')).toBeInTheDocument();
   });
 
-  it('today: off keeps the goal and labels the calories as not counted', async () => {
+  it('progress main page: off, the daily goal stays the base goal', async () => {
     await renderApp('/', {
       healthPlatform: platformWith([session('a', [3, 7, 0], 45, { activeKcal: 500 })]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
+        await logToday(services, profileId);
         await connect(services, profileId);
       },
     });
-    expect(
-      await screen.findByText('Aktivitätskalorien 500 kcal · Nicht auf das Tagesziel angerechnet'),
-    ).toBeInTheDocument();
-    expect(screen.getByText(/von 2\.300 kcal/)).toBeInTheDocument();
+    expect(await screen.findByText('Tagesziel Ø 2.300 kcal · 160 g Protein')).toBeInTheDocument();
   });
 });

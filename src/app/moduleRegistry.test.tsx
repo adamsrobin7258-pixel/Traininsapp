@@ -29,7 +29,7 @@ describe('TabBar', () => {
   it('shows only modules that declare a tab', () => {
     const Screen = () => null;
     const modules: AppModule[] = [
-      { id: 'dashboard', path: '/', Screen, tab: { labelKey: 'nav.dashboard', icon: 'today' } },
+      { id: 'progress', path: '/', Screen, tab: { labelKey: 'nav.progress', icon: 'progress' } },
       { id: 'training', path: '/training', Screen },
       {
         id: 'profile',
@@ -46,7 +46,7 @@ describe('TabBar', () => {
       </I18nProvider>,
     );
     const links = within(screen.getByRole('navigation')).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Today', 'Profile']);
+    expect(links.map((link) => link.textContent)).toEqual(['Progress', 'Profile']);
     expect(screen.getByRole('list')).toHaveStyle({ '--tab-count': '2' });
   });
 });

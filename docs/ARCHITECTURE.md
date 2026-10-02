@@ -11,7 +11,7 @@ dabei nichts vorwegnehmen, was heute keinen Nutzen hat.
 │ app/      App-Shell: Start, Provider, Router, Tab-Leiste     │
 │           kennt alle Module nur über die Modul-Registry      │
 ├──────────────────────────────────────────────────────────────┤
-│ modules/  dashboard · training · nutrition · health · profile│
+│ modules/  progress · training · nutrition · health · profile │
 │           Screens, modulspezifische Komponenten und Logik    │
 ├───────────────────────────────┬──────────────────────────────┤
 │ core/     Infrastruktur       │ ui/      Designsystem        │
@@ -99,14 +99,14 @@ einem Bildschirm heraus verlinkt (etwa Running aus Training).
 
 **Prüfung der geplanten Bereiche (Phase 1.1):**
 
-| Bereich                                         | Einordnung                                                                                                     | Anbindung                      |
-| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------ |
-| Dashboard, Training, Nutrition, Health, Profile | Tab-Module (vorhanden)                                                                                         | `tab` gesetzt                  |
-| Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                                    | Route, Link aus Training/Heute |
-| HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`core/training/trainingTypes.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training        |
-| Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                                 | Route, Link aus Heute          |
-| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                                    | Route                          |
-| Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                                             | `SyncService`                  |
+| Bereich                                         | Einordnung                                                                                                     | Anbindung                            |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| Dashboard, Training, Nutrition, Health, Profile | Tab-Module (vorhanden)                                                                                         | `tab` gesetzt                        |
+| Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                                    | Route, Link aus Training/Fortschritt |
+| HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`core/training/trainingTypes.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training              |
+| Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                                 | Route, Link aus Fortschritt          |
+| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                                    | Route                                |
+| Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                                             | `SyncService`                        |
 
 Ergebnis: Kein Umbau nötig außer dem optionalen Tab (umgesetzt). Die Regeln unten verhindern
 direkte Abhängigkeiten zwischen Modulen.
@@ -150,7 +150,7 @@ Screen ─► Hook/Provider ─► Service (Regeln, Validierung) ─► Reposito
 
 ```
 modules/health  (Gesundheit: Übersicht, Diagramm, Verlauf, Eingabe-Sheet)
-modules/dashboard (Heute: Tagesauswahl, Gewicht des Tages)
+modules/dashboard (damals „Heute“, seit 7.1 modules/progress „Fortschritt“)
         │  useWeightForDate / useWeightData / useWeightService   (core/health/WeightProvider)
         ▼
 WeightService      Regeln: kein Zukunftsdatum, 20–400 kg, ein Wert pro Tag (ersetzen statt duplizieren)
@@ -206,11 +206,10 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 „Aus Plan starten“ (Trainingstag wählen). Pläne werden ausschließlich unter „Pläne“
 (`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
 
-**Heute.** Tägliche Übersicht ohne Eingaben (seit Phase 7, siehe [TODAY.md](TODAY.md)): oben der
-heutige Tag (Ernährung, Training, Aktivitäten, Gesundheitswerte – nur was es heute gibt), darunter
-„Dein Fortschritt“ (Woche/Monat) aus aggregierten Abfragen der Bereiche und reinen
-Auswertungsfunktionen in `core/*/progress.ts`. „Heute“ speichert nichts; jede Karte und jede
-Fortschrittszeile öffnet ihren Bereich.
+**Fortschritt (Mainpage).** Seit Phase 7.1 die Startseite ohne Eingaben (siehe
+[PROGRESS.md](PROGRESS.md)): Training, Ernährung, Gewicht und Aktivitäten der letzten 7 bzw. 30
+Tage aus aggregierten Abfragen der Bereiche und reinen Auswertungsfunktionen in
+`core/*/progress.ts`. Keine Tagesübersicht; jede Karte öffnet ihren Bereich.
 
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer
@@ -255,7 +254,7 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   verdrahtet.
 - **Gewicht:** `BodyWeightSource` in `core/nutrition`, umgesetzt im Composition Root über den
   `WeightService` – keine zweite Gewichtsdatenhaltung.
-- **Heute** liest die Tageswerte des Tagebuchs und das gültige Ziel, speichert nichts.
+- **Fortschritt** (Mainpage) liest Tagessummen des Tagebuchs und die gültigen Ziele über einen Zeitraum, speichert nichts.
 - **Oberfläche (Phase 4.2.1)** in `modules/nutrition`: Tagesansicht `/nutrition?day=YYYY-MM-DD`
   (zukünftige oder ungültige Tage fallen auf heute zurück), Unterseiten `/nutrition/foods`,
   `/nutrition/meals`, `/nutrition/templates` (für die Zurück-Navigation als `subRoutes`
@@ -327,7 +326,7 @@ Stelle mit Capacitor). `app/layout/SystemBackHandler` entscheidet zentral:
 1. Ist ein Sheet offen, wird es geschlossen (`ui/backStack.ts`: Sheets melden sich beim Öffnen an).
 2. Sonst eine Ebene höher: `backTarget()` in `app/backNavigation.ts` leitet die Elternseite aus der
    Modul-Registry ab (`/training/plans/:id` → `/training/plans` → `/training` → `/`).
-3. Auf „Heute“ wird die App beendet.
+3. Auf „Fortschritt“ (Startseite) wird die App beendet.
 
 Es gibt keine zweite Navigation und keine Bestätigungsdialoge; ein laufendes Training bleibt beim
 Verlassen unverändert gespeichert. Browser und iOS sind nicht betroffen (kein System-Zurück-Ereignis).

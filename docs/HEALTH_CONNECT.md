@@ -61,7 +61,7 @@ Einstellung unter „Profil → Gesundheitsdaten“, gespeichert in `app_setting
 
 - Zeitfenster: die letzten 30 lokalen Tage einschließlich heute. Kein Verlaufszugriff.
 - Auslöser: Verbinden, App-Start, Rückkehr in den Vordergrund (`appStateChange`), Öffnen von
-  „Heute“ und „Gesundheit“, „Jetzt synchronisieren“.
+  „Fortschritt“ und „Gesundheit“, „Jetzt synchronisieren“.
 - Automatische Auslöser höchstens alle 15 Minuten (gemessen ab dem letzten Versuch); manuell
   jederzeit. Immer nur eine Synchronisierung gleichzeitig. Keine Hintergrundarbeit.
 - Aktivitäten werden über ihre Record-ID abgeglichen: neue hinzugefügt, geänderte aktualisiert,
@@ -100,8 +100,9 @@ app/HealthSyncTrigger.tsx       App-Start und Vordergrund
 modules/profile/        Bereich „Gesundheitsdaten“, Verbinden- und Trennen-Dialog
 modules/health/         „Aus Health Connect“ (Schritte, aktive Kalorien, Gewicht)
 modules/training/       „Aktivitäten“ (Liste, Details)
-modules/nutrition/, modules/dashboard/   Basisziel + Aktivitätskalorien; „Heute“ fasst
-                        Aktivitäten, Schritte und Gewicht zusammen (TODAY.md)
+modules/nutrition/      Basisziel + Aktivitätskalorien im Ernährungstagebuch
+modules/progress/       Mainpage „Fortschritt“: Aktivitäten und Gewicht über 7/30 Tage
+                        (PROGRESS.md)
 ```
 
 Das Plugin ist nur in `core/platform` erlaubt (ESLint). Auf iOS ist es per

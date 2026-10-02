@@ -1,4 +1,4 @@
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router';
 import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import {
@@ -27,13 +27,12 @@ import styles from './Progress.module.css';
 const MIN_CHART_DAYS = 2;
 
 /**
- * "Dein Fortschritt": four compact figures over the last 7 or 30 days – Kalethra training,
- * nutrition, weight and imported activities. Each row opens its area. Values are only
- * described, never judged; missing data stays missing (no invented zeros).
+ * The progress figures over the last 7 or 30 days – Kalethra training, nutrition, weight and
+ * imported activities, in this order. Each area is one card that opens its detail screen.
+ * Values are only described, never judged; missing data stays missing (no invented zeros).
  */
 export function ProgressSection({ now }: { now: Date }) {
   const { t, locale } = useI18n();
-  const headingId = useId();
   const [period, setPeriod] = useState<ProgressPeriod>('week');
   const todayKey = now.toDateString();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per day, not per minute
@@ -41,32 +40,27 @@ export function ProgressSection({ now }: { now: Date }) {
   const day = (date: string) => formatDayMonth(parseLocalDateKey(date) ?? now, locale);
 
   return (
-    <section className={styles.progress} aria-labelledby={headingId}>
-      <div className={styles.header}>
-        <h2 id={headingId} className={styles.title}>
-          {t('dashboard.progress.title')}
-        </h2>
-        <span className={styles.range}>
-          <span className="visually-hidden">{t(`dashboard.progress.rangeHint.${period}`)} </span>
-          {t('dashboard.progress.range', { from: day(range.from), to: day(range.to) })}
-        </span>
-      </div>
+    <div className={styles.progress}>
       <SegmentedControl
-        label={t('dashboard.progress.periodLabel')}
+        label={t('progress.periodLabel')}
         options={PROGRESS_PERIODS.map((value) => ({
           value,
-          label: t(`dashboard.progress.periods.${value}`),
+          label: t(`progress.periods.${value}`),
         }))}
         value={period}
         onChange={setPeriod}
       />
-      <ul className={styles.list}>
+      <p className={styles.range}>
+        <span className="visually-hidden">{t(`progress.rangeHint.${period}`)} </span>
+        {t('progress.range', { from: day(range.from), to: day(range.to) })}
+      </p>
+      <ul className={styles.list} aria-label={t('progress.title')}>
         <TrainingProgress range={range} period={period} day={day} />
         <NutritionProgress range={range} day={day} />
         <WeightProgress range={range} period={period} day={day} />
         <ActivityProgress range={range} day={day} />
       </ul>
-    </section>
+    </div>
   );
 }
 
@@ -84,7 +78,7 @@ function ProgressRow({
   children: ReactNode;
 }) {
   return (
-    <li className={styles.item}>
+    <li>
       <Link to={to} className={styles.row}>
         <span className={styles.rowHeader}>
           <span className={styles.rowTitle}>
@@ -116,35 +110,31 @@ function TrainingProgress({
   const summary = data.status === 'ready' ? summarizeTraining(data.data, range.dates) : null;
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 });
   return (
-    <ProgressRow
-      to={ROUTES.training}
-      icon="training"
-      title={t('dashboard.progress.training.title')}
-    >
+    <ProgressRow to={ROUTES.training} icon="training" title={t('progress.training.title')}>
       {summary && summary.workouts > 0 ? (
         <>
           <span className={styles.figures}>
             <span className={styles.main}>
               {summary.workouts === 1
-                ? t('dashboard.progress.training.workoutsOne')
-                : t('dashboard.progress.training.workouts', { count: summary.workouts })}
+                ? t('progress.training.workoutsOne')
+                : t('progress.training.workouts', { count: summary.workouts })}
             </span>
             <span className={styles.secondary}>
-              {t('dashboard.progress.training.perWeek', {
+              {t('progress.training.perWeek', {
                 value: number.format(perWeek(summary.workouts, period)),
               })}
             </span>
           </span>
           {summary.volumeKg !== null ? (
             <span className={styles.secondary}>
-              {t('dashboard.progress.training.volume', {
+              {t('progress.training.volume', {
                 value: new Intl.NumberFormat(locale).format(summary.volumeKg),
               })}
             </span>
           ) : null}
           <DayBars
             values={summary.perDay.map((entry) => entry.workouts)}
-            label={t('dashboard.progress.training.chart', {
+            label={t('progress.training.chart', {
               days: summary.trainingDays,
               total: range.dates.length,
             })}
@@ -153,7 +143,7 @@ function TrainingProgress({
           />
         </>
       ) : summary ? (
-        <span className={styles.note}>{t('dashboard.progress.training.empty')}</span>
+        <span className={styles.note}>{t('progress.training.empty')}</span>
       ) : null}
     </ProgressRow>
   );
@@ -178,20 +168,16 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
       : null;
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
   return (
-    <ProgressRow
-      to={ROUTES.nutrition}
-      icon="nutrition"
-      title={t('dashboard.progress.nutrition.title')}
-    >
+    <ProgressRow to={ROUTES.nutrition} icon="nutrition" title={t('progress.nutrition.title')}>
       {summary && summary.avgKcal !== null ? (
         <>
           <span className={styles.figures}>
             <span className={styles.main}>
-              {t('dashboard.progress.nutrition.avgKcal', { value: number.format(summary.avgKcal) })}
+              {t('progress.nutrition.avgKcal', { value: number.format(summary.avgKcal) })}
             </span>
             {summary.avgProteinG !== null ? (
               <span className={styles.secondary}>
-                {t('dashboard.progress.nutrition.avgProtein', {
+                {t('progress.nutrition.avgProtein', {
                   value: number.format(summary.avgProteinG),
                 })}
               </span>
@@ -200,17 +186,17 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
           {summary.avgGoalKcal !== null ? (
             <span className={styles.note}>
               {summary.avgGoalProteinG !== null
-                ? t('dashboard.progress.nutrition.goal', {
+                ? t('progress.nutrition.goal', {
                     kcal: number.format(summary.avgGoalKcal),
                     protein: number.format(summary.avgGoalProteinG),
                   })
-                : t('dashboard.progress.nutrition.goalKcal', {
+                : t('progress.nutrition.goalKcal', {
                     kcal: number.format(summary.avgGoalKcal),
                   })}
             </span>
           ) : null}
           <span className={styles.note}>
-            {t('dashboard.progress.nutrition.logged', {
+            {t('progress.nutrition.logged', {
               count: summary.loggedDays,
               total: range.dates.length,
             })}
@@ -219,7 +205,7 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
             <DayBars
               values={summary.perDay.map((entry) => entry.kcal)}
               reference={summary.avgGoalKcal}
-              label={t('dashboard.progress.nutrition.chart', {
+              label={t('progress.nutrition.chart', {
                 count: summary.loggedDays,
                 avg: number.format(summary.avgKcal),
               })}
@@ -229,7 +215,7 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
           ) : null}
         </>
       ) : summary ? (
-        <span className={styles.note}>{t('dashboard.progress.nutrition.empty')}</span>
+        <span className={styles.note}>{t('progress.nutrition.empty')}</span>
       ) : null}
     </ProgressRow>
   );
@@ -278,21 +264,21 @@ function WeightProgress({
   const last = summary?.points.at(-1);
   const weight = (kg: number) => formatWeight(kg, unit, locale);
   return (
-    <ProgressRow to={ROUTES.health} icon="scale" title={t('dashboard.progress.weight.title')}>
+    <ProgressRow to={ROUTES.health} icon="scale" title={t('progress.weight.title')}>
       {summary?.latest ? (
         <>
           <span className={styles.figures}>
             <span className={styles.main}>{weight(summary.latest.kg)}</span>
             <span className={styles.secondary}>
               {summary.changeKg !== null
-                ? t(`dashboard.progress.weight.change.${period}`, {
+                ? t(`progress.weight.change.${period}`, {
                     value: formatWeightChange(summary.changeKg, unit, locale),
                   })
-                : t('dashboard.progress.weight.noChange')}
+                : t('progress.weight.noChange')}
             </span>
           </span>
           {summary.latest.source === 'imported' ? (
-            <span className={styles.note}>{t('dashboard.progress.weight.imported')}</span>
+            <span className={styles.note}>{t('progress.weight.imported')}</span>
           ) : null}
           {first && last && summary.points.length >= MIN_CHART_DAYS ? (
             <WeightLine
@@ -300,7 +286,7 @@ function WeightProgress({
                 date: point.date,
                 value: fromKg(point.kg, unit),
               }))}
-              label={t('dashboard.progress.weight.chart', {
+              label={t('progress.weight.chart', {
                 first: weight(first.kg),
                 from: day(first.date),
                 last: weight(last.kg),
@@ -312,7 +298,7 @@ function WeightProgress({
           ) : null}
         </>
       ) : summary ? (
-        <span className={styles.note}>{t('dashboard.progress.weight.empty')}</span>
+        <span className={styles.note}>{t('progress.weight.empty')}</span>
       ) : null}
     </ProgressRow>
   );
@@ -332,24 +318,20 @@ function ActivityProgress({ range, day }: { range: Range; day: (date: string) =>
   if (!summary || (!connected && summary.count === 0)) return null;
   const number = new Intl.NumberFormat(locale);
   return (
-    <ProgressRow
-      to={TRAINING_LINKS.activities}
-      icon="flame"
-      title={t('dashboard.progress.activities.title')}
-    >
+    <ProgressRow to={TRAINING_LINKS.activities} icon="flame" title={t('progress.activities.title')}>
       {summary.count > 0 ? (
         <>
           <span className={styles.figures}>
             <span className={styles.main}>
               {summary.count === 1
-                ? t('dashboard.progress.activities.countOne')
-                : t('dashboard.progress.activities.count', { count: summary.count })}
+                ? t('progress.activities.countOne')
+                : t('progress.activities.count', { count: summary.count })}
             </span>
             <span className={styles.secondary}>{formatDuration(summary.durationS)}</span>
           </span>
           {summary.activeKcal !== null ? (
             <span className={styles.secondary}>
-              {t('dashboard.progress.activities.kcal', {
+              {t('progress.activities.kcal', {
                 value: number.format(summary.activeKcal),
               })}
             </span>
@@ -357,7 +339,7 @@ function ActivityProgress({ range, day }: { range: Range; day: (date: string) =>
           {summary.activeDays >= 3 ? (
             <DayBars
               values={summary.perDay.map((entry) => entry.minutes)}
-              label={t('dashboard.progress.activities.chart', {
+              label={t('progress.activities.chart', {
                 days: summary.activeDays,
                 total: range.dates.length,
               })}
@@ -367,7 +349,7 @@ function ActivityProgress({ range, day }: { range: Range; day: (date: string) =>
           ) : null}
         </>
       ) : (
-        <span className={styles.note}>{t('dashboard.progress.activities.empty')}</span>
+        <span className={styles.note}>{t('progress.activities.empty')}</span>
       )}
     </ProgressRow>
   );

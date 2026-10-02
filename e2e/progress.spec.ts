@@ -1,50 +1,61 @@
 import { expect, test } from '@playwright/test';
 
-test('Today is a read-only overview that opens the areas', async ({ page }) => {
+test('Fortschritt is the read-only main page that opens the areas', async ({ page }) => {
   await page.goto('/');
   const main = page.locator('main');
-  await expect(main.getByRole('link', { name: /^Training/ }).first()).toBeVisible();
+  const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
+  await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
+  await expect(nav.getByRole('link', { name: 'Fortschritt' })).toHaveAttribute(
+    'aria-current',
+    'page',
+  );
+  // There is no "Heute" tab any more.
+  await expect(nav.getByRole('link')).toHaveText([
+    'Fortschritt',
+    'Training',
+    'Ernährung',
+    'Gesundheit',
+    'Profil',
+  ]);
   await expect(main.locator('input, textarea, select')).toHaveCount(0);
   await expect(main.getByRole('button')).toHaveCount(0);
-  // The only control: the period of "Dein Fortschritt".
+  // The only control: the period.
   await expect(main.getByRole('radio')).toHaveCount(2);
-  await expect(main.getByText('Noch nichts eingetragen')).toBeVisible();
+  await expect(main.getByText('Noch keine Trainingsdaten.')).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
     true,
   );
 
-  // Weight entered under Health shows up in "Dein Fortschritt" on Today.
-  const progress = main.getByRole('region', { name: 'Dein Fortschritt' });
-  await expect(progress.getByText('Noch keine Gewichtsdaten.')).toBeVisible();
-  await progress.getByRole('link', { name: /^Gewicht/ }).click();
+  // Every card is one large target (at least 44 px high) that opens its area.
+  for (const name of [/^Training/, /^Ernährung/, /^Gewicht/]) {
+    const box = await main.getByRole('link', { name }).boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+
+  // Weight entered under Health shows up here.
+  await main.getByRole('link', { name: /^Gewicht/ }).click();
   await expect(page).toHaveURL(/\/health$/);
   await page.getByRole('button', { name: 'Gewicht eintragen' }).click();
   await page.getByLabel('Gewicht in kg').fill('91,8');
   await page.getByRole('button', { name: 'Speichern' }).click();
-  await page
-    .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: 'Heute' })
-    .click();
+  await nav.getByRole('link', { name: 'Fortschritt' }).click();
   await expect(page).toHaveURL(/\/$/);
-  await expect(
-    page
-      .locator('main')
-      .getByRole('region', { name: 'Dein Fortschritt' })
-      .getByRole('link', { name: /^Gewicht/ })
-      .getByText('91,8 kg'),
-  ).toBeVisible();
+  await expect(main.getByRole('link', { name: /^Gewicht/ }).getByText('91,8 kg')).toBeVisible();
 
-  await page
-    .locator('main')
-    .getByRole('link', { name: /^Ernährung/ })
-    .first()
-    .click();
+  // Back and forward between the main page and an area.
+  await main.getByRole('link', { name: /^Training/ }).click();
+  await expect(page).toHaveURL(/\/training$/);
+  await page.goBack();
+  await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
+  await page.goForward();
+  await expect(page).toHaveURL(/\/training$/);
+  await page.goBack();
+
+  await main.getByRole('link', { name: /^Ernährung/ }).click();
   await expect(page).toHaveURL(/\/nutrition$/);
 });
 
-test('a day on Today: food, workout, activity calories and progress by period', async ({
-  page,
-}) => {
+test('progress over a day: food, workout, activity calories and period', async ({ page }) => {
   // Health Connect stand-in (see healthConnect.spec.ts) with one run that just ended.
   await page.addInitScript(() => {
     const now = new Date();
@@ -86,9 +97,9 @@ test('a day on Today: food, workout, activity calories and progress by period', 
   const noHorizontalScroll = () =>
     page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
-  // 1–2: open the app on Today.
+  // Open the app on Fortschritt.
   await page.goto('/');
-  await expect(main.getByText('Heute kein Training geplant')).toBeVisible();
+  await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
 
   // Own goals: 2.000 kcal, 120 g protein.
   await page.goto('/nutrition/profile');
@@ -140,27 +151,26 @@ test('a day on Today: food, workout, activity calories and progress by period', 
   await page.getByRole('dialog').getByRole('button', { name: 'Training beenden' }).click();
   await expect(page.getByText('600 kg')).toBeVisible();
 
-  // 5–7: Today and "Dein Fortschritt".
-  await tab('Heute').click();
-  await expect(main.getByText('Heute abgeschlossen')).toBeVisible();
-  const nutrition = main.getByRole('link', { name: /^Ernährung/ }).first();
-  await expect(nutrition.getByText('370', { exact: true })).toBeVisible();
-  await expect(nutrition.getByText('von 2.000 kcal · noch 1.630 kcal')).toBeVisible();
-  const progress = main.getByRole('region', { name: 'Dein Fortschritt' });
-  await expect(progress.getByRole('radio', { name: 'Woche' })).toHaveAttribute(
-    'aria-checked',
-    'true',
-  );
-  await expect(progress.getByText('1 Einheit')).toBeVisible();
-  await expect(progress.getByText('600 kg Volumen')).toBeVisible();
-  await expect(progress.getByText('Ø 370 kcal / Tag')).toBeVisible();
-  await expect(progress.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
-  await progress.getByRole('radio', { name: 'Monat' }).click();
-  await expect(progress.getByText('An 1 von 30 Tagen erfasst')).toBeVisible();
-  await expect(progress.getByText('1 Einheit')).toBeVisible();
+  // Fortschritt: the workout and the logged day, by period (week is the default).
+  await tab('Fortschritt').click();
+  const nutrition = main.getByRole('link', { name: /^Ernährung/ });
+  await expect(main.getByRole('radio', { name: 'Woche' })).toHaveAttribute('aria-checked', 'true');
+  await expect(main.getByText('1 Einheit')).toBeVisible();
+  await expect(main.getByText('600 kg Volumen')).toBeVisible();
+  await expect(nutrition.getByText('Ø 370 kcal / Tag')).toBeVisible();
+  await expect(nutrition.getByText('Tagesziel Ø 2.000 kcal · 120 g Protein')).toBeVisible();
+  await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
+  await main.getByRole('radio', { name: 'Monat' }).click();
+  await expect(nutrition.getByText('An 1 von 30 Tagen erfasst')).toBeVisible();
+  await expect(main.getByText('1 Einheit')).toBeVisible();
+  await main.getByRole('radio', { name: 'Woche' }).click();
+  await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
+  // No daily content on the main page.
+  await expect(main.getByText('Training fortsetzen')).toHaveCount(0);
+  await expect(main.getByRole('progressbar')).toHaveCount(0);
   expect(await noHorizontalScroll()).toBe(true);
 
-  // 8: Health Connect with a run – shown, kept apart from Kalethra workouts.
+  // Health Connect with a run – shown, kept apart from Kalethra workouts.
   await tab('Profil').click();
   await main
     .getByRole('region', { name: 'Gesundheitsdaten' })
@@ -172,23 +182,31 @@ test('a day on Today: food, workout, activity calories and progress by period', 
     .click();
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Verbunden');
   await page.keyboard.press('Escape');
-  await tab('Heute').click();
-  await expect(main.getByRole('link', { name: /^Aktivitäten heute/ })).toContainText('Laufen ·');
-  await expect(progress.getByText('1 Aktivität', { exact: true })).toBeVisible();
-  await expect(progress.getByText('1 Einheit')).toBeVisible();
-  // Off (default): the goal stays, the calories are information only.
-  await expect(nutrition.getByText('von 2.000 kcal · noch 1.630 kcal')).toBeVisible();
-  await expect(
-    nutrition.getByText('Aktivitätskalorien 500 kcal · Nicht auf das Tagesziel angerechnet'),
-  ).toBeVisible();
+  await tab('Fortschritt').click();
+  const activities = main.getByRole('link', { name: /^Aktivitäten/ });
+  await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
+  await expect(main.getByText('1 Einheit')).toBeVisible();
+  // Off (default): the daily goal stays the base goal.
+  await expect(nutrition.getByText('Tagesziel Ø 2.000 kcal · 120 g Protein')).toBeVisible();
+  await activities.click();
+  await expect(page).toHaveURL(/\/training\/activities$/);
+  await expect(main.getByText('Laufen')).toBeVisible();
 
-  // 9–10: count activity calories → the day's budget grows, the base goal stays.
+  // Count activity calories → the goal of the logged day grows; the base goal stays.
   await tab('Profil').click();
   await page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' }).click();
-  await tab('Heute').click();
-  await expect(nutrition.getByText('von 2.500 kcal · noch 2.130 kcal')).toBeVisible();
-  await expect(
-    nutrition.getByText('Basisziel 2.000 kcal · Aktivitätskalorien +500 kcal'),
-  ).toBeVisible();
+  await tab('Fortschritt').click();
+  await expect(nutrition.getByText('Tagesziel Ø 2.500 kcal · 120 g Protein')).toBeVisible();
+  await tab('Ernährung').click();
+  await expect(main.getByText('Basisziel')).toBeVisible();
+  await expect(main.getByText('+500 kcal')).toBeVisible();
+
+  // Scroll to the very end: the last card is fully reachable above the tab bar.
+  await tab('Fortschritt').click();
+  await page.mouse.wheel(0, 5000);
+  await expect(activities).toBeInViewport({ ratio: 1 });
+  const cardBox = await activities.boundingBox();
+  const tabBarBox = await page.getByRole('navigation', { name: 'Hauptnavigation' }).boundingBox();
+  expect((cardBox?.y ?? 0) + (cardBox?.height ?? 0)).toBeLessThanOrEqual(tabBarBox?.y ?? 0);
   expect(await noHorizontalScroll()).toBe(true);
 });

@@ -40,7 +40,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
         </span>
         <span className={styles.heroNumber}>
           <span className={styles.heroValue}>{eaten}</span>
-          <span className={styles.heroUnit}>{t('dashboard.nutrition.kcal')}</span>
+          <span className={styles.heroUnit}>{t('common.kcal')}</span>
         </span>
       </div>
       <div className={styles.energy}>

@@ -83,7 +83,7 @@ export class WorkoutService {
     return this.store.repos.workouts.completedBetween(profileId, fromLocalDate, toLocalDate);
   }
 
-  /** Completed workouts and volume per day – for the progress overview on Today. */
+  /** Completed workouts and volume per day – for the progress main page. */
   dailyStatsBetween(profileId: string, fromLocalDate: string, toLocalDate: string) {
     return this.store.repos.workouts.dailyStatsBetween(profileId, fromLocalDate, toLocalDate);
   }
@@ -93,14 +93,14 @@ export class WorkoutService {
     return this.store.repos.workouts.completedSpansBetween(profileId, fromLocalDate, toLocalDate);
   }
 
-  /** Trained minutes on a local day (for the Today screen); `null` if none. */
+  /** Trained minutes on a local day ; `null` if none. */
   async trainedMinutesOn(profileId: string, localDate: string): Promise<number | null> {
     const seconds = await this.store.repos.workouts.trainedSecondsOn(profileId, localDate);
     return seconds === null ? null : Math.round(seconds / 60);
   }
 
   /**
-   * Read-only summary for the Today screen: the last completed workout and how many workouts
+   * Read-only summary: the last completed workout and how many workouts
    * were completed in the last 7 and 30 days (including today).
    */
   async overview(profileId: string): Promise<TrainingOverview> {

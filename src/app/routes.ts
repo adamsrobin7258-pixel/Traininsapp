@@ -3,7 +3,8 @@
  * to another area without creating import cycles.
  */
 export const ROUTES = {
-  dashboard: '/',
+  /** The main page: progress over the last 7 or 30 days. */
+  progress: '/',
   training: '/training',
   nutrition: '/nutrition',
   health: '/health',

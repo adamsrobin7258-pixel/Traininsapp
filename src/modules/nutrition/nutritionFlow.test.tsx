@@ -533,7 +533,7 @@ describe('meals, templates and foods', () => {
   });
 });
 
-describe('Today card', () => {
+describe('Day overview progress', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
@@ -545,8 +545,9 @@ describe('Today card', () => {
     vi.restoreAllMocks();
   });
 
+  // Formerly on the Today card; since Phase 7.1 the day's progress lives in the diary only.
   it('shows calorie and protein progress when goals are set', async () => {
-    await renderApp('/', {
+    await renderApp('/nutrition', {
       prepare: async (services, profileId) => {
         const { n, food, meals } = await prepareBasics(services, profileId);
         await n.diary.addFood(profileId, {
@@ -565,11 +566,14 @@ describe('Today card', () => {
         });
       },
     });
-    const bars = await screen.findAllByRole('progressbar');
-    expect(bars.map((bar) => bar.getAttribute('aria-valuetext'))).toEqual([
-      '740 kcal von 2.000 kcal',
-      '27 g von 100 g',
-    ]);
-    expect(bars.map((bar) => bar.getAttribute('aria-valuenow'))).toEqual(['37', '27']);
+    const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
+    const energy = await overview.findByRole('progressbar', { name: 'Kalorien' });
+    const protein = overview.getByRole('progressbar', { name: 'Protein' });
+    expect(energy).toHaveAttribute('aria-valuetext', '740 kcal von 2.000 kcal');
+    expect(energy).toHaveAttribute('aria-valuenow', '37');
+    expect(protein).toHaveAttribute('aria-valuetext', '27 g von 100 g');
+    expect(protein).toHaveAttribute('aria-valuenow', '27');
+    // Only the goals that are set get a progress line.
+    expect(overview.getAllByRole('progressbar')).toHaveLength(2);
   });
 });

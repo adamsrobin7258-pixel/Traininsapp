@@ -29,5 +29,5 @@ export function backTarget(pathname: string, patterns: readonly string[]): strin
       return candidate;
     }
   }
-  return ROUTES.dashboard;
+  return ROUTES.progress;
 }

@@ -49,8 +49,8 @@ describe('createTranslator', () => {
 
   it('interpolates parameters and keeps unknown placeholders', () => {
     const t = createTranslator('en');
-    expect(t('dashboard.greetingWithName', { greeting: 'Hi', name: 'Anna' })).toBe('Hi, Anna');
-    expect(t('dashboard.greetingWithName', { greeting: 'Hi' })).toBe('Hi, {name}');
+    expect(t('progress.greetingWithName', { greeting: 'Hi', name: 'Anna' })).toBe('Hi, Anna');
+    expect(t('progress.greetingWithName', { greeting: 'Hi' })).toBe('Hi, {name}');
   });
 
   it('returns the key for unknown keys instead of crashing', () => {

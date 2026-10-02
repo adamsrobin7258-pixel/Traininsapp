@@ -193,7 +193,15 @@ aktualisierter Dokumentation.
   Ernährung (Ø kcal/Protein der erfassten Tage, Ø Tagesziel), Gewicht (eigene Einträge vor
   importierten), Aktivitäten (Health Connect); kleine, ruhige Diagramme
 - Doppelungen entfernt: Mahlzeitenliste, letztes Training/7-30-Tage-Zähler, 3-Monats-Gewichtskarte
-- Details: [TODAY.md](TODAY.md)
+- Details: [PROGRESS.md](PROGRESS.md) (seit 7.1 ohne Tagesteil)
+
+## Phase 7.1 – Fortschritt als Mainpage ✅ (Version 0.11.1)
+
+- „Heute“ vollständig entfernt; der erste Tab heißt „Fortschritt“ (eigenes Symbol) und zeigt nur
+  Woche/Monat mit Training, Ernährung, Gewicht und Aktivitäten
+- Tagesinhalte (Ernährungskarte, Trainingsstatus, Gesundheit und Aktivitäten von heute) entfernt
+  – sie stehen in ihren Bereichen
+- Details: [PROGRESS.md](PROGRESS.md)
 
 ## Phase 6.4 – geplant
 

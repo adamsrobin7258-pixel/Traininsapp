@@ -104,7 +104,7 @@ einschaltet (**[Produkt]** Voreinstellung **aus**):
 - Protein, Fett, Kohlenhydrate und Wasser bleiben unverändert – auch ein individuelles
   Protein-Ziel. Ohne Kalorienziel wird nichts angerechnet.
 - Ist die Einstellung aus, zeigt Kalethra die Aktivitätskalorien nur zur Information.
-- „Dein Fortschritt“ auf Heute vergleicht mit denselben Tageszielen (`dayGoalsBetween`): mit
+- Die Mainpage „Fortschritt“ vergleicht mit denselben Tageszielen (`dayGoalsBetween`): mit
   Aktivitätskalorien nur bei eingeschalteter Einstellung, Durchschnitt nur über erfasste Tage.
 
 ## 6. Zielanpassung

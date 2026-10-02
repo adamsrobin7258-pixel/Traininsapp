@@ -21,10 +21,16 @@ describe('app shell', () => {
     await renderApp();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
     expect(within(nav).getAllByRole('link')).toHaveLength(appModules.length);
-    expect(within(nav).getByRole('link', { name: 'Heute' })).toHaveAttribute(
+    expect(within(nav).getByRole('link', { name: 'Fortschritt' })).toHaveAttribute(
       'aria-current',
       'page',
     );
+    // The former daily page is gone: no "Heute" anywhere in the navigation.
+    expect(within(nav).queryByRole('link', { name: 'Heute' })).not.toBeInTheDocument();
+    expect(nav).not.toHaveTextContent('Heute');
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Fortschritt' }),
+    ).toBeInTheDocument();
   });
 
   it.each([
@@ -40,17 +46,20 @@ describe('app shell', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: heading })).toBeInTheDocument();
     expect(within(nav).getByRole('link', { name: tab })).toHaveAttribute('aria-current', 'page');
-    expect(within(nav).getByRole('link', { name: 'Heute' })).not.toHaveAttribute('aria-current');
+    expect(within(nav).getByRole('link', { name: 'Fortschritt' })).not.toHaveAttribute(
+      'aria-current',
+    );
   });
 
-  it('opens areas from the dashboard', async () => {
+  it('opens areas from the progress main page', async () => {
     await renderApp();
-    // The nutrition summary card (not the tab) opens the area.
-    await userEvent.click(screen.getByRole('link', { name: /^Ernährung.*Kalorien/ }));
+    // The nutrition card (not the tab) opens the area.
+    const main = screen.getByRole('main');
+    await userEvent.click(await within(main).findByRole('link', { name: /^Ernährung/ }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Ernährung' })).toBeInTheDocument();
   });
 
-  it('redirects unknown routes to the dashboard', async () => {
+  it('redirects unknown routes to the progress main page', async () => {
     const { router } = await renderApp('/does-not-exist');
     await waitFor(() => {
       expect(router.state.location.pathname).toBe('/');
@@ -88,8 +97,10 @@ describe('app shell', () => {
     await renderApp('/profile');
 
     await userEvent.type(screen.getByLabelText('Name'), 'Anna{Enter}');
-    await userEvent.click(screen.getByRole('link', { name: 'Heute' }));
+    await userEvent.click(screen.getByRole('link', { name: 'Fortschritt' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: /, Anna$/ })).toBeInTheDocument();
+    // The greeting stays as the small line above the page title.
+    expect(await screen.findByText(/, Anna$/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeInTheDocument();
   });
 });

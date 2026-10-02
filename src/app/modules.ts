@@ -1,4 +1,4 @@
-import { dashboardModule } from '@/modules/dashboard';
+import { progressModule } from '@/modules/progress';
 import { healthModule } from '@/modules/health';
 import { nutritionModule } from '@/modules/nutrition';
 import { profileModule } from '@/modules/profile';
@@ -7,7 +7,7 @@ import type { AppModule } from './moduleTypes';
 
 /** Top-level areas in tab-bar order. Registering a module here adds its route and tab. */
 export const appModules: readonly AppModule[] = [
-  dashboardModule,
+  progressModule,
   trainingModule,
   nutritionModule,
   healthModule,

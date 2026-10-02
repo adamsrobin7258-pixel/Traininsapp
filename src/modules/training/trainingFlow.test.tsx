@@ -71,7 +71,7 @@ describe('training', () => {
     delete document.documentElement.dataset.theme;
   });
 
-  it('starts empty and honest: no plans, no history, no next workout on the dashboard', async () => {
+  it('starts empty and honest: no plans, no history, no training data on the main page', async () => {
     await renderApp('/training');
     expect(await screen.findByRole('heading', { level: 1, name: 'Training' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Training starten' })).toBeInTheDocument();
@@ -80,12 +80,14 @@ describe('training', () => {
     // Plans are created in the plan management, not on the start screen.
     expect(screen.queryByRole('button', { name: 'Neuer Plan' })).not.toBeInTheDocument();
 
-    await userEvent.click(tab('Heute'));
-    expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
-    // No invented suggestion: without a plan there is no next workout and nothing running.
-    expect(await screen.findByText('Heute kein Training geplant')).toBeInTheDocument();
-    expect(screen.queryByText('Als Nächstes laut Plan')).not.toBeInTheDocument();
+    await userEvent.click(tab('Fortschritt'));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Fortschritt' }),
+    ).toBeInTheDocument();
+    // No invented values: no training data, no daily training status on the main page.
+    expect(await screen.findByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
     expect(screen.queryByText('Laufendes Training')).not.toBeInTheDocument();
+    expect(screen.queryByText('Nächstes Training')).not.toBeInTheDocument();
   });
 
   it('records a free strength workout from start to history', async () => {
@@ -180,12 +182,10 @@ describe('training', () => {
       expect.stringContaining('Trizepsdrücken am Kabel'),
     ]);
 
-    // The dashboard now suggests the plan day – and only now.
-    await userEvent.click(tab('Heute'));
-    expect(await screen.findByText('Push A · Push/Pull/Legs')).toBeInTheDocument();
-    expect(screen.queryByText('Kein Training geplant')).not.toBeInTheDocument();
-
+    // The training area now suggests the plan day – and only now (the main page shows progress).
     await userEvent.click(tab('Training'));
+    expect(await screen.findByText('Push A · Push/Pull/Legs')).toBeInTheDocument();
+
     await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
     await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
     const pushA = await dialog().findByRole('button', { name: /^Push A/ });

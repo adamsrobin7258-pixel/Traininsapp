@@ -75,15 +75,14 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   await expect(overview.getByText('370', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Today shows calories as the big number with their progress.
+  // Fortschritt compares the logged day with its goal.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: 'Heute' })
+    .getByRole('link', { name: 'Fortschritt' })
     .click();
   const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText('370', { exact: true })).toBeVisible();
-  await expect(card.getByRole('progressbar', { name: 'Kalorien' })).toBeVisible();
-  await expect(card.getByRole('progressbar', { name: 'Protein' })).toBeVisible();
+  await expect(card.getByText('Ø 370 kcal / Tag')).toBeVisible();
+  await expect(card.getByText('Tagesziel Ø 2.000 kcal · 120 g Protein')).toBeVisible();
 });
 
 test('days: back to yesterday, never into the future', async ({ page }) => {
@@ -181,11 +180,14 @@ test('nutrition profile: personal data, goal and calculation', async ({ page }) 
   await sheet.getByRole('button', { name: 'Ziel ändern' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // Today uses the profile's goals.
+  // Fortschritt opens the nutrition area from its card.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: 'Heute' })
+    .getByRole('link', { name: 'Fortschritt' })
     .click();
-  const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText(/^von \d\.\d{3} kcal/)).toBeVisible();
+  await page
+    .locator('main')
+    .getByRole('link', { name: /^Ernährung/ })
+    .click();
+  await expect(page).toHaveURL(/\/nutrition$/);
 });
