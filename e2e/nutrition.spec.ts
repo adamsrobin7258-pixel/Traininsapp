@@ -105,7 +105,7 @@ test('days: back to yesterday, never into the future', async ({ page }) => {
 });
 
 test('the food form stays usable with the keyboard on small screens', async ({ page }) => {
-  await page.goto('/nutrition/foods');
+  await page.goto('/settings/content/foods');
   await page.getByRole('button', { name: 'Neues Lebensmittel' }).click();
   const sheet = page.getByRole('dialog');
   await sheet.getByRole('button', { name: 'Speichern' }).click();
@@ -130,13 +130,16 @@ test('the food form stays usable with the keyboard on small screens', async ({ p
 });
 
 test('manage meals and system back closes sheets first', async ({ page }) => {
-  await page.goto('/nutrition/meals');
+  await page.goto('/settings/content/meals');
   await page.getByRole('button', { name: 'Mahlzeit hinzufügen' }).click();
   await page.getByRole('dialog').getByLabel('Name der Mahlzeit').fill('Spätmahlzeit');
   await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click();
   await expect(page.locator('main').getByRole('button', { name: 'Spätmahlzeit' })).toBeVisible();
 
-  await page.getByRole('link', { name: 'Ernährung' }).first().click();
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: 'Ernährung' })
+    .click();
   await expect(page).toHaveURL(/\/nutrition$/);
   await expect(
     page.locator('main').getByRole('heading', { name: 'Spätmahlzeit · 0 kcal' }),

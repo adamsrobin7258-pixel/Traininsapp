@@ -1,12 +1,18 @@
 import { matchPath } from 'react-router';
-import { ROUTES } from './routes';
+import { ROUTES, SETTINGS_LINKS } from './routes';
 import type { AppModule } from './moduleTypes';
+
+/** Full path of a module's content page below Einstellungen → Meine Inhalte. */
+export function contentRoutePath(path: string): string {
+  return `${SETTINGS_LINKS.content}/${path}`;
+}
 
 /** All route patterns of the app, derived from the module registry (single source). */
 export function routePatterns(modules: readonly AppModule[]): string[] {
   return modules.flatMap((module) => [
     module.path,
     ...(module.subRoutes ?? []).map((sub) => `${module.path}/${sub.path}`),
+    ...(module.contentRoutes ?? []).map((sub) => contentRoutePath(sub.path)),
   ]);
 }
 
@@ -14,9 +20,10 @@ export function routePatterns(modules: readonly AppModule[]): string[] {
  * Where the system back action leads from `pathname`: one level up in the route hierarchy.
  *
  * - A nested page goes to the nearest ancestor path that is a page itself
- *   (`/training/plans/:id` → `/training/plans`, `/training/workouts/:id` → `/training`).
- * - A tab's start page goes to "Today".
- * - "Today" returns `null`: nothing is above it, the app may close.
+ *   (`/settings/content/plans/:id` → `/settings/content/plans` → `/settings/content`,
+ *   `/training/workouts/:id` → `/training`).
+ * - A tab's start page goes to Fortschritt.
+ * - Fortschritt returns `null`: nothing is above it, the app may close.
  *
  * Leaving a page never changes data – an active workout stays as it is.
  */

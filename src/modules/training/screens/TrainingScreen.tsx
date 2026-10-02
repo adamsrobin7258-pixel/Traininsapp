@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { TRAINING_LINKS } from '@/app/routes';
+import { CONTENT_LINKS, TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
@@ -24,7 +24,6 @@ export function TrainingScreen() {
     async (s, profileId) => ({
       active: await s.workouts.getActive(profileId),
       next: await s.plans.nextWorkout(profileId),
-      planCount: (await s.plans.listPlans(profileId)).length,
     }),
     [],
   );
@@ -91,18 +90,6 @@ export function TrainingScreen() {
       <Section>
         <List>
           <ListRow
-            title={t('training.plansTitle')}
-            subtitle={
-              data
-                ? data.planCount === 1
-                  ? t('training.plansCountOne')
-                  : t('training.plansCount', { count: data.planCount })
-                : undefined
-            }
-            to={TRAINING_LINKS.plans}
-          />
-          <ListRow title={t('training.manageExercises')} to={TRAINING_LINKS.exercises} />
-          <ListRow
             title={t('activities.title')}
             subtitle={t('activities.linkHint')}
             to={TRAINING_LINKS.activities}
@@ -118,7 +105,7 @@ export function TrainingScreen() {
         <StartWorkoutSheet
           error={error}
           onStart={start}
-          onOpenPlans={() => void navigate(TRAINING_LINKS.plans)}
+          onOpenPlans={() => void navigate(CONTENT_LINKS.plans)}
           onClose={() => {
             setStarting(false);
             setError(null);

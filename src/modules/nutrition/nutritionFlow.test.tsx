@@ -168,7 +168,7 @@ describe('nutrition diary', () => {
   });
 
   it('validates the food form and saves nothing invalid', async () => {
-    const { db } = await renderApp('/nutrition/foods');
+    const { db } = await renderApp('/settings/content/foods');
     await userEvent.click(await screen.findByRole('button', { name: 'Neues Lebensmittel' }));
     await userEvent.type(dialog().getByLabelText('Kalorien (kcal)'), '-5');
     await userEvent.type(dialog().getByLabelText('Protein (g)'), 'abc');
@@ -186,7 +186,7 @@ describe('nutrition diary', () => {
   });
 
   it('creates a food with piece size, so it can be logged in pieces', async () => {
-    await renderApp('/nutrition/foods');
+    await renderApp('/settings/content/foods');
     await userEvent.click(await screen.findByRole('button', { name: 'Neues Lebensmittel' }));
     await userEvent.type(dialog().getByLabelText('Name'), 'Banane');
     await userEvent.type(dialog().getByLabelText('Kalorien (kcal)'), '89');
@@ -198,8 +198,11 @@ describe('nutrition diary', () => {
     await closed();
     expect(await screen.findByText('Banane')).toBeInTheDocument();
 
+    // The food was created in Meine Inhalte; logging happens in the Ernährung tab.
     await userEvent.click(
-      within(screen.getByRole('main')).getByRole('link', { name: 'Ernährung' }),
+      within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByRole('link', {
+        name: 'Ernährung',
+      }),
     );
     await userEvent.click(await screen.findByRole('button', { name: 'Snacks: hinzufügen' }));
     await userEvent.click(await dialog().findByText('Banane'));
@@ -407,7 +410,7 @@ describe('meals, templates and foods', () => {
   });
 
   it('adds, renames, reorders and hides meals but keeps one visible', async () => {
-    await renderApp('/nutrition/meals');
+    await renderApp('/settings/content/meals');
     await userEvent.click(await screen.findByRole('button', { name: 'Mahlzeit hinzufügen' }));
     await userEvent.type(dialog().getByLabelText('Name der Mahlzeit'), 'Pre-Workout');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
@@ -420,7 +423,7 @@ describe('meals, templates and foods', () => {
     await userEvent.type(dialog().getByLabelText('Name der Mahlzeit'), 'Vor dem Training');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
     await closed();
-    const list = within(screen.getByRole('list', { name: 'Mahlzeiten' }));
+    const list = within(screen.getByRole('list', { name: 'Mahlzeiten des Tages' }));
     await waitFor(() => {
       expect(list.getAllByRole('button').map((b) => b.textContent)).toEqual([
         'Frühstück',
@@ -490,7 +493,7 @@ describe('meals, templates and foods', () => {
   });
 
   it('renames and deletes templates', async () => {
-    await renderApp('/nutrition/templates', {
+    await renderApp('/settings/content/templates', {
       prepare: async (s, profileId) => {
         const { n, food } = await prepareBasics(s, profileId);
         await n.meals.saveMeal(profileId, {
@@ -513,7 +516,7 @@ describe('meals, templates and foods', () => {
   });
 
   it('corrects foods without changing logged days; deletes unused, hides used ones', async () => {
-    const { db } = await renderApp('/nutrition/foods', {
+    const { db } = await renderApp('/settings/content/foods', {
       prepare: async (s, profileId) => {
         const { n, food, meals } = await prepareBasics(s, profileId);
         await n.foods.create(profileId, { ...oats, name: 'Reis', brand: null });

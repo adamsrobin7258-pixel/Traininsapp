@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { TRAINING_LINKS } from '@/app/routes';
+import { CONTENT_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
@@ -29,7 +29,11 @@ type Dialog =
   | { kind: 'targets'; planned: PlannedExercise; name: string }
   | null;
 
-/** Edit a training plan: days, exercises, order and optional targets. */
+/**
+ * Edit a training plan (Einstellungen → Meine Inhalte): days, exercises, order and optional
+ * targets. Only management – a plan day is started in the training area (start sheet or next
+ * workout), so this page has no start button.
+ */
 export function PlanScreen() {
   const { planId = '' } = useParams();
   const { t, locale } = useI18n();
@@ -38,7 +42,7 @@ export function PlanScreen() {
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
   const [error, setError] = useState<string | null>(null);
-  const back = { to: TRAINING_LINKS.plans, label: t('training.plansTitle') };
+  const back = { to: CONTENT_LINKS.plans, label: t('training.plansTitle') };
 
   const data = useTrainingData(
     async (s, profileId) => ({
@@ -71,16 +75,6 @@ export function PlanScreen() {
     mutate(change).catch((failure: unknown) => {
       setError(describe(failure));
     });
-  }
-
-  async function startDay(dayId: string) {
-    setError(null);
-    try {
-      await mutate((s, profileId) => s.workouts.startFromPlan(profileId, dayId));
-      await navigate(TRAINING_LINKS.activeWorkout);
-    } catch (failure) {
-      setError(describe(failure));
-    }
   }
 
   /** "2 × Aufwärmen · 3 × 8 · 2 Drops" – the planned set structure in one line. */
@@ -122,7 +116,6 @@ export function PlanScreen() {
         <section key={day.id} className={styles.day} aria-label={day.name}>
           <header className={styles.dayHeader}>
             <h2 className={styles.dayName}>{day.name}</h2>
-            <Button onClick={() => void startDay(day.id)}>{t('training.startDay')}</Button>
           </header>
 
           {day.exercises.length === 0 ? (
@@ -323,7 +316,7 @@ export function PlanScreen() {
           destructive
           onConfirm={async () => {
             await mutate((s, profileId) => s.plans.deletePlan(profileId, plan.id));
-            await navigate(TRAINING_LINKS.plans, { replace: true });
+            await navigate(CONTENT_LINKS.plans, { replace: true });
           }}
           onClose={() => {
             setDialog(null);

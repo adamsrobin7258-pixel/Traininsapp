@@ -242,6 +242,22 @@ aktualisierter Dokumentation.
 - Alte Adressen `/profile` und `/nutrition/profile` leiten weiter
 - Details: [SETTINGS.md](SETTINGS.md)
 
+## Phase 11 – Meine Inhalte zentralisieren ✅ (Version 0.15.0)
+
+- Einstellungen → Meine Inhalte verwaltet Lebensmittel, Mahlzeiten des Tages, Vorlagen,
+  Trainingspläne und Übungen (bestehende Seiten, Formulare und Services; keine Migration)
+- Ernährung und Training nur noch Tracking mit Schnellzugriffen (neues Lebensmittel, Barcode,
+  Vorlage speichern/anwenden, eigene Übung in der Auswahl)
+- Training wird nur noch im Trainingsbereich gestartet; die Planseite hat keinen Start-Knopf
+- Alte Adressen leiten weiter (Plan-ID bleibt erhalten)
+- Details: [SETTINGS.md](SETTINGS.md)
+
+## Phase 11B – Vorschlag
+
+- Rezepte: Oberfläche zum Anlegen und Bearbeiten (Zutaten, Mengen, Portionen) auf dem bestehenden
+  `RecipeService`, Eintragen im Hinzufügen-Fenster, Platz unter Meine Inhalte
+- Vorlagen inhaltlich bearbeiten (Positionen und Mengen; `MealService.updateSavedMeal` existiert)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

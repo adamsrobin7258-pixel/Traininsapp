@@ -97,7 +97,7 @@ describe('exercise library', () => {
   });
 
   it('marks favourites in the library and lists them first in the picker', async () => {
-    await renderApp('/training/exercises');
+    await renderApp('/settings/content/exercises');
     await userEvent.type(await screen.findByRole('searchbox'), 'face pull');
     await userEvent.click(screen.getByRole('button', { name: /^Face PullsKabelzug/ }));
 
@@ -134,7 +134,7 @@ describe('exercise library', () => {
   });
 
   it('shows library exercises as read-only and keeps own exercises editable', async () => {
-    await renderApp('/training/exercises');
+    await renderApp('/settings/content/exercises');
     await userEvent.type(await screen.findByRole('searchbox'), 'latzug');
     await userEvent.click(screen.getByRole('button', { name: /^LatzugKabelzug/ }));
     expect(

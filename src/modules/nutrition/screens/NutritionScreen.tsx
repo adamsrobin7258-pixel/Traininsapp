@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { NUTRITION_LINKS } from '@/app/routes';
 import { useActivities } from '@/core/activity';
 import { useHealthSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
@@ -13,7 +12,7 @@ import {
 } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { List, ListRow, PromptSheet, Screen, Section } from '@/ui';
+import { PromptSheet, Screen } from '@/ui';
 import { AddSheet } from '../components/AddSheet';
 import { DayNavigator } from '../components/DayNavigator';
 import { DayOverview } from '../components/DayOverview';
@@ -111,13 +110,6 @@ export function NutritionScreen() {
             totalMl={ready.day.waterMl}
             goalMl={ready.goal?.effective.waterMl.value ?? null}
           />
-          <Section title={t('nutrition.more')}>
-            <List label={t('nutrition.more')}>
-              <ListRow title={t('nutrition.foods.manage')} to={NUTRITION_LINKS.foods} />
-              <ListRow title={t('nutrition.mealsManage.manage')} to={NUTRITION_LINKS.meals} />
-              <ListRow title={t('nutrition.templates.manage')} to={NUTRITION_LINKS.templates} />
-            </List>
-          </Section>
         </>
       ) : null}
 

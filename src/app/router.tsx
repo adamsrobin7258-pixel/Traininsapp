@@ -1,5 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router';
+import { contentRoutePath } from './backNavigation';
 import { AppLayout } from './layout/AppLayout';
+import { LegacyRedirect } from './layout/LegacyRedirect';
 import { appModules } from './modules';
 import { LEGACY_REDIRECTS } from './routes';
 
@@ -20,9 +22,16 @@ export function createRoutes(): RouteObject[] {
               }
             : { path, element: <Screen /> },
         ),
+        // Content management pages of the areas, mounted below Einstellungen → Meine Inhalte.
+        ...appModules.flatMap(({ contentRoutes }) =>
+          (contentRoutes ?? []).map((sub) => ({
+            path: contentRoutePath(sub.path),
+            element: <sub.Screen />,
+          })),
+        ),
         ...LEGACY_REDIRECTS.map(({ from, to }) => ({
           path: from,
-          element: <Navigate to={to} replace />,
+          element: <LegacyRedirect to={to} />,
         })),
         { path: '*', element: <Navigate to="/" replace /> },
       ],

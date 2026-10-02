@@ -203,8 +203,9 @@ UI). In der Datenbank steht die Art als Text; unbekannte Werte fallen auf `other
 Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumbau.
 
 **Navigation.** Training (Start, Verlauf) → „Training starten“ bietet nur „Freies Training“ und
-„Aus Plan starten“ (Trainingstag wählen). Pläne werden ausschließlich unter „Pläne“
-(`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
+„Aus Plan starten“ (Trainingstag wählen). Pläne und Übungen werden seit Phase 11 ausschließlich
+unter Einstellungen → Meine Inhalte (`/settings/content/plans`, `/settings/content/exercises`)
+verwaltet; ohne Plan verweist der Start-Dialog dorthin. Gestartet wird nur im Trainingsbereich.
 
 **Fortschritt (Mainpage).** Seit Phase 7.1 die Startseite ohne Eingaben (siehe
 [PROGRESS.md](PROGRESS.md)): Training, Ernährung, Gewicht und Aktivitäten der letzten 7 bzw. 30
@@ -222,6 +223,13 @@ einzige Ort für Profil, Ziele und App-Einstellungen. Versionierte Wochen- und S
 liest sie über `ScoreSources.targets`. Die drei Gewichtsregeln sind in
 `core/health/weightRules.ts` benannt. Alte Adressen leiten über `LEGACY_REDIRECTS` weiter.
 Details: [SETTINGS.md](SETTINGS.md).
+
+**Meine Inhalte (Phase 11).** Verwaltungsseiten eigener Inhalte bleiben in ihrem Fachmodul und
+werden über `AppModule.contentRoutes` unter `/settings/content/<pfad>` angemeldet; `createRoutes`
+und `routePatterns` nehmen sie auf. So nutzen zentrale Verwaltung und Schnellzugriffe im Tracking
+(z. B. `FoodFormSheet` im Hinzufügen-Fenster, `ExerciseFormSheet` in der Übungsauswahl) eine
+Implementierung, ohne dass Module einander importieren. `src/app/moduleIsolation.test.ts` prüft
+die Modulgrenzen zusätzlich zu ESLint sowie die Zuordnung der Inhaltsseiten.
 
 **Manuelle Aktivitäten.** Seit Phase 8 in `core/activity`: Sportartenkatalog mit MET-Werten
 (`catalog.ts`), reine Kalorienberechnung (`calories.ts`), Repository/Service für
@@ -275,9 +283,9 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   `WeightService` – keine zweite Gewichtsdatenhaltung.
 - **Fortschritt** (Mainpage) liest Tagessummen des Tagebuchs und die gültigen Ziele über einen Zeitraum, speichert nichts.
 - **Oberfläche (Phase 4.2.1)** in `modules/nutrition`: Tagesansicht `/nutrition?day=YYYY-MM-DD`
-  (zukünftige oder ungültige Tage fallen auf heute zurück), Unterseiten `/nutrition/foods`,
-  `/nutrition/meals`, `/nutrition/templates` (für die Zurück-Navigation als `subRoutes`
-  registriert). Der Hinzufügen-Ablauf ist eine Schrittfolge aus Sheets; „Zurück“ führt aus
+  (zukünftige oder ungültige Tage fallen auf heute zurück), Verwaltungsseiten Lebensmittel,
+  Mahlzeiten des Tages und Vorlagen (seit Phase 11 als `contentRoutes` unter
+  `/settings/content/…` registriert). Der Hinzufügen-Ablauf ist eine Schrittfolge aus Sheets; „Zurück“ führt aus
   jedem Schritt zur Suche statt den Ablauf zu verlassen. Nährwerte in der Vorschau rechnet
   ausschließlich die Kernlogik (`nutrientsForQuantity`, `scaleNutrients`).
 - **Löschen von Lebensmitteln:** `FoodService.remove` löscht nur, wenn kein Eintrag, keine
@@ -344,7 +352,8 @@ Stelle mit Capacitor). `app/layout/SystemBackHandler` entscheidet zentral:
 
 1. Ist ein Sheet offen, wird es geschlossen (`ui/backStack.ts`: Sheets melden sich beim Öffnen an).
 2. Sonst eine Ebene höher: `backTarget()` in `app/backNavigation.ts` leitet die Elternseite aus der
-   Modul-Registry ab (`/training/plans/:id` → `/training/plans` → `/training` → `/`).
+   Modul-Registry ab (`/settings/content/plans/:id` → `/settings/content/plans` →
+   `/settings/content` → `/settings` → `/`).
 3. Auf „Fortschritt“ (Startseite) wird die App beendet.
 
 Es gibt keine zweite Navigation und keine Bestätigungsdialoge; ein laufendes Training bleibt beim

@@ -23,9 +23,18 @@ async function startFreeWorkout(page: Page) {
   await expect(page.getByText('Laufendes Training')).toBeVisible();
 }
 
+/** Plans are managed in Einstellungen → Meine Inhalte → Trainingspläne. */
 async function createPlan(page: Page, name: string, day: string) {
-  await page.goto('/training');
-  await page.getByRole('link', { name: /^Pläne/ }).click();
+  await page.goto('/settings');
+  await page
+    .locator('main')
+    .getByRole('link', { name: /^Meine Inhalte/ })
+    .click();
+  await page
+    .locator('main')
+    .getByRole('link', { name: /^Trainingspläne/ })
+    .click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Trainingspläne' })).toBeVisible();
   await page.getByRole('button', { name: 'Neuer Plan' }).click();
   await page.getByLabel('Name des Plans').fill(name);
   await page.getByRole('button', { name: 'Speichern' }).click();
@@ -34,6 +43,17 @@ async function createPlan(page: Page, name: string, day: string) {
   await page.getByLabel('Name des Trainingstags').fill(day);
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(sheet(page)).toHaveCount(0);
+}
+
+/** Workouts start in the training area – the plan page has no start button. */
+async function startPlanDay(page: Page, day: RegExp) {
+  await expect(page.getByRole('button', { name: 'Starten' })).toHaveCount(0);
+  await tab(page, 'Training').click();
+  await page.getByRole('button', { name: 'Training starten' }).click();
+  await sheet(page)
+    .getByRole('button', { name: /^Aus Plan starten/ })
+    .click();
+  await sheet(page).getByRole('button', { name: day }).click();
 }
 
 /** True when a field that would bring up the on-screen keyboard has focus. */
@@ -56,8 +76,8 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
   await createPlan(page, 'Oberkörper', 'Tag A');
   await pickExercise(page, 'bank', /^Langhantel-Bankdrücken/);
 
-  // Start the workout from the plan and log two sets.
-  await page.getByRole('button', { name: 'Starten' }).click();
+  // Start the workout from the plan (in the training area) and log two sets.
+  await startPlanDay(page, /^Tag A/);
   await expect(page.getByRole('heading', { level: 1, name: 'Tag A' })).toBeVisible();
   await page.getByLabel('Satz 1: Gewicht').fill('60');
   await page.getByLabel('Satz 1: Wdh.').fill('10');
@@ -197,16 +217,18 @@ test('D – without plans the start flow leads to the plan management', async ({
   await expect(sheet(page).getByText(/Neuen? Plan/)).toHaveCount(0);
   await sheet(page).getByRole('button', { name: 'Zu Plänen' }).click();
 
-  await expect(page).toHaveURL(/\/training\/plans$/);
-  await expect(page.getByRole('heading', { level: 1, name: 'Pläne' })).toBeVisible();
-  // Create a plan there; the normal way back leads to the training area.
+  await expect(page).toHaveURL(/\/settings\/content\/plans$/);
+  await expect(page.getByRole('heading', { level: 1, name: 'Trainingspläne' })).toBeVisible();
+  // Create a plan there; the way back leads to Meine Inhalte, the tab back to training.
   await page.getByRole('button', { name: 'Neuer Plan' }).click();
   await page.getByLabel('Name des Plans').fill('Beine');
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByRole('heading', { level: 1, name: 'Beine' })).toBeVisible();
-  await page.getByRole('link', { name: 'Pläne' }).click();
+  await page.getByRole('link', { name: 'Trainingspläne' }).click();
   await expect(page.getByRole('link', { name: 'Beine' })).toBeVisible();
-  await page.getByRole('link', { name: 'Training' }).first().click();
+  await page.locator('main').getByRole('link', { name: 'Meine Inhalte' }).click();
+  await expect(page).toHaveURL(/\/settings\/content$/);
+  await tab(page, 'Training').click();
   await expect(page.getByRole('heading', { level: 1, name: 'Training' })).toBeVisible();
 });
 
@@ -231,7 +253,7 @@ test('warm-ups and drops from the plan into the workout', async ({ page }) => {
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByText('1 × Aufwärmen · 2 × 8 · 1 Drop')).toBeVisible();
 
-  await page.getByRole('button', { name: 'Starten' }).click();
+  await startPlanDay(page, /^Tag A/);
   await expect(page.getByLabel('Aufwärmsatz 1: Gewicht')).toBeVisible();
   await page.getByLabel('Satz 2: Gewicht', { exact: true }).fill('100');
   await page.getByRole('button', { name: 'Satz 2 abschließen', exact: true }).tap();
@@ -249,8 +271,11 @@ test('warm-ups and drops from the plan into the workout', async ({ page }) => {
 });
 
 test('exercise library: filters, details and favourites without the keyboard', async ({ page }) => {
-  await page.goto('/training');
-  await page.getByRole('link', { name: /^Übungen verwalten/ }).click();
+  await page.goto('/settings/content');
+  await page
+    .locator('main')
+    .getByRole('link', { name: /^Übungen/ })
+    .click();
   await expect(page.getByRole('heading', { level: 1, name: 'Übungen' })).toBeVisible();
   expect(await textFieldFocused(page)).toBe(false);
 

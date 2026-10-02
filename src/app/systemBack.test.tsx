@@ -33,16 +33,18 @@ describe('back target', () => {
   const patterns = routePatterns(appModules);
 
   it.each([
-    ['/training/plans/abc', '/training/plans'],
-    ['/training/plans', '/training'],
     ['/training/workout', '/training'],
     ['/training/workouts/xyz', '/training'],
-    ['/training/exercises', '/training'],
+    ['/training/activities', '/training'],
     ['/training', '/'],
-    ['/nutrition/foods', '/nutrition'],
-    ['/nutrition/meals', '/nutrition'],
-    ['/nutrition/templates', '/nutrition'],
     ['/nutrition', '/'],
+    // Einstellungen → Meine Inhalte: the content pages of nutrition and training.
+    ['/settings/content/foods', '/settings/content'],
+    ['/settings/content/meals', '/settings/content'],
+    ['/settings/content/templates', '/settings/content'],
+    ['/settings/content/plans/abc', '/settings/content/plans'],
+    ['/settings/content/plans', '/settings/content'],
+    ['/settings/content/exercises', '/settings/content'],
     ['/health', '/'],
     ['/settings/profile', '/settings'],
     ['/settings/goals', '/settings'],
@@ -72,13 +74,15 @@ describe('system back', () => {
     const { router, services } = await renderApp('/training');
     const profileId = (await services.profile.ensureLocalProfile()).id;
     const plan = await services.training.plans.createPlan(profileId, 'Beine');
-    await act(() => router.navigate(`/training/plans/${plan.id}`));
+    await act(() => router.navigate(`/settings/content/plans/${plan.id}`));
     expect(await screen.findByRole('heading', { level: 1, name: 'Beine' })).toBeInTheDocument();
 
     await pressBack();
-    expect(router.state.location.pathname).toBe('/training/plans');
+    expect(router.state.location.pathname).toBe('/settings/content/plans');
     await pressBack();
-    expect(router.state.location.pathname).toBe('/training');
+    expect(router.state.location.pathname).toBe('/settings/content');
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings');
     await pressBack();
     expect(router.state.location.pathname).toBe('/');
     expect(platform.exitApp).not.toHaveBeenCalled();
@@ -99,6 +103,37 @@ describe('system back', () => {
     expect(platform.exitApp).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['/nutrition/foods', '/settings/content/foods'],
+    ['/nutrition/meals', '/settings/content/meals'],
+    ['/nutrition/templates', '/settings/content/templates'],
+    ['/training/plans', '/settings/content/plans'],
+    ['/training/exercises', '/settings/content/exercises'],
+  ])('redirects the old address %s to %s and goes back to Meine Inhalte', async (from, to) => {
+    const { router } = await renderApp(from);
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(to);
+    });
+    // Replaced, not pushed: the old address leaves no entry in the history.
+    expect(router.state.historyAction).toBe('REPLACE');
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings/content');
+  });
+
+  it('keeps the plan id when redirecting an old plan address', async () => {
+    const { router, services } = await renderApp('/');
+    const profileId = (await services.profile.ensureLocalProfile()).id;
+    const plan = await services.training.plans.createPlan(profileId, 'Push');
+    await act(() => router.navigate(`/training/plans/${plan.id}`));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(`/settings/content/plans/${plan.id}`);
+    });
+    expect(router.state.historyAction).toBe('REPLACE');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Push' })).toBeInTheDocument();
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings/content/plans');
+  });
+
   it('a redirected old address behaves like the new page for back', async () => {
     const { router } = await renderApp('/nutrition/profile');
     await waitFor(() => {
@@ -109,7 +144,7 @@ describe('system back', () => {
   });
 
   it('closes an open sheet before navigating', async () => {
-    const { router } = await renderApp('/training/plans');
+    const { router } = await renderApp('/settings/content/plans');
     await userEvent.click(await screen.findByRole('button', { name: 'Neuer Plan' }));
     expect(screen.getByRole('dialog')).toBeInTheDocument();
 
@@ -117,10 +152,10 @@ describe('system back', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
-    expect(router.state.location.pathname).toBe('/training/plans');
+    expect(router.state.location.pathname).toBe('/settings/content/plans');
 
     await pressBack();
-    expect(router.state.location.pathname).toBe('/training');
+    expect(router.state.location.pathname).toBe('/settings/content');
   });
 
   it('steps back through the nutrition add flow without leaving the diary', async () => {

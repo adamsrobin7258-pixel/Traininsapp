@@ -180,7 +180,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
   });
 
   it('shows a BLS food read-only and edits it as an own copy', async () => {
-    const { db } = await renderApp('/nutrition/foods', {
+    const { db } = await renderApp('/settings/content/foods', {
       prepare: async (s, profileId) => {
         const [hit] = await s.nutrition.lookup.search(profileId, 'apfel roh');
         if (hit?.kind !== 'reference') throw new Error('reference expected');
@@ -342,7 +342,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
   });
 
   it('lists favourites on the foods page', async () => {
-    await renderApp('/nutrition/foods', { prepare: withFoods });
+    await renderApp('/settings/content/foods', { prepare: withFoods });
     const favorites = within(await screen.findByRole('list', { name: 'Favoriten' }));
     expect(favorites.getByText('Milch')).toBeInTheDocument();
   });

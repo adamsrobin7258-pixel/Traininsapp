@@ -176,9 +176,7 @@ export const en: TranslationSchema = {
     nextTitle: 'Next workout',
     nextFromPlan: '{day} · {plan}',
     startDay: 'Start',
-    plansTitle: 'Plans',
-    plansCount: '{count} plans',
-    plansCountOne: '1 plan',
+    plansTitle: 'Training plans',
     startSheet: {
       free: 'Free workout',
       freeHint: 'Choose exercises as you go',
@@ -197,7 +195,6 @@ export const en: TranslationSchema = {
     historyTitle: 'Recent workouts',
     historyEmpty: 'No completed workouts yet.',
     showMore: 'Show more',
-    manageExercises: 'Manage exercises',
     today: 'Today',
     yesterday: 'Yesterday',
     exerciseCount: '{count} exercises',
@@ -523,7 +520,6 @@ export const en: TranslationSchema = {
     },
     foods: {
       title: 'Foods',
-      manage: 'Manage foods',
       create: 'New food',
       edit: 'Edit food',
       name: 'Name',
@@ -552,8 +548,7 @@ export const en: TranslationSchema = {
       deactivated: '“{name}” is still in use and was hidden.',
     },
     mealsManage: {
-      title: 'Meals',
-      manage: 'Manage meals',
+      title: 'Meals of the day',
       add: 'Add meal',
       name: 'Meal name',
       rename: 'Rename',
@@ -566,7 +561,6 @@ export const en: TranslationSchema = {
     },
     templates: {
       title: 'Templates',
-      manage: 'Manage templates',
       empty: 'No templates yet',
       emptyBody: 'Save a logged meal with “Save as template”.',
       itemCount: '{count} foods',
@@ -846,7 +840,6 @@ export const en: TranslationSchema = {
       fat: 'Fat (g)',
       water: 'Water (ml)',
     },
-    more: 'Manage',
     errors: {
       loadFailed: 'The data could not be loaded.',
       saveFailed: 'That did not work. Please try again.',
@@ -1262,10 +1255,18 @@ export const en: TranslationSchema = {
     },
     content: {
       title: 'My content',
-      summary: 'Foods, meals, templates, plans, exercises',
+      summary: 'Foods, meals, templates, training plans, exercises',
       nutrition: 'Nutrition',
       training: 'Training',
-      moving: 'Your own content moves here soon. Until then these entries lead to where it is now.',
+      foodsHint: 'Your own and saved foods',
+      mealsHint: 'Sections of your diary, e.g. breakfast',
+      templatesHint: 'Log several foods at once',
+      plansHint: 'Training days, exercises and targets',
+      exercisesHint: 'Library, favourites and your own exercises',
+      withCount: '{count} · {hint}',
+      nutritionHint:
+        'You can also create new foods and templates right while logging in Nutrition.',
+      trainingHint: 'You start a workout in the Training area.',
     },
     app: {
       title: 'App',

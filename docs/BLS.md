@@ -132,7 +132,7 @@ gesättigte Fettsäuren 23× `-`. Energie, Kohlenhydrate und Zucker sind vollst�
     (allgemeinerer) Name zuerst, dann alphabetisch. So steht bei „milch“ „Milch fettarm …“ vor
     „Milchschokolade“.
   - Höchstens 50 BLS-Treffer je Suche (`REFERENCE_RESULTS_LIMIT`).
-  - Dieselbe Normalisierung gilt für eigene Lebensmittel (Liste „Lebensmittel verwalten“).
+  - Dieselbe Normalisierung gilt für eigene Lebensmittel (Liste unter Meine Inhalte → Lebensmittel).
 - **Keine Duplikate:** Ein BLS-Lebensmittel, das schon benutzt wurde, erscheint nur einmal – als
   gespeicherter Eintrag.
 

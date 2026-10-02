@@ -29,6 +29,14 @@ async function setRows(db: Rendered['db']) {
   );
 }
 
+/** Plans are managed in Einstellungen → Meine Inhalte → Trainingspläne. */
+async function openPlans() {
+  await userEvent.click(tab('Einstellungen'));
+  await userEvent.click(await screen.findByRole('link', { name: /^Meine Inhalte/ }));
+  await userEvent.click(await screen.findByRole('link', { name: /^Trainingspläne/ }));
+  await screen.findByRole('heading', { level: 1, name: 'Trainingspläne' });
+}
+
 async function pickExercise(search: string, name: RegExp) {
   await userEvent.click(await screen.findByRole('button', { name: 'Übung hinzufügen' }));
   await userEvent.type(dialog().getByRole('searchbox'), search);
@@ -75,10 +83,13 @@ describe('training', () => {
     await renderApp('/training');
     expect(await screen.findByRole('heading', { level: 1, name: 'Training' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Training starten' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /^Pläne/ })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Letzte Trainings' })).toBeInTheDocument();
-    // Plans are created in the plan management, not on the start screen.
+    expect(screen.getByRole('link', { name: /^Aktivitäten/ })).toBeInTheDocument();
+    // Plans and exercises are managed in Einstellungen → Meine Inhalte – the training area
+    // only tracks: no plan creation and no way into a second plan or exercise management.
     expect(screen.queryByRole('button', { name: 'Neuer Plan' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Pläne|Trainingspläne/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Übungen/ })).not.toBeInTheDocument();
 
     await userEvent.click(tab('Fortschritt'));
     expect(
@@ -159,7 +170,7 @@ describe('training', () => {
 
   it('builds a plan and starts the next workout from it', async () => {
     const { router } = await renderApp('/training');
-    await userEvent.click(await screen.findByRole('link', { name: /^Pläne/ }));
+    await openPlans();
     await userEvent.click(await screen.findByRole('button', { name: 'Neuer Plan' }));
     await userEvent.type(dialog().getByLabelText('Name des Plans'), 'Push/Pull/Legs');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
@@ -181,6 +192,9 @@ describe('training', () => {
       expect.stringContaining('Langhantel-Schulterdrücken'),
       expect.stringContaining('Trizepsdrücken am Kabel'),
     ]);
+    // The plan page only manages the plan – a workout is started in the training area.
+    expect(screen.queryByRole('button', { name: 'Starten' })).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toMatch(/^\/settings\/content\/plans\/[^/]+$/);
 
     // The training area now suggests the plan day – and only now (the main page shows progress).
     await userEvent.click(tab('Training'));
@@ -250,10 +264,40 @@ describe('training', () => {
       await userEvent.click(dialog().getByRole('button', { name: 'Zu Plänen' }));
 
       await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/training/plans');
+        expect(router.state.location.pathname).toBe('/settings/content/plans');
       });
-      expect(await screen.findByRole('heading', { level: 1, name: 'Pläne' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Trainingspläne' }),
+      ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Neuer Plan' })).toBeInTheDocument();
+    });
+
+    it('offers every day of every plan and starts any of them', async () => {
+      const { router } = await renderApp('/training', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          for (const [name, days] of [
+            ['Oberkörper', ['Push', 'Pull']],
+            ['Unterkörper', ['Beine A', 'Beine B']],
+          ] as const) {
+            const plan = await services.training.plans.createPlan(profileId, name);
+            for (const day of days) {
+              const id = await services.training.plans.addDay(profileId, plan.id, day);
+              await services.training.plans.addExercise(profileId, id, 'sys.back-squat');
+            }
+          }
+        },
+      });
+      await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
+      await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
+      for (const day of ['Push', 'Pull', 'Beine A', 'Beine B']) {
+        expect(await dialog().findByRole('button', { name: new RegExp(`^${day}`) })).toBeEnabled();
+      }
+      await userEvent.click(dialog().getByRole('button', { name: /^Beine B/ }));
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/training/workout');
+      });
+      expect(await screen.findByRole('heading', { level: 1, name: 'Beine B' })).toBeInTheDocument();
     });
 
     it('keeps existing workouts and plans when using the new flow', async () => {
@@ -268,11 +312,19 @@ describe('training', () => {
         },
       });
       expect(await screen.findByRole('link', { name: /Tag A.*Heute/ })).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /^Pläne.*1 Plan/ })).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole('button', { name: 'Training starten' }));
       await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
       expect(await dialog().findByRole('button', { name: /^Tag A/ })).toBeEnabled();
+      await userEvent.keyboard('{Escape}');
+      await closedDialog();
+
+      // The existing plan is listed in Einstellungen → Meine Inhalte.
+      await userEvent.click(tab('Einstellungen'));
+      await userEvent.click(await screen.findByRole('link', { name: /^Meine Inhalte/ }));
+      expect(await screen.findByRole('link', { name: /^Trainingspläne1 · / })).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('link', { name: /^Trainingspläne/ }));
+      expect(await screen.findByRole('link', { name: /^Ganzkörper/ })).toBeInTheDocument();
     });
   });
 
@@ -321,7 +373,7 @@ describe('training', () => {
 
     it('does not carry an open keyboard from a name prompt into the picker', async () => {
       await renderApp('/training');
-      await userEvent.click(await screen.findByRole('link', { name: /^Pläne/ }));
+      await openPlans();
       await userEvent.click(await screen.findByRole('button', { name: 'Neuer Plan' }));
       // Naming is real text entry: the field gets focus on its own.
       expect(dialog().getByLabelText('Name des Plans')).toHaveFocus();
@@ -355,7 +407,7 @@ describe('training', () => {
 
   describe('set types', () => {
     it('configures warm-ups and drops in the plan and takes them into the workout', async () => {
-      const { db } = await renderApp('/training/plans');
+      const { db } = await renderApp('/settings/content/plans');
       await userEvent.click(await screen.findByRole('button', { name: 'Neuer Plan' }));
       await userEvent.type(dialog().getByLabelText('Name des Plans'), 'Beine');
       await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
@@ -375,7 +427,9 @@ describe('training', () => {
       await closedDialog();
       expect(await screen.findByText('2 × Aufwärmen · 3 × 8 · 2 Drops')).toBeInTheDocument();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Starten' }));
+      // Started in the training area (next workout card), not from the plan page.
+      await userEvent.click(tab('Training'));
+      await userEvent.click(await screen.findByRole('button', { name: 'Starten' }));
       const card = within(await screen.findByRole('article', { name: 'Langhantel-Kniebeugen' }));
       expect(card.getByRole('group', { name: 'Aufwärmen' })).toBeInTheDocument();
       expect(card.getByRole('group', { name: 'Arbeitssätze' })).toBeInTheDocument();

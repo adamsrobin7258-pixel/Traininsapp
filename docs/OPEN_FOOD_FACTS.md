@@ -154,7 +154,7 @@ Stand Oktober 2026).
 - **Favoriten:**
   - Gespeichert im Feld `foods.favorite`, das es seit Migration 6 gibt.
   - Setzen und Entfernen geht über den Stern in der Mengenansicht und im Lebensmittel-Editor.
-  - Angezeigt werden sie im Hinzufügen-Dialog und unter „Lebensmittel verwalten“.
+  - Angezeigt werden sie im Hinzufügen-Dialog und unter Einstellungen → Meine Inhalte → Lebensmittel.
   - Sie funktionieren offline.
 - **Zuletzt verwendet:**
   - Abgeleitet aus dem Tagebuch: der späteste Eintragszeitpunkt (`food_entries.created_at`) je

@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { ROUTES } from '@/app/routes';
+import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { matchesFoodSearch, useNutritionData, type Food } from '@/core/nutrition';
 import { EmptyState, FoodArt, List, ListRow, Screen, Section } from '@/ui';
@@ -44,7 +44,7 @@ export function FoodsScreen() {
   return (
     <Screen
       title={t('nutrition.foods.title')}
-      back={{ to: ROUTES.nutrition, label: t('nutrition.back') }}
+      back={{ to: SETTINGS_LINKS.content, label: t('settings.content.title') }}
     >
       <label htmlFor={searchId} className="visually-hidden">
         {t('nutrition.add.search')}

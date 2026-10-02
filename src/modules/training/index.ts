@@ -16,10 +16,13 @@ export const trainingModule: AppModule = {
   subRoutes: [
     { path: 'workout', Screen: ActiveWorkoutScreen },
     { path: 'workouts/:workoutId', Screen: WorkoutDetailScreen },
+    { path: 'activities', Screen: ActivitiesScreen },
+  ],
+  // Managed under Einstellungen → Meine Inhalte; paths must match CONTENT_LINKS in app/routes.ts.
+  contentRoutes: [
     { path: 'plans', Screen: PlansScreen },
     { path: 'plans/:planId', Screen: PlanScreen },
     { path: 'exercises', Screen: ExercisesScreen },
-    { path: 'activities', Screen: ActivitiesScreen },
   ],
   tab: { labelKey: 'nav.training', icon: 'training' },
 };

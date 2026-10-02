@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ROUTES } from '@/app/routes';
+import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import {
   SAVED_MEAL_NAME_MAX_LENGTH,
@@ -51,7 +51,7 @@ export function TemplatesScreen() {
   return (
     <Screen
       title={t('nutrition.templates.title')}
-      back={{ to: ROUTES.nutrition, label: t('nutrition.back') }}
+      back={{ to: SETTINGS_LINKS.content, label: t('settings.content.title') }}
     >
       {data.status === 'error' ? (
         <p className={styles.error} role="alert">

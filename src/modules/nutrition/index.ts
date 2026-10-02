@@ -9,8 +9,8 @@ export const nutritionModule: AppModule = {
   id: 'nutrition',
   path: ROUTES.nutrition,
   Screen: NutritionScreen,
-  // Paths must match NUTRITION_LINKS in app/routes.ts.
-  subRoutes: [
+  // Managed under Einstellungen → Meine Inhalte; paths must match CONTENT_LINKS in app/routes.ts.
+  contentRoutes: [
     { path: 'foods', Screen: FoodsScreen },
     { path: 'meals', Screen: MealsScreen },
     { path: 'templates', Screen: TemplatesScreen },

@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react';
-import { ROUTES } from '@/app/routes';
+import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import {
   exerciseDisplayName,
@@ -42,7 +42,7 @@ export function ExercisesScreen() {
   return (
     <Screen
       title={t('training.exercises.title')}
-      back={{ to: ROUTES.training, label: t('training.back') }}
+      back={{ to: SETTINGS_LINKS.content, label: t('settings.content.title') }}
     >
       <label htmlFor={searchId} className="visually-hidden">
         {t('training.exercises.search')}

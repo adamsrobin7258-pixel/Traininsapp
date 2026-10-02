@@ -17,6 +17,12 @@ export interface AppModule {
   /** Nested screens below `path`, e.g. `{ path: 'plans/:planId', Screen }`. */
   subRoutes?: readonly { path: string; Screen: ComponentType }[];
   /**
+   * Management pages of the module's own content (foods, plans, …), mounted below
+   * Einstellungen → Meine Inhalte (`/settings/content/<path>`). The pages stay in their module,
+   * so quick access while tracking and the central management share one implementation.
+   */
+  contentRoutes?: readonly { path: string; Screen: ComponentType }[];
+  /**
    * Bottom-navigation entry. Omit it for modules that are reached from another screen
    * (e.g. running or cycling inside training) – they still get their route.
    */

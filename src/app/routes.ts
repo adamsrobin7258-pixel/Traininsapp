@@ -25,18 +25,12 @@ export const TRAINING_LINKS = {
   activeWorkout: `${ROUTES.training}/workout`,
   /** Activities imported from Health Connect – kept apart from Kalethra's own workouts. */
   activities: `${ROUTES.training}/activities`,
-  exercises: `${ROUTES.training}/exercises`,
-  plans: `${ROUTES.training}/plans`,
   workout: (id: string) => `${ROUTES.training}/workouts/${id}`,
-  plan: (id: string) => `${ROUTES.training}/plans/${id}`,
 } as const;
 
 /** Sub pages of the nutrition area; `day` opens the diary on a local day (YYYY-MM-DD). */
 export const NUTRITION_LINKS = {
   day: (localDate: string) => `${ROUTES.nutrition}?day=${localDate}`,
-  foods: `${ROUTES.nutrition}/foods`,
-  meals: `${ROUTES.nutrition}/meals`,
-  templates: `${ROUTES.nutrition}/templates`,
 } as const;
 
 /**
@@ -51,10 +45,32 @@ export const SETTINGS_LINKS = {
 } as const;
 
 /**
- * Old addresses that moved; they redirect so saved links and deep links keep working
- * (otherwise the catch-all route would silently open Fortschritt).
+ * Einstellungen → Meine Inhalte: the management of the user's own content. The pages belong to
+ * their areas (nutrition, training) and are mounted here through `AppModule.contentRoutes`;
+ * the areas themselves only track and offer quick access (e.g. a new food while logging).
+ */
+export const CONTENT_LINKS = {
+  foods: `${SETTINGS_LINKS.content}/foods`,
+  meals: `${SETTINGS_LINKS.content}/meals`,
+  templates: `${SETTINGS_LINKS.content}/templates`,
+  plans: `${SETTINGS_LINKS.content}/plans`,
+  plan: (id: string) => `${SETTINGS_LINKS.content}/plans/${id}`,
+  exercises: `${SETTINGS_LINKS.content}/exercises`,
+} as const;
+
+/**
+ * Old addresses that moved; they redirect (replacing the history entry) so saved links and
+ * deep links keep working – otherwise the catch-all route would silently open Fortschritt.
+ * `:params` in `from` are carried over into `to`. Navigation inside the app uses the new
+ * addresses directly.
  */
 export const LEGACY_REDIRECTS: readonly { from: string; to: string }[] = [
   { from: '/profile', to: ROUTES.settings },
   { from: '/nutrition/profile', to: SETTINGS_LINKS.goals },
+  { from: '/nutrition/foods', to: CONTENT_LINKS.foods },
+  { from: '/nutrition/meals', to: CONTENT_LINKS.meals },
+  { from: '/nutrition/templates', to: CONTENT_LINKS.templates },
+  { from: '/training/plans', to: CONTENT_LINKS.plans },
+  { from: '/training/plans/:planId', to: CONTENT_LINKS.plan(':planId') },
+  { from: '/training/exercises', to: CONTENT_LINKS.exercises },
 ];

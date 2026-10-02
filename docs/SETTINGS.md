@@ -1,28 +1,86 @@
-# Einstellungen, Profil und Ziele (Phase 10)
+# Einstellungen, Profil, Ziele und eigene Inhalte (Phase 10 und 11)
 
 Seit Phase 10 heißt der fünfte Tab **Einstellungen** (vorher „Profil“). Alles, was der Nutzer
-über sich und seine Ziele festlegt, liegt dort – jeweils an genau einer Stelle. Die übrigen Tabs
-werten nur aus oder verlinken hierher.
+über sich und seine Ziele festlegt, liegt dort – jeweils an genau einer Stelle. Seit Phase 11 werden
+dort auch die eigenen Inhalte verwaltet (**Meine Inhalte**). Die übrigen Tabs erfassen, was
+tatsächlich passiert ist, werten aus oder verlinken hierher.
 
-## Aufbau (höchstens zwei Ebenen)
+**Leitlinie:** Einstellungen verwalten die Inhalte. Ernährung und Training verwenden sie für das
+tägliche Tracking.
+
+## Aufbau
 
 | Route               | Seite         | Inhalt                                                                                                                                          |
 | ------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/settings`         | Einstellungen | Profilkopf, Liste der vier Bereiche                                                                                                             |
 | `/settings/profile` | Profil        | Name, Geschlecht, Geburtsdatum, Körpergröße; Gewicht nur zur Ansicht mit Link zu Gesundheit                                                     |
 | `/settings/goals`   | Ziele         | Hauptziel (+ Wunschgewicht), Ernährung, Aktivitätskalorien, Training, Aktivitäten, Gesundheit (Schrittziel)                                     |
-| `/settings/content` | Meine Inhalte | Platzhalter: Verweise auf die bestehenden Orte (Lebensmittel, Mahlzeiten, Vorlagen, Pläne, Übungen) – noch keine eigene Verwaltung              |
+| `/settings/content` | Meine Inhalte | Übersicht der eigenen Inhalte, getrennt nach Ernährung und Training (siehe unten)                                                               |
 | `/settings/app`     | App           | Darstellung, Gewichtseinheit, Sprache, Wasser-Schnellmengen, Health Connect, Datenschutz/Speicherprüfung, Über Kalethra (Version, Datenquellen) |
 
 Zurück: jede Unterseite → `/settings`, `/settings` → Fortschritt (`/`), wie bei allen Tabs
-(`backTarget`). Android-Zurück und Browser-Verlauf folgen derselben Regel.
+(`backTarget`). Android-Zurück und Browser-Verlauf folgen derselben Regel. Die Seiten von Meine
+Inhalte liegen eine Ebene tiefer, die Plan-Detailseite zwei (bewusst so entschieden, Phase 11).
+
+## Meine Inhalte (Phase 11)
+
+| Route                             | Seite                | Inhalt                                                                                                                                    |
+| --------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `/settings/content`               | Meine Inhalte        | Ernährung: Lebensmittel, Mahlzeiten des Tages, Vorlagen · Training: Trainingspläne, Übungen – je mit kurzer Beschreibung und Anzahl       |
+| `/settings/content/foods`         | Lebensmittel         | Suche, Favoriten, eigene und ausgeblendete Lebensmittel; bearbeiten, löschen/ausblenden, BLS als eigene Kopie (`FoodFormSheet`)           |
+| `/settings/content/meals`         | Mahlzeiten des Tages | Abschnitte des Tagebuchs (Frühstück …): hinzufügen, umbenennen, verschieben, ein-/ausblenden; mindestens einer bleibt sichtbar            |
+| `/settings/content/templates`     | Vorlagen             | anzeigen, umbenennen, löschen                                                                                                             |
+| `/settings/content/plans`         | Trainingspläne       | Liste, neuer Plan                                                                                                                         |
+| `/settings/content/plans/:planId` | Plan                 | Tage und Übungen hinzufügen, umbenennen, verschieben, löschen; Satz-/Wiederholungsziele, Aufwärm- und Drop-Sätze; Plan umbenennen/löschen |
+| `/settings/content/exercises`     | Übungen              | Bibliothek (schreibgeschützt) mit Suche, Filtern, Details und Favoriten; eigene Übungen anlegen, bearbeiten, (de)aktivieren               |
+
+Zurück: Inhaltsseite → Meine Inhalte → Einstellungen → Fortschritt; Plan → Trainingspläne. Nach
+dem Löschen eines Plans geht es (ohne Verlaufseintrag) zur Planliste.
+
+**Technik.** Die Seiten gehören weiter ihren Fachmodulen (`modules/nutrition`,
+`modules/training`) und werden dort über `AppModule.contentRoutes` unter `/settings/content/…`
+angemeldet; die App setzt daraus die Routen und die Zurück-Hierarchie zusammen. Einstellungen
+importieren keine Seiten anderer Module (Isolationstest `src/app/moduleIsolation.test.ts`). Die
+Übersicht liest nur die Anzahlen über die bestehenden Services. Es gibt keine neue Tabelle und keine
+Migration; alle Schreibwege bleiben dieselben Services (Lebensmittel, Mahlzeiten, Plan, Übungen).
+
+**Tracking und Schnellzugriffe.** Ernährung und Training haben keine eigene Verwaltung mehr
+(kein „Verwalten“-Abschnitt in Ernährung, keine Links zu Plänen und Übungen im Training). Erlaubt
+bleiben Schnellzugriffe, die dieselben Formulare und Services nutzen:
+
+- Ernährung, Hinzufügen-Fenster: „Neues Lebensmittel anlegen“, Barcode scannen/eingeben (inkl.
+  „unbekannt → anlegen“), Vorlagen anwenden; im Tagebuch „Als Vorlage speichern“.
+- Training, Übungsauswahl (Plan bearbeiten, laufendes und abgeschlossenes Training): „Eigene Übung
+  anlegen“.
+- Training, Start-Fenster ohne Plan: „Zu Plänen“ führt zu Meine Inhalte → Trainingspläne.
+
+**Training starten** geht nur im Trainingsbereich (Karte „Nächstes Training“, Start-Fenster mit
+„Freies Training“ und „Aus Plan starten“ mit allen Tagen aller Pläne). Die Planseite hat keinen
+Start-Knopf mehr.
+
+**Noch nicht umgesetzt** (bewusst nicht Teil von Phase 11):
+
+- Rezepte haben eine fertige Datengrundlage (`RecipeService`, `recipes`, Eintragen über
+  `DiaryService.addRecipe`), aber noch keine Oberfläche; sie erscheinen deshalb nicht in Meine
+  Inhalte.
+- Vorlagen können nicht inhaltlich bearbeitet werden (nur umbenennen und löschen; Mengen lassen
+  sich beim Anwenden anpassen).
+- Kein Barcode-Einstieg in der Lebensmittelverwaltung; der Scanner bleibt im Hinzufügen-Fenster.
 
 ### Alte Adressen
 
-`LEGACY_REDIRECTS` in `src/app/routes.ts` leiten mit `replace` weiter (kein Eintrag im Verlauf):
+`LEGACY_REDIRECTS` in `src/app/routes.ts` leiten mit `replace` weiter (kein Eintrag im Verlauf);
+Parameter wie die Plan-ID werden übernommen (`app/layout/LegacyRedirect.tsx`). Die App selbst
+verlinkt nur noch die neuen Adressen.
 
 - `/profile` → `/settings`
 - `/nutrition/profile` → `/settings/goals`
+- `/nutrition/foods` → `/settings/content/foods`
+- `/nutrition/meals` → `/settings/content/meals`
+- `/nutrition/templates` → `/settings/content/templates`
+- `/training/plans` → `/settings/content/plans`
+- `/training/plans/:planId` → `/settings/content/plans/:planId`
+- `/training/exercises` → `/settings/content/exercises`
 
 ## Eine Schreibstelle je Wert
 

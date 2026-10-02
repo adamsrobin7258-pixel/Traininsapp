@@ -181,9 +181,7 @@ export const de = {
     nextTitle: 'Nächstes Training',
     nextFromPlan: '{day} · {plan}',
     startDay: 'Starten',
-    plansTitle: 'Pläne',
-    plansCount: '{count} Pläne',
-    plansCountOne: '1 Plan',
+    plansTitle: 'Trainingspläne',
     startSheet: {
       free: 'Freies Training',
       freeHint: 'Übungen während des Trainings auswählen',
@@ -202,7 +200,6 @@ export const de = {
     historyTitle: 'Letzte Trainings',
     historyEmpty: 'Noch keine abgeschlossenen Trainings.',
     showMore: 'Weitere anzeigen',
-    manageExercises: 'Übungen verwalten',
     today: 'Heute',
     yesterday: 'Gestern',
     exerciseCount: '{count} Übungen',
@@ -533,7 +530,6 @@ export const de = {
     },
     foods: {
       title: 'Lebensmittel',
-      manage: 'Lebensmittel verwalten',
       create: 'Neues Lebensmittel',
       edit: 'Lebensmittel bearbeiten',
       name: 'Name',
@@ -563,8 +559,7 @@ export const de = {
       deactivated: '„{name}“ wird noch verwendet und wurde ausgeblendet.',
     },
     mealsManage: {
-      title: 'Mahlzeiten',
-      manage: 'Mahlzeiten verwalten',
+      title: 'Mahlzeiten des Tages',
       add: 'Mahlzeit hinzufügen',
       name: 'Name der Mahlzeit',
       rename: 'Umbenennen',
@@ -577,7 +572,6 @@ export const de = {
     },
     templates: {
       title: 'Vorlagen',
-      manage: 'Vorlagen verwalten',
       empty: 'Noch keine Vorlagen',
       emptyBody: 'Speichere eine eingetragene Mahlzeit über „Als Vorlage speichern“.',
       itemCount: '{count} Lebensmittel',
@@ -860,7 +854,6 @@ export const de = {
       fat: 'Fett (g)',
       water: 'Wasser (ml)',
     },
-    more: 'Verwalten',
     errors: {
       loadFailed: 'Die Daten konnten nicht geladen werden.',
       saveFailed: 'Das hat nicht geklappt. Bitte versuche es erneut.',
@@ -1282,11 +1275,19 @@ export const de = {
     },
     content: {
       title: 'Meine Inhalte',
-      summary: 'Lebensmittel, Mahlzeiten, Vorlagen, Pläne, Übungen',
+      summary: 'Lebensmittel, Mahlzeiten, Vorlagen, Trainingspläne, Übungen',
       nutrition: 'Ernährung',
       training: 'Training',
-      moving:
-        'Deine eigenen Inhalte ziehen bald hierher. Bis dahin führen diese Einträge an ihren bisherigen Ort.',
+      foodsHint: 'Eigene und gespeicherte Lebensmittel',
+      mealsHint: 'Abschnitte deines Tagebuchs, z. B. Frühstück',
+      templatesHint: 'Mehrere Lebensmittel auf einmal eintragen',
+      plansHint: 'Trainingstage, Übungen und Ziele',
+      exercisesHint: 'Bibliothek, Favoriten und eigene Übungen',
+      /** A count in front of the hint, e.g. "2 · Eigene und gespeicherte Lebensmittel". */
+      withCount: '{count} · {hint}',
+      nutritionHint:
+        'Neue Lebensmittel und Vorlagen kannst du auch direkt beim Eintragen in Ernährung anlegen.',
+      trainingHint: 'Ein Training startest du im Bereich Training.',
     },
     app: {
       title: 'App',

@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { ROUTES, TRAINING_LINKS } from '@/app/routes';
+import { CONTENT_LINKS, SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { PLAN_NAME_MAX_LENGTH, useTraining, useTrainingData } from '@/core/training';
 import { List, ListRow, PromptSheet, Screen } from '@/ui';
 import { describeTrainingError } from '../domain/errors';
 
-/** Plan management: the only place where plans are created; each plan opens its editor. */
+/**
+ * Plan management (Einstellungen → Meine Inhalte): the only place where plans are created; each
+ * plan opens its editor. Workouts are started in the training area, never from here.
+ */
 export function PlansScreen() {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
@@ -19,13 +22,13 @@ export function PlansScreen() {
   return (
     <Screen
       title={t('training.plansTitle')}
-      back={{ to: ROUTES.training, label: t('training.back') }}
+      back={{ to: SETTINGS_LINKS.content, label: t('settings.content.title') }}
     >
       {plans.status === 'error' ? <p role="alert">{t('training.errors.loadFailed')}</p> : null}
       <List label={t('training.plansTitle')}>
         {plans.status === 'ready'
           ? plans.data.map((plan) => (
-              <ListRow key={plan.id} title={plan.name} to={TRAINING_LINKS.plan(plan.id)} />
+              <ListRow key={plan.id} title={plan.name} to={CONTENT_LINKS.plan(plan.id)} />
             ))
           : null}
         {plans.status === 'ready' && plans.data.length === 0 ? (
@@ -52,7 +55,7 @@ export function PlansScreen() {
           describeError={(failure) => describeTrainingError(failure, t, unit, locale)}
           onSubmit={async (name) => {
             const plan = await mutate((s, profileId) => s.plans.createPlan(profileId, name));
-            await navigate(TRAINING_LINKS.plan(plan.id));
+            await navigate(CONTENT_LINKS.plan(plan.id));
           }}
           onClose={() => {
             setCreating(false);
