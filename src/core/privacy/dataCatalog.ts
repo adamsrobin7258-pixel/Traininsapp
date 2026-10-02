@@ -75,6 +75,15 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    // Logged by hand; kept apart from Kalethra workouts and Health Connect activities.
+    table: 'manual_activities',
+    category: 'activity',
+    sensitivity: 'health',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     // Imported from Health Connect; kept apart from Kalethra's own workouts.
     table: 'external_workouts',
     category: 'activity',

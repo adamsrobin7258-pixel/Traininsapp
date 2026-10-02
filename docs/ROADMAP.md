@@ -203,6 +203,23 @@ aktualisierter Dokumentation.
   – sie stehen in ihren Bereichen
 - Details: [PROGRESS.md](PROGRESS.md)
 
+## Phase 8 – Manuelle Sportarten und Aktivitäten ✅ (Version 0.12.0)
+
+- „Aktivität erfassen“ unter Training → Aktivitäten: 60 Sportarten in 11 Kategorien (de/en,
+  durchsuchbar), je Sportart nur die passenden Felder (Dauer, optional Startzeit, Distanz,
+  Intensität oder Variante)
+- Energieverbrauch netto aus MET-Werten des Compendium of Physical Activities mit Quelle je Wert;
+  Körpergewicht eigener Eintrag oder neuerer Health-Connect-Wert; eigener Wert überschreibbar
+  (berechneter Wert bleibt gespeichert)
+- Eigene Tabelle `manual_activities` (Migration 12), getrennt von Kalethra-Trainings und
+  Health Connect; bearbeiten und löschen mit Rückfrage
+- Health Connect hat Vorrang: vorsichtige Duplikaterkennung (Startzeit, passender Typ, ≥ 50 %
+  Überschneidung, ähnliche Dauer)
+- „Aktivitätskalorien anrechnen“ und Fortschrittskarte „Aktivitäten“ zählen beide Quellen
+- Details: [ACTIVITIES.md](ACTIVITIES.md)
+- Offen: MET-Werte und Codes vollständig gegen das Original-Compendium prüfen (Quelle war aus der
+  Entwicklungsumgebung nicht abrufbar, siehe ACTIVITIES.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

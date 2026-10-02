@@ -439,6 +439,19 @@ CREATE INDEX external_workouts_profile_type ON external_workouts (profile_id, ac
 - Einstellung „Aktivitätskalorien anrechnen“: `app_settings`, Schlüssel `countActivityCalories`
   (Boolean, Standard `false`). Das Kalorienziel in `nutrition_goals` wird dadurch nie verändert.
 
+## Manuelle Aktivitäten (Migration 12, Phase 8)
+
+Tabelle `manual_activities` – selbst erfasste Sportarten mit Dauer, optional Startzeit und Distanz,
+Intensität/Variante, dem verwendeten Körpergewicht, MET-Wert mit Compendium-Quelle, berechneten
+und verwendeten kcal sowie `kcal_overridden`. Vollständiges Schema, Berechnung und Duplikatregel:
+[ACTIVITIES.md](ACTIVITIES.md).
+
+- **Rein additiv;** strikt getrennt von `workouts` und `external_workouts` (keine Fremdschlüssel,
+  nichts wird kopiert). `CHECK`-Grenzen für Dauer, Distanz, MET, Gewicht und kcal.
+- Index `manual_activities_profile_date (profile_id, local_date)` für Zeiträume.
+- Datenkatalog: Kategorie `activity`, Sensibilität `health`, exportierbar, mit dem Profil
+  gelöscht (`ON DELETE CASCADE`), `syncable: false`.
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:
@@ -472,11 +485,11 @@ Training (Migration 4) und das Ernährungsfundament (Migration 6) sind umgesetzt
 
 Skizze zur Orientierung; die Tabellen entstehen mit dem jeweiligen Modul als eigene Migrationen.
 
-| Bereich      | Tabellen (vorläufig)                                                                                                                                                   |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                                                                                                          |
-| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle); Health-Connect-Gewicht und `daily_activity` seit Migration 10, `external_workouts` seit Migration 11 umgesetzt |
-| Regeneration | `sleep_sessions`                                                                                                                                                       |
+| Bereich      | Tabellen (vorläufig)                                                                                                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Benutzer     | `profiles` (vorhanden), `goals` (Zielart, Zielwert, Zeitraum)                                                                                                                                                 |
+| Gesundheit   | `measurements` (Typ, Wert, Einheit, Zeitpunkt, Quelle); Health-Connect-Gewicht und `daily_activity` seit Migration 10, `external_workouts` seit Migration 11, `manual_activities` seit Migration 12 umgesetzt |
+| Regeneration | `sleep_sessions`                                                                                                                                                                                              |
 
 Leitidee: Messwerte generisch über `measurements(type, value, unit, measured_at, source)` statt
 einer Tabelle pro Messart – neue Messarten brauchen dann keinen Schemaumbau. Importierte Werte

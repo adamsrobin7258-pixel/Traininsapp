@@ -2,11 +2,11 @@ import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
 import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
 import {
-  countableActivityCalories,
-  HealthSyncService,
-  WeightRepository,
-  WeightService,
-} from '@/core/health';
+  dayActivityCalories,
+  ManualActivityService,
+  type ActivityWeightSource,
+} from '@/core/activity';
+import { HealthSyncService, WeightRepository, WeightService } from '@/core/health';
 import {
   ExerciseService,
   getTrainingType,
@@ -50,6 +50,8 @@ export interface AppServices {
   nutrition: NutritionServices;
   /** Read-only view on body weight for nutrition (weight itself lives in health). */
   bodyWeight: BodyWeightSource;
+  /** Sport activities logged by hand – apart from workouts and Health Connect. */
+  activities: ManualActivityService;
 }
 
 export function createServices(
@@ -66,6 +68,27 @@ export function createServices(
   const profile = new ProfileService(new ProfileRepository(db), clock);
   const training = createTrainingServices(new TrainingStore(db), clock);
   const healthSync = new HealthSyncService(healthPlatform, db, clock);
+  // Body weight for activity calories: the most recent value on or before the day – an own
+  // entry, or an imported Health Connect value if that is newer (own entry wins on the same
+  // day). Display/calculation only: nutrition goals keep reading the own entries.
+  const activityWeight: ActivityWeightSource = {
+    weightOn: async (profileId, localDate) => {
+      const day = parseLocalDateKey(localDate);
+      if (!day) return null;
+      const [own, imported] = await Promise.all([
+        weight.getLatestOnOrBefore(profileId, localDate),
+        healthSync.weightsBetween(profileId, toLocalDateKey(addDays(day, -60)), localDate),
+      ]);
+      const latestImported = imported.at(-1) ?? null;
+      if (own && (!latestImported || own.date >= latestImported.date)) {
+        return { kg: own.kg, date: own.date, source: 'own' as const };
+      }
+      return latestImported
+        ? { kg: latestImported.kg, date: latestImported.date, source: 'imported' as const }
+        : null;
+    },
+  };
+  const activities = new ManualActivityService(db, clock, activityWeight);
   const bodyWeight: BodyWeightSource = {
     latestKgOnOrBefore: async (profileId, localDate) =>
       (await weight.getLatestOnOrBefore(profileId, localDate))?.kg ?? null,
@@ -76,6 +99,35 @@ export function createServices(
     pointsBetween: async (profileId, from, to) =>
       (await weight.listBetween(profileId, from, to)).map((e) => ({ date: e.date, kg: e.kg })),
   };
+  async function activityCaloriesBetween(profileId: string, from: string, to: string) {
+    const first = parseLocalDateKey(from);
+    const last = parseLocalDateKey(to);
+    const result = new Map<string, { kcal: number; counted: number; excluded: number }>();
+    if (!first || !last) return result;
+    // Neighbouring days too: a Kalethra workout may have started before midnight.
+    const [imported, manual, own] = await Promise.all([
+      healthSync.workoutsBetween(profileId, from, to),
+      activities.listBetween(profileId, from, to),
+      training.workouts.completedSpansBetween(
+        profileId,
+        toLocalDateKey(addDays(first, -1)),
+        toLocalDateKey(addDays(last, 1)),
+      ),
+    ]);
+    const days = new Set([...imported, ...manual].map((activity) => activity.localDate));
+    for (const day of days) {
+      result.set(
+        day,
+        dayActivityCalories(
+          imported.filter((activity) => activity.localDate === day),
+          manual.filter((activity) => activity.localDate === day),
+          own,
+        ),
+      );
+    }
+    return result;
+  }
+
   // Nutrition reads weight, workouts and body data from their owners – it copies nothing.
   const sources: NutritionSources = {
     bodyWeight,
@@ -88,46 +140,20 @@ export function createServices(
           category: getTrainingType(w.trainingType).category,
         })),
     },
-    // Imported activities of a day, without sessions that are the same as a completed Kalethra
-    // workout (e.g. a watch recording the gym session that was also logged here).
+    // Imported and manual activities of a day: without sessions that are the same as a
+    // completed Kalethra workout, and without manual entries that duplicate an import.
     activity: {
-      caloriesOn: async (profileId, localDate) => {
-        const day = parseLocalDateKey(localDate);
-        if (!day) return { kcal: 0, counted: 0, excluded: 0 };
-        // Neighbouring days too: a Kalethra workout may have started before midnight.
-        const [activities, own] = await Promise.all([
-          healthSync.workoutsBetween(profileId, localDate, localDate),
-          training.workouts.completedSpansBetween(
-            profileId,
-            toLocalDateKey(addDays(day, -1)),
-            toLocalDateKey(addDays(day, 1)),
-          ),
-        ]);
-        return countableActivityCalories(activities, own);
-      },
-      caloriesBetween: async (profileId, from, to) => {
-        const first = parseLocalDateKey(from);
-        const last = parseLocalDateKey(to);
-        if (!first || !last) return new Map();
-        const [activities, own] = await Promise.all([
-          healthSync.workoutsBetween(profileId, from, to),
-          training.workouts.completedSpansBetween(
-            profileId,
-            toLocalDateKey(addDays(first, -1)),
-            toLocalDateKey(addDays(last, 1)),
-          ),
-        ]);
-        const byDay = new Map<string, typeof activities>();
-        for (const activity of activities) {
-          byDay.set(activity.localDate, [...(byDay.get(activity.localDate) ?? []), activity]);
-        }
-        return new Map(
-          [...byDay].map(([day, list]) => [day, countableActivityCalories(list, own)] as const),
-        );
-      },
+      caloriesOn: async (profileId, localDate) =>
+        (await activityCaloriesBetween(profileId, localDate, localDate)).get(localDate) ?? {
+          kcal: 0,
+          counted: 0,
+          excluded: 0,
+        },
+      caloriesBetween: activityCaloriesBetween,
     },
   };
   return {
+    activities,
     storage: new StorageService(db, security, clock),
     weight,
     healthSync,

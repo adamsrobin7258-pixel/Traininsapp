@@ -6,12 +6,17 @@ import {
   formatWeightChange,
   fromKg,
   mergeWeightDays,
-  summarizeActivities,
   summarizeWeightPeriod,
   useHealthSync,
   useImportedHealthData,
   useWeightData,
 } from '@/core/health';
+import {
+  combineActivities,
+  summarizeAllActivities,
+  useActivities,
+  useActivityData,
+} from '@/core/activity';
 import { useI18n } from '@/core/i18n';
 import { summarizeNutrition, useNutritionData } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
@@ -153,6 +158,7 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
   const { t, locale } = useI18n();
   const { countActivityCalories } = useSettings().settings;
   const { revision: healthRevision } = useHealthSync();
+  const { revision: activityRevision } = useActivities();
   const data = useNutritionData(
     async (s, profileId) => ({
       totals: await s.diary.dailyTotalsBetween(profileId, range.from, range.to),
@@ -160,7 +166,7 @@ function NutritionProgress({ range, day }: { range: Range; day: (date: string) =
         countActivity: countActivityCalories,
       }),
     }),
-    [range, countActivityCalories, healthRevision],
+    [range, countActivityCalories, healthRevision, activityRevision],
   );
   const summary =
     data.status === 'ready'
@@ -307,14 +313,22 @@ function WeightProgress({
 function ActivityProgress({ range, day }: { range: Range; day: (date: string) => string }) {
   const { t, locale } = useI18n();
   const { status } = useHealthSync();
-  const data = useImportedHealthData(
+  const imported = useImportedHealthData(
     (service, profileId) => service.workoutsBetween(profileId, range.from, range.to),
     [range.from, range.to],
   );
-  const summary = data.status === 'ready' ? summarizeActivities(data.data, range.dates) : null;
+  const manual = useActivityData(
+    (service, profileId) => service.listBetween(profileId, range.from, range.to),
+    [range.from, range.to],
+  );
+  // Both sources; a manual entry that duplicates an import counts once.
+  const summary =
+    imported.status === 'ready' && manual.status === 'ready'
+      ? summarizeAllActivities(combineActivities(imported.data, manual.data), range.dates)
+      : null;
   const connected = status.state === 'connected' || status.state === 'permissionRequired';
-  // Without Health Connect (iOS, browser, never connected) and without imported activities this
-  // row would only say "nothing" – it is left out.
+  // Without Health Connect (iOS, browser, never connected) and without any activity this row
+  // would only say "nothing" – it is left out.
   if (!summary || (!connected && summary.count === 0)) return null;
   const number = new Intl.NumberFormat(locale);
   return (

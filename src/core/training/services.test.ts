@@ -436,7 +436,7 @@ describe('training schema', () => {
     await db.run(
       "INSERT INTO weight_entries (id, profile_id, date, value, created_at, updated_at) VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x')",
     );
-    expect(await migrate(db, migrations)).toEqual([4, 5, 6, 7, 8, 9, 10, 11]);
+    expect(await migrate(db, migrations)).toEqual([4, 5, 6, 7, 8, 9, 10, 11, 12]);
     expect(await db.query('SELECT date, value FROM weight_entries')).toEqual([
       { date: '2026-10-01', value: 82.4 },
     ]);

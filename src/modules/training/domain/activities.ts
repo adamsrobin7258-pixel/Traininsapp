@@ -1,12 +1,13 @@
+import { sportById, sportName, type ActivityEntry } from '@/core/activity';
+import { activityTypeLabel, type ExternalWorkout } from '@/core/health';
 import type { TranslateFn } from '@/core/i18n';
-import type { ExternalWorkout } from '@/core/health';
 import { formatDuration, formatRelativeDay } from '@/shared/lib/format';
 
-export { activityTypeLabel } from '@/core/health';
+export { activityTypeLabel };
 
-/** "Heute · 18:20", "Gestern · 07:05", "Mo., 28.09. · 18:20". */
+/** "Heute · 18:20", "Gestern · 07:05", "Mo., 28.09. · 18:20" – or the day alone without a time. */
 export function activityWhen(
-  activity: Pick<ExternalWorkout, 'localDate' | 'startedAt'>,
+  activity: { localDate: string; startedAt: string | null },
   today: string,
   locale: string,
   t: TranslateFn,
@@ -15,6 +16,7 @@ export function activityWhen(
     today: t('activities.today'),
     yesterday: t('activities.yesterday'),
   });
+  if (!activity.startedAt) return day;
   return t('activities.when', { day, time: activityTime(activity.startedAt, locale) });
 }
 
@@ -51,4 +53,39 @@ export function activityFacts(
   }
   if (activity.activeKcal !== null) parts.push(formatActivityKcal(activity.activeKcal, locale, t));
   return parts.join(' · ');
+}
+
+/** Name of a list entry: the sport (manual) or the Health Connect type. */
+export function entryTitle(entry: ActivityEntry, locale: string, t: TranslateFn): string {
+  if (entry.source === 'healthConnect') return activityTypeLabel(entry.activity.activityType, t);
+  const sport = sportById(entry.activity.sportId);
+  return sport ? sportName(sport, locale) : entry.activity.sportId;
+}
+
+/** "Heute · 18:00 / 90 min · 620 kcal / Manuell erfasst" – three short lines. */
+export function entrySubtitle(
+  entry: ActivityEntry,
+  today: string,
+  locale: string,
+  t: TranslateFn,
+): string {
+  const facts =
+    entry.source === 'healthConnect'
+      ? activityFacts(entry.activity, locale, t)
+      : activityFacts(
+          {
+            durationS: entry.activity.durationS,
+            distanceM: entry.activity.distanceM,
+            activeKcal: entry.activity.kcal,
+          },
+          locale,
+          t,
+        );
+  const source =
+    entry.source === 'healthConnect'
+      ? entry.activity.source
+        ? t('activities.sourceValue', { source: entry.activity.source })
+        : t('activities.sourceUnknown')
+      : t('activities.sourceManual');
+  return [activityWhen(entry.activity, today, locale, t), facts, source].join('\n');
 }

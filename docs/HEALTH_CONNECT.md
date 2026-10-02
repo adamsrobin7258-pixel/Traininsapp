@@ -37,7 +37,11 @@ Apple Health folgt in einer eigenen Phase.
   unbekannte werden mit ihrem eigenen Namen lesbar gezeigt („frisbeeDisc“ → „Frisbee disc“) und
   nie einer anderen Sportart zugeordnet.
 - Strikt getrennt: Aktivitäten sind keine Kalethra-Trainings, erscheinen nicht im Verlauf, in
-  Plänen, im Fortschritt oder bei „Nächstes Training“.
+  Plänen oder bei „Nächstes Training“.
+- Seit Phase 8 stehen in derselben Liste auch **manuell erfasste** Aktivitäten (Quelle „Manuell
+  erfasst“). Health-Connect-Aktivitäten bleiben dort schreibgeschützt. Erfasst der Nutzer eine
+  Einheit, die auch Health Connect kennt, hat **Health Connect Vorrang** – Regel in
+  [ACTIVITIES.md](ACTIVITIES.md#health-connect-hat-vorrang-duplikate).
 
 ## Aktivitätskalorien anrechnen
 
@@ -46,8 +50,10 @@ Einstellung unter „Profil → Gesundheitsdaten“, gespeichert in `app_setting
 
 - Aus: Das Tagesziel bleibt unverändert; die Aktivitätskalorien werden nur als Information gezeigt
   („Aktivitätskalorien 500 kcal / Nicht auf das Tagesziel angerechnet“).
-- Ein: 100 % der aktiven Kalorien der importierten Aktivitäten des Tages kommen zum Kalorienziel
-  dieses Tages hinzu („Basisziel 2.300 kcal / Aktivitätskalorien +500 kcal“ → 2.800 kcal).
+- Texte: „Aktivitätskalorien werden nicht zum Tagesziel addiert.“ (aus) bzw. „100 % der
+  anrechenbaren Aktivitätskalorien werden zum Tagesziel addiert.“ (an).
+- Ein: 100 % der anrechenbaren aktiven Kalorien des Tages – importierte und seit Phase 8 auch
+  manuell erfasste Aktivitäten, Duplikate einmal – kommen zum Kalorienziel dieses Tages hinzu („Basisziel 2.300 kcal / Aktivitätskalorien +500 kcal“ → 2.800 kcal).
 - Das gespeicherte Basisziel wird nie verändert; der Zuschlag wird bei jeder Anzeige berechnet
   (`GoalService.dayGoal`). Protein (auch ein individuelles Ziel), Fett, Kohlenhydrate und Wasser
   bleiben unverändert. Ohne Kalorienziel wird nichts angerechnet.

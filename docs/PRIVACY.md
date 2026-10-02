@@ -37,6 +37,7 @@ Pull Request und einen Eintrag in diesem Dokument.
 | `imported_weights`                                                                    | Aus Health Connect importiertes Tagesgewicht (früheste Messung des Tages), nur Anzeige                            | **Gesundheitsdaten** |
 | `daily_activity`                                                                      | Aus Health Connect importierte Tageswerte: Schritte, aktive Kalorien, nur Anzeige                                 | **Gesundheitsdaten** |
 | `external_workouts`                                                                   | Aus Health Connect importierte Aktivitäten: Typ, Zeit, Dauer, aktive Kalorien, Distanz, Quelle                    | **Gesundheitsdaten** |
+| `manual_activities`                                                                   | Selbst erfasste Aktivitäten: Sportart, Tag, optional Startzeit, Dauer, Distanz, Gewicht der Berechnung, kcal      | **Gesundheitsdaten** |
 | `exercise_muscles`                                                                    | Muskelgruppen je Übung                                                                                            | technisch            |
 | `exercise_favorites`                                                                  | Favorisierte Übungen je Profil                                                                                    | personenbezogen      |
 | `training_plans`, `training_plan_days`, `planned_exercises`                           | Trainingspläne, Tage, Übungen mit Vorgaben                                                                        | **Gesundheitsdaten** |
@@ -50,6 +51,13 @@ Seit Phase 2 wird **Körpergewicht**, seit Phase 3 werden **Trainingsdaten** ges
 Seit Phase 6.2 kann der Nutzer **Health Connect** (Android) ausdrücklich einschalten. Kalethra liest dann Gewicht, Schritte und aktive Kalorien der letzten 30 Tage – nur lesend, nur im Vordergrund, ohne Netzwerk – und speichert sie getrennt von den eigenen Daten verschlüsselt auf dem Gerät (`imported_weights`, `daily_activity`). Importierte Werte werden nur angezeigt und beeinflussen weder eigene Gewichtseinträge noch Ernährungsziele. Beim Trennen lassen sie sich löschen (voreingestellt). Die für Health Connect nötige Datenschutzerklärung liegt offline in der App (`public/privacypolicy.html`). Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md).
 
 Seit Phase 6.3 liest Kalethra zusätzlich die **Aktivitäten** (Trainingseinheiten anderer Apps oder Uhren) mit Dauer, aktiven Kalorien und Distanz (`external_workouts`, Leserechte `READ_EXERCISE` und `READ_DISTANCE`). Sie werden getrennt von den eigenen Trainings angezeigt. Nur wenn der Nutzer „Aktivitätskalorien anrechnen“ einschaltet (standardmäßig aus), werden ihre aktiven Kalorien dem Kalorienziel des Tages hinzugerechnet – lokal, ohne das gespeicherte Ziel zu verändern. Beim Trennen werden auch die Aktivitäten gelöscht (voreingestellt).
+
+Seit Phase 8 kann der Nutzer Aktivitäten auch **selbst erfassen** (`manual_activities`). Sie
+bleiben ausschließlich lokal in der verschlüsselten Datenbank; die Kalorien werden offline aus
+einem fest eingebauten Katalog (Compendium of Physical Activities) berechnet – kein Server, keine
+Analyse, keine Cloud-Synchronisierung. Für die Berechnung wird das eigene oder ein importiertes
+Körpergewicht gelesen, aber nichts davon verlässt das Gerät. Beim Trennen von Health Connect
+bleiben manuelle Aktivitäten erhalten; sie werden mit dem Profil gelöscht.
 
 ### Künftig (⏳ geplant, noch nicht implementiert)
 

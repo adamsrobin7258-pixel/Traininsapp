@@ -92,7 +92,9 @@ describe('Aktivitäten', () => {
       prepare: connect,
     });
     const link = await screen.findByRole('link', { name: /Aktivitäten/ });
-    expect(link).toHaveTextContent('Aus Health Connect · getrennt von deinen Trainings');
+    expect(link).toHaveTextContent(
+      'Health Connect und eigene Einträge · getrennt von deinen Trainings',
+    );
     // Imported activities are no Kalethra workouts: the history stays empty.
     expect(await screen.findByText('Noch keine abgeschlossenen Trainings.')).toBeInTheDocument();
     expect(screen.queryByText('Laufen')).not.toBeInTheDocument();
@@ -224,18 +226,18 @@ describe('Aktivitätskalorien anrechnen', () => {
     expect(row.getByText('Aus')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Aktive Kalorien aus Health Connect werden zum verfügbaren Tagesziel hinzugezählt.',
+        'Aktive Kalorien aus Health Connect und deinen erfassten Aktivitäten werden zum verfügbaren Tagesziel hinzugezählt.',
       ),
     ).toBeInTheDocument();
     expect(toggle).toHaveAccessibleDescription(
-      'Das tägliche Ernährungsziel bleibt unverändert. Importierte Aktivitätskalorien werden nur als Information angezeigt.',
+      'Aktivitätskalorien werden nicht zum Tagesziel addiert.',
     );
 
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-checked', 'true');
     expect(row.getByText('An')).toBeInTheDocument();
     expect(toggle).toHaveAccessibleDescription(
-      '100 % der von Health Connect gelieferten aktiven Kalorien werden zum verfügbaren Tagesbudget hinzugezählt.',
+      '100 % der anrechenbaren Aktivitätskalorien werden zum Tagesziel addiert.',
     );
     await waitFor(async () => {
       expect((await services.settings.load()).countActivityCalories).toBe(true);

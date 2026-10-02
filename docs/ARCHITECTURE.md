@@ -43,7 +43,7 @@ Zusätzlich:
 - **Capacitor** (`@capacitor/*`) nur in Plattform-Adaptern (`src/core/platform/`) und
   Datenbanktreibern.
 - **Reine Domain-Logik** – `modules/**/domain`, `shared/`, Services, Repositories, Migrationen,
-  `core/privacy`, `core/platform/location`, `core/health/*.ts` – darf weder React noch UI noch
+  `core/privacy`, `core/platform/location`, `core/health/*.ts`, `core/activity/*.ts` – darf weder React noch UI noch
   Capacitor importieren.
 - In JSX sind keine festen Texte erlaubt; sichtbarer Text kommt aus `t()`.
 
@@ -210,6 +210,13 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 [PROGRESS.md](PROGRESS.md)): Training, Ernährung, Gewicht und Aktivitäten der letzten 7 bzw. 30
 Tage aus aggregierten Abfragen der Bereiche und reinen Auswertungsfunktionen in
 `core/*/progress.ts`. Keine Tagesübersicht; jede Karte öffnet ihren Bereich.
+
+**Manuelle Aktivitäten.** Seit Phase 8 in `core/activity`: Sportartenkatalog mit MET-Werten
+(`catalog.ts`), reine Kalorienberechnung (`calories.ts`), Repository/Service für
+`manual_activities` und das Zusammenführen mit Health-Connect-Aktivitäten inkl.
+Duplikaterkennung (`combined.ts`). In `core`, weil Training (Erfassen), Ernährung
+(Aktivitätskalorien) und Fortschritt sie lesen; die Oberfläche liegt im Trainingsmodul. Details:
+[ACTIVITIES.md](ACTIVITIES.md).
 
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer

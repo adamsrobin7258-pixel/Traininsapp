@@ -1,0 +1,157 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  margin-top: var(--space-2);
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  min-height: calc(var(--size-tap-target) + var(--space-1));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.field:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.sport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: var(--size-tap-target);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.sportName {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+}
+
+.link {
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-2);
+  border: 0;
+  font: inherit;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent-text);
+  background: none;
+  cursor: pointer;
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.note {
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+/* The estimate: one calm card with the number, how it came about, and the way to change it. */
+.estimate {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-accent-subtle);
+}
+
+.estimateTitle {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.estimateValue {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.estimate .link {
+  align-self: flex-start;
+  padding: 0;
+  text-align: left;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+/* Sport picker */
+.search {
+  flex-shrink: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-2));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.search:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: var(--space-2);
+}
+
+.groupTitle {
+  margin: var(--space-4) 0 var(--space-2);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}

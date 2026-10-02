@@ -22,16 +22,18 @@ Jeder Bereich ist eine eigene Karte; die ganze Karte ist ein Link (mindestens 44
 | Training    | abgeschlossene **Kalethra**-Einheiten, Ø pro Woche, Volumen (kg)                               | Trainingstage als Balken                               | Training               | `WorkoutService.dailyStatsBetween` (SQL-Aggregation)                |
 | Ernährung   | Ø kcal und Ø Protein pro erfasstem Tag, Ø Tagesziel derselben Tage, „an x von y Tagen erfasst“ | kcal pro Tag, gestrichelte Linie = Ø Ziel (ab 2 Tagen) | Ernährung              | `DiaryService.dailyTotalsBetween`, `GoalService.dayGoalsBetween`    |
 | Gewicht     | aktueller Wert, Veränderung im Zeitraum                                                        | Linie (ab 2 Werten im Zeitraum)                        | Gesundheit             | eigene Einträge + Health-Connect-Werte, eigener Eintrag hat Vorrang |
-| Aktivitäten | Anzahl, Gesamtdauer, aktive kcal (Health Connect)                                              | aktive Minuten pro Tag (ab 3 Tagen)                    | Training → Aktivitäten | `HealthSyncService.workoutsBetween`                                 |
+| Aktivitäten | Anzahl, Gesamtdauer, aktive kcal (Health Connect + manuell)                                    | aktive Minuten pro Tag (ab 3 Tagen)                    | Training → Aktivitäten | `workoutsBetween` + `ManualActivityService.listBetween`             |
 
 Regeln:
 
 - **Keine erfundenen Nullen.** Tage ohne Ernährungseintrag zählen nicht in Durchschnitte und
   erscheinen im Diagramm als Lücke; ohne Werte zeigt jeder Bereich einen kleinen Hinweis
   („Noch keine Trainingsdaten.“ usw.).
-- **Aktivitäten** erscheinen nur, wenn Health Connect verbunden ist oder importierte Aktivitäten
-  vorhanden sind; sonst entfällt die Karte.
-- **Getrennt:** Health-Connect-Aktivitäten zählen nie als Kalethra-Training, nie zum
+- **Aktivitäten** erscheinen nur, wenn Health Connect verbunden ist oder Aktivitäten (importiert
+  oder manuell) im Zeitraum vorhanden sind; sonst entfällt die Karte. Eine manuelle Aktivität,
+  die dieselbe Einheit wie eine Health-Connect-Aktivität ist, zählt einmal
+  ([ACTIVITIES.md](ACTIVITIES.md)).
+- **Getrennt:** Health-Connect- und manuelle Aktivitäten zählen nie als Kalethra-Training, nie zum
   Trainingsvolumen oder zur Häufigkeit.
 - **Aktivitätskalorien** fließen in das Ø Tagesziel nur ein, wenn „Aktivitätskalorien anrechnen“
   an ist – genau wie im Ernährungstagebuch (`withActivityCalories`). Gespeichertes Basisziel und

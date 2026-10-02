@@ -1,67 +1,80 @@
 import { useState } from 'react';
 import { ROUTES } from '@/app/routes';
-import {
-  useHealthAutoSync,
-  useHealthSync,
-  useImportedHealthData,
-  type ExternalWorkout,
-} from '@/core/health';
+import { combineActivities, useActivityData, type ActivityEntry } from '@/core/activity';
+import { useHealthAutoSync, useHealthSync, useImportedHealthData } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { EmptyState, List, ListRow, Screen, Section } from '@/ui';
+import { Button, EmptyState, List, ListRow, Screen, Section } from '@/ui';
 import { ActivityDetailSheet } from '../components/ActivityDetailSheet';
-import { activityFacts, activityTypeLabel, activityWhen } from '../domain/activities';
+import { ManualActivitySheet } from '../components/ManualActivitySheet';
+import { entrySubtitle, entryTitle } from '../domain/activities';
+
+type Open = { kind: 'new' } | { kind: 'entry'; key: string } | null;
 
 /**
- * Activities imported from Health Connect (runs, rides, classes …), newest first. A list of
- * their own: they are not Kalethra workouts, never appear in the history, plans or "next
- * workout" and change no progress.
+ * Activities – imported from Health Connect and logged by hand – newest first, with their
+ * source. A list of their own: they are not Kalethra workouts, never appear in the history,
+ * plans or "next workout" and change no training progress. Only manual activities can be
+ * edited here; Health Connect data is managed by its sync alone.
  */
 export function ActivitiesScreen() {
   const { t, locale } = useI18n();
   const { status } = useHealthSync();
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [open, setOpen] = useState<Open>(null);
   useHealthAutoSync();
-  const activities = useImportedHealthData(
+  const imported = useImportedHealthData(
     (service, profileId) => service.recentWorkouts(profileId),
     [],
   );
+  const manual = useActivityData((service, profileId) => service.recent(profileId), []);
 
   const today = toLocalDateKey(new Date());
-  const list = activities.status === 'ready' ? activities.data : null;
+  const list =
+    imported.status === 'ready' && manual.status === 'ready'
+      ? combineActivities(imported.data, manual.data)
+      : null;
   const connected = status.state === 'connected' || status.state === 'permissionRequired';
-  const open: ExternalWorkout | null = list?.find((activity) => activity.id === openId) ?? null;
+  const openEntry: ActivityEntry | null =
+    open?.kind === 'entry' ? (list?.find((entry) => entry.key === open.key) ?? null) : null;
+  const close = () => {
+    setOpen(null);
+  };
 
   return (
     <Screen title={t('activities.title')} back={{ to: ROUTES.training, label: t('training.back') }}>
-      {activities.status === 'error' ? <p role="alert">{t('training.errors.loadFailed')}</p> : null}
+      <Button
+        fullWidth
+        onClick={() => {
+          setOpen({ kind: 'new' });
+        }}
+      >
+        {t('activities.record')}
+      </Button>
+
+      {imported.status === 'error' || manual.status === 'error' ? (
+        <p role="alert">{t('training.errors.loadFailed')}</p>
+      ) : null}
 
       {list && list.length === 0 ? (
-        connected ? (
-          <EmptyState
-            icon="training"
-            title={t('activities.emptyConnected')}
-            body={t('activities.emptyConnectedBody')}
-          />
-        ) : (
-          <EmptyState
-            icon="training"
-            title={t('activities.emptyDisconnected')}
-            body={t('activities.emptyDisconnectedBody')}
-          />
-        )
+        <EmptyState
+          icon="training"
+          title={connected ? t('activities.emptyConnected') : t('activities.emptyDisconnected')}
+          body={
+            connected ? t('activities.emptyConnectedBody') : t('activities.emptyDisconnectedBody')
+          }
+        />
       ) : null}
 
       {list && list.length > 0 ? (
         <Section footer={t('activities.intro')}>
           <List label={t('activities.title')}>
-            {list.map((activity) => (
+            {list.map((entry) => (
               <ListRow
-                key={activity.id}
-                title={activityTypeLabel(activity.activityType, t)}
-                subtitle={`${activityWhen(activity, today, locale, t)}\n${activityFacts(activity, locale, t)}`}
+                key={entry.key}
+                title={entryTitle(entry, locale, t)}
+                subtitle={entrySubtitle(entry, today, locale, t)}
                 onPress={() => {
-                  setOpenId(activity.id);
+                  setOpen({ kind: 'entry', key: entry.key });
                 }}
               />
             ))}
@@ -69,12 +82,15 @@ export function ActivitiesScreen() {
         </Section>
       ) : null}
 
-      {open ? (
-        <ActivityDetailSheet
-          activity={open}
-          onClose={() => {
-            setOpenId(null);
-          }}
+      {open?.kind === 'new' ? <ManualActivitySheet onClose={close} /> : null}
+      {openEntry?.source === 'healthConnect' ? (
+        <ActivityDetailSheet activity={openEntry.activity} onClose={close} />
+      ) : null}
+      {openEntry?.source === 'manual' ? (
+        <ManualActivitySheet
+          activity={openEntry.activity}
+          duplicate={openEntry.duplicateOf !== null}
+          onClose={close}
         />
       ) : null}
     </Screen>

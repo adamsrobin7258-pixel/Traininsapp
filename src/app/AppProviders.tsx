@@ -1,4 +1,5 @@
 import { useLayoutEffect, type ReactNode } from 'react';
+import { ActivityProvider } from '@/core/activity';
 import { I18nProvider } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import { resolveLocale, resolveTheme, SettingsProvider, useSettings } from '@/core/settings';
@@ -30,9 +31,11 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
                 <HealthSyncProvider service={services.healthSync}>
                   <TrainingProvider services={services.training}>
                     <NutritionProvider services={services.nutrition}>
-                      <NutritionGoalSync />
-                      <HealthSyncTrigger />
-                      {children}
+                      <ActivityProvider service={services.activities}>
+                        <NutritionGoalSync />
+                        <HealthSyncTrigger />
+                        {children}
+                      </ActivityProvider>
                     </NutritionProvider>
                   </TrainingProvider>
                 </HealthSyncProvider>

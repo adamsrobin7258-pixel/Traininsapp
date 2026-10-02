@@ -87,7 +87,7 @@ Bänder liegen bei etwa 1,2 bei überwiegend liegender oder sitzender Lebensweis
 
 `Erhaltungsbedarf = Grundumsatz × Alltagsfaktor + Training (falls einbezogen)`
 
-### Aktivitätskalorien aus Health Connect (Phase 6.3)
+### Aktivitätskalorien aus Health Connect und manuellen Aktivitäten (Phase 6.3 / 8)
 
 Getrennt von der Berechnung oben und nur, wenn der Nutzer „Aktivitätskalorien anrechnen“
 einschaltet (**[Produkt]** Voreinstellung **aus**):
@@ -104,6 +104,11 @@ einschaltet (**[Produkt]** Voreinstellung **aus**):
 - Protein, Fett, Kohlenhydrate und Wasser bleiben unverändert – auch ein individuelles
   Protein-Ziel. Ohne Kalorienziel wird nichts angerechnet.
 - Ist die Einstellung aus, zeigt Kalethra die Aktivitätskalorien nur zur Information.
+- **Manuelle Aktivitäten (Phase 8)** zählen genauso wie Health-Connect-Aktivitäten: mit ihrem
+  verwendeten Wert (bei einem eigenen Wert dieser, z. B. automatisch 650 kcal, eigener Wert
+  700 kcal → +700 kcal). Ist dieselbe Einheit auch in Health Connect, zählt nur Health Connect;
+  Überschneidungen mit Kalethra-Trainings zählen nicht. Berechnung (netto, MET − 1) und Regeln:
+  [ACTIVITIES.md](ACTIVITIES.md).
 - Die Mainpage „Fortschritt“ vergleicht mit denselben Tageszielen (`dayGoalsBetween`): mit
   Aktivitätskalorien nur bei eingeschalteter Einstellung, Durchschnitt nur über erfasste Tage.
 

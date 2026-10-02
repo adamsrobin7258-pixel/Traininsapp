@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { NUTRITION_LINKS } from '@/app/routes';
+import { useActivities } from '@/core/activity';
 import { useHealthSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import {
@@ -47,6 +48,8 @@ export function NutritionScreen() {
   const { countActivityCalories } = useSettings().settings;
   // Reloads after a Health Connect sync: imported activities can change the day's budget.
   const { revision: healthRevision } = useHealthSync();
+  // … and after a manual activity changed.
+  const { revision: activityRevision } = useActivities();
 
   const data = useNutritionData(
     async (s, profileId) => ({
@@ -54,7 +57,7 @@ export function NutritionScreen() {
       goal: await s.goals.dayGoal(profileId, day, { countActivity: countActivityCalories }),
       meals: await s.meals.listAll(profileId),
     }),
-    [day, today, countActivityCalories, healthRevision],
+    [day, today, countActivityCalories, healthRevision, activityRevision],
   );
 
   function changeDay(next: string) {

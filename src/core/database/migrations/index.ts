@@ -9,6 +9,7 @@ import { migration008FoodOrigin } from './008_food_origin';
 import { migration009ExerciseFavorites } from './009_exercise_favorites';
 import { migration010HealthImport } from './010_health_import';
 import { migration011ExternalWorkouts } from './011_external_workouts';
+import { migration012ManualActivities } from './012_manual_activities';
 import type { Migration } from './types';
 
 /** All migrations in ascending order. Append new migrations at the end. */
@@ -24,6 +25,7 @@ export const migrations: readonly Migration[] = [
   migration009ExerciseFavorites,
   migration010HealthImport,
   migration011ExternalWorkouts,
+  migration012ManualActivities,
 ];
 
 export type { Migration } from './types';

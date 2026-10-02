@@ -201,7 +201,7 @@ test('shows imported activities apart from workouts and can count their calories
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');
-  await expect(page.getByText(/100 % der von Health Connect gelieferten/)).toBeVisible();
+  await expect(page.getByText(/100 % der anrechenbaren Aktivitätskalorien/)).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Reload: the choice stays.
