@@ -113,7 +113,6 @@ export function NutritionScreen() {
           />
           <Section title={t('nutrition.more')}>
             <List label={t('nutrition.more')}>
-              <ListRow title={t('nutrition.profile.title')} to={NUTRITION_LINKS.profile} />
               <ListRow title={t('nutrition.foods.manage')} to={NUTRITION_LINKS.foods} />
               <ListRow title={t('nutrition.mealsManage.manage')} to={NUTRITION_LINKS.meals} />
               <ListRow title={t('nutrition.templates.manage')} to={NUTRITION_LINKS.templates} />

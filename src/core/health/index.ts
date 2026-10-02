@@ -47,4 +47,6 @@ export {
   type ImportedLoadState,
 } from './HealthSyncProvider';
 export * from './progress';
+export * from './weightRules';
+export * from './steps';
 export { activityTypeLabel } from './activityLabels';

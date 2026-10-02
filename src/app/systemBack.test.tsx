@@ -42,10 +42,13 @@ describe('back target', () => {
     ['/nutrition/foods', '/nutrition'],
     ['/nutrition/meals', '/nutrition'],
     ['/nutrition/templates', '/nutrition'],
-    ['/nutrition/profile', '/nutrition'],
     ['/nutrition', '/'],
     ['/health', '/'],
-    ['/profile', '/'],
+    ['/settings/profile', '/settings'],
+    ['/settings/goals', '/settings'],
+    ['/settings/content', '/settings'],
+    ['/settings/app', '/settings'],
+    ['/settings', '/'],
   ])('%s → %s', (from, to) => {
     expect(backTarget(from, patterns)).toBe(to);
   });
@@ -83,6 +86,26 @@ describe('system back', () => {
     await pressBack();
     expect(platform.exitApp).toHaveBeenCalledTimes(1);
     expect(router.state.location.pathname).toBe('/');
+  });
+
+  it('goes from a settings page to Einstellungen, then to Fortschritt', async () => {
+    const { router } = await renderApp('/settings/goals');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ziele' })).toBeInTheDocument();
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Einstellungen' })).toBeVisible();
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/');
+    expect(platform.exitApp).not.toHaveBeenCalled();
+  });
+
+  it('a redirected old address behaves like the new page for back', async () => {
+    const { router } = await renderApp('/nutrition/profile');
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/settings/goals');
+    });
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings');
   });
 
   it('closes an open sheet before navigating', async () => {

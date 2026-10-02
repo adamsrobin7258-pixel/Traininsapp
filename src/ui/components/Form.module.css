@@ -1,0 +1,114 @@
+/* Form building blocks shared by several areas: number fields, choice cards and chips. */
+
+.item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.label {
+  margin-top: var(--space-2);
+  padding: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-1));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.field:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+.fieldError {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+/* Choice chips that wrap on narrow screens (e.g. the main goal). */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  white-space: nowrap;
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-subhead);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.chip[data-selected='true'] {
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+.chip:focus-visible,
+.option:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* A selectable card with a title and an explanation (radio semantics). */
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: var(--size-tap-target);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  text-align: left;
+  color: var(--color-text);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.option[aria-checked='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent-subtle);
+}
+
+.optionTitle {
+  font-size: var(--font-size-body);
+  font-weight: var(--font-weight-medium);
+}
+
+.optionText {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}

@@ -4,6 +4,7 @@ import { useHealthSync } from '@/core/health';
 import { useNutrition } from '@/core/nutrition';
 import { useRecovery } from '@/core/recovery';
 import { useSettings } from '@/core/settings';
+import { useTargets } from '@/core/targets';
 import { useTraining } from '@/core/training';
 import { useProfile } from '@/core/user';
 import { toLocalDateKey } from '@/shared/lib/date';
@@ -28,7 +29,7 @@ export type ScoreLoadState =
 
 /**
  * The score of a period and its trend. Recalculated whenever an input changes – food, goals,
- * workouts, activities, Health Connect, recovery or the settings – so it is never stale.
+ * workouts, activities, Health Connect, recovery, the targets or the settings – so it is never stale.
  */
 export function useScore(dates: readonly string[], previousDates: readonly string[]) {
   const service = useContext(ScoreContext);
@@ -40,10 +41,11 @@ export function useScore(dates: readonly string[], previousDates: readonly strin
   const { revision: activity } = useActivities();
   const { revision: health } = useHealthSync();
   const { revision: recovery } = useRecovery();
+  const { revision: targets } = useTargets();
   const [state, setState] = useState<ScoreLoadState>({ status: 'loading' });
   const key = `${dates.join(',')}|${previousDates.join(',')}`;
   const today = toLocalDateKey(new Date());
-  const { countActivityCalories, trainingsPerWeek, activeMinutesPerWeek } = settings;
+  const { countActivityCalories } = settings;
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +53,6 @@ export function useScore(dates: readonly string[], previousDates: readonly strin
       .withTrend(profile.id, dates, previousDates, {
         today,
         countActivity: countActivityCalories,
-        trainingsPerWeek,
-        activeMinutesPerWeek,
       })
       .then(
         (data) => {
@@ -73,13 +73,12 @@ export function useScore(dates: readonly string[], previousDates: readonly strin
     key,
     today,
     countActivityCalories,
-    trainingsPerWeek,
-    activeMinutesPerWeek,
     nutrition,
     training,
     activity,
     health,
     recovery,
+    targets,
   ]);
   return state;
 }

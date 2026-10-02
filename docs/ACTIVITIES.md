@@ -157,7 +157,7 @@ abgeschlossenen Kalethra-Training überschneidet, zählt ebenfalls nicht. Die Re
 
 ## Aktivitätskalorien anrechnen
 
-Dieselbe Einstellung wie in Phase 6.3 („Profil → Gesundheitsdaten“, Standard aus), jetzt für
+Dieselbe Einstellung wie in Phase 6.3 (seit Phase 10 „Einstellungen → Ziele → Aktivitätskalorien“, Standard aus), jetzt für
 beide Quellen:
 
 - **Aus:** „Aktivitätskalorien werden nicht zum Tagesziel addiert.“ – 2.300 kcal bleiben

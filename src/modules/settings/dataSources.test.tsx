@@ -13,7 +13,7 @@ describe('data sources', () => {
   });
 
   it('credits the BLS and Open Food Facts under "About"', async () => {
-    await renderApp('/profile');
+    await renderApp('/settings/app');
     await userEvent.click(await screen.findByRole('button', { name: 'Datenquellen' }));
     const sheet = within(await screen.findByRole('dialog', { name: 'Datenquellen' }));
     expect(
@@ -28,7 +28,7 @@ describe('data sources', () => {
   });
 
   it('says so when no BLS data is bundled', async () => {
-    await renderApp('/profile', {
+    await renderApp('/settings/app', {
       referenceCatalog: new BlsCatalog(() =>
         Promise.resolve({ ...TEST_BLS_DATA, meta: null, foods: [] }),
       ),

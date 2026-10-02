@@ -55,7 +55,7 @@ describe('nutrition profile', () => {
   });
 
   it('opens without the keyboard and names what is missing', async () => {
-    await renderApp('/nutrition/profile');
+    await renderApp('/settings/goals');
     expect(
       await screen.findByText(/Für eine automatische Berechnung fehlen noch Angaben/),
     ).toHaveTextContent(
@@ -71,7 +71,7 @@ describe('nutrition profile', () => {
   });
 
   it('calculates the goals step by step and uses them in the diary and on Today', async () => {
-    const { services } = await renderApp('/nutrition/profile', {
+    const { services } = await renderApp('/settings/goals', {
       prepare: preparePerson,
     });
     await userEvent.click(await screen.findByRole('radio', { name: /^Moderat aktiv/ }));
@@ -95,7 +95,9 @@ describe('nutrition profile', () => {
       goals.getByRole('button', { name: /^Protein.*1,6 g pro kg.*143 g$/ }),
     ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }),
+    );
     expect(await screen.findByText(/Ernährungsprofil gespeichert/)).toBeInTheDocument();
     const profileId = (await services.profile.ensureLocalProfile()).id;
     const goal = await services.nutrition.goals.goalFor(profileId, '2026-10-03');
@@ -103,7 +105,9 @@ describe('nutrition profile', () => {
     expect(goal?.effective.energyKcal).toEqual({ value: 2040, origin: 'auto' });
 
     await userEvent.click(
-      within(screen.getByRole('main')).getByRole('link', { name: 'Ernährung' }),
+      within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByRole('link', {
+        name: 'Ernährung',
+      }),
     );
     const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
     // Goal and remaining (nothing eaten yet).
@@ -111,7 +115,7 @@ describe('nutrition profile', () => {
   });
 
   it('keeps a manual value and returns to the automatic one on request', async () => {
-    const { services } = await renderApp('/nutrition/profile', {
+    const { services } = await renderApp('/settings/goals', {
       prepare: async (s, profileId) => {
         await preparePerson(s, profileId);
         await s.nutrition.goals.saveProfile(profileId, loseModerate);
@@ -128,7 +132,9 @@ describe('nutrition profile', () => {
     expect(
       screen.getByRole('button', { name: /^Protein\s*Individuell.*170 g$/ }),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }),
+    );
     await screen.findByText(/Ernährungsprofil gespeichert/);
     const profileId = (await services.profile.ensureLocalProfile()).id;
     expect(
@@ -147,7 +153,7 @@ describe('nutrition profile', () => {
   });
 
   it('asks before changing the goal and keeps earlier days', async () => {
-    const { services } = await renderApp('/nutrition/profile', {
+    const { services } = await renderApp('/settings/goals', {
       prepare: async (s, profileId) => {
         await preparePerson(s, profileId);
         vi.setSystemTime(new Date(2026, 9, 1, 10));
@@ -156,7 +162,9 @@ describe('nutrition profile', () => {
       },
     });
     await userEvent.click(await screen.findByRole('radio', { name: 'Muskelaufbau' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }),
+    );
     const sheet = dialog();
     expect(sheet.getByText('Abnehmen – Moderat · 2.040 kcal')).toBeInTheDocument();
     // 2590 + 5 % = 2719.5 → 2.720 kcal
@@ -177,7 +185,7 @@ describe('nutrition profile', () => {
   });
 
   it('includes training only when switched on', async () => {
-    await renderApp('/nutrition/profile', {
+    await renderApp('/settings/goals', {
       prepare: async (s, profileId) => {
         await preparePerson(s, profileId);
         for (const day of [10, 17, 24]) {

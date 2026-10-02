@@ -56,3 +56,13 @@ export function formatWater(ml: number, locale: string): string {
   }
   return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(ml)} ml`;
 }
+
+/** Whole kcal, e.g. "1.250 kcal". */
+export function formatKcal(value: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)} kcal`;
+}
+
+/** Grams with at most one decimal, e.g. "12,5 g". */
+export function formatGrams(value: number, locale: string): string {
+  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)} g`;
+}

@@ -37,7 +37,7 @@ describe('app shell', () => {
     ['Training', 'Training'],
     ['Ernährung', 'Ernährung'],
     ['Gesundheit', 'Gesundheit'],
-    ['Profil', 'Profil'],
+    ['Einstellungen', 'Einstellungen'],
   ])('navigates to %s via the tab bar', async (tab, heading) => {
     await renderApp();
     const nav = screen.getByRole('navigation', { name: 'Hauptnavigation' });
@@ -66,6 +66,17 @@ describe('app shell', () => {
     });
   });
 
+  it.each([
+    ['/profile', '/settings', 'Einstellungen'],
+    ['/nutrition/profile', '/settings/goals', 'Ziele'],
+  ])('redirects the old address %s to %s instead of the start page', async (old, path, title) => {
+    const { router } = await renderApp(old);
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe(path);
+    });
+    expect(await screen.findByRole('heading', { level: 1, name: title })).toBeInTheDocument();
+  });
+
   it('uses the device language on first launch', async () => {
     setDeviceLanguages(['en-US']);
     await renderApp();
@@ -74,29 +85,31 @@ describe('app shell', () => {
   });
 
   it('switches the language and persists the choice', async () => {
-    const { services } = await renderApp('/profile');
+    const { services } = await renderApp('/settings/app');
 
-    await userEvent.click(screen.getByRole('radio', { name: 'English' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'English' }));
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Profile' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Nutrition' })).toBeInTheDocument();
+    const nav = within(await screen.findByRole('navigation', { name: 'Main navigation' }));
+    expect(nav.getByRole('link', { name: 'Settings' })).toBeInTheDocument();
+    expect(nav.getByRole('link', { name: 'Nutrition' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Language' })).toBeInTheDocument();
     expect((await services.settings.load()).language).toBe('en');
   });
 
   it('switches the theme and persists the choice', async () => {
-    const { services } = await renderApp('/profile');
+    const { services } = await renderApp('/settings/app');
     expect(document.documentElement.dataset.theme).toBe('light');
 
-    await userEvent.click(screen.getByRole('radio', { name: 'Dunkel' }));
+    await userEvent.click(await screen.findByRole('radio', { name: 'Dunkel' }));
 
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect((await services.settings.load()).theme).toBe('dark');
   });
 
   it('greets the user by the name entered in the profile', async () => {
-    await renderApp('/profile');
+    await renderApp('/settings/profile');
 
-    await userEvent.type(screen.getByLabelText('Name'), 'Anna{Enter}');
+    await userEvent.type(await screen.findByLabelText('Name'), 'Anna{Enter}');
     await userEvent.click(screen.getByRole('link', { name: 'Fortschritt' }));
 
     // The greeting stays as the small line above the page title.

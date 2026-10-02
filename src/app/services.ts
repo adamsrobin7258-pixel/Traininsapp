@@ -7,7 +7,13 @@ import {
   ManualActivityService,
   type ActivityWeightSource,
 } from '@/core/activity';
-import { HealthSyncService, WeightRepository, WeightService } from '@/core/health';
+import {
+  ACTIVITY_WEIGHT_WINDOW_DAYS,
+  HealthSyncService,
+  pickActivityWeight,
+  WeightRepository,
+  WeightService,
+} from '@/core/health';
 import {
   ExerciseService,
   getTrainingType,
@@ -34,6 +40,7 @@ import {
 import { createBlsCatalog } from '@/core/nutrition/bls';
 import { RecoveryService } from '@/core/recovery';
 import { ScoreService } from '@/core/score';
+import { TargetService } from '@/core/targets';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -57,6 +64,8 @@ export interface AppServices {
   activities: ManualActivityService;
   /** The user's own daily recovery note (Kalethra score). */
   recovery: RecoveryService;
+  /** Versioned personal targets (workouts and active minutes per week, steps per day). */
+  targets: TargetService;
   /** Kalethra score – calculated from the data above, never stored. */
   score: ScoreService;
 }
@@ -75,24 +84,21 @@ export function createServices(
   const profile = new ProfileService(new ProfileRepository(db), clock);
   const training = createTrainingServices(new TrainingStore(db), clock);
   const healthSync = new HealthSyncService(healthPlatform, db, clock);
-  // Body weight for activity calories: the most recent value on or before the day – an own
-  // entry, or an imported Health Connect value if that is newer (own entry wins on the same
-  // day). Display/calculation only: nutrition goals keep reading the own entries.
+  // Body weight for activity calories – weight rule 3 (core/health/weightRules.ts): the most
+  // recent own or imported value. Nutrition goals keep reading the own entries only (rule 1).
   const activityWeight: ActivityWeightSource = {
     weightOn: async (profileId, localDate) => {
       const day = parseLocalDateKey(localDate);
       if (!day) return null;
       const [own, imported] = await Promise.all([
         weight.getLatestOnOrBefore(profileId, localDate),
-        healthSync.weightsBetween(profileId, toLocalDateKey(addDays(day, -60)), localDate),
+        healthSync.weightsBetween(
+          profileId,
+          toLocalDateKey(addDays(day, -ACTIVITY_WEIGHT_WINDOW_DAYS)),
+          localDate,
+        ),
       ]);
-      const latestImported = imported.at(-1) ?? null;
-      if (own && (!latestImported || own.date >= latestImported.date)) {
-        return { kg: own.kg, date: own.date, source: 'own' as const };
-      }
-      return latestImported
-        ? { kg: latestImported.kg, date: latestImported.date, source: 'imported' as const }
-        : null;
+      return pickActivityWeight(own, imported);
     },
   };
   const activities = new ManualActivityService(db, clock, activityWeight);
@@ -167,6 +173,7 @@ export function createServices(
     referenceCatalog,
   );
   const recovery = new RecoveryService(db, clock);
+  const targets = new TargetService(db, clock);
   // The score reads the existing services; it has no data of its own.
   const score = new ScoreService({
     goalTypeOn: async (profileId, localDate) =>
@@ -198,10 +205,12 @@ export function createServices(
         state: entry.state,
         restDay: entry.restDay,
       })),
+    targets: (profileId) => targets.history(profileId),
   });
   return {
     activities,
     recovery,
+    targets,
     score,
     storage: new StorageService(db, security, clock),
     weight,

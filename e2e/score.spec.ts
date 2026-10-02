@@ -26,7 +26,7 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
   expect(await noHorizontalScroll()).toBe(true);
 
   // Main goal "Allgemeine Fitness" with an own calorie and protein goal.
-  await page.goto('/nutrition/profile');
+  await page.goto('/settings/goals');
   await main.getByRole('radio', { name: 'Allgemeine Fitness' }).click();
   for (const [row, value] of [
     [/^Kalorienziel/, '2000'],
@@ -36,7 +36,7 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
     await sheet.getByLabel(/^Eigener Wert/).fill(value);
     await sheet.getByRole('button', { name: 'Eigenen Wert verwenden' }).click();
   }
-  await main.getByRole('button', { name: 'Speichern' }).click();
+  await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   await expect(page.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
 
   // Food on target today.
@@ -66,9 +66,13 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
   await expect(page.getByText('Für heute gespeichert.')).toBeVisible();
   expect(await noHorizontalScroll()).toBe(true);
 
-  // Weekly targets in the profile – chosen from a list.
-  await tab('Profil').click();
-  await expect(main.getByRole('link', { name: /Hauptziel/ })).toContainText('Allgemeine Fitness');
+  // Weekly targets in Einstellungen → Ziele – chosen from a list.
+  await tab('Einstellungen').click();
+  await main.getByRole('link', { name: /^Ziele/ }).click();
+  await expect(main.getByRole('radio', { name: 'Allgemeine Fitness' })).toHaveAttribute(
+    'aria-checked',
+    'true',
+  );
   await main.getByRole('button', { name: /Trainings pro Woche/ }).click();
   expect(await noFocusedField()).toBe(true);
   await sheet.getByRole('button', { name: '3× pro Woche' }).click();

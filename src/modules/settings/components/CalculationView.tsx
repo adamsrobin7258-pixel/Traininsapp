@@ -1,8 +1,8 @@
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import type { Calculation, MacroTarget } from '@/core/nutrition';
-import { List, ListRow, Section } from '@/ui';
-import { formatGrams, formatKcal } from '../domain/format';
-import styles from './Nutrition.module.css';
+import { EmptyValue, List, ListRow, Section } from '@/ui';
+import { formatGrams, formatKcal } from '@/shared/lib/format';
+import styles from './Settings.module.css';
 
 const TARGETS: { key: MacroTarget; label: TranslationKey }[] = [
   { key: 'energyKcal', label: 'nutrition.profile.energyGoal' },
@@ -32,12 +32,15 @@ export function CalculationView({
   const { energy, protein, macros } = calculation;
   const percent = (share: number) => number(share * 100);
 
+  // A dash keeps the row readable on narrow screens; screen readers still hear the full text.
   const format = (key: MacroTarget, value: number | null) =>
-    value === null
-      ? t('nutrition.profile.noValue')
-      : key === 'energyKcal'
-        ? formatKcal(value, locale)
-        : formatGrams(value, locale);
+    value === null ? (
+      <EmptyValue label={t('nutrition.profile.noValue')} />
+    ) : key === 'energyKcal' ? (
+      formatKcal(value, locale)
+    ) : (
+      formatGrams(value, locale)
+    );
 
   const explain = (key: MacroTarget): string | undefined => {
     if (key === 'energyKcal' && energy) {

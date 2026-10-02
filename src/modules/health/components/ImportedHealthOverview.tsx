@@ -1,12 +1,15 @@
+import { SETTINGS_LINKS } from '@/app/routes';
 import {
   dayWeight,
   formatWeight,
+  summarizeStepGoal,
   useHealthSync,
   useImportedHealthData,
   useWeightService,
 } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
+import { targetOn, useTargetData } from '@/core/targets';
 import { addDays, parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { formatDayMonth } from '@/shared/lib/format';
 import { EmptyValue, List, ListRow, Section } from '@/ui';
@@ -34,6 +37,11 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
     },
     [weekStart, todayKey, weights.service, weights.revision],
   );
+  // The step goal is set in Einstellungen → Ziele; steps themselves come only from Health Connect.
+  const stepGoals = useTargetData(
+    async (service, profileId) => (await service.history(profileId)).stepsPerDay,
+    [],
+  );
 
   const connected = status.state === 'connected' || status.state === 'permissionRequired';
   const ready = data.status === 'ready' ? data.data : null;
@@ -48,6 +56,17 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
       ? Math.round(stepDays.reduce((sum, day) => sum + (day.steps ?? 0), 0) / stepDays.length)
       : null;
   const none = <EmptyValue label={t('common.noValue')} />;
+  const weekDates = Array.from({ length: 7 }, (_, index) =>
+    toLocalDateKey(addDays(today, index - 6)),
+  );
+  const stepGoal =
+    ready && stepGoals.status === 'ready'
+      ? summarizeStepGoal(
+          ready.activity.map((day) => ({ date: day.date, steps: day.steps })),
+          weekDates,
+          (date) => targetOn(stepGoals.data, date),
+        )
+      : null;
   const lastSuccessAt =
     status.state === 'connected' || status.state === 'permissionRequired'
       ? status.lastSuccessAt
@@ -77,6 +96,35 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
               : none
           }
         />
+        {stepGoal?.today ? (
+          <ListRow
+            icon="target"
+            title={t('healthConnect.stepGoalToday')}
+            subtitle={
+              stepGoal.ratedDays > 0
+                ? t('healthConnect.stepGoalWeek', {
+                    reached: stepGoal.reachedDays,
+                    total: stepGoal.ratedDays,
+                  })
+                : undefined
+            }
+            value={
+              stepGoal.today.steps !== null
+                ? t(
+                    stepGoal.today.steps >= stepGoal.today.goal
+                      ? 'healthConnect.stepGoalReached'
+                      : 'healthConnect.stepGoalProgress',
+                    {
+                      steps: number.format(stepGoal.today.steps),
+                      goal: number.format(stepGoal.today.goal),
+                    },
+                  )
+                : t('healthConnect.stepGoalNoData', { goal: number.format(stepGoal.today.goal) })
+            }
+          />
+        ) : stepGoals.status === 'ready' ? (
+          <ListRow icon="target" title={t('healthConnect.stepGoalSet')} to={SETTINGS_LINKS.goals} />
+        ) : null}
         <ListRow
           icon="flame"
           title={t('healthConnect.activeEnergyToday')}

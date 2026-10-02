@@ -32,10 +32,10 @@ describe('TabBar', () => {
       { id: 'progress', path: '/', Screen, tab: { labelKey: 'nav.progress', icon: 'progress' } },
       { id: 'training', path: '/training', Screen },
       {
-        id: 'profile',
-        path: '/profile',
+        id: 'settings',
+        path: '/settings',
         Screen,
-        tab: { labelKey: 'nav.profile', icon: 'profile' },
+        tab: { labelKey: 'nav.settings', icon: 'settings' },
       },
     ];
     render(
@@ -46,7 +46,7 @@ describe('TabBar', () => {
       </I18nProvider>,
     );
     const links = within(screen.getByRole('navigation')).getAllByRole('link');
-    expect(links.map((link) => link.textContent)).toEqual(['Progress', 'Profile']);
+    expect(links.map((link) => link.textContent)).toEqual(['Progress', 'Settings']);
     expect(screen.getByRole('list')).toHaveStyle({ '--tab-count': '2' });
   });
 });

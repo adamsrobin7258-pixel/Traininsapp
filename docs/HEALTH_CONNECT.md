@@ -45,7 +45,8 @@ Apple Health folgt in einer eigenen Phase.
 
 ## Aktivitätskalorien anrechnen
 
-Einstellung unter „Profil → Gesundheitsdaten“, gespeichert in `app_settings`
+Einstellung unter „Einstellungen → Ziele → Aktivitätskalorien“ (bis Phase 9 unter Profil →
+Gesundheitsdaten), gespeichert in `app_settings`
 (`countActivityCalories`), **standardmäßig aus**.
 
 - Aus: Das Tagesziel bleibt unverändert; die Aktivitätskalorien werden nur als Information gezeigt

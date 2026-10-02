@@ -19,7 +19,7 @@ export const en: TranslationSchema = {
     training: 'Training',
     nutrition: 'Nutrition',
     health: 'Health',
-    profile: 'Profile',
+    settings: 'Settings',
   },
   common: {
     kcal: 'kcal',
@@ -126,8 +126,7 @@ export const en: TranslationSchema = {
           restDays: 'Rest days: {count}.',
         },
         recordRecovery: 'Log recovery',
-        setTargets: 'Set weekly targets',
-        setGoal: 'Change main goal',
+        setGoals: 'Adjust goals',
       },
     },
     training: {
@@ -653,7 +652,7 @@ export const en: TranslationSchema = {
         active: 'Physical work, e.g. trades or warehouse',
         veryActive: 'Heavy physical work, e.g. construction or farming',
       },
-      training: 'Training',
+      training: 'Training in energy needs',
       includeTraining: 'Include training in the calorie calculation',
       includeTrainingHint:
         'Uses your completed workouts of the last 4 weeks (duration and type) for a cautious addition. Off by default.',
@@ -1188,6 +1187,12 @@ export const en: TranslationSchema = {
     disconnectConfirm: 'Disconnect',
     disconnectFailed: 'Disconnecting did not work. Please try again.',
     overviewTitle: 'From Health Connect',
+    stepGoalToday: 'Step goal today',
+    stepGoalProgress: '{steps} of {goal}',
+    stepGoalReached: 'Reached · {steps} of {goal}',
+    stepGoalNoData: 'Goal {goal} · no steps yet',
+    stepGoalWeek: 'Goal reached on {reached} of {total} days with data (7 days)',
+    stepGoalSet: 'Set a step goal',
     stepsToday: 'Steps today',
     activeEnergyToday: 'Active calories today',
     stepsAverage: 'Steps, 7-day average',
@@ -1201,24 +1206,74 @@ export const en: TranslationSchema = {
     overviewFooterSynced:
       'For display only, last updated {date}. These values change neither your weight entries nor your nutrition goals.',
   },
-  profile: {
-    scoreTargets: {
-      title: 'Kalethra score',
-      footer:
-        'Targets for your score. Without a target the area is left out – it makes the score neither better nor worse.',
-      mainGoal: 'Main goal',
-      mainGoalUnset: 'Not set',
-      trainings: 'Workouts per week',
-      minutes: 'Active minutes per week',
-      none: 'No target',
-      trainingsValue: '{count}× per week',
-      minutesValue: '{count} min',
-      trainingsHint:
-        'How many Kalethra workouts you plan per week. Days without training in between are part of the plan and never count against you.',
-      minutesHint:
-        'Active minutes from your activities (logged yourself and Health Connect). For orientation: the WHO recommends 150–300 minutes of moderate activity per week for adults.',
-      failed: 'Saving did not work. Please try again.',
+  settings: {
+    title: 'Settings',
+    profile: {
+      title: 'Profile',
+      summary: 'Name, sex, date of birth, height',
+      personalHint: 'The basis of the automatic nutrition goals. Stored on this device only.',
+      save: 'Save personal data',
+      saved: 'Saved. Automatic goals are being updated.',
+      saveFailed: 'Saving did not work. Please try again.',
+      weight: 'Weight',
+      weightHint: 'You record your weight under Health – that is the only place to enter it.',
+      recordWeight: 'Record weight under Health',
     },
+    goals: {
+      title: 'Goals',
+      summary: 'Main goal, nutrition, training, activities, steps',
+      mainGoal: 'Main goal',
+      mainGoalHint: 'Sets the calorie calculation and how the Kalethra score weighs the areas.',
+      nutrition: 'Nutrition',
+      basis: 'Basis of the calculation',
+      personalData: 'Personal data',
+      personalDataSet: 'From your profile',
+      personalDataMissing: 'Incomplete – add it in your profile',
+      save: 'Save main goal and nutrition',
+      activityCalories: 'Activity calories',
+      training: 'Training',
+      activity: 'Activities',
+      health: 'Health',
+    },
+    targets: {
+      none: 'No target',
+      versioned:
+        'Applies from today. Past days keep the target that applied then – your score so far does not change.',
+      failed: 'Saving did not work. Please try again.',
+      trainingsPerWeek: {
+        title: 'Workouts per week',
+        value: '{count}× per week',
+        footer: 'For the Kalethra score. Without a target, training is not counted there.',
+        hint: 'How many Kalethra workouts you plan per week. Days without training in between are part of the plan and never count against you.',
+      },
+      activeMinutesPerWeek: {
+        title: 'Active minutes per week',
+        value: '{count} min',
+        footer: 'For the Kalethra score. Without a target, activities are not counted there.',
+        hint: 'Active minutes from your activities (logged yourself and Health Connect). For orientation: the WHO recommends 150–300 minutes of moderate activity per week for adults.',
+      },
+      stepsPerDay: {
+        title: 'Daily step goal',
+        value: '{count} steps',
+        footer:
+          'Steps come from Health Connect and appear under Health. The step goal is not part of the Kalethra score.',
+        hint: 'How many steps you want to reach per day. Kalethra reads steps from Health Connect only – there is no second source.',
+      },
+    },
+    content: {
+      title: 'My content',
+      summary: 'Foods, meals, templates, plans, exercises',
+      nutrition: 'Nutrition',
+      training: 'Training',
+      moving: 'Your own content moves here soon. Until then these entries lead to where it is now.',
+    },
+    app: {
+      title: 'App',
+      summary: 'Appearance, language, Health Connect, privacy',
+      water: 'Water',
+    },
+  },
+  profile: {
     title: 'Profile',
     localProfile: 'Local profile',
     localProfileHint: 'Your data stays on this device.',

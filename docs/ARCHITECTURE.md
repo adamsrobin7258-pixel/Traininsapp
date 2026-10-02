@@ -105,7 +105,7 @@ einem Bildschirm heraus verlinkt (etwa Running aus Training).
 | Activity, Running, Cycling                      | Module ohne Tab; GPS über `LocationTracker`                                                                    | Route, Link aus Training/Fortschritt |
 | HYROX, Mobility, Calisthenics                   | Trainingsarten innerhalb von Training (`core/training/trainingTypes.ts`); eigenes Modul erst bei eigener Logik | Unterroute von Training              |
 | Statistics                                      | eigenes Modul; liest Kennzahlen nur über Abfrage-Schnittstellen anderer Module                                 | Route, Link aus Fortschritt          |
-| Settings                                        | bleibt Teil von Profil; bei Wachstum eigenes Modul ohne Tab                                                    | Route                                |
+| Settings                                        | seit Phase 10 Tab-Modul `settings` (ersetzt Profil), siehe [SETTINGS.md](SETTINGS.md)                          | `tab` gesetzt                        |
 | Cloud Sync                                      | Infrastruktur in `core/sync` (kein Fachmodul), Bedienung im Profil                                             | `SyncService`                        |
 
 Ergebnis: Kein Umbau nötig außer dem optionalen Tab (umgesetzt). Die Regeln unten verhindern
@@ -216,6 +216,13 @@ Tage aus aggregierten Abfragen der Bereiche und reinen Auswertungsfunktionen in
 bestehenden Services über `ScoreSources` (verdrahtet in `app/services.ts`), speichert nichts und
 rechnet bei jeder Änderung neu (`useScore`). Details: [SCORE.md](SCORE.md).
 
+**Einstellungen und Ziele.** Seit Phase 10 ist `modules/settings` (vorher `modules/profile`) der
+einzige Ort für Profil, Ziele und App-Einstellungen. Versionierte Wochen- und Schrittziele liegen in
+`core/targets` (rein `targets.ts`, Repository, Service, `useTargets`/`useTargetData`); der Score
+liest sie über `ScoreSources.targets`. Die drei Gewichtsregeln sind in
+`core/health/weightRules.ts` benannt. Alte Adressen leiten über `LEGACY_REDIRECTS` weiter.
+Details: [SETTINGS.md](SETTINGS.md).
+
 **Manuelle Aktivitäten.** Seit Phase 8 in `core/activity`: Sportartenkatalog mit MET-Werten
 (`catalog.ts`), reine Kalorienberechnung (`calories.ts`), Repository/Service für
 `manual_activities` und das Zusammenführen mit Health-Connect-Aktivitäten inkl.
@@ -281,8 +288,8 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
   und Körperdaten über `NutritionSources` (im Composition Root verdrahtet, keine Kopien),
   speichert Profilversionen mit Herleitung und berechnet über `refreshAutomatic` neu. Die
   App-Komponente `NutritionGoalSync` löst das nach Gewichts-, Trainings- oder
-  Körperdatenänderungen aus. Die Oberfläche (`/nutrition/profile`) zeigt nur Ergebnisse der
-  Engine an.
+  Körperdatenänderungen aus. Die Oberfläche (seit Phase 10 `/settings/goals` im
+  Einstellungsmodul) zeigt nur Ergebnisse der Engine an.
 - **Lebensmittelsuche (Phase 4.4):** `FoodLookupService.search` kombiniert offline die
   gespeicherten Lebensmittel (SQLite) und den gebündelten BLS 4.0 (`ReferenceCatalog` →
   `core/nutrition/bls/BlsCatalog`, Daten als eigener Chunk `bls/data/bls.json`, erzeugt von

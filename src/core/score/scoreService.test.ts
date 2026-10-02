@@ -47,11 +47,21 @@ async function setup(db?: Awaited<ReturnType<typeof createTestDatabase>>) {
 
 type Setup = Awaited<ReturnType<typeof setup>>;
 
+/** Sets a target as if it had been chosen on `day` (the clock is moved there and back). */
+async function targetSince(
+  { services, profileId }: Setup,
+  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek',
+  value: number | null,
+  day = new Date(2026, 8, 1, 9),
+) {
+  now = day;
+  await services.targets.set(profileId, kind, value);
+  now = new Date(2026, 9, 3, 10);
+}
+
 const options = (patch: Partial<ScoreOptions> = {}): ScoreOptions => ({
   today: TODAY,
   countActivity: false,
-  trainingsPerWeek: null,
-  activeMinutesPerWeek: null,
   ...patch,
 });
 
@@ -175,7 +185,8 @@ describe('score from the real data', () => {
       variant: 'singles',
       kcalOverride: 500,
     });
-    const target = options({ trainingsPerWeek: 2 });
+    await targetSince(s, 'trainingsPerWeek', 2);
+    const target = options();
     const before = await s.services.score.calculate(s.profileId, WEEK, target);
     expect(before.areas.training.detail.done).toBe(0);
     expect(before.areas.training.score).toBe(0);
@@ -223,22 +234,16 @@ describe('score from the real data', () => {
       variant: null,
       kcalOverride: 90,
     });
-    const result = await s.services.score.calculate(
-      s.profileId,
-      WEEK,
-      options({ activeMinutesPerWeek: 150 }),
-    );
+    await targetSince(s, 'activeMinutesPerWeek', 150);
+    const result = await s.services.score.calculate(s.profileId, WEEK, options());
     expect(result.areas.activity.detail).toMatchObject({ minutes: 75, activeDays: 2 });
     expect(result.areas.activity.score).toBe(50);
   });
 
   it('activity: neutral without any activity data or without a target', async () => {
     const s = await setup();
-    const withTarget = await s.services.score.calculate(
-      s.profileId,
-      WEEK,
-      options({ activeMinutesPerWeek: 150 }),
-    );
+    await targetSince(s, 'activeMinutesPerWeek', 150);
+    const withTarget = await s.services.score.calculate(s.profileId, WEEK, options());
     expect(withTarget.areas.activity.score).toBeNull();
     await s.services.activities.create(s.profileId, {
       sportId: 'yoga',
@@ -250,6 +255,7 @@ describe('score from the real data', () => {
       variant: null,
       kcalOverride: 90,
     });
+    await targetSince(s, 'activeMinutesPerWeek', null, new Date(2026, 8, 2, 9));
     const noTarget = await s.services.score.calculate(s.profileId, WEEK, options());
     expect(noTarget.areas.activity.score).toBeNull();
     expect(noTarget.areas.activity.detail.minutes).toBe(30);
@@ -386,7 +392,7 @@ describe('migration 13', () => {
           78.5, 1, '{"x":1}');
     `);
     const before = await db.query('SELECT * FROM nutrition_goals');
-    expect(await migrate(db, migrations)).toEqual([13]);
+    expect(await migrate(db, migrations)).toEqual([13, 14]);
     expect(await db.query('SELECT * FROM nutrition_goals')).toEqual(before);
     // The new goal type is accepted, an unknown one still is not.
     await db.run(
@@ -427,22 +433,28 @@ describe('migration 13', () => {
   });
 });
 
-describe('weekly targets in the settings', () => {
+describe('weekly targets (versioned)', () => {
   it('are off by default and accept whole numbers in range or null', async () => {
     const s = await setup();
-    const settings = await s.services.settings.load();
-    expect(settings.trainingsPerWeek).toBeNull();
-    expect(settings.activeMinutesPerWeek).toBeNull();
-    await s.services.settings.update('trainingsPerWeek', 3);
-    await s.services.settings.update('activeMinutesPerWeek', 150);
-    expect(await s.services.settings.load()).toMatchObject({
+    expect(await s.services.targets.current(s.profileId)).toEqual({
+      trainingsPerWeek: null,
+      activeMinutesPerWeek: null,
+      stepsPerDay: null,
+    });
+    await s.services.targets.set(s.profileId, 'trainingsPerWeek', 3);
+    await s.services.targets.set(s.profileId, 'activeMinutesPerWeek', 150);
+    expect(await s.services.targets.current(s.profileId)).toMatchObject({
       trainingsPerWeek: 3,
       activeMinutesPerWeek: 150,
     });
-    await s.services.settings.update('trainingsPerWeek', null);
-    expect((await s.services.settings.load()).trainingsPerWeek).toBeNull();
-    await expect(s.services.settings.update('trainingsPerWeek', 0)).rejects.toThrow();
-    await expect(s.services.settings.update('trainingsPerWeek', 2.5)).rejects.toThrow();
-    await expect(s.services.settings.update('activeMinutesPerWeek', 5000)).rejects.toThrow();
+    await s.services.targets.set(s.profileId, 'trainingsPerWeek', null);
+    expect((await s.services.targets.current(s.profileId)).trainingsPerWeek).toBeNull();
+    await expect(s.services.targets.set(s.profileId, 'trainingsPerWeek', 0)).rejects.toThrow();
+    await expect(s.services.targets.set(s.profileId, 'trainingsPerWeek', 2.5)).rejects.toThrow();
+    await expect(
+      s.services.targets.set(s.profileId, 'activeMinutesPerWeek', 5000),
+    ).rejects.toThrow();
+    // No longer part of the app settings – one source only.
+    expect(await s.services.settings.load()).not.toHaveProperty('trainingsPerWeek');
   });
 });

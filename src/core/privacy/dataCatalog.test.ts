@@ -66,7 +66,7 @@ describe('data catalog', () => {
   });
 
   it('groups tables by category', () => {
-    expect(tablesInCategory('profile')).toEqual(['profiles']);
+    expect(tablesInCategory('profile')).toEqual(['profiles', 'goal_targets']);
     expect(requiresEncryptionAtRest('health')).toBe(true);
     expect(requiresEncryptionAtRest('personal')).toBe(false);
   });

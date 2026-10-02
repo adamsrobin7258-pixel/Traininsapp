@@ -1,4 +1,4 @@
-import styles from './Nutrition.module.css';
+import styles from './Form.module.css';
 
 /** Single choice as cards with an explanation each (radio group semantics). */
 export function ChoiceCards<T extends string>({

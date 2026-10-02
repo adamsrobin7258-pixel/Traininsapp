@@ -1,10 +1,9 @@
 import { useState, type ReactNode, type SyntheticEvent } from 'react';
 import { useI18n } from '@/core/i18n';
 import { OVERRIDE_LIMITS, type MacroTarget } from '@/core/nutrition';
-import { Button, Sheet } from '@/ui';
-import { formatNumberInput, parseNumberInput } from '../domain/input';
-import { NumberField } from './NumberField';
-import styles from './Nutrition.module.css';
+import { formatNumberInput, parseNumberInput } from '@/shared/lib/numberInput';
+import { Button, NumberField, Sheet } from '@/ui';
+import styles from './Settings.module.css';
 
 /**
  * Sets an own value for one goal or returns it to the automatic calculation. Opens without the

@@ -1,4 +1,5 @@
 import type { GoalType, NutritionDayGoal, NutritionDayTotals } from '@/core/nutrition';
+import { targetOn, type TargetHistory } from '@/core/targets';
 import {
   calculateScore,
   scoreTrend,
@@ -35,14 +36,14 @@ export interface ScoreSources {
     to: string,
   ): Promise<{ localDate: string; minutes: number }[]>;
   recovery(profileId: string, from: string, to: string): Promise<ScoreRecoveryDay[]>;
+  /** Versioned weekly targets (TargetService); each day is judged by its own version. */
+  targets(profileId: string): Promise<TargetHistory>;
 }
 
 export interface ScoreOptions {
   /** Today's local day. */
   today: string;
   countActivity: boolean;
-  trainingsPerWeek: number | null;
-  activeMinutesPerWeek: number | null;
 }
 
 export interface ScoreWithTrend {
@@ -65,13 +66,14 @@ export class ScoreService {
     const to = dates.at(-1);
     if (!from || !to) throw new Error('A score needs at least one day');
     const s = this.sources;
-    const [goal, totals, goals, workouts, minutes, recovery] = await Promise.all([
+    const [goal, totals, goals, workouts, minutes, recovery, targets] = await Promise.all([
       s.goalTypeOn(profileId, to),
       s.nutritionTotals(profileId, from, to),
       s.nutritionGoals(profileId, dates, { countActivity: options.countActivity }),
       s.workoutsPerDay(profileId, from, to),
       s.activityMinutesPerDay(profileId, from, to),
       s.recovery(profileId, from, to),
+      s.targets(profileId),
     ]);
     return calculateScore({
       goal,
@@ -82,8 +84,8 @@ export class ScoreService {
       activity: { minutesPerDay: minutes },
       recovery,
       targets: {
-        trainingsPerWeek: options.trainingsPerWeek,
-        activeMinutesPerWeek: options.activeMinutesPerWeek,
+        trainingsPerWeek: (date) => targetOn(targets.trainingsPerWeek, date),
+        activeMinutesPerWeek: (date) => targetOn(targets.activeMinutesPerWeek, date),
       },
     });
   }

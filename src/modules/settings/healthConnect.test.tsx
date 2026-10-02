@@ -42,7 +42,7 @@ describe('Health Connect settings', () => {
 
   it('is not connected by default and explains everything before the system dialog', async () => {
     const platform = filled();
-    await renderApp('/profile', { healthPlatform: platform });
+    await renderApp('/settings/app', { healthPlatform: platform });
     expect(await section().findByText('Nicht verbunden')).toBeInTheDocument();
 
     const sheet = await openConnection();
@@ -70,7 +70,7 @@ describe('Health Connect settings', () => {
   it('explains a denied permission and stays disconnected', async () => {
     const platform = filled();
     platform.grantOnRequest = [];
-    await renderApp('/profile', { healthPlatform: platform });
+    await renderApp('/settings/app', { healthPlatform: platform });
     const sheet = await openConnection();
     await userEvent.click(sheet.getByRole('button', { name: 'Mit Health Connect verbinden' }));
     expect(
@@ -82,12 +82,12 @@ describe('Health Connect settings', () => {
   it('explains when Health Connect is not available or not installed', async () => {
     const platform = filled();
     platform.available = { kind: 'needsInstall' };
-    const view = await renderApp('/profile', { healthPlatform: platform });
+    const view = await renderApp('/settings/app', { healthPlatform: platform });
     expect(await section().findByText('Nicht installiert')).toBeInTheDocument();
     expect((await openConnection()).getByText(/aus dem Google Play Store/)).toBeVisible();
     view.unmount();
 
-    await renderApp('/profile');
+    await renderApp('/settings/app');
     expect(await section().findByText('Nicht verfügbar')).toBeInTheDocument();
     expect(
       (await openConnection()).getByText(/Auf diesem Gerät gibt es Health Connect nicht/),
@@ -96,7 +96,7 @@ describe('Health Connect settings', () => {
 
   it('shows "syncing" while a manual sync runs, then the last sync', async () => {
     const platform = filled();
-    await renderApp('/profile', {
+    await renderApp('/settings/app', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);
@@ -120,7 +120,7 @@ describe('Health Connect settings', () => {
 
   it('shows a failed sync without hiding the existing data', async () => {
     const platform = filled();
-    await renderApp('/profile', {
+    await renderApp('/settings/app', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);
@@ -137,7 +137,7 @@ describe('Health Connect settings', () => {
   it('keeps every permission and action of the connected sheet in the scrollable sheet', async () => {
     const platform = filled();
     platform.grantOnRequest = ['weight', 'steps', 'exercise'];
-    await renderApp('/profile', {
+    await renderApp('/settings/app', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);
@@ -172,7 +172,7 @@ describe('Health Connect settings', () => {
 
   it('asks before disconnecting, with deleting pre-selected', async () => {
     const platform = filled();
-    const { db } = await renderApp('/profile', {
+    const { db } = await renderApp('/settings/app', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);
@@ -199,7 +199,7 @@ describe('Health Connect settings', () => {
 
   it('keeps the imported data when deleting is unticked', async () => {
     const platform = filled();
-    const { db } = await renderApp('/profile', {
+    const { db } = await renderApp('/settings/app', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);

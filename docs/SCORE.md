@@ -65,26 +65,30 @@ eingeschalteter Einstellung). Keine eigene Zielberechnung.
 ### Training
 
 Pläne in Kalethra haben keinen Kalender (sie laufen zyklisch A → B → C). Grundlage ist deshalb
-das Wochenziel **„Trainings pro Woche“** (Profil → Kalethra-Score, 1–7, Standard: kein Ziel).
+das Wochenziel **„Trainings pro Woche“** (Einstellungen → Ziele → Training, 1–7, Standard: kein
+Ziel). Seit Phase 10 versioniert: Jeder Tag zählt mit dem Ziel, das an ihm galt.
 
-- Soll im Zeitraum = Ziel × Tage ÷ 7 (3/Woche → 3 in 7 Tagen, ≈12,9 in 30 Tagen).
+- Soll im Zeitraum = Summe der Tagesziele ÷ 7 (3/Woche → 3 in 7 Tagen, ≈12,9 in 30 Tagen; Ziel
+  4 für drei und 3 für vier Tage → 3,4). Tage ohne gültiges Ziel zählen nicht zum Soll.
 - Teilwert = absolvierte Kalethra-Workouts ÷ Soll, **gedeckelt bei 100** – mehr Training bringt
   keinen Bonus.
 - Tage ohne Training sind nie für sich ein Minus; ein markierter Ruhetag auch nicht.
-- **Heute:** ein Workout heute → 100, keins → nicht bewertet (der Tag läuft noch).
+- **Weniger als 7 Tage mit Ziel** (Zeitraum Heute oder ein Ziel, das erst seit Kurzem gilt): ein
+  Workout an einem dieser Tage → 100, keins → nicht bewertet. So wird ein heute gesetztes Ziel nicht
+  gegen eine ganze Woche gemessen.
 - **Ohne Wochenziel:** neutral (nicht bewertet).
 - Nur abgeschlossene **Kalethra-Workouts** (`WorkoutService.dailyStatsBetween`).
   Health-Connect-Aktivitäten und manuelle Aktivitäten zählen **nie** als Training.
 
 ### Aktivitäten
 
-Wochenziel **„Aktive Minuten pro Woche“** (60–300, Standard: kein Ziel; Hinweis auf die
-WHO-Orientierung 150–300 Minuten).
+Wochenziel **„Aktive Minuten pro Woche“** (Einstellungen → Ziele → Aktivitäten, 60–300, Standard:
+kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie das Trainingsziel.
 
 - Minuten aus manuellen und Health-Connect-Aktivitäten mit den bestehenden Regeln aus Phase 8:
   ein manuelles Duplikat einer Health-Connect-Aktivität einmal, eine Einheit, die ein
   Kalethra-Workout ist, nicht noch einmal (`countableActivityMinutes`).
-- Teilwert = Minuten ÷ (Ziel × Tage ÷ 7), **gedeckelt bei 100** – viel Aktivität allein ergibt
+- Teilwert = Minuten ÷ (Summe der Tagesziele ÷ 7), **gedeckelt bei 100** – viel Aktivität allein ergibt
   keinen Höchstwert in den anderen Bereichen und keinen Bonus.
 - **Ohne Ziel** oder **ohne jede Aktivität im Zeitraum** (nicht erfasst ≠ nicht aktiv): neutral.
 - Unabhängig von „Aktivitätskalorien anrechnen“ – die Einstellung wirkt nur auf das Tagesziel
@@ -144,12 +148,12 @@ Luft nach oben“. Keine Ampelfarben, keine Wertung der Person.
   verschlüsselt, Kategorie Gesundheit, mit dem Profil gelöscht, nicht synchronisiert.
 - `nutrition_goals.goal_type` erlaubt zusätzlich `fitness` (Migration 13 baut die Tabelle neu, weil
   SQLite `CHECK`-Bedingungen nicht ändern kann; alle Zeilen werden unverändert kopiert).
-- Einstellungen `trainingsPerWeek` und `activeMinutesPerWeek` in `app_settings` (`null` = kein
-  Ziel).
+- Wochenziele in `goal_targets` (Migration 14, versioniert mit `effective_from`, `NULL` = kein
+  Ziel); bis Phase 9 unversioniert in `app_settings`, bei der Migration ab `1970-01-01` übernommen.
+  Das Schrittziel liegt in derselben Tabelle, fließt aber **nicht** in den Score ein
+  ([SETTINGS.md](SETTINGS.md)).
 
 ## Grenzen
 
-- Das Trainingssoll kennt keinen Startzeitpunkt: Wer ein Wochenziel neu setzt, bekommt für die
-  Tage davor ohne Workouts weniger Trainingspunkte (der Score ist dann meist ohnehin vorläufig).
 - Regeneration nur für heute eintragbar (kein Nachtragen vergangener Tage in dieser Phase).
 - Kein Schlaf, keine HRV, keine Wearable-Recovery-Werte (Health Connect später möglich).

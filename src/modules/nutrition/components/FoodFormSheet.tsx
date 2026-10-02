@@ -14,7 +14,7 @@ import {
   type MeasureUnit,
   type QuantityUnit,
 } from '@/core/nutrition';
-import { AUTOFOCUS, Button, ConfirmSheet, Sheet } from '@/ui';
+import { AUTOFOCUS, Button, ConfirmSheet, NumberField, Sheet } from '@/ui';
 import {
   describeNutritionError,
   foodAttribution,
@@ -22,7 +22,6 @@ import {
   isReferenceFood,
 } from '../domain/format';
 import { formatNumberInput, parseNumberInput, parseOptionalNumber } from '../domain/input';
-import { NumberField } from './NumberField';
 import styles from './Nutrition.module.css';
 import { ReferenceFoodSheet } from './ReferenceFoodSheet';
 

@@ -15,3 +15,5 @@ export { Icon, type IconName } from './icons/Icon';
 export { FoodArt, type FoodArtName } from './illustrations/FoodArt';
 export { AUTOFOCUS, dismissKeyboard, isTextEntry } from './focus';
 export { closeTopOverlay, registerBackHandler } from './backStack';
+export { ChoiceCards, ChoiceChips } from './components/ChoiceCards';
+export { NumberField } from './components/NumberField';

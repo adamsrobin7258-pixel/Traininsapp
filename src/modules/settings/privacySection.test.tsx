@@ -15,7 +15,7 @@ describe('privacy and security section', () => {
   });
 
   it('shows that data is encrypted and stays on the device', async () => {
-    await renderApp('/profile');
+    await renderApp('/settings/app');
     const section = within(privacySection());
     expect(section.getByText('Nur dieses Gerät')).toBeInTheDocument();
     expect(section.getByText('Aktiv')).toBeInTheDocument();
@@ -28,7 +28,7 @@ describe('privacy and security section', () => {
   });
 
   it('runs the storage check and lists every result', async () => {
-    await renderApp('/profile');
+    await renderApp('/settings/app');
     const section = within(privacySection());
 
     await userEvent.click(section.getByRole('button', { name: 'Speicher prüfen' }));
@@ -40,7 +40,7 @@ describe('privacy and security section', () => {
   });
 
   it('is honest about the unencrypted browser development mode', async () => {
-    await renderApp('/profile', {
+    await renderApp('/settings/app', {
       security: { encrypted: false, outcome: 'development-unencrypted', cipherVersion: null },
     });
     const section = within(privacySection());

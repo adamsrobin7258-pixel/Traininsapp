@@ -219,7 +219,7 @@ describe('Aktivitätskalorien anrechnen', () => {
   });
 
   it('is off by default, explains both states and saves the choice', async () => {
-    const { services } = await renderApp('/profile', { healthPlatform: platformWith([]) });
+    const { services } = await renderApp('/settings/goals', { healthPlatform: platformWith([]) });
     const toggle = await screen.findByRole('switch', { name: 'Aktivitätskalorien anrechnen' });
     expect(toggle).toHaveAttribute('aria-checked', 'false');
     const row = within(toggle.closest('li') ?? document.body);

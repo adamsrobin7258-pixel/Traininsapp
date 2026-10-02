@@ -1,5 +1,5 @@
 import { useId } from 'react';
-import styles from './Nutrition.module.css';
+import styles from './Form.module.css';
 
 /**
  * A number input that opens the numeric keyboard (decimal comma allowed). Text is kept as
@@ -23,7 +23,7 @@ export function NumberField({
   const id = useId();
   const errorId = useId();
   return (
-    <div className={styles.pairItem}>
+    <div className={styles.item}>
       <label htmlFor={id} className={styles.label}>
         {label}
       </label>

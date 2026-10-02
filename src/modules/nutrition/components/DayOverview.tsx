@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { NUTRITION_LINKS } from '@/app/routes';
+import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
 import { Icon, Meter } from '@/ui';
@@ -100,7 +100,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
 
       {hasAnyGoal ? (
         <div className={styles.cardActions}>
-          <Link to={NUTRITION_LINKS.profile} className={styles.linkButton}>
+          <Link to={SETTINGS_LINKS.goals} className={styles.linkButton}>
             {t('nutrition.profile.open')}
           </Link>
         </div>
@@ -110,7 +110,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
             <p className={styles.foodName}>{t('nutrition.overview.noGoalTitle')}</p>
             <p className={styles.hint}>{t('nutrition.overview.noGoalBody')}</p>
           </div>
-          <Link to={NUTRITION_LINKS.profile} className={styles.linkButtonPrimary}>
+          <Link to={SETTINGS_LINKS.goals} className={styles.linkButtonPrimary}>
             {t('nutrition.profile.setup')}
           </Link>
         </div>

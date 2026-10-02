@@ -501,7 +501,7 @@ describe('migration 10', () => {
         VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x');
       INSERT INTO app_settings (key, value, updated_at) VALUES ('theme', '"dark"', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([10, 11, 12, 13]);
+    expect(await migrate(db, migrations)).toEqual([10, 11, 12, 13, 14]);
     expect(await db.query('SELECT id, value FROM weight_entries')).toEqual([
       { id: 'w', value: 82.4 },
     ]);

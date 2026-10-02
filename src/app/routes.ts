@@ -8,7 +8,8 @@ export const ROUTES = {
   training: '/training',
   nutrition: '/nutrition',
   health: '/health',
-  profile: '/profile',
+  /** Einstellungen: profile, goals, own content and app settings. */
+  settings: '/settings',
 } as const;
 
 export type ModuleId = keyof typeof ROUTES;
@@ -36,5 +37,24 @@ export const NUTRITION_LINKS = {
   foods: `${ROUTES.nutrition}/foods`,
   meals: `${ROUTES.nutrition}/meals`,
   templates: `${ROUTES.nutrition}/templates`,
-  profile: `${ROUTES.nutrition}/profile`,
 } as const;
+
+/**
+ * The pages of Einstellungen – the only place where the user defines what they want to reach
+ * (profile, goals) and how Kalethra is set up (app). The areas record what actually happened.
+ */
+export const SETTINGS_LINKS = {
+  profile: `${ROUTES.settings}/profile`,
+  goals: `${ROUTES.settings}/goals`,
+  content: `${ROUTES.settings}/content`,
+  app: `${ROUTES.settings}/app`,
+} as const;
+
+/**
+ * Old addresses that moved; they redirect so saved links and deep links keep working
+ * (otherwise the catch-all route would silently open Fortschritt).
+ */
+export const LEGACY_REDIRECTS: readonly { from: string; to: string }[] = [
+  { from: '/profile', to: ROUTES.settings },
+  { from: '/nutrition/profile', to: SETTINGS_LINKS.goals },
+];

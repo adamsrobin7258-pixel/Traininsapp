@@ -113,7 +113,7 @@ describe('Fortschritt – the main page', () => {
         'Training',
         'Ernährung',
         'Gesundheit',
-        'Profil',
+        'Einstellungen',
       ]);
       expect(nav.getByRole('link', { name: 'Fortschritt' })).toHaveAttribute(
         'aria-current',

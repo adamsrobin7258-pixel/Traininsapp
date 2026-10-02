@@ -64,7 +64,7 @@ test('connects Health Connect after an explanation, shows the data and disconnec
   page,
 }) => {
   await installFakeHealthConnect(page);
-  await page.goto('/profile');
+  await page.goto('/settings/app');
   const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
   await expect(section.getByText('Nicht verbunden')).toBeVisible();
 
@@ -91,11 +91,25 @@ test('connects Health Connect after an explanation, shows the data and disconnec
   await expect(imported.getByText(/92,4 kg/)).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
+  // Step goal: set under Einstellungen → Ziele, the steps themselves stay Health Connect's.
+  await imported.getByRole('link', { name: 'Schrittziel festlegen' }).click();
+  await expect(page).toHaveURL(/\/settings\/goals$/);
+  await page.getByRole('button', { name: /Schrittziel pro Tag/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '8.000 Schritte' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: 'Gesundheit' })
+    .click();
+  await expect(imported.getByText('6.543 von 8.000')).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+
   // Disconnect: deleting the imported data is pre-selected.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
-    .getByRole('link', { name: 'Profil' })
+    .getByRole('link', { name: 'Einstellungen' })
     .click();
+  await page.locator('main').getByRole('link', { name: /^App/ }).click();
   await section.getByRole('button', { name: /^Health Connect/ }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Verbindung trennen' }).click();
   const confirm = page.getByRole('dialog');
@@ -109,7 +123,7 @@ test('connects Health Connect after an explanation, shows the data and disconnec
 });
 
 test('explains that Health Connect is not available in the browser', async ({ page }) => {
-  await page.goto('/profile');
+  await page.goto('/settings/app');
   const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
   await expect(section.getByText('Nicht verfügbar')).toBeVisible();
   await section.getByRole('button', { name: /^Health Connect/ }).click();
@@ -123,7 +137,7 @@ test('the connected Health Connect sheet scrolls to its last action on a small s
 }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await installFakeHealthConnect(page);
-  await page.goto('/profile');
+  await page.goto('/settings/app');
   const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
   await section.getByRole('button', { name: /^Health Connect/ }).click();
   const sheet = page.getByRole('dialog');
@@ -167,7 +181,7 @@ test('shows imported activities apart from workouts and can count their calories
 }) => {
   // Runs in every project: light and dark, 390 and 320 px wide.
   await installFakeHealthConnect(page);
-  await page.goto('/profile');
+  await page.goto('/settings/app');
   const section = page.getByRole('region', { name: 'Gesundheitsdaten' });
   await section.getByRole('button', { name: /^Health Connect/ }).click();
   const sheet = page.getByRole('dialog');
@@ -195,8 +209,12 @@ test('shows imported activities apart from workouts and can count their calories
   expect(await noHorizontalScroll(page)).toBe(true);
   await page.keyboard.press('Escape');
 
-  // Off by default; turning it on is saved and explained.
-  await nav.getByRole('link', { name: 'Profil' }).click();
+  // Off by default; turning it on (Einstellungen → Ziele) is saved and explained.
+  await nav.getByRole('link', { name: 'Einstellungen' }).click();
+  await page
+    .locator('main')
+    .getByRole('link', { name: /^Ziele/ })
+    .click();
   const toggle = page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' });
   await expect(toggle).toHaveAttribute('aria-checked', 'false');
   await toggle.click();

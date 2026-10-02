@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { NUTRITION_LINKS } from '@/app/routes';
+import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useNutrition, type WaterEntry } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
 import { Icon, List, ListRow, Meter, Section } from '@/ui';
 import { describeNutritionError, formatWater } from '../domain/format';
-import { QuickAmountsSheet, WaterSheet } from './WaterSheets';
+import { WaterSheet } from './WaterSheets';
 import styles from './Nutrition.module.css';
 
-type Open = { kind: 'add' } | { kind: 'edit'; entry: WaterEntry } | { kind: 'quick' } | null;
+type Open = { kind: 'add' } | { kind: 'edit'; entry: WaterEntry } | null;
 
 /** Water of the day: quick buttons, custom amounts and the entries. Never counts as kcal. */
 export function WaterSection({
@@ -111,15 +111,9 @@ export function WaterSection({
           }}
         />
         {goalMl === null ? (
-          <ListRow title={t('nutrition.water.setGoal')} to={NUTRITION_LINKS.profile} />
+          <ListRow title={t('nutrition.water.setGoal')} to={SETTINGS_LINKS.goals} />
         ) : null}
-        <ListRow
-          title={t('nutrition.water.quickEdit')}
-          action
-          onPress={() => {
-            setOpen({ kind: 'quick' });
-          }}
-        />
+        <ListRow title={t('nutrition.water.quickEdit')} to={SETTINGS_LINKS.app} />
       </List>
       {open?.kind === 'add' ? (
         <WaterSheet
@@ -133,13 +127,6 @@ export function WaterSection({
         <WaterSheet
           day={day}
           entry={open.entry}
-          onClose={() => {
-            setOpen(null);
-          }}
-        />
-      ) : null}
-      {open?.kind === 'quick' ? (
-        <QuickAmountsSheet
           onClose={() => {
             setOpen(null);
           }}

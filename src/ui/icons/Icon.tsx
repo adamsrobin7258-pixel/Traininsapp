@@ -28,6 +28,21 @@ const paths = {
   plus: <path d="M12 5.5v13M5.5 12h13" />,
   arrowUp: <path d="M12 18.5v-13M6.75 10.75 12 5.5l5.25 5.25" />,
   arrowDown: <path d="M12 5.5v13M6.75 13.25 12 18.5l5.25-5.25" />,
+  /** Einstellungen: two sliders. */
+  settings: (
+    <>
+      <path d="M4.75 7.25h9M18.25 7.25h1M4.75 16.75h1M9.75 16.75h9.5" />
+      <circle cx="16.25" cy="7.25" r="2" />
+      <circle cx="7.75" cy="16.75" r="2" />
+    </>
+  ),
+  /** Goals. */
+  target: (
+    <>
+      <circle cx="12" cy="12" r="7.25" />
+      <circle cx="12" cy="12" r="3.5" />
+    </>
+  ),
   /** "About the same" (score trend). */
   arrowRight: <path d="M5.5 12h13M13.25 6.75 18.5 12l-5.25 5.25" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,

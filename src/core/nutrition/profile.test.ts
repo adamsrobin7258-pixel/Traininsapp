@@ -226,7 +226,7 @@ describe('migration 7', () => {
          protein_g_auto, created_at, updated_at)
        VALUES ('g', 'p', '2026-09-01', 'lose', 2100, 150, 'x', 'x')`,
     );
-    expect(await migrate(db, migrations)).toEqual([7, 8, 9, 10, 11, 12, 13]);
+    expect(await migrate(db, migrations)).toEqual([7, 8, 9, 10, 11, 12, 13, 14]);
 
     const services = createServices({ driver: db, security: ENCRYPTED_TEST_SECURITY }, clock);
     const [goal] = await services.nutrition.goals.list('p');

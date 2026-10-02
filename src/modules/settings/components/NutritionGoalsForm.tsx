@@ -1,5 +1,5 @@
 import { useId, useState } from 'react';
-import { ROUTES } from '@/app/routes';
+import { ROUTES, SETTINGS_LINKS } from '@/app/routes';
 import { formatWeight, fromKg, parseWeightInput } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import {
@@ -11,6 +11,7 @@ import {
   INPUT_LIMITS,
   levelFor,
   MACRO_TARGETS,
+  nutritionErrorKey,
   useNutrition,
   useNutritionData,
   type ActivityLevel,
@@ -25,41 +26,37 @@ import {
   type ProfileParams,
 } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
-import { BODY_DATA_LIMITS, PROFILE_SEXES, useProfile, type ProfileSex } from '@/core/user';
+import { useProfile } from '@/core/user';
 import { parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
-import { formatMediumDate } from '@/shared/lib/format';
-import { Button, List, ListRow, Screen, Section, Sheet } from '@/ui';
-import { CalculationView } from '../components/CalculationView';
-import { ChoiceCards, ChoiceChips } from '../components/ChoiceCards';
-import { NumberField } from '../components/NumberField';
-import { OverrideSheet } from '../components/OverrideSheet';
-import { describeNutritionError, formatKcal } from '../domain/format';
-import { formatNumberInput, parseNumberInput, parseOptionalNumber } from '../domain/input';
-import styles from '../components/Nutrition.module.css';
+import { formatKcal, formatMediumDate } from '@/shared/lib/format';
+import { formatNumberInput, parseOptionalNumber } from '@/shared/lib/numberInput';
+import { Button, ChoiceCards, ChoiceChips, List, ListRow, NumberField, Section, Sheet } from '@/ui';
+import { CalculationView } from './CalculationView';
+import { OverrideSheet } from './OverrideSheet';
+import styles from './Settings.module.css';
 
-/** The nutrition profile: personal data, activity, training and goal → calculated goals. */
-export function NutritionProfileScreen() {
+/**
+ * Main goal and nutrition goals (Einstellungen → Ziele): goal and pace, target weight,
+ * everyday activity, training, calculated goals with own values and water → one save. The
+ * personal data the calculation needs are read from the profile (Einstellungen → Profil); the
+ * calculation itself is unchanged (GoalService).
+ */
+export function NutritionGoalsForm() {
   const { t } = useI18n();
   const state = useNutritionData((s, profileId) => s.goals.profileState(profileId), []);
   return (
-    <Screen
-      title={t('nutrition.profile.title')}
-      back={{ to: ROUTES.nutrition, label: t('nutrition.back') }}
-    >
+    <>
       {state.status === 'error' ? (
         <p className={styles.error} role="alert">
           {t('nutrition.errors.loadFailed')}
         </p>
       ) : null}
-      {state.status === 'ready' ? <ProfileForm state={state.data} /> : null}
-    </Screen>
+      {state.status === 'ready' ? <GoalsForm state={state.data} /> : null}
+    </>
   );
 }
 
 interface Draft {
-  sex: ProfileSex | null;
-  birthDate: string;
-  height: string;
   targetWeight: string;
   activityLevel: ActivityLevel | null;
   includeTraining: boolean;
@@ -69,18 +66,14 @@ interface Draft {
   water: string;
 }
 
-type FieldError = 'birthDate' | 'height' | 'targetWeight' | 'water';
+type FieldError = 'targetWeight' | 'water';
 
 function initialDraft(
   current: NutritionGoal | null,
-  personal: PersonalData,
   formatTarget: (kg: number) => string,
   locale: string,
 ): Draft {
   return {
-    sex: personal.sex,
-    birthDate: personal.birthDate ?? '',
-    height: formatNumberInput(personal.heightCm, locale),
     targetWeight: current?.targetWeightKg != null ? formatTarget(current.targetWeightKg) : '',
     activityLevel: current?.activityLevel ?? null,
     includeTraining: current?.includeTraining ?? false,
@@ -93,17 +86,16 @@ function initialDraft(
   };
 }
 
-function ProfileForm({ state }: { state: NutritionProfileState }) {
+function GoalsForm({ state }: { state: NutritionProfileState }) {
   const { t, locale } = useI18n();
   const { mutate } = useNutrition();
-  const { profile, updateBodyData } = useProfile();
+  const { profile } = useProfile();
   const { weightUnit } = useSettings().settings;
-  const birthId = useId();
+  const trainingId = useId();
   const weightText = (kg: number) => formatWeight(kg, weightUnit, locale);
   const [draft, setDraft] = useState<Draft>(() =>
     initialDraft(
       state.current,
-      profile,
       (kg) => formatNumberInput(Math.round(fromKg(kg, weightUnit) * 10) / 10, locale),
       locale,
     ),
@@ -116,15 +108,17 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
   const [failure, setFailure] = useState<string | null>(null);
 
   const today = toLocalDateKey(new Date());
-  const height = parseNumberInput(draft.height);
   const target = draft.targetWeight.trim()
     ? parseWeightInput(draft.targetWeight, weightUnit)
     : null;
+  // Read-only here: personal data are edited only under Einstellungen → Profil.
   const personal: PersonalData = {
-    sex: draft.sex,
-    birthDate: parseLocalDateKey(draft.birthDate) ? draft.birthDate : null,
-    heightCm: height.ok ? height.value : null,
+    sex: profile.sex,
+    birthDate: profile.birthDate,
+    heightCm: profile.heightCm,
   };
+  const personalComplete =
+    personal.sex !== null && personal.birthDate !== null && personal.heightCm !== null;
   const params: ProfileParams = {
     goalType: draft.goalType,
     goalLevel: levelFor(draft.goalType, draft.goalLevel),
@@ -146,18 +140,6 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
 
   function validate(): { water: number | null } | null {
     const next: Partial<Record<FieldError, string>> = {};
-    if (
-      draft.birthDate &&
-      (!personal.birthDate ||
-        draft.birthDate > today ||
-        draft.birthDate < BODY_DATA_LIMITS.earliestBirthDate)
-    ) {
-      next.birthDate = t('nutrition.profile.errors.birthDate');
-    }
-    const { min, max } = BODY_DATA_LIMITS.heightCm;
-    if (draft.height.trim() && (!height.ok || height.value < min || height.value > max)) {
-      next.height = t('nutrition.profile.errors.height');
-    }
     const limits = INPUT_LIMITS.targetWeightKg;
     if (target && (!target.ok || target.kg < limits.min || target.kg > limits.max)) {
       next.targetWeight = t('nutrition.profile.errors.targetWeight');
@@ -197,13 +179,6 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
     setBusy(true);
     setFailure(null);
     try {
-      if (
-        personal.sex !== profile.sex ||
-        personal.birthDate !== profile.birthDate ||
-        personal.heightCm !== profile.heightCm
-      ) {
-        await updateBodyData(personal);
-      }
       await mutate((s, profileId) =>
         s.goals.saveProfile(profileId, {
           params,
@@ -213,7 +188,7 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
       );
       setNotice(t('nutrition.profile.saved'));
     } catch (error) {
-      setFailure(describeNutritionError(error, t));
+      setFailure(t(nutritionErrorKey(error)));
     } finally {
       setBusy(false);
       setConfirming(false);
@@ -242,157 +217,10 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
 
   return (
     <>
-      <p className={styles.hint}>{t('nutrition.profile.intro')}</p>
-
-      <Section title={t('nutrition.profile.personal')}>
-        <div className={styles.form}>
-          <p className={styles.label}>{t('nutrition.profile.sex')}</p>
-          <ChoiceChips
-            label={t('nutrition.profile.sex')}
-            options={PROFILE_SEXES.map((sex) => ({
-              value: sex,
-              title: t(`nutrition.profile.sexes.${sex}`),
-            }))}
-            value={draft.sex}
-            onChange={(sex) => {
-              change({ sex });
-            }}
-          />
-          {draft.sex === 'unspecified' ? (
-            <p className={styles.hint}>{t('nutrition.profile.sexHint')}</p>
-          ) : null}
-          {/* Stacked: a native date field needs the full width on small phones. */}
-          <div className={styles.stack}>
-            <div className={styles.pairItem}>
-              <label htmlFor={birthId} className={styles.label}>
-                {t('nutrition.profile.birthDate')}
-              </label>
-              <input
-                id={birthId}
-                className={styles.field}
-                type="date"
-                min={BODY_DATA_LIMITS.earliestBirthDate}
-                max={today}
-                value={draft.birthDate}
-                aria-invalid={Boolean(errors.birthDate)}
-                onChange={(event) => {
-                  change({ birthDate: event.target.value });
-                }}
-              />
-              {errors.birthDate ? <p className={styles.fieldError}>{errors.birthDate}</p> : null}
-            </div>
-            <NumberField
-              label={t('nutrition.profile.height')}
-              value={draft.height}
-              integer
-              error={errors.height}
-              onChange={(value) => {
-                change({ height: value });
-              }}
-            />
-          </div>
-        </div>
-      </Section>
-
-      <Section title={t('nutrition.profile.body')}>
-        <List label={t('nutrition.profile.body')}>
-          <ListRow
-            title={t('nutrition.profile.currentWeight')}
-            value={
-              latest
-                ? t('nutrition.profile.currentWeightValue', {
-                    value: weightText(latest.kg),
-                    date: formatMediumDate(parseLocalDateKey(latest.date) ?? new Date(), locale),
-                  })
-                : t('nutrition.profile.noWeight')
-            }
-          />
-          {trend ? (
-            <ListRow
-              title={t('nutrition.profile.trendWeight')}
-              subtitle={
-                trend.method === 'median7'
-                  ? t('nutrition.profile.trendMedian', { count: trend.entryCount })
-                  : t('nutrition.profile.trendLatest')
-              }
-              value={weightText(trend.kg)}
-            />
-          ) : (
-            <ListRow title={t('nutrition.profile.addWeight')} to={ROUTES.health} />
-          )}
-        </List>
-        <div className={styles.form}>
-          <NumberField
-            label={t('nutrition.profile.targetWeight', { unit: weightUnit })}
-            value={draft.targetWeight}
-            error={errors.targetWeight}
-            onChange={(value) => {
-              change({ targetWeight: value });
-            }}
-          />
-          {params.targetWeightKg !== null && remaining !== null ? (
-            <p className={styles.hint}>
-              {remaining < 0.05
-                ? t('nutrition.profile.targetReached', {
-                    target: weightText(params.targetWeightKg),
-                  })
-                : t('nutrition.profile.targetProgress', {
-                    target: weightText(params.targetWeightKg),
-                    remaining: weightText(remaining),
-                  })}
-            </p>
-          ) : null}
-        </div>
-      </Section>
-
-      <Section title={t('nutrition.profile.activity')} footer={t('nutrition.profile.activityHint')}>
-        <ChoiceCards
-          label={t('nutrition.profile.activity')}
-          options={ACTIVITY_LEVELS.map((level) => ({
-            value: level,
-            title: t(`nutrition.profile.activities.${level}`),
-            text: t(`nutrition.profile.activityDescriptions.${level}`),
-          }))}
-          value={draft.activityLevel}
-          onChange={(activityLevel) => {
-            change({ activityLevel });
-          }}
-        />
-      </Section>
-
-      <Section
-        title={t('nutrition.profile.training')}
-        footer={t('nutrition.profile.includeTrainingHint')}
-      >
-        <div className={styles.switchRow}>
-          <span id={`${birthId}-training`}>{t('nutrition.profile.includeTraining')}</span>
-          <button
-            type="button"
-            role="switch"
-            className={styles.switch}
-            aria-checked={draft.includeTraining}
-            aria-labelledby={`${birthId}-training`}
-            onClick={() => {
-              change({ includeTraining: !draft.includeTraining });
-            }}
-          />
-        </div>
-        {draft.includeTraining && calculation?.energy ? (
-          <p className={styles.empty}>
-            {calculation.energy.training && calculation.energy.training.sessions > 0
-              ? t('nutrition.profile.trainingSummary', {
-                  count: calculation.energy.training.sessions,
-                  kcal: Math.round(calculation.energy.training.kcalPerDay),
-                })
-              : t('nutrition.profile.trainingNone')}
-          </p>
-        ) : null}
-      </Section>
-
-      <Section title={t('nutrition.profile.goal')}>
+      <Section title={t('settings.goals.mainGoal')} footer={t('settings.goals.mainGoalHint')}>
         <div className={styles.form}>
           <ChoiceChips
-            label={t('nutrition.profile.goalType')}
+            label={t('settings.goals.mainGoal')}
             options={GOAL_TYPES.map((type) => ({
               value: type,
               title: t(`nutrition.goalTypes.${type}`),
@@ -424,7 +252,109 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
           ) : (
             <p className={styles.hint}>{t('nutrition.profile.maintainHint')}</p>
           )}
+          <NumberField
+            label={t('nutrition.profile.targetWeight', { unit: weightUnit })}
+            value={draft.targetWeight}
+            error={errors.targetWeight}
+            onChange={(value) => {
+              change({ targetWeight: value });
+            }}
+          />
+          {params.targetWeightKg !== null && remaining !== null ? (
+            <p className={styles.hint}>
+              {remaining < 0.05
+                ? t('nutrition.profile.targetReached', {
+                    target: weightText(params.targetWeightKg),
+                  })
+                : t('nutrition.profile.targetProgress', {
+                    target: weightText(params.targetWeightKg),
+                    remaining: weightText(remaining),
+                  })}
+            </p>
+          ) : null}
         </div>
+      </Section>
+
+      <Section title={t('settings.goals.nutrition')} footer={t('nutrition.profile.intro')}>
+        <List label={t('settings.goals.basis')}>
+          <ListRow
+            title={t('settings.goals.personalData')}
+            subtitle={
+              personalComplete
+                ? t('settings.goals.personalDataSet')
+                : t('settings.goals.personalDataMissing')
+            }
+            to={SETTINGS_LINKS.profile}
+          />
+          <ListRow
+            title={t('nutrition.profile.currentWeight')}
+            value={
+              latest
+                ? t('nutrition.profile.currentWeightValue', {
+                    value: weightText(latest.kg),
+                    date: formatMediumDate(parseLocalDateKey(latest.date) ?? new Date(), locale),
+                  })
+                : t('nutrition.profile.noWeight')
+            }
+          />
+          {trend ? (
+            <ListRow
+              title={t('nutrition.profile.trendWeight')}
+              subtitle={
+                trend.method === 'median7'
+                  ? t('nutrition.profile.trendMedian', { count: trend.entryCount })
+                  : t('nutrition.profile.trendLatest')
+              }
+              value={weightText(trend.kg)}
+            />
+          ) : (
+            <ListRow title={t('nutrition.profile.addWeight')} to={ROUTES.health} />
+          )}
+        </List>
+      </Section>
+
+      <Section title={t('nutrition.profile.activity')} footer={t('nutrition.profile.activityHint')}>
+        <ChoiceCards
+          label={t('nutrition.profile.activity')}
+          options={ACTIVITY_LEVELS.map((level) => ({
+            value: level,
+            title: t(`nutrition.profile.activities.${level}`),
+            text: t(`nutrition.profile.activityDescriptions.${level}`),
+          }))}
+          value={draft.activityLevel}
+          onChange={(activityLevel) => {
+            change({ activityLevel });
+          }}
+        />
+      </Section>
+
+      <Section
+        title={t('nutrition.profile.training')}
+        footer={t('nutrition.profile.includeTrainingHint')}
+      >
+        <div className={styles.switchRow}>
+          <span id={`${trainingId}-training`}>{t('nutrition.profile.includeTraining')}</span>
+          <button
+            type="button"
+            role="switch"
+            className={styles.switch}
+            aria-checked={draft.includeTraining}
+            aria-labelledby={`${trainingId}-training`}
+            onClick={() => {
+              change({ includeTraining: !draft.includeTraining });
+            }}
+          />
+        </div>
+        {draft.includeTraining && calculation?.energy ? (
+          <p className={styles.empty}>
+            {calculation.energy.training && calculation.energy.training.sessions > 0
+              ? t('nutrition.profile.trainingSummary', {
+                  count: calculation.energy.training.sessions,
+                  kcal: Math.round(calculation.energy.training.kcalPerDay),
+                })
+              : t('nutrition.profile.trainingNone')}
+          </p>
+        ) : null}
       </Section>
 
       {calculation ? (
@@ -463,7 +393,7 @@ function ProfileForm({ state }: { state: NutritionProfileState }) {
           </p>
         ) : null}
         <Button fullWidth disabled={busy} onClick={requestSave}>
-          {t('nutrition.profile.save')}
+          {t('settings.goals.save')}
         </Button>
       </div>
 

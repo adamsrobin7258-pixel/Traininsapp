@@ -4,19 +4,11 @@ import {
   isValidWaterQuickAmounts,
   LANGUAGE_PREFERENCES,
   THEME_PREFERENCES,
-  WEEKLY_TARGET_LIMITS,
   WEIGHT_UNIT_PREFERENCES,
   type AppSettings,
 } from './types';
 
 type Validators = { [K in keyof AppSettings]: (value: unknown) => value is AppSettings[K] };
-
-/** A whole number within `limits`, or `null` for "no target". */
-function optionalTarget(limits: { min: number; max: number }) {
-  return (value: unknown): value is number | null =>
-    value === null ||
-    (Number.isInteger(value) && (value as number) >= limits.min && (value as number) <= limits.max);
-}
 
 function oneOf<T extends string>(allowed: readonly T[]) {
   return (value: unknown): value is T => allowed.includes(value as T);
@@ -28,8 +20,6 @@ const validators: Validators = {
   weightUnit: oneOf(WEIGHT_UNIT_PREFERENCES),
   waterQuickAmountsMl: isValidWaterQuickAmounts,
   countActivityCalories: (value: unknown): value is boolean => typeof value === 'boolean',
-  trainingsPerWeek: optionalTarget(WEEKLY_TARGET_LIMITS.trainingsPerWeek),
-  activeMinutesPerWeek: optionalTarget(WEEKLY_TARGET_LIMITS.activeMinutesPerWeek),
 };
 
 /** Merges stored values with defaults. Unknown keys and invalid values are ignored. */

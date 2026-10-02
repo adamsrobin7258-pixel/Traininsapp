@@ -2,26 +2,15 @@ import type { TranslateFn, TranslationKey } from '@/core/i18n';
 import {
   FoodProviderError,
   mealDisplayName,
-  NutritionError,
+  nutritionErrorKey,
   type DefaultMealKey,
   type Food,
   type MealSlot,
-  type NutritionErrorCode,
   type QuantityUnit,
 } from '@/core/nutrition';
 import type { AmountError } from './input';
 
-/** Whole kcal, e.g. "1.250 kcal". */
-export function formatKcal(value: number, locale: string): string {
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value)} kcal`;
-}
-
-/** Grams with at most one decimal, e.g. "12,5 g". */
-export function formatGrams(value: number, locale: string): string {
-  return `${new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(value)} g`;
-}
-
-export { formatWater } from '@/shared/lib/format';
+export { formatGrams, formatKcal, formatWater } from '@/shared/lib/format';
 
 /** "150 g", "2 Stück", "1 Portion". */
 export function formatQuantity(
@@ -41,21 +30,10 @@ export function mealName(meal: Pick<MealSlot, 'defaultKey' | 'name'>, t: Transla
   );
 }
 
-const ERRORS: Record<NutritionErrorCode, TranslationKey> = {
-  'not-found': 'nutrition.errors.notFound',
-  'invalid-name': 'nutrition.errors.name',
-  'invalid-value': 'nutrition.errors.invalidNumber',
-  'invalid-unit': 'nutrition.errors.incompatibleUnit',
-  'incompatible-unit': 'nutrition.errors.incompatibleUnit',
-  'food-inactive': 'nutrition.errors.foodInactive',
-  'last-meal': 'nutrition.errors.lastMeal',
-  'invalid-barcode': 'nutrition.errors.barcode',
-};
-
 /** User-facing text for a failed nutrition action (never the technical message). */
 export function describeNutritionError(error: unknown, t: TranslateFn): string {
   if (error instanceof FoodProviderError) return t(`nutrition.lookup.errors.${error.code}`);
-  return t(error instanceof NutritionError ? ERRORS[error.code] : 'nutrition.errors.saveFailed');
+  return t(nutritionErrorKey(error));
 }
 
 const AMOUNT_ERRORS: Record<AmountError, TranslationKey> = {

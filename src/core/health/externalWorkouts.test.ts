@@ -479,7 +479,7 @@ describe('migration 11', () => {
       INSERT INTO daily_activity (profile_id, platform, date, steps, active_kcal, created_at, updated_at)
         VALUES ('p', 'healthConnect', '2026-10-01', 9000, 410, 'x', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([11, 12, 13]);
+    expect(await migrate(db, migrations)).toEqual([11, 12, 13, 14]);
     expect(await db.query('SELECT id, value FROM weight_entries')).toEqual([
       { id: 'w', value: 82.4 },
     ]);

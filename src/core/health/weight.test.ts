@@ -8,6 +8,7 @@ import {
   toKg,
   weightLimitsIn,
 } from './weight';
+import { ACTIVITY_WEIGHT_WINDOW_DAYS, pickActivityWeight } from './weightRules';
 
 describe('parseWeightInput', () => {
   it.each([
@@ -90,5 +91,29 @@ describe('formatting', () => {
     expect(formatWeightChange(-0.6, 'kg', 'de')).toMatch(/^[-−]0,6 kg$/);
     expect(formatWeightChange(1.2, 'kg', 'en')).toBe('+1.2 kg');
     expect(formatWeightChange(0.01, 'kg', 'en')).toBe('0.0 kg');
+  });
+});
+
+describe('weight rule 3: activity weight', () => {
+  it('takes the own entry unless a Health Connect value is newer; own wins on the same day', () => {
+    const own = { date: '2026-10-01', kg: 84 };
+    expect(pickActivityWeight(own, [])).toEqual({ ...own, source: 'own' });
+    expect(pickActivityWeight(own, [{ date: '2026-10-01', kg: 86 }])).toEqual({
+      ...own,
+      source: 'own',
+    });
+    expect(
+      pickActivityWeight(own, [
+        { date: '2026-09-20', kg: 85 },
+        { date: '2026-10-02', kg: 86 },
+      ]),
+    ).toEqual({ date: '2026-10-02', kg: 86, source: 'imported' });
+    expect(pickActivityWeight(null, [{ date: '2026-09-20', kg: 85 }])).toEqual({
+      date: '2026-09-20',
+      kg: 85,
+      source: 'imported',
+    });
+    expect(pickActivityWeight(null, [])).toBeNull();
+    expect(ACTIVITY_WEIGHT_WINDOW_DAYS).toBe(60);
   });
 });

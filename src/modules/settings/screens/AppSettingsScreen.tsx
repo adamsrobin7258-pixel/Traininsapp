@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ROUTES } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import {
@@ -8,22 +9,23 @@ import {
   WEIGHT_UNIT_PREFERENCES,
   useSettings,
 } from '@/core/settings';
-import { DISPLAY_NAME_MAX_LENGTH, useProfile } from '@/core/user';
-import { List, ListRow, Screen, Section, SegmentedControl, TextField } from '@/ui';
+import { List, ListRow, Screen, Section, SegmentedControl } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { HealthDataSection } from '../components/HealthDataSection';
-import { ScoreTargetsSection } from '../components/ScoreTargetsSection';
 import { PrivacySection } from '../components/PrivacySection';
-import { ProfileHeader } from '../components/ProfileHeader';
+import { WaterQuickAmountsSection } from '../components/WaterQuickAmountsRow';
 
 function reportError(error: unknown) {
   console.error(error);
 }
 
-export function ProfileScreen() {
+/**
+ * Einstellungen → App: how Kalethra looks and behaves – appearance, units, language, water quick
+ * buttons, Health Connect, privacy and storage, about. No goals here (Einstellungen → Ziele).
+ */
+export function AppSettingsScreen() {
   const { t } = useI18n();
   const { settings, updateSetting } = useSettings();
-  const { profile, rename } = useProfile();
   const deviceLocale = resolveLocale('system', getDeviceLanguages());
   const [sourcesOpen, setSourcesOpen] = useState(false);
 
@@ -37,22 +39,10 @@ export function ProfileScreen() {
   }));
 
   return (
-    <Screen title={t('profile.title')}>
-      <ProfileHeader profile={profile} />
-
-      <Section>
-        <TextField
-          label={t('profile.nameLabel')}
-          value={profile.displayName ?? ''}
-          placeholder={t('profile.namePlaceholder')}
-          maxLength={DISPLAY_NAME_MAX_LENGTH}
-          autoComplete="given-name"
-          onCommit={(value) => {
-            rename(value).catch(reportError);
-          }}
-        />
-      </Section>
-
+    <Screen
+      title={t('settings.app.title')}
+      back={{ to: ROUTES.settings, label: t('settings.title') }}
+    >
       <Section title={t('profile.appearanceTitle')}>
         <SegmentedControl
           label={t('profile.theme.label')}
@@ -93,7 +83,7 @@ export function ProfileScreen() {
         />
       </Section>
 
-      <ScoreTargetsSection />
+      <WaterQuickAmountsSection />
 
       <HealthDataSection />
 

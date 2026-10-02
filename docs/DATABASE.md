@@ -473,8 +473,32 @@ CREATE UNIQUE INDEX recovery_entries_day ON recovery_entries (profile_id, local_
 - `nutrition_goals.goal_type` erlaubt zusätzlich `fitness`. Weil SQLite `CHECK`-Bedingungen nicht
   ändern kann, wird die Tabelle mit identischen Spalten neu angelegt, jede Zeile unverändert
   kopiert und der Index `nutrition_goals_day` neu erstellt (getestet: Zeilen vorher = nachher).
-- Der Score selbst wird **nicht** gespeichert. Wochenziele `trainingsPerWeek` und
-  `activeMinutesPerWeek` liegen in `app_settings`.
+- Der Score selbst wird **nicht** gespeichert. Die Wochenziele lagen bis Phase 9 in
+  `app_settings`; seit Migration 14 in `goal_targets` (unten).
+
+## Versionierte Ziele (Migration 14, Phase 10)
+
+```sql
+CREATE TABLE goal_targets (
+  id             TEXT PRIMARY KEY NOT NULL,
+  profile_id     TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  kind           TEXT NOT NULL,   -- trainingsPerWeek | activeMinutesPerWeek | stepsPerDay
+  effective_from TEXT NOT NULL,   -- YYYY-MM-DD, gilt bis zur nächsten Version
+  value          INTEGER,         -- NULL = kein Ziel ab diesem Tag; Grenzen per CHECK
+  created_at     TEXT NOT NULL,
+  updated_at     TEXT NOT NULL
+);
+CREATE UNIQUE INDEX goal_targets_version ON goal_targets (profile_id, kind, effective_from);
+```
+
+- Versioniert wie `nutrition_goals`: Eine Änderung legt eine Version ab heute an, ältere werden
+  nie verändert; eine zweite Änderung am selben Tag ersetzt die heutige.
+- **Übernahme:** `trainingsPerWeek` und `activeMinutesPerWeek` aus `app_settings` werden für jedes
+  Profil als Version ab `1970-01-01` übernommen (nur gültige ganze Zahlen im Bereich) und danach
+  aus `app_settings` gelöscht – eine Quelle, kein Datenverlust, bisherige Scores identisch.
+  `INSERT OR IGNORE` macht die Übernahme wiederholbar.
+- Datenkatalog: Kategorie `profile`, Sensibilität `personal`, exportierbar, mit dem Profil
+  gelöscht, `syncable: false`. Details: [SETTINGS.md](SETTINGS.md).
 
 ## Konventionen für Nutzerdaten-Tabellen
 

@@ -43,7 +43,36 @@ export interface ScoreInput {
   /** Countable activity minutes per day (both sources, duplicates once, no Kalethra workouts). */
   activity: { minutesPerDay: readonly { localDate: string; minutes: number }[] };
   recovery: readonly ScoreRecoveryDay[];
-  targets: { trainingsPerWeek: number | null; activeMinutesPerWeek: number | null };
+  /**
+   * Weekly targets – one value for the whole period, or the value in force on each day
+   * (versioned targets: a past day keeps the target that applied then).
+   */
+  targets: { trainingsPerWeek: TargetValue; activeMinutesPerWeek: TargetValue };
+}
+
+/** A target: the same for every day, or looked up per local day; `null` = no target. */
+export type TargetValue = number | null | ((localDate: string) => number | null);
+
+const targetOnDay = (target: TargetValue, localDate: string): number | null => {
+  const value = typeof target === 'function' ? target(localDate) : target;
+  return value !== null && value > 0 ? value : null;
+};
+
+/**
+ * The days of the period that have a target and the expected amount over them: the sum of
+ * each day's weekly target ÷ 7. With one target for the whole period that is target × days ÷ 7.
+ */
+function expectation(target: TargetValue, dates: readonly string[]) {
+  const days = dates.flatMap((date) => {
+    const value = targetOnDay(target, date);
+    return value === null ? [] : [{ date, value }];
+  });
+  return {
+    days: new Set(days.map((day) => day.date)),
+    expected: days.reduce((sum, day) => sum + day.value / 7, 0),
+    /** The target that applies at the end of the period (shown in the explanation). */
+    latest: days.at(-1)?.value ?? null,
+  };
 }
 
 export interface NutritionDetail {
@@ -183,27 +212,44 @@ export function nutritionScore(input: ScoreInput): AreaScores['nutrition'] {
  * Training: completed Kalethra workouts against the weekly target, pro rata for the period
  * (3 per week → 3 in 7 days, ≈12.9 in 30). Plans have no calendar, so the target is a number
  * per week; days without training are never penalised by themselves, and doing more than the
- * target gives no bonus (capped at 100). Today: a workout today is 100, none is not judged yet.
- * Without a target the area is neutral (`null`).
+ * target gives no bonus (capped at 100). With fewer than 7 days under a target (today, or a
+ * target set only recently) a workout is 100 and none is not judged yet. Without a target the
+ * area is neutral (`null`). Each day uses the target version in force on that day.
  */
 export function trainingScore(input: ScoreInput): AreaScores['training'] {
-  const target = input.targets.trainingsPerWeek;
-  const done = input.training.workoutsPerDay
-    .filter((day) => input.dates.includes(day.localDate))
-    .reduce((sum, day) => sum + day.workouts, 0);
+  const workoutsOn = (include: (date: string) => boolean) =>
+    input.training.workoutsPerDay
+      .filter((day) => include(day.localDate))
+      .reduce((sum, day) => sum + day.workouts, 0);
   const restDays = input.recovery.filter(
     (day) => day.restDay && input.dates.includes(day.localDate),
   ).length;
-  const days = input.dates.length;
-  if (target === null || target <= 0) {
-    return { score: null, detail: { target: null, done, expected: null, restDays } };
+  const plan = expectation(input.targets.trainingsPerWeek, input.dates);
+  if (plan.latest === null) {
+    return {
+      score: null,
+      detail: {
+        target: null,
+        done: workoutsOn((date) => input.dates.includes(date)),
+        expected: null,
+        restDays,
+      },
+    };
   }
-  const expected = (target * days) / 7;
-  const detail = { target, done, expected: Math.round(expected * 10) / 10, restDays };
-  if (days < 7) {
+  // Only days with a target count – with one target for the whole period that is every day.
+  const done = workoutsOn((date) => plan.days.has(date));
+  const detail = {
+    target: plan.latest,
+    done,
+    expected: Math.round(plan.expected * 10) / 10,
+    restDays,
+  };
+  // Less than a week with a target (the "Heute" period, or a target set only a few days ago):
+  // no fair weekly expectation yet – a workout counts as met, none is not judged.
+  if (plan.days.size < 7) {
     return { score: done > 0 ? 100 : null, detail };
   }
-  return { score: round((Math.min(done, expected) / expected) * 100), detail };
+  return { score: round((Math.min(done, plan.expected) / plan.expected) * 100), detail };
 }
 
 /**
@@ -213,17 +259,29 @@ export function trainingScore(input: ScoreInput): AreaScores['training'] {
  * period (not tracked is not the same as not active), the area is neutral.
  */
 export function activityScore(input: ScoreInput): AreaScores['activity'] {
-  const target = input.targets.activeMinutesPerWeek;
-  const perDay = input.activity.minutesPerDay.filter(
-    (day) => input.dates.includes(day.localDate) && day.minutes > 0,
-  );
-  const minutes = Math.round(perDay.reduce((sum, day) => sum + day.minutes, 0));
-  const activeDays = perDay.length;
-  if (target === null || target <= 0) {
-    return { score: null, detail: { target: null, minutes, expectedMinutes: null, activeDays } };
+  const active = (include: (date: string) => boolean) => {
+    const perDay = input.activity.minutesPerDay.filter(
+      (day) => include(day.localDate) && day.minutes > 0,
+    );
+    return {
+      minutes: Math.round(perDay.reduce((sum, day) => sum + day.minutes, 0)),
+      activeDays: perDay.length,
+    };
+  };
+  const plan = expectation(input.targets.activeMinutesPerWeek, input.dates);
+  if (plan.latest === null) {
+    const all = active((date) => input.dates.includes(date));
+    return { score: null, detail: { target: null, ...all, expectedMinutes: null } };
   }
-  const expected = (target * input.dates.length) / 7;
-  const detail = { target, minutes, expectedMinutes: Math.round(expected), activeDays };
+  // Only days with a target count – with one target for the whole period that is every day.
+  const { minutes, activeDays } = active((date) => plan.days.has(date));
+  const expected = plan.expected;
+  const detail = {
+    target: plan.latest,
+    minutes,
+    expectedMinutes: Math.round(expected),
+    activeDays,
+  };
   if (minutes === 0) return { score: null, detail };
   return { score: round((Math.min(minutes, expected) / expected) * 100), detail };
 }

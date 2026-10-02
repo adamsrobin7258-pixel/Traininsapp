@@ -19,11 +19,11 @@ test('manual activity: log, adjust, edit, delete and count towards the daily goa
   await page.getByLabel('Gewicht in kg').fill('84,6');
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(sheet).toHaveCount(0);
-  await page.goto('/nutrition/profile');
+  await page.goto('/settings/goals');
   await main.getByRole('button', { name: /^Kalorienziel/ }).click();
   await sheet.getByLabel(/^Eigener Wert/).fill('2000');
   await sheet.getByRole('button', { name: 'Eigenen Wert verwenden' }).click();
-  await main.getByRole('button', { name: 'Speichern' }).click();
+  await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   await expect(page.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
 
   // 1. Open Fortschritt.
@@ -125,8 +125,9 @@ test('manual activity: log, adjust, edit, delete and count towards the daily goa
   await expect(overview.getByText('Nicht auf das Tagesziel angerechnet')).toBeVisible();
   await expect(overview.getByText('Basisziel')).toHaveCount(0);
 
-  // 16. Count activity calories.
-  await tab('Profil').click();
+  // 16. Count activity calories (Einstellungen → Ziele).
+  await tab('Einstellungen').click();
+  await main.getByRole('link', { name: /^Ziele/ }).click();
   const toggle = page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' });
   await toggle.click();
   await expect(toggle).toHaveAttribute('aria-checked', 'true');

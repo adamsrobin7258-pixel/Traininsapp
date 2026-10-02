@@ -75,6 +75,15 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    // Versioned personal targets (workouts/active minutes per week, steps per day).
+    table: 'goal_targets',
+    category: 'profile',
+    sensitivity: 'personal',
+    exportable: true,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     // The user's own daily recovery note (subjective) and rest days – input of the score.
     table: 'recovery_entries',
     category: 'health',

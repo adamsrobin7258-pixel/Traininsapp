@@ -1,0 +1,155 @@
+/* Settings: forms of profile and goals (taken over from the nutrition profile), and the overview. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.label {
+  margin-top: var(--space-2);
+  padding: 0;
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.field {
+  width: 100%;
+  min-width: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-1));
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-body);
+  color: var(--color-text);
+  background: var(--color-surface);
+}
+
+.field:focus-visible {
+  outline: none;
+  border-color: var(--color-focus);
+}
+
+.field[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}
+
+/* Two fields side by side (amount + unit); stacks on very narrow screens. */
+.pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.pairItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.fieldError {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}
+
+.hint {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.notice {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-subhead);
+  background: var(--color-accent-subtle);
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.empty {
+  padding: var(--space-3) var(--space-4) 0;
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.switch {
+  flex: none;
+  position: relative;
+  width: 3.25rem;
+  height: 2rem;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+}
+
+.switch::after {
+  content: '';
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 50%;
+  background: var(--color-bg);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.switch[aria-checked='true'] {
+  background: var(--color-accent);
+}
+
+.switch[aria-checked='true']::after {
+  transform: translateX(1.25rem);
+}
+
+.warning {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-footnote);
+  background: var(--color-surface-muted);
+}
+
+.saveBar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+}
+
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}

@@ -1,24 +1,22 @@
 import { useId, useState } from 'react';
-import { useHealthSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { List, ListRow, Section } from '@/ui';
-import { healthStatusKey } from '../domain/healthStatus';
-import { DisconnectHealthSheet } from './DisconnectHealthSheet';
 import styles from './HealthData.module.css';
-import { HealthConnectSheet } from './HealthConnectSheet';
 
-/** Settings entry for connected health data (Health Connect on Android). */
-export function HealthDataSection() {
+/**
+ * "Aktivitätskalorien anrechnen" – a nutrition goal: adds the active calories of Health Connect
+ * and manual activities (each session once, none that is a Kalethra workout) to the day's
+ * calorie goal. The stored base goal and the macro goals never change. Saved at once.
+ */
+export function ActivityCaloriesSection() {
   const { t } = useI18n();
-  const { status, syncing } = useHealthSync();
   const { settings, updateSetting } = useSettings();
-  const [open, setOpen] = useState<'connection' | 'disconnect' | null>(null);
   const [saveFailed, setSaveFailed] = useState(false);
   const countId = useId();
   const counting = settings.countActivityCalories;
 
-  function toggleCounting() {
+  function toggle() {
     setSaveFailed(false);
     updateSetting('countActivityCalories', !counting).catch(() => {
       setSaveFailed(true);
@@ -26,16 +24,8 @@ export function HealthDataSection() {
   }
 
   return (
-    <Section title={t('healthConnect.sectionTitle')} footer={t('healthConnect.sectionFooter')}>
+    <Section title={t('settings.goals.activityCalories')}>
       <List>
-        <ListRow
-          icon="health"
-          title={t('healthConnect.name')}
-          value={t(healthStatusKey(status, syncing))}
-          onPress={() => {
-            setOpen('connection');
-          }}
-        />
         <ListRow
           title={t('healthConnect.countActivity')}
           subtitle={t('healthConnect.countActivityHint')}
@@ -51,7 +41,7 @@ export function HealthDataSection() {
                 aria-checked={counting}
                 aria-label={t('healthConnect.countActivity')}
                 aria-describedby={countId}
-                onClick={toggleCounting}
+                onClick={toggle}
               />
             </span>
           }
@@ -64,26 +54,6 @@ export function HealthDataSection() {
         <p className={styles.countNote} role="alert">
           {t('healthConnect.countActivityFailed')}
         </p>
-      ) : null}
-      {open === 'connection' ? (
-        <HealthConnectSheet
-          onClose={() => {
-            setOpen(null);
-          }}
-          onDisconnect={() => {
-            setOpen('disconnect');
-          }}
-        />
-      ) : null}
-      {open === 'disconnect' ? (
-        <DisconnectHealthSheet
-          onClose={() => {
-            setOpen('connection');
-          }}
-          onDone={() => {
-            setOpen(null);
-          }}
-        />
       ) : null}
     </Section>
   );

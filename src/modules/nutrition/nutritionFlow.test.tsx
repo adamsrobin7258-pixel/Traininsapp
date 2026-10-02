@@ -265,16 +265,21 @@ describe('nutrition diary', () => {
         });
       },
     });
-    // Goals are set in the nutrition profile; without personal data they are manual values.
+    // Goals are set under Einstellungen → Ziele; without personal data they are manual values.
     await userEvent.click(await screen.findByRole('link', { name: 'Ernährungsprofil einrichten' }));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ziele' })).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('radio', { name: 'Muskelaufbau' }));
     await setOwnValue(/^Kalorienziel/, '1500');
     await setOwnValue(/^Protein/, '120');
     await userEvent.type(screen.getByLabelText('Wasserziel (ml, optional)'), '2500');
-    await userEvent.click(screen.getByRole('button', { name: 'Speichern' }));
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }),
+    );
     expect(await screen.findByText(/Ernährungsprofil gespeichert/)).toBeInTheDocument();
     await userEvent.click(
-      within(screen.getByRole('main')).getByRole('link', { name: 'Ernährung' }),
+      within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByRole('link', {
+        name: 'Ernährung',
+      }),
     );
 
     const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
@@ -352,9 +357,14 @@ describe('water', () => {
     expect(await db.query('SELECT * FROM food_entries')).toEqual([]);
   });
 
-  it('lets the user choose the quick amounts', async () => {
-    await renderApp('/nutrition');
-    await userEvent.click(await screen.findByRole('button', { name: 'Schnellmengen anpassen' }));
+  it('lets the user choose the quick amounts (Einstellungen → App)', async () => {
+    const { router } = await renderApp('/nutrition');
+    // Ernährung only links to the setting – the one place to change it is Einstellungen → App.
+    await userEvent.click(await screen.findByRole('link', { name: 'Schnellmengen anpassen' }));
+    await waitFor(() => {
+      expect(router.state.location.pathname).toBe('/settings/app');
+    });
+    await userEvent.click(await screen.findByRole('button', { name: /^Schnellmengen/ }));
     await userEvent.clear(dialog().getByLabelText('Schnellmenge 1 in ml'));
     await userEvent.type(dialog().getByLabelText('Schnellmenge 1 in ml'), '5');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
@@ -365,8 +375,18 @@ describe('water', () => {
     await userEvent.clear(dialog().getByLabelText('Schnellmenge 3 in ml'));
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
     await closed();
+    expect(screen.getByRole('button', { name: /^Schnellmengen/ })).toHaveTextContent(
+      '330 ml · 500 ml',
+    );
 
-    expect(screen.getByRole('button', { name: '330 ml Wasser hinzufügen' })).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('navigation', { name: 'Hauptnavigation' })).getByRole('link', {
+        name: 'Ernährung',
+      }),
+    );
+    expect(
+      await screen.findByRole('button', { name: '330 ml Wasser hinzufügen' }),
+    ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '500 ml Wasser hinzufügen' })).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: '750 ml Wasser hinzufügen' }),

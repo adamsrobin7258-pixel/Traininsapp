@@ -85,6 +85,18 @@ async function eat(
   });
 }
 
+/** Sets a weekly target as if it had been chosen on 1 September (targets apply from that day). */
+async function targetSince(
+  s: AppServices,
+  profileId: string,
+  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek',
+  value: number,
+) {
+  vi.setSystemTime(new Date(2026, 8, 1, 9));
+  await s.targets.set(profileId, kind, value);
+  vi.setSystemTime(NOW);
+}
+
 async function workout(s: AppServices, profileId: string, start: Date) {
   vi.setSystemTime(start);
   const own = await s.training.workouts.startFree(profileId);
@@ -251,7 +263,7 @@ describe('Kalethra-Score on Fortschritt', () => {
   it('weighs by the main goal: changing it changes the score', async () => {
     const prepare = (goalType: 'lose' | 'gain') => async (s: AppServices, profileId: string) => {
       await goal(s, profileId, goalType);
-      await s.settings.update('trainingsPerWeek', 4);
+      await targetSince(s, profileId, 'trainingsPerWeek', 4);
       for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2300); // 100
       await workout(s, profileId, new Date(2026, 8, 28, 18));
       await workout(s, profileId, new Date(2026, 8, 30, 18)); // 2 of 4 → 50
@@ -273,8 +285,8 @@ describe('Kalethra-Score on Fortschritt', () => {
         return platform;
       })(),
       prepare: async (s, profileId) => {
-        await s.settings.update('trainingsPerWeek', 2);
-        await s.settings.update('activeMinutesPerWeek', 120);
+        await targetSince(s, profileId, 'trainingsPerWeek', 2);
+        await targetSince(s, profileId, 'activeMinutesPerWeek', 120);
         await s.healthSync.connect(profileId);
         await s.activities.create(profileId, {
           sportId: 'tennis',
@@ -305,7 +317,7 @@ describe('score details', () => {
       prepare: async (s, profileId) => {
         await goodWeek(s, profileId);
         await s.recovery.save(profileId, '2026-10-02', { state: null, restDay: true });
-        await s.settings.update('trainingsPerWeek', 3);
+        await targetSince(s, profileId, 'trainingsPerWeek', 3);
         await workout(s, profileId, new Date(2026, 8, 28, 18));
         await workout(s, profileId, new Date(2026, 8, 30, 18));
         await workout(s, profileId, new Date(2026, 9, 1, 18));
@@ -339,7 +351,7 @@ describe('score details', () => {
       sheet.getByText('Deine dokumentierte Erholung war überwiegend gut.'),
     ).toBeInTheDocument();
     expect(sheet.getByText('Zählt nicht mit.')).toBeInTheDocument();
-    for (const link of ['Regeneration eintragen', 'Wochenziele festlegen', 'Hauptziel ändern']) {
+    for (const link of ['Regeneration eintragen', 'Ziele anpassen']) {
       expect(sheet.getByRole('link', { name: link })).toBeInTheDocument();
     }
     await userEvent.keyboard('{Escape}');
@@ -422,45 +434,50 @@ describe('Regeneration eintragen (Gesundheit)', () => {
   });
 });
 
-describe('Score-Ziele (Profil)', () => {
+describe('Score-Ziele (Einstellungen → Ziele)', () => {
   it('shows the main goal and sets weekly targets from a list – no keyboard', async () => {
-    const { services } = await renderApp('/profile', {
+    const { services } = await renderApp('/settings/goals', {
       prepare: async (s, profileId) => {
         await goal(s, profileId, 'lose');
       },
     });
-    const section = within(
-      (await screen.findByRole('heading', { name: 'Kalethra-Score' })).closest('section') ??
+    expect(await screen.findByRole('radio', { name: 'Abnehmen' })).toHaveAttribute(
+      'aria-checked',
+      'true',
+    );
+    const training = within(
+      screen.getByRole('heading', { level: 2, name: 'Training' }).closest('section') ??
         document.body,
     );
-    expect(await section.findByText('Abnehmen')).toBeInTheDocument();
-    expect(section.getAllByText('Kein Ziel')).toHaveLength(2);
+    expect(await training.findByText('Kein Ziel')).toBeInTheDocument();
 
-    await userEvent.click(section.getByRole('button', { name: /Trainings pro Woche/ }));
+    await userEvent.click(training.getByRole('button', { name: /Trainings pro Woche/ }));
     const sheet = within(await screen.findByRole('dialog', { name: 'Trainings pro Woche' }));
     expect(document.activeElement?.tagName).not.toBe('INPUT');
     expect(sheet.getByRole('button', { name: 'Kein Ziel' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
+    expect(sheet.getByText(/Vergangene Tage behalten das Ziel/)).toBeInTheDocument();
     await userEvent.click(sheet.getByRole('button', { name: '3× pro Woche' }));
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
-    expect(section.getByText('3× pro Woche')).toBeInTheDocument();
-    expect((await services.settings.load()).trainingsPerWeek).toBe(3);
+    expect(await training.findByText('3× pro Woche')).toBeInTheDocument();
+    const profileId = (await services.profile.ensureLocalProfile()).id;
+    expect((await services.targets.current(profileId)).trainingsPerWeek).toBe(3);
 
-    await userEvent.click(section.getByRole('button', { name: /Aktive Minuten pro Woche/ }));
+    await userEvent.click(screen.getByRole('button', { name: /Aktive Minuten pro Woche/ }));
     const minutes = within(await screen.findByRole('dialog', { name: 'Aktive Minuten pro Woche' }));
     expect(minutes.getByText(/WHO empfiehlt/)).toBeInTheDocument();
     await userEvent.click(minutes.getByRole('button', { name: '150 min' }));
     await waitFor(async () => {
-      expect((await services.settings.load()).activeMinutesPerWeek).toBe(150);
+      expect((await services.targets.current(profileId)).activeMinutesPerWeek).toBe(150);
     });
   });
 
-  it('offers "Allgemeine Fitness" as main goal in the nutrition profile', async () => {
-    await renderApp('/nutrition/profile');
+  it('offers "Allgemeine Fitness" as main goal', async () => {
+    await renderApp('/settings/goals');
     const option = await screen.findByRole('radio', { name: 'Allgemeine Fitness' });
     await userEvent.click(option);
     expect(option).toHaveAttribute('aria-checked', 'true');

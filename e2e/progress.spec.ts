@@ -15,7 +15,7 @@ test('Fortschritt is the read-only main page that opens the areas', async ({ pag
     'Training',
     'Ernährung',
     'Gesundheit',
-    'Profil',
+    'Einstellungen',
   ]);
   await expect(main.locator('input, textarea, select')).toHaveCount(0);
   // The only controls: the period and the Kalethra score (opens its explanation).
@@ -103,7 +103,7 @@ test('progress over a day: food, workout, activity calories and period', async (
   await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
 
   // Own goals: 2.000 kcal, 120 g protein.
-  await page.goto('/nutrition/profile');
+  await page.goto('/settings/goals');
   for (const [row, value] of [
     [/^Kalorienziel/, '2000'],
     [/^Protein/, '120'],
@@ -115,7 +115,7 @@ test('progress over a day: food, workout, activity calories and period', async (
       .fill(value);
     await page.getByRole('dialog').getByRole('button', { name: 'Eigenen Wert verwenden' }).click();
   }
-  await main.getByRole('button', { name: 'Speichern' }).click();
+  await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   await expect(page.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
 
   // 3: log food.
@@ -172,7 +172,8 @@ test('progress over a day: food, workout, activity calories and period', async (
   expect(await noHorizontalScroll()).toBe(true);
 
   // Health Connect with a run – shown, kept apart from Kalethra workouts.
-  await tab('Profil').click();
+  await tab('Einstellungen').click();
+  await main.getByRole('link', { name: /^App/ }).click();
   await main
     .getByRole('region', { name: 'Gesundheitsdaten' })
     .getByRole('button', { name: /^Health Connect/ })
@@ -194,7 +195,8 @@ test('progress over a day: food, workout, activity calories and period', async (
   await expect(main.getByText('Laufen')).toBeVisible();
 
   // Count activity calories → the goal of the logged day grows; the base goal stays.
-  await tab('Profil').click();
+  await tab('Einstellungen').click();
+  await main.getByRole('link', { name: /^Ziele/ }).click();
   await page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' }).click();
   await tab('Fortschritt').click();
   await expect(nutrition.getByText('Tagesziel Ø 2.500 kcal · 120 g Protein')).toBeVisible();

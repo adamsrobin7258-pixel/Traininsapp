@@ -1,7 +1,7 @@
 import { progressModule } from '@/modules/progress';
 import { healthModule } from '@/modules/health';
 import { nutritionModule } from '@/modules/nutrition';
-import { profileModule } from '@/modules/profile';
+import { settingsModule } from '@/modules/settings';
 import { trainingModule } from '@/modules/training';
 import type { AppModule } from './moduleTypes';
 
@@ -11,5 +11,5 @@ export const appModules: readonly AppModule[] = [
   trainingModule,
   nutritionModule,
   healthModule,
-  profileModule,
+  settingsModule,
 ];

@@ -5,6 +5,11 @@ Wie Kalethra aus dem Ernährungsprofil Tagesziele schätzt. Code: `src/core/nutr
 Jede Berechnung speichert `CALCULATION_VERSION`, sodass spätere Anpassungen nachvollziehbar
 bleiben.
 
+Seit Phase 10 liegt die Oberfläche unter **Einstellungen → Ziele** (Hauptziel, Ernährung,
+Aktivitätskalorien); Geschlecht, Geburtsdatum und Größe unter **Einstellungen → Profil**, das
+Gewicht weiterhin nur unter Gesundheit. Die Berechnung selbst ist unverändert
+([SETTINGS.md](SETTINGS.md)).
+
 In diesem Dokument ist jeder Wert markiert:
 
 - **[Evidenz]**: veröffentlichte Gleichung oder Referenzwert.

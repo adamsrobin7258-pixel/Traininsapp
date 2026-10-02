@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { NUTRITION_LINKS, ROUTES } from '@/app/routes';
+import { ROUTES, SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { SCORE_AREAS, type ScoreResult } from '@/core/score';
 import { Sheet } from '@/ui';
@@ -99,11 +99,8 @@ export function ScoreDetailSheet({
           <Link to={ROUTES.health} className={styles.linkButton}>
             {t('progress.score.detail.recordRecovery')}
           </Link>
-          <Link to={ROUTES.profile} className={styles.linkButton}>
-            {t('progress.score.detail.setTargets')}
-          </Link>
-          <Link to={NUTRITION_LINKS.profile} className={styles.linkButton}>
-            {t('progress.score.detail.setGoal')}
+          <Link to={SETTINGS_LINKS.goals} className={styles.linkButton}>
+            {t('progress.score.detail.setGoals')}
           </Link>
         </div>
       </div>

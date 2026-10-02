@@ -231,6 +231,17 @@ aktualisierter Dokumentation.
 - Fehlende Daten neutral, „Vorläufig“ bei dünner Datenbasis; nichts gespeichert, alles offline
 - Details: [SCORE.md](SCORE.md)
 
+## Phase 10 – Zentrale Einstellungen, Profil & Ziele ✅ (Version 0.14.0)
+
+- Tab „Profil“ heißt „Einstellungen“: Profil, Ziele, Meine Inhalte (Platzhalter), App
+- Ziele an einer Stelle: Hauptziel, Ernährung (Logik unverändert), Aktivitätskalorien, Trainings
+  pro Woche, aktive Minuten pro Woche, neues Schrittziel (Schritte nur aus Health Connect)
+- Wochen- und Schrittziele versioniert (`goal_targets`, Migration 14): vergangene Zeiträume
+  behalten ihr damaliges Ziel
+- Gewicht nur noch unter Gesundheit erfassbar; drei Gewichtsregeln zentral dokumentiert
+- Alte Adressen `/profile` und `/nutrition/profile` leiten weiter
+- Details: [SETTINGS.md](SETTINGS.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

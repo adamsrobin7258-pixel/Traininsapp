@@ -63,9 +63,15 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
     await page.getByRole('dialog').getByRole('button', { name: 'Eigenen Wert verwenden' }).click();
   }
   await page.getByLabel('Wasserziel (ml, optional)').fill('2000');
-  await page.locator('main').getByRole('button', { name: 'Speichern' }).click();
+  await page
+    .locator('main')
+    .getByRole('button', { name: 'Hauptziel und Ernährung speichern' })
+    .click();
   await expect(page.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
-  await page.locator('main').getByRole('link', { name: 'Ernährung' }).click();
+  await page
+    .getByRole('navigation', { name: 'Hauptnavigation' })
+    .getByRole('link', { name: 'Ernährung' })
+    .click();
   const overview = main.getByRole('region', { name: 'Tagesübersicht' });
   await expect(overview.getByText('1.630 kcal')).toBeVisible();
 
@@ -146,15 +152,29 @@ test('nutrition profile: personal data, goal and calculation', async ({ page }) 
   await page.getByRole('button', { name: 'Speichern' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
+  // The old address still works: it leads to Einstellungen → Ziele.
   await page.goto('/nutrition/profile');
+  await expect(page).toHaveURL(/\/settings\/goals$/);
   const main = page.locator('main');
   await expect(main.getByText(/fehlen noch Angaben/)).toBeVisible();
   // Opening the page never opens the keyboard.
   expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('INPUT');
 
+  // Personal data live in Einstellungen → Profil.
+  await main.getByRole('link', { name: /Persönliche Daten/ }).click();
+  await expect(page).toHaveURL(/\/settings\/profile$/);
+  expect(await page.evaluate(() => document.activeElement?.tagName)).not.toBe('INPUT');
   await main.getByRole('radio', { name: 'Männlich' }).click();
   await main.getByLabel('Geburtsdatum').fill('1990-05-01');
   await main.getByLabel('Körpergröße (cm)').fill('180');
+  await main.getByRole('button', { name: 'Persönliche Daten speichern' }).click();
+  await expect(main.getByText(/Gespeichert/)).toBeVisible();
+  // The weight is shown, not edited here.
+  await expect(main.getByText(/90,0 kg/)).toBeVisible();
+  await expect(main.getByLabel(/Gewicht in kg/)).toHaveCount(0);
+  await page.goBack();
+  await expect(page).toHaveURL(/\/settings\/goals$/);
+
   await main.getByRole('radio', { name: /^Moderat aktiv/ }).click();
   await main.getByRole('radio', { name: 'Abnehmen' }).click();
   await main.getByLabel('Wunschgewicht (kg, optional)').fill('82');
@@ -168,12 +188,12 @@ test('nutrition profile: personal data, goal and calculation', async ({ page }) 
   await expect(main.getByText(/Die Werte sind Schätzungen/)).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  await main.getByRole('button', { name: 'Speichern' }).click();
+  await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   await expect(main.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
 
   // Changing the goal asks first and shows old and new.
   await main.getByRole('radio', { name: 'Muskelaufbau' }).click();
-  await main.getByRole('button', { name: 'Speichern' }).click();
+  await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   const sheet = page.getByRole('dialog');
   await expect(sheet.getByText(/^Abnehmen – Moderat/)).toBeVisible();
   await expect(sheet.getByText(/^Muskelaufbau – Moderat/)).toBeVisible();
