@@ -185,6 +185,16 @@ aktualisierter Dokumentation.
 - Aufschlüsselung „Basisziel / Aktivitätskalorien“ in Ernährung und Heute
 - Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
 
+## Phase 7 – Heute als Tages- und Fortschrittsübersicht ✅ (Version 0.11.0)
+
+- Heute: Ernährung, Training (laufend mit Übungsfortschritt und „Training fortsetzen“),
+  Aktivitäten und Gesundheitswerte des Tages – nur was es heute gibt
+- „Dein Fortschritt“ mit Woche/Monat: Training (Kalethra-Einheiten, Ø pro Woche, Volumen),
+  Ernährung (Ø kcal/Protein der erfassten Tage, Ø Tagesziel), Gewicht (eigene Einträge vor
+  importierten), Aktivitäten (Health Connect); kleine, ruhige Diagramme
+- Doppelungen entfernt: Mahlzeitenliste, letztes Training/7-30-Tage-Zähler, 3-Monats-Gewichtskarte
+- Details: [TODAY.md](TODAY.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

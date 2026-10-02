@@ -36,6 +36,12 @@ export interface ActivityCaloriesSource {
     profileId: string,
     localDate: string,
   ): Promise<{ kcal: number; counted: number; excluded: number }>;
+  /** The same for every day of a range in one go, keyed by local day (days without: absent). */
+  caloriesBetween?(
+    profileId: string,
+    fromLocalDate: string,
+    toLocalDate: string,
+  ): Promise<Map<string, { kcal: number; counted: number; excluded: number }>>;
 }
 
 /** Everything the nutrition calculation reads from other areas of the app. */

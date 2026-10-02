@@ -206,10 +206,11 @@ Workflow eine eigene Erfassungsoberfläche im Trainingsmodul – kein Schemaumba
 „Aus Plan starten“ (Trainingstag wählen). Pläne werden ausschließlich unter „Pläne“
 (`/training/plans`) angelegt und bearbeitet; ohne Plan verweist der Start-Dialog dorthin.
 
-**Heute.** Reine Übersicht ohne Eingaben: Training (`WorkoutService.overview`, nächster Plan-Tag),
-Gesundheit (Gewicht mit kleinem Verlauf, aus `core/health`) und Ernährung (Tageswerte mit
-Ziel; Fortschrittsbalken für kcal und Protein, sobald Ziele gesetzt sind). „Heute“ speichert nichts und berechnet nichts Eigenes über die Darstellung
-hinaus; jede Karte öffnet ihren Bereich.
+**Heute.** Tägliche Übersicht ohne Eingaben (seit Phase 7, siehe [TODAY.md](TODAY.md)): oben der
+heutige Tag (Ernährung, Training, Aktivitäten, Gesundheitswerte – nur was es heute gibt), darunter
+„Dein Fortschritt“ (Woche/Monat) aus aggregierten Abfragen der Bereiche und reinen
+Auswertungsfunktionen in `core/*/progress.ts`. „Heute“ speichert nichts; jede Karte und jede
+Fortschrittszeile öffnet ihren Bereich.
 
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer

@@ -53,6 +53,13 @@ export class DiaryService {
     };
   }
 
+  /** Energy and protein per day with entries – days without entries are absent, not 0. */
+  dailyTotalsBetween(profileId: string, fromDate: string, toDate: string) {
+    requireDay(fromDate);
+    requireDay(toDate);
+    return this.store.repos.diary.dailyTotals(profileId, fromDate, toDate);
+  }
+
   /** Logs a quantity of a food with its current nutrient values. */
   async addFood(
     profileId: string,

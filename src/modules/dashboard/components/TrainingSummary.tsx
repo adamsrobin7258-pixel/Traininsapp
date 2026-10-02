@@ -1,80 +1,88 @@
-import { ROUTES } from '@/app/routes';
+import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
-import { getTrainingType, useTrainingData, workoutDisplayTitle } from '@/core/training';
+import {
+  getTrainingType,
+  useTrainingData,
+  workoutDisplayTitle,
+  workoutProgress,
+} from '@/core/training';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { formatDuration, formatRelativeDay } from '@/shared/lib/format';
-import { OverviewCard, OverviewLine, OverviewStat, OverviewStats } from './OverviewCard';
+import { formatDuration } from '@/shared/lib/format';
+import { OverviewAction, OverviewCard, OverviewLine, OverviewNote } from './OverviewCard';
 
-/** Training at a glance: active or last workout, the next planned day and recent frequency. */
+/**
+ * Today's training only: the workout in progress (with its next step), the workouts finished
+ * today, or a calm note. Counts and history belong to "Dein Fortschritt" and the training area.
+ */
 export function TrainingSummary({ now }: { now: Date }) {
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
+  const today = toLocalDateKey(now);
   const data = useTrainingData(
     async (s, profileId) => ({
       active: await s.workouts.getActive(profileId),
       next: await s.plans.nextWorkout(profileId),
-      overview: await s.workouts.overview(profileId),
+      // A handful is plenty for one day; history stays in the training area.
+      done: (await s.workouts.getHistory(profileId, { limit: 5 })).filter(
+        (workout) => workout.localDate === today,
+      ),
     }),
-    [],
+    [today],
   );
   const typeLabel = (id: string) => t(`training.types.${getTrainingType(id).id}` as TranslationKey);
+  const ready = data.status === 'ready' ? data.data : null;
+  const active = ready?.active ?? null;
+  const progress = active ? workoutProgress(active) : null;
 
   return (
-    <OverviewCard icon="training" title={t('dashboard.training.title')} to={ROUTES.training}>
+    <OverviewCard
+      icon="training"
+      title={t('dashboard.training.title')}
+      to={active ? TRAINING_LINKS.activeWorkout : ROUTES.training}
+    >
       {data.status === 'error' ? <span role="alert">{t('training.errors.loadFailed')}</span> : null}
-      {data.status === 'ready' ? (
+      {active ? (
         <>
-          {data.data.active ? (
-            <OverviewLine label={t('dashboard.training.active')}>
-              {t('dashboard.training.activeSince', {
-                title:
-                  workoutDisplayTitle(data.data.active) ?? typeLabel(data.data.active.trainingType),
-                duration: formatDuration(
-                  (now.getTime() - new Date(data.data.active.startedAt).getTime()) / 1000,
-                ),
+          <OverviewLine label={t('dashboard.training.active')}>
+            {t('dashboard.training.activeSince', {
+              title: workoutDisplayTitle(active) ?? typeLabel(active.trainingType),
+              duration: formatDuration(
+                (now.getTime() - new Date(active.startedAt).getTime()) / 1000,
+              ),
+            })}
+          </OverviewLine>
+          {progress && progress.total > 0 ? (
+            <OverviewNote>
+              {t('dashboard.training.exercisesDone', {
+                done: progress.done,
+                total: progress.total,
               })}
+            </OverviewNote>
+          ) : null}
+          <OverviewAction>{t('dashboard.training.resume')}</OverviewAction>
+        </>
+      ) : ready && ready.done.length > 0 ? (
+        <OverviewLine label={t('dashboard.training.doneToday')}>
+          {ready.done
+            .map((workout) =>
+              workout.durationS !== null
+                ? t('dashboard.training.workoutLine', {
+                    title: workout.title ?? workout.planDayName ?? typeLabel(workout.trainingType),
+                    duration: formatDuration(workout.durationS),
+                  })
+                : (workout.title ?? workout.planDayName ?? typeLabel(workout.trainingType)),
+            )
+            .join(', ')}
+        </OverviewLine>
+      ) : ready ? (
+        <>
+          <OverviewNote>
+            {ready.next ? t('dashboard.training.notYetToday') : t('dashboard.training.noneToday')}
+          </OverviewNote>
+          {ready.next ? (
+            <OverviewLine label={t('dashboard.training.next')}>
+              {t('training.nextFromPlan', { day: ready.next.dayName, plan: ready.next.planName })}
             </OverviewLine>
           ) : null}
-          <OverviewLine label={t('dashboard.training.last')}>
-            {data.data.overview.last
-              ? [
-                  data.data.overview.last.title ??
-                    data.data.overview.last.planDayName ??
-                    typeLabel(data.data.overview.last.trainingType),
-                  formatRelativeDay(
-                    data.data.overview.last.localDate,
-                    toLocalDateKey(now),
-                    locale,
-                    {
-                      today: t('training.today'),
-                      yesterday: t('training.yesterday'),
-                    },
-                  ),
-                  data.data.overview.last.durationS !== null
-                    ? formatDuration(data.data.overview.last.durationS)
-                    : null,
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              : t('dashboard.training.lastNone')}
-          </OverviewLine>
-          <OverviewLine label={t('dashboard.training.next')}>
-            {data.data.next
-              ? t('training.nextFromPlan', {
-                  day: data.data.next.dayName,
-                  plan: data.data.next.planName,
-                })
-              : t('dashboard.training.nextNone')}
-          </OverviewLine>
-          <OverviewStats>
-            <OverviewStat
-              value={data.data.overview.last7Days}
-              label={t('dashboard.training.last7')}
-            />
-            <OverviewStat
-              value={data.data.overview.last30Days}
-              label={t('dashboard.training.last30')}
-            />
-          </OverviewStats>
         </>
       ) : null}
     </OverviewCard>

@@ -76,3 +76,13 @@ export function OverviewStats({
 export function OverviewNote({ children }: { children: ReactNode }) {
   return <span className={styles.note}>{children}</span>;
 }
+
+/** The card's main next step, styled as a button but part of the card's link. */
+export function OverviewAction({ children }: { children: ReactNode }) {
+  return <span className={styles.action}>{children}</span>;
+}
+
+/** The card's one main line, e.g. "Laufen · 42 min". */
+export function OverviewValue({ children }: { children: ReactNode }) {
+  return <span className={styles.value}>{children}</span>;
+}

@@ -100,7 +100,8 @@ app/HealthSyncTrigger.tsx       App-Start und Vordergrund
 modules/profile/        Bereich „Gesundheitsdaten“, Verbinden- und Trennen-Dialog
 modules/health/         „Aus Health Connect“ (Schritte, aktive Kalorien, Gewicht)
 modules/training/       „Aktivitäten“ (Liste, Details)
-modules/nutrition/, modules/dashboard/   Basisziel + Aktivitätskalorien
+modules/nutrition/, modules/dashboard/   Basisziel + Aktivitätskalorien; „Heute“ fasst
+                        Aktivitäten, Schritte und Gewicht zusammen (TODAY.md)
 ```
 
 Das Plugin ist nur in `core/platform` erlaubt (ESLint). Auf iOS ist es per

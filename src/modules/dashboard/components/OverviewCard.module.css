@@ -96,3 +96,18 @@
   font-size: var(--font-size-footnote);
   color: var(--color-text-secondary);
 }
+
+/* Looks like the primary button; the whole card is the link, so there is one target only. */
+.action {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  margin-top: var(--space-1);
+  padding: 0 var(--space-5);
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+}

@@ -32,6 +32,7 @@ export * from './category';
 export * from './meals';
 export { MealService } from './mealService';
 export * from './nutrients';
+export * from './progress';
 export { NutritionStore, type NutritionRepositories } from './nutritionStore';
 export * from './provider';
 export * from './reference';

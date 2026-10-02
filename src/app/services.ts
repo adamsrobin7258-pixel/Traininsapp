@@ -105,6 +105,26 @@ export function createServices(
         ]);
         return countableActivityCalories(activities, own);
       },
+      caloriesBetween: async (profileId, from, to) => {
+        const first = parseLocalDateKey(from);
+        const last = parseLocalDateKey(to);
+        if (!first || !last) return new Map();
+        const [activities, own] = await Promise.all([
+          healthSync.workoutsBetween(profileId, from, to),
+          training.workouts.completedSpansBetween(
+            profileId,
+            toLocalDateKey(addDays(first, -1)),
+            toLocalDateKey(addDays(last, 1)),
+          ),
+        ]);
+        const byDay = new Map<string, typeof activities>();
+        for (const activity of activities) {
+          byDay.set(activity.localDate, [...(byDay.get(activity.localDate) ?? []), activity]);
+        }
+        return new Map(
+          [...byDay].map(([day, list]) => [day, countableActivityCalories(list, own)] as const),
+        );
+      },
     },
   };
   return {

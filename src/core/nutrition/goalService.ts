@@ -137,6 +137,55 @@ export class GoalService {
     return withActivityCalories(day, activity, countActivity);
   }
 
+  /**
+   * Calorie and protein goal of every given day, exactly as `dayGoal` shows them (activity
+   * calories only when `countActivity` is on) – but with one read of the goals and one of the
+   * activities for the whole range. Days without a goal have `null` values.
+   */
+  async dayGoalsBetween(
+    profileId: string,
+    dates: readonly string[],
+    { countActivity }: { countActivity: boolean },
+  ): Promise<{ localDate: string; energyKcal: number | null; proteinG: number | null }[]> {
+    const first = dates[0];
+    const last = dates.at(-1);
+    if (!first || !last) return [];
+    const goals = await this.list(profileId);
+    const activity =
+      countActivity && this.sources.activity
+        ? await this.activityBetween(profileId, first, last, dates)
+        : new Map<string, { kcal: number; counted: number; excluded: number }>();
+    return dates.map((localDate) => {
+      const goal = goalForDate(goals, localDate);
+      if (!goal) return { localDate, energyKcal: null, proteinG: null };
+      const day = withActivityCalories(
+        { goal, effective: effectiveTargets(goal) },
+        activity.get(localDate) ?? { kcal: 0, counted: 0, excluded: 0 },
+        countActivity,
+      );
+      return {
+        localDate,
+        energyKcal: day.effective.energyKcal.value,
+        proteinG: day.effective.proteinG.value,
+      };
+    });
+  }
+
+  private async activityBetween(
+    profileId: string,
+    from: string,
+    to: string,
+    dates: readonly string[],
+  ) {
+    const source = this.sources.activity;
+    if (!source) return new Map<string, { kcal: number; counted: number; excluded: number }>();
+    if (source.caloriesBetween) return source.caloriesBetween(profileId, from, to);
+    const entries = await Promise.all(
+      dates.map(async (date) => [date, await source.caloriesOn(profileId, date)] as const),
+    );
+    return new Map(entries);
+  }
+
   /** Saves the goal starting on a day; a goal for the same start day is replaced. */
   async save(profileId: string, input: GoalInput): Promise<NutritionGoal> {
     const effectiveFrom = input.effectiveFrom ?? toLocalDateKey(this.clock());

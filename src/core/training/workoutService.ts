@@ -83,6 +83,11 @@ export class WorkoutService {
     return this.store.repos.workouts.completedBetween(profileId, fromLocalDate, toLocalDate);
   }
 
+  /** Completed workouts and volume per day – for the progress overview on Today. */
+  dailyStatsBetween(profileId: string, fromLocalDate: string, toLocalDate: string) {
+    return this.store.repos.workouts.dailyStatsBetween(profileId, fromLocalDate, toLocalDate);
+  }
+
   /** Start and end of completed workouts – to recognise the same session imported elsewhere. */
   completedSpansBetween(profileId: string, fromLocalDate: string, toLocalDate: string) {
     return this.store.repos.workouts.completedSpansBetween(profileId, fromLocalDate, toLocalDate);

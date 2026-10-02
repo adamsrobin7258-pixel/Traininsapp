@@ -46,3 +46,5 @@ export {
   type HealthStatusView,
   type ImportedLoadState,
 } from './HealthSyncProvider';
+export * from './progress';
+export { activityTypeLabel } from './activityLabels';

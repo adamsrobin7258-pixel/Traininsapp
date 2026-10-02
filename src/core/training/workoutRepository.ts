@@ -226,6 +226,35 @@ export class WorkoutRepository {
     }));
   }
 
+  /**
+   * Completed workouts and their volume per local day (inclusive range), aggregated in SQL.
+   * Volume follows `setVolumeKg`: completed working and drop sets with load and reps.
+   */
+  async dailyStatsBetween(
+    profileId: string,
+    fromLocalDate: string,
+    toLocalDate: string,
+  ): Promise<{ localDate: string; workouts: number; volumeKg: number }[]> {
+    const rows = await this.db.query<{ local_date: string; workouts: number; volume: number }>(
+      `SELECT w.local_date,
+         COUNT(DISTINCT w.id) AS workouts,
+         COALESCE(SUM(CASE WHEN s.completed = 1 AND s.set_type <> 'warmup'
+           THEN s.weight_kg * s.reps END), 0) AS volume
+       FROM workouts w
+       LEFT JOIN workout_exercises we ON we.workout_id = w.id
+       LEFT JOIN workout_sets s ON s.workout_exercise_id = we.id
+       WHERE w.profile_id = ? AND w.status = 'completed' AND w.local_date BETWEEN ? AND ?
+       GROUP BY w.local_date
+       ORDER BY w.local_date`,
+      [profileId, fromLocalDate, toLocalDate],
+    );
+    return rows.map((row) => ({
+      localDate: row.local_date,
+      workouts: row.workouts,
+      volumeKg: row.volume,
+    }));
+  }
+
   /** Start and end of completed workouts between two local days (inclusive). */
   async completedSpansBetween(
     profileId: string,

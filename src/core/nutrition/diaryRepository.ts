@@ -79,6 +79,32 @@ export class DiaryRepository {
     return rows.map(toEntry);
   }
 
+  /** Energy and protein eaten per local day, only days with entries (aggregated in SQL). */
+  async dailyTotals(
+    profileId: string,
+    fromDate: string,
+    toDate: string,
+  ): Promise<{ localDate: string; energyKcal: number; proteinG: number; entries: number }[]> {
+    const rows = await this.db.query<{
+      local_date: string;
+      energy: number;
+      protein: number;
+      entries: number;
+    }>(
+      `SELECT local_date, SUM(energy_kcal) AS energy, SUM(protein_g) AS protein,
+         COUNT(*) AS entries
+       FROM food_entries WHERE profile_id = ? AND local_date BETWEEN ? AND ?
+       GROUP BY local_date ORDER BY local_date`,
+      [profileId, fromDate, toDate],
+    );
+    return rows.map((row) => ({
+      localDate: row.local_date,
+      energyKcal: row.energy,
+      proteinG: row.protein,
+      entries: row.entries,
+    }));
+  }
+
   async findEntry(profileId: string, id: string): Promise<FoodEntry | null> {
     const rows = await this.db.query<EntryRow>(
       'SELECT * FROM food_entries WHERE id = ? AND profile_id = ?',

@@ -83,7 +83,8 @@ describe('training', () => {
     await userEvent.click(tab('Heute'));
     expect(await screen.findByRole('heading', { level: 1 })).toBeInTheDocument();
     // No invented suggestion: without a plan there is no next workout and nothing running.
-    expect(await screen.findByText('Kein Training geplant')).toBeInTheDocument();
+    expect(await screen.findByText('Heute kein Training geplant')).toBeInTheDocument();
+    expect(screen.queryByText('Als Nächstes laut Plan')).not.toBeInTheDocument();
     expect(screen.queryByText('Laufendes Training')).not.toBeInTheDocument();
   });
 

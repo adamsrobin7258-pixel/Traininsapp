@@ -1,17 +1,8 @@
-import type { TranslateFn, TranslationKey } from '@/core/i18n';
-import { NAMED_ACTIVITY_TYPES, readableActivityType, type ExternalWorkout } from '@/core/health';
+import type { TranslateFn } from '@/core/i18n';
+import type { ExternalWorkout } from '@/core/health';
 import { formatDuration, formatRelativeDay } from '@/shared/lib/format';
 
-/**
- * Name of an imported activity: Kalethra's translation for known types, otherwise the
- * provider's own name made readable – an unknown type is never mapped to another sport.
- */
-export function activityTypeLabel(type: string, t: TranslateFn): string {
-  if (type === 'other' || NAMED_ACTIVITY_TYPES.includes(type)) {
-    return t(`activities.types.${type}` as TranslationKey);
-  }
-  return readableActivityType(type);
-}
+export { activityTypeLabel } from '@/core/health';
 
 /** "Heute · 18:20", "Gestern · 07:05", "Mo., 28.09. · 18:20". */
 export function activityWhen(

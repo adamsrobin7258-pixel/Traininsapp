@@ -1,73 +1,75 @@
 import { ROUTES } from '@/app/routes';
-import { formatWeight, formatWeightChange, useLatestWeight, useWeightTrend } from '@/core/health';
+import {
+  dayWeight,
+  formatWeight,
+  useHealthSync,
+  useImportedHealthData,
+  useWeightService,
+} from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
-import { parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
-import { formatDayMonth } from '@/shared/lib/format';
-import { summarizeWeight } from '../domain/weightSummary';
-import { OverviewCard, OverviewNote } from './OverviewCard';
-import styles from './HealthSummary.module.css';
+import { toLocalDateKey } from '@/shared/lib/date';
+import { OverviewCard, OverviewStat, OverviewStats } from './OverviewCard';
 
 /**
- * Health at a glance. Weight is currently the only health value the app records; further
- * values appear here once their area stores them – none are invented for this overview.
+ * Today's health values in one line: steps and active calories from Health Connect and the
+ * weight of today (an own entry wins over an imported one). Shown only when there is something
+ * for today; the full picture stays in the health area.
  */
 export function HealthSummary({ now }: { now: Date }) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
-  const trend = useWeightTrend('3m');
-  const latest = useLatestWeight();
-
-  const entries = trend.status === 'ready' ? trend.data : [];
-  // The latest entry can be older than the trend window.
-  const newest = latest.status === 'ready' ? latest.data : null;
-  const summary = summarizeWeight(
-    newest && !entries.some((e) => e.date === newest.date) ? [...entries, newest] : entries,
-    toLocalDateKey(now),
+  const weights = useWeightService();
+  const { status } = useHealthSync();
+  const today = toLocalDateKey(now);
+  const data = useImportedHealthData(
+    async (service, profileId) => {
+      const [activity, imported, own] = await Promise.all([
+        service.activityBetween(profileId, today, today),
+        service.weightsBetween(profileId, today, today),
+        weights.service.getForDate(profileId, today),
+      ]);
+      return {
+        activity: activity[0] ?? null,
+        weight: dayWeight(own?.kg ?? null, imported[0] ?? null),
+      };
+    },
+    [today, weights.service, weights.revision],
   );
-  const ready = trend.status === 'ready' && latest.status === 'ready';
+  if (data.status !== 'ready') return null;
+  const { activity, weight } = data.data;
+  const steps = activity?.steps ?? null;
+  const kcal = activity?.activeKcal ?? null;
+  if (steps === null && kcal === null && weight.kind === 'none') return null;
+  // Without a connection only an own weight of today can appear – then the card is redundant
+  // with "Dein Fortschritt"; show it only with Health Connect data or a connection.
+  const connected = status.state === 'connected' || status.state === 'permissionRequired';
+  if (!connected && steps === null && kcal === null) return null;
 
+  const number = new Intl.NumberFormat(locale);
   return (
-    <OverviewCard icon="scale" title={t('dashboard.health.title')} to={ROUTES.health}>
-      <span className={styles.row}>
-        <span className={styles.text}>
-          <span className={styles.label}>{t('dashboard.health.weight')}</span>
-          {summary.latest ? (
-            <>
-              <span className={styles.value}>{formatWeight(summary.latest.kg, unit, locale)}</span>
-              {summary.change ? (
-                <OverviewNote>
-                  {t('weight.changeSince', {
-                    change: formatWeightChange(summary.change.deltaKg, unit, locale),
-                    date: formatDayMonth(parseLocalDateKey(summary.change.since) ?? now, locale),
-                  })}
-                </OverviewNote>
-              ) : null}
-            </>
-          ) : ready ? (
-            <OverviewNote>{t('dashboard.health.weightNone')}</OverviewNote>
-          ) : null}
-        </span>
-        {summary.trendPoints ? (
-          <svg
-            className={styles.trend}
-            viewBox="0 0 100 32"
-            preserveAspectRatio="none"
-            role="img"
-            aria-label={t('dashboard.health.trend')}
-          >
-            <polyline
-              points={summary.trendPoints}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
+    <OverviewCard icon="health" title={t('dashboard.health.title')} to={ROUTES.health}>
+      <OverviewStats>
+        {steps !== null ? (
+          <OverviewStat value={number.format(steps)} label={t('dashboard.health.steps')} />
         ) : null}
-      </span>
+        {kcal !== null ? (
+          <OverviewStat
+            value={number.format(Math.round(kcal))}
+            label={t('dashboard.health.activeKcal')}
+          />
+        ) : null}
+        {weight.kind !== 'none' ? (
+          <OverviewStat
+            value={formatWeight(weight.kg, unit, locale)}
+            label={
+              weight.kind === 'imported'
+                ? `${t('dashboard.health.weight')} · ${t('dashboard.health.imported')}`
+                : t('dashboard.health.weight')
+            }
+          />
+        ) : null}
+      </OverviewStats>
     </OverviewCard>
   );
 }
