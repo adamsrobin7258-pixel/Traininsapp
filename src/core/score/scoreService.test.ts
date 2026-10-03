@@ -69,14 +69,16 @@ async function goal(
   goalType: 'lose' | 'maintain' | 'gain' | 'fitness' = 'maintain',
   proteinG = 160,
 ) {
+  // A goal applies from the day it is saved: saved on 1 September.
+  now = new Date(2026, 8, 1, 9);
   await services.nutrition.goals.save(profileId, {
-    effectiveFrom: '2026-09-01',
     goalType,
     targets: {
       energyKcal: { auto: null, manual: 2300 },
       proteinG: { auto: null, manual: proteinG },
     },
   });
+  now = new Date(2026, 9, 3, 10);
 }
 
 /** Logs one food with the given kcal and protein on a day. */
@@ -284,8 +286,8 @@ describe('score from the real data', () => {
     const s = await setup();
     await goal(s, 'lose');
     expect((await s.services.score.calculate(s.profileId, WEEK, options())).goal).toBe('lose');
+    // Saved today – it applies from today.
     await s.services.nutrition.goals.save(s.profileId, {
-      effectiveFrom: TODAY,
       goalType: 'gain',
       targets: { energyKcal: { auto: null, manual: 2800 } },
     });
@@ -436,11 +438,13 @@ describe('recovery entries', () => {
 describe('general fitness as main goal', () => {
   it('is saved and calculated like "maintain weight"', async () => {
     const s = await setup();
+    // Saved on 1 September – it applies from that day.
+    now = new Date(2026, 8, 1, 9);
     await s.services.nutrition.goals.save(s.profileId, {
-      effectiveFrom: '2026-09-01',
       goalType: 'fitness',
       targets: { energyKcal: { auto: null, manual: 2300 } },
     });
+    now = new Date(2026, 9, 3, 10);
     const day = await s.services.nutrition.goals.goalFor(s.profileId, TODAY);
     expect(day?.goal.goalType).toBe('fitness');
     expect(day?.goal.goalLevel).toBeNull();

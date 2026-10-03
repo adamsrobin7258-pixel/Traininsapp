@@ -1,5 +1,5 @@
 import type { Clock } from '@/shared/lib/clock';
-import { addDays, isLocalDateKey, parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
+import { addDays, parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { createId } from '@/shared/lib/id';
 import { NutritionError } from './errors';
 import {
@@ -30,9 +30,11 @@ import {
 import { ACTIVITY_LEVELS, INPUT_LIMITS, TRAINING, WEIGHT_TREND } from './calculation/parameters';
 import type { NutritionStore } from './nutritionStore';
 
+/**
+ * A goal as the user sets it. It always applies from today: there is no start day in the input,
+ * so no write can change a day that has already passed.
+ */
 export interface GoalInput {
-  /** First day the goal applies to; defaults to today. */
-  effectiveFrom?: string;
   goalType: GoalType;
   targets: Partial<Record<GoalTarget, GoalValue>>;
 }
@@ -186,10 +188,13 @@ export class GoalService {
     return new Map(entries);
   }
 
-  /** Saves the goal starting on a day; a goal for the same start day is replaced. */
+  /**
+   * Saves the goal as the version starting today; a version started earlier today is replaced.
+   * Versions of earlier days are never changed.
+   */
   async save(profileId: string, input: GoalInput): Promise<NutritionGoal> {
-    const effectiveFrom = input.effectiveFrom ?? toLocalDateKey(this.clock());
-    if (!isLocalDateKey(effectiveFrom) || !GOAL_TYPES.includes(input.goalType)) {
+    const effectiveFrom = this.today();
+    if (!GOAL_TYPES.includes(input.goalType)) {
       throw new NutritionError('invalid-value');
     }
     const targets = Object.fromEntries(
@@ -217,25 +222,6 @@ export class GoalService {
     };
     await this.store.atomic((repos) => repos.goals.upsert(goal));
     return goal;
-  }
-
-  /**
-   * Overrides (or with `null` resets to automatic) one value of the goal in force on
-   * `localDate`. The automatic value is kept, so a later recalculation does not lose it.
-   */
-  async setManual(
-    profileId: string,
-    localDate: string,
-    target: GoalTarget,
-    manual: number | null,
-  ): Promise<NutritionGoal> {
-    const current = await this.goalFor(profileId, localDate);
-    if (!current) throw new NutritionError('not-found');
-    return this.save(profileId, {
-      effectiveFrom: current.goal.effectiveFrom,
-      goalType: current.goal.goalType,
-      targets: { ...current.goal.targets, [target]: { ...current.goal.targets[target], manual } },
-    });
   }
 
   // ── Nutrition profile (automatic goals) ─────────────────────────────────

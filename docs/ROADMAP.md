@@ -278,6 +278,10 @@ Keine neuen Funktionen. Gefunden und behoben:
 - Doppelte Implementierungen zusammengeführt: Anrechenbarkeit von Aktivitäten, Laden der
   Aktivitätsquellen, Gewichtsregel 2 (`mergeWeightDays`/`dayWeight`); `mergeWeightDays` gibt nur
   noch Datum, Gewicht und Quelle zurück
+- Kein Rückwärts-Schreibpfad für Ziele mehr: das ungenutzte `GoalService.setManual` (überschrieb
+  die gültige Version eines vergangenen Tages) ist entfernt, `GoalService.save` legt eine Version
+  nur noch ab heute an, `TargetRepository` wird nicht mehr exportiert. Jede Zieländerung gilt
+  ab dem Tag, an dem sie gemacht wird
 - Kettentests A–H über alle Module, Regressions-E2E (alle Seiten bei 320/390 px, hell/dunkel,
   große Schrift, keine Tastatur, Tippflächen)
 - Details: [SETTINGS.md](SETTINGS.md), [ARCHITECTURE.md](ARCHITECTURE.md)

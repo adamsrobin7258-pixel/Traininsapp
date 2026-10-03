@@ -41,16 +41,17 @@ async function goal(
   s: AppServices,
   profileId: string,
   goalType: 'lose' | 'maintain' | 'gain' | 'fitness' = 'maintain',
-  effectiveFrom = '2026-08-01',
 ) {
+  // A goal applies from the day it is saved: saved on 1 August.
+  vi.setSystemTime(new Date(2026, 7, 1, 9));
   await s.nutrition.goals.save(profileId, {
-    effectiveFrom,
     goalType,
     targets: {
       energyKcal: { auto: null, manual: 2300 },
       proteinG: { auto: null, manual: 160 },
     },
   });
+  vi.setSystemTime(NOW);
 }
 
 async function eat(

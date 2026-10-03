@@ -72,14 +72,16 @@ async function countActivityFrom(
 
 /** Base goal 2300 kcal / 160 g protein from 1 September. */
 async function withGoal({ n, profileId }: Awaited<ReturnType<typeof setup>>) {
+  // A goal applies from the day it is saved: saved on 1 September.
+  now = new Date(2026, 8, 1, 9);
   await n.goals.save(profileId, {
-    effectiveFrom: '2026-09-01',
     goalType: 'maintain',
     targets: {
       energyKcal: { auto: null, manual: 2300 },
       proteinG: { auto: null, manual: 160 },
     },
   });
+  now = new Date(2026, 9, 3, 10);
 }
 
 function activity(id: string, day: number, hour: number, minutes: number, kcal: number | null) {

@@ -38,14 +38,16 @@ const connect = async (services: AppServices, profileId: string) => {
 };
 
 async function withGoal(services: AppServices, profileId: string) {
+  // A goal applies from the day it is saved: saved on 1 September.
+  vi.setSystemTime(new Date(2026, 8, 1, 9));
   await services.nutrition.goals.save(profileId, {
-    effectiveFrom: '2026-09-01',
     goalType: 'maintain',
     targets: {
       energyKcal: { auto: null, manual: 2300 },
       proteinG: { auto: null, manual: 160 },
     },
   });
+  vi.setSystemTime(NOW);
 }
 
 /** One logged meal today, so the progress page has a day to compare with its goal. */

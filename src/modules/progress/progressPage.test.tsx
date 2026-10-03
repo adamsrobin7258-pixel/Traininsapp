@@ -293,14 +293,16 @@ describe('Fortschritt – the main page', () => {
             ['2026-10-01', 2000],
             ['2026-10-03', 1200],
           ]);
+          // A goal applies from the day it is saved: saved on 1 September.
+          vi.setSystemTime(new Date(2026, 8, 1, 9));
           await services.nutrition.goals.save(profileId, {
-            effectiveFrom: '2026-09-01',
             goalType: 'maintain',
             targets: {
               energyKcal: { auto: null, manual: 2300 },
               proteinG: { auto: null, manual: 160 },
             },
           });
+          vi.setSystemTime(NOW);
         },
       });
       const nutrition = await findCard(/^Ernährung/);

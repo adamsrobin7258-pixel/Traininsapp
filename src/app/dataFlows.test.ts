@@ -85,16 +85,17 @@ async function eat(s: Setup, localDate: string, kcal: number, protein: number) {
   });
 }
 
-/** A fixed nutrition goal from 1 September (own values). */
+/** A fixed nutrition goal saved on 1 September (own values) – it applies from that day. */
 async function fixedGoal({ services, profileId }: Setup, kcal = 2300, protein = 160) {
-  await services.nutrition.goals.save(profileId, {
-    effectiveFrom: '2026-09-01',
-    goalType: 'maintain',
-    targets: {
-      energyKcal: { auto: null, manual: kcal },
-      proteinG: { auto: null, manual: protein },
-    },
-  });
+  await on('2026-09-01', () =>
+    services.nutrition.goals.save(profileId, {
+      goalType: 'maintain',
+      targets: {
+        energyKcal: { auto: null, manual: kcal },
+        proteinG: { auto: null, manual: protein },
+      },
+    }),
+  );
 }
 
 /** A completed Kalethra workout starting at the given local time. */

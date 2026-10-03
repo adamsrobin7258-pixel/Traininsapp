@@ -28,8 +28,9 @@ type Context = Awaited<ReturnType<typeof setup>>;
 
 /** A fixed daily goal of 2300 kcal (the user's own values). */
 async function withGoal({ services, profileId }: Context) {
+  // A goal applies from the day it is saved: saved on 1 September.
+  now = new Date(2026, 8, 1, 9);
   await services.nutrition.goals.save(profileId, {
-    effectiveFrom: '2026-09-01',
     goalType: 'maintain',
     targets: {
       energyKcal: { auto: null, manual: 2300 },
@@ -38,6 +39,7 @@ async function withGoal({ services, profileId }: Context) {
       carbsG: { auto: null, manual: 250 },
     },
   });
+  now = new Date(2026, 9, 3, 10, 0);
 }
 
 /** A Health Connect activity today. */

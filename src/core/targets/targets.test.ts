@@ -434,8 +434,9 @@ describe('migration 15 – "Aktivitätskalorien anrechnen" becomes a versioned t
 
   it('every past day keeps the goal it had before the update', async () => {
     const first = await setup();
+    // Saved on 1 September – it applies from that day.
+    now = new Date(2026, 8, 1, 9);
     await first.services.nutrition.goals.save(first.profileId, {
-      effectiveFrom: '2026-09-01',
       goalType: 'maintain',
       targets: {
         energyKcal: { auto: null, manual: 2300 },
@@ -444,6 +445,7 @@ describe('migration 15 – "Aktivitätskalorien anrechnen" becomes a versioned t
         carbsG: { auto: null, manual: 250 },
       },
     });
+    now = new Date(2026, 9, 3, 10);
     await first.services.activities.create(first.profileId, {
       sportId: 'yoga',
       localDate: '2026-09-15',

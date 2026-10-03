@@ -646,41 +646,75 @@ describe('water corrections', () => {
 });
 
 describe('goals', () => {
-  it('stores all five targets with automatic and manual values per start day', async () => {
+  it('stores all five targets with automatic and manual values from the day they are saved', async () => {
     const { n, profileId } = await setup();
+    // Saved on 1 September: an own calorie value over the automatic one, which is kept.
+    now = new Date(2026, 8, 1, 9);
     await n.goals.save(profileId, {
-      effectiveFrom: '2026-09-01',
       goalType: 'gain',
       targets: {
-        energyKcal: { auto: 2800, manual: null },
+        energyKcal: { auto: 2800, manual: 2600 },
         proteinG: { auto: 180, manual: null },
         carbsG: { auto: 330, manual: null },
         fatG: { auto: 80, manual: null },
         waterMl: { auto: 3000, manual: null },
       },
     });
-    await n.goals.setManual(profileId, '2026-09-15', 'energyKcal', 2600);
     const september = await n.goals.goalFor(profileId, '2026-09-20');
+    expect(september?.goal.effectiveFrom).toBe('2026-09-01');
     expect(september?.goal.goalType).toBe('gain');
     expect(september?.effective.energyKcal).toEqual({ value: 2600, origin: 'manual' });
     expect(september?.goal.targets.energyKcal).toEqual({ auto: 2800, manual: 2600 });
     expect(september?.effective.waterMl).toEqual({ value: 3000, origin: 'auto' });
 
-    // A new goal from October does not change how September is judged.
+    // A new goal from 1 October does not change how September is judged.
+    now = new Date(2026, 9, 1, 9);
     await n.goals.save(profileId, {
-      effectiveFrom: '2026-10-01',
+      goalType: 'lose',
+      targets: { energyKcal: { auto: 2100, manual: 1900 } },
+    });
+    // Back to automatic on the same day: that day's version is replaced, nothing else.
+    await n.goals.save(profileId, {
       goalType: 'lose',
       targets: { energyKcal: { auto: 2100, manual: null } },
     });
-    expect((await n.goals.goalFor(profileId, '2026-09-20'))?.goal.goalType).toBe('gain');
-    expect((await n.goals.goalFor(profileId, '2026-10-03'))?.effective.energyKcal.value).toBe(2100);
+    now = new Date(2026, 9, 3, 12, 0);
+    expect((await n.goals.list(profileId)).map((g) => g.effectiveFrom)).toEqual([
+      '2026-09-01',
+      '2026-10-01',
+    ]);
+    expect(await n.goals.goalFor(profileId, '2026-09-20')).toEqual(september);
+    expect((await n.goals.goalFor(profileId, '2026-10-03'))?.effective.energyKcal).toEqual({
+      value: 2100,
+      origin: 'auto',
+    });
     expect(await n.goals.goalFor(profileId, '2026-08-31')).toBeNull();
+  });
 
-    // Back to automatic.
-    await n.goals.setManual(profileId, '2026-09-20', 'energyKcal', null);
-    expect((await n.goals.goalFor(profileId, '2026-09-20'))?.effective.energyKcal.origin).toBe(
-      'auto',
-    );
+  it('never writes a goal into the past: a change always starts today', async () => {
+    const { n, profileId } = await setup();
+    now = new Date(2026, 8, 1, 9);
+    await n.goals.save(profileId, {
+      goalType: 'maintain',
+      targets: { energyKcal: { auto: null, manual: 2300 } },
+    });
+    now = new Date(2026, 9, 3, 12, 0);
+    const before = await n.goals.goalFor(profileId, '2026-09-15');
+    // Even an attempt to pass a start day is ignored – the version starts today.
+    await n.goals.save(profileId, {
+      // @ts-expect-error – a start day is no longer part of the input
+      effectiveFrom: '2026-09-01',
+      goalType: 'maintain',
+      targets: { energyKcal: { auto: null, manual: 1800 } },
+    });
+    expect(await n.goals.goalFor(profileId, '2026-09-15')).toEqual(before);
+    expect(
+      (await n.goals.list(profileId)).map((g) => [g.effectiveFrom, g.targets.energyKcal]),
+    ).toEqual([
+      ['2026-09-01', { auto: null, manual: 2300 }],
+      ['2026-10-03', { auto: null, manual: 1800 }],
+    ]);
+    expect((await n.goals.goalFor(profileId, '2026-10-02'))?.effective.energyKcal.value).toBe(2300);
   });
 
   it('rejects implausible goals', async () => {
