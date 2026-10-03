@@ -1,9 +1,16 @@
 /**
- * Personal targets beyond nutrition: workouts and active minutes per week, steps per day.
+ * Personal targets beyond nutrition: workouts and active minutes per week, steps per day – and
+ * the switch "Aktivitätskalorien anrechnen" (`activityCalories`, 1 = on, 0 = off), which decides
+ * whether a day's calorie goal includes its activity calories.
  * Versioned like the nutrition goals: each change starts a new version on the day it is made
  * (`effectiveFrom`), so a past period is always judged by the target that applied then. Pure.
  */
-export const TARGET_KINDS = ['trainingsPerWeek', 'activeMinutesPerWeek', 'stepsPerDay'] as const;
+export const TARGET_KINDS = [
+  'trainingsPerWeek',
+  'activeMinutesPerWeek',
+  'stepsPerDay',
+  'activityCalories',
+] as const;
 export type TargetKind = (typeof TARGET_KINDS)[number];
 
 /** Allowed values per kind (whole numbers); `null` = "no target". */
@@ -11,6 +18,7 @@ export const TARGET_LIMITS: Record<TargetKind, { min: number; max: number }> = {
   trainingsPerWeek: { min: 1, max: 14 },
   activeMinutesPerWeek: { min: 10, max: 2000 },
   stepsPerDay: { min: 1000, max: 50000 },
+  activityCalories: { min: 0, max: 1 },
 };
 
 /** Choices offered in the settings (chosen from a list – no keyboard). */
@@ -18,6 +26,7 @@ export const TARGET_OPTIONS: Record<TargetKind, readonly number[]> = {
   trainingsPerWeek: [1, 2, 3, 4, 5, 6, 7],
   activeMinutesPerWeek: [60, 90, 120, 150, 180, 240, 300],
   stepsPerDay: [4000, 5000, 6000, 7000, 8000, 10000, 12000, 15000],
+  activityCalories: [0, 1],
 };
 
 /**
@@ -71,9 +80,20 @@ export function targetOn(
   return found?.value ?? null;
 }
 
+/**
+ * Whether activity calories count towards the calorie goal on `localDate`: the switch as it was
+ * set then. Off without any version (the default).
+ */
+export function countsActivityCaloriesOn(
+  versions: readonly Pick<TargetVersion, 'effectiveFrom' | 'value'>[],
+  localDate: string,
+): boolean {
+  return targetOn(versions, localDate) === 1;
+}
+
 /** All versions of every kind, ready to look values up by day. */
 export type TargetHistory = Record<TargetKind, readonly TargetVersion[]>;
 
 export function emptyTargetHistory(): TargetHistory {
-  return { trainingsPerWeek: [], activeMinutesPerWeek: [], stepsPerDay: [] };
+  return { trainingsPerWeek: [], activeMinutesPerWeek: [], stepsPerDay: [], activityCalories: [] };
 }

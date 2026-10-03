@@ -435,7 +435,8 @@ describe('Einstellungen → Ziele', () => {
     const toggle = await screen.findByRole('switch', { name: 'Aktivitätskalorien anrechnen' });
     await userEvent.click(toggle);
     await waitFor(async () => {
-      expect((await services.settings.load()).countActivityCalories).toBe(true);
+      const profileId = (await services.profile.ensureLocalProfile()).id;
+      expect((await services.targets.current(profileId)).activityCalories).toBe(1);
     });
   });
 

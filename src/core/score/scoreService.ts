@@ -17,12 +17,11 @@ export interface ScoreSources {
   goalTypeOn(profileId: string, localDate: string): Promise<GoalType | null>;
   /** Days with at least one food entry and their totals (DiaryService). */
   nutritionTotals(profileId: string, from: string, to: string): Promise<NutritionDayTotals[]>;
-  /** Day goals exactly as the diary shows them (GoalService.dayGoalsBetween). */
-  nutritionGoals(
-    profileId: string,
-    dates: readonly string[],
-    options: { countActivity: boolean },
-  ): Promise<NutritionDayGoal[]>;
+  /**
+   * Day goals exactly as the diary shows them (GoalService.dayGoalsBetween) – with activity
+   * calories only on days "Aktivitätskalorien anrechnen" was on then.
+   */
+  nutritionGoals(profileId: string, dates: readonly string[]): Promise<NutritionDayGoal[]>;
   /** Completed Kalethra workouts per day (WorkoutService.dailyStatsBetween). */
   workoutsPerDay(
     profileId: string,
@@ -43,7 +42,6 @@ export interface ScoreSources {
 export interface ScoreOptions {
   /** Today's local day. */
   today: string;
-  countActivity: boolean;
 }
 
 export interface ScoreWithTrend {
@@ -69,7 +67,7 @@ export class ScoreService {
     const [goal, totals, goals, workouts, minutes, recovery, targets] = await Promise.all([
       s.goalTypeOn(profileId, to),
       s.nutritionTotals(profileId, from, to),
-      s.nutritionGoals(profileId, dates, { countActivity: options.countActivity }),
+      s.nutritionGoals(profileId, dates),
       s.workoutsPerDay(profileId, from, to),
       s.activityMinutesPerDay(profileId, from, to),
       s.recovery(profileId, from, to),

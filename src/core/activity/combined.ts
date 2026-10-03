@@ -5,11 +5,16 @@
  * - Health Connect has priority. A manual activity that is most likely the same session as an
  *   imported one (see `isLikelySameActivity`) is shown, but not counted a second time.
  * - Neither source is ever counted as a Kalethra workout; activities that are the same session
- *   as a completed Kalethra workout do not add to the calorie budget (Phase 6.3 rule).
+ *   as a completed Kalethra workout are that workout and do not count again – not on the calorie
+ *   budget, not in the score's active minutes, not in the progress totals (Phase 6.3 rule).
+ *
+ * Whether an activity counts is decided in one place (`importedExclusion`, `manualExclusion`);
+ * calorie budget, score minutes and progress totals all use it.
  */
 
 import {
   countableActivityCalories,
+  isKalethraWorkout,
   isSameSession,
   summarizeActivities,
   type ActivityPeriodSummary,
@@ -58,6 +63,31 @@ export function isLikelySameActivity(manual: ManualActivity, imported: ExternalW
   const longer = Math.max(manual.durationS, imported.durationS);
   if (longer <= 0 || shorter / longer < SIMILAR_DURATION) return false;
   return isSameSession(span, imported);
+}
+
+/** Why an activity does not count – `null` when it counts. */
+export type ActivityExclusion = 'duplicate' | 'kalethraWorkout' | null;
+
+/** An imported activity counts unless it is the same session as a Kalethra workout. */
+export function importedExclusion(
+  activity: ExternalWorkout,
+  own: readonly OwnWorkoutSpan[],
+): ActivityExclusion {
+  return isKalethraWorkout(activity, own) ? 'kalethraWorkout' : null;
+}
+
+/**
+ * A manual activity counts unless it duplicates an imported one (Health Connect has priority)
+ * or – with a start time – is the same session as a Kalethra workout.
+ */
+export function manualExclusion(
+  activity: ManualActivity,
+  imported: readonly ExternalWorkout[],
+  own: readonly OwnWorkoutSpan[],
+): ActivityExclusion {
+  if (imported.some((candidate) => isLikelySameActivity(activity, candidate))) return 'duplicate';
+  const span = manualSpan(activity);
+  return span !== null && isKalethraWorkout(span, own) ? 'kalethraWorkout' : null;
 }
 
 /** Both sources, newest first; manual activities know the import they duplicate. */
@@ -123,10 +153,7 @@ export function dayActivityCalories(
   let counted = fromImport.counted;
   let excluded = fromImport.excluded;
   for (const activity of manual) {
-    const span = manualSpan(activity);
-    const duplicate = imported.some((candidate) => isLikelySameActivity(activity, candidate));
-    const kalethraWorkout = span !== null && own.some((workout) => isSameSession(span, workout));
-    if (duplicate || kalethraWorkout) {
+    if (manualExclusion(activity, imported, own) !== null) {
       excluded++;
       continue;
     }
@@ -139,15 +166,24 @@ export function dayActivityCalories(
 
 /**
  * Totals for the progress page: every activity of both sources once – a manual duplicate of an
- * import is left out, so the session is not counted twice.
+ * import is left out, and so is a session that is a Kalethra workout (it shows under training).
+ * Same rule as the calorie budget and the score's active minutes.
  */
 export function summarizeAllActivities(
   entries: readonly ActivityEntry[],
   dates: readonly string[],
+  own: readonly OwnWorkoutSpan[],
 ): ActivityPeriodSummary {
+  const imported = entries.flatMap((entry) =>
+    entry.source === 'healthConnect' ? [entry.activity] : [],
+  );
   return summarizeActivities(
     entries
-      .filter((entry) => entry.source === 'healthConnect' || entry.duplicateOf === null)
+      .filter((entry) =>
+        entry.source === 'healthConnect'
+          ? importedExclusion(entry.activity, own) === null
+          : manualExclusion(entry.activity, imported, own) === null,
+      )
       .map((entry) => {
         const figures = entryFigures(entry);
         return {
@@ -176,14 +212,12 @@ export function countableActivityMinutes(
     minutes.set(localDate, (minutes.get(localDate) ?? 0) + durationS / 60);
   };
   for (const activity of imported) {
-    if (own.some((workout) => isSameSession(activity, workout))) continue;
-    add(activity.localDate, activity.durationS);
+    if (importedExclusion(activity, own) === null) add(activity.localDate, activity.durationS);
   }
   for (const activity of manual) {
-    const span = manualSpan(activity);
-    if (imported.some((candidate) => isLikelySameActivity(activity, candidate))) continue;
-    if (span !== null && own.some((workout) => isSameSession(span, workout))) continue;
-    add(activity.localDate, activity.durationS);
+    if (manualExclusion(activity, imported, own) === null) {
+      add(activity.localDate, activity.durationS);
+    }
   }
   return [...minutes]
     .sort(([a], [b]) => a.localeCompare(b))

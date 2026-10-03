@@ -5,15 +5,55 @@
  * 1. Nutrition goals – own entries only (`weight_entries`), smoothed as the median of the last
  *    7 days (`trendWeight`, core/nutrition/calculation/trend.ts); the protein reference weight
  *    caps it at BMI 27.5. Imported values never change a nutrition goal.
- * 2. Progress (weight card) – own and Health Connect values side by side, one per day, the own
- *    entry wins on the same day (`mergeWeightDays`, ./progress.ts). Display only.
+ * 2. Display (progress weight card, Health Connect overview) – own and Health Connect values
+ *    side by side, one per day, the own entry wins on the same day (`mergeWeightDays` for a
+ *    period, `dayWeight` for one day, below). Display only.
  * 3. Activity calories (MET estimate of a manual activity) – the most recent value on or before
  *    the day: the own entry, or a Health Connect value if that is newer (the own entry wins on
  *    the same day), imported values at most `ACTIVITY_WEIGHT_WINDOW_DAYS` old
  *    (`pickActivityWeight`, below). Stored with the activity as a snapshot.
  *
- * Pure.
+ * Pure. Every module reads weight through these functions (or `trendWeight` for rule 1); none
+ * repeats the rules.
  */
+
+import type { ImportedWeight } from './importedHealth';
+
+// ── Rule 2: display ───────────────────────────────────────────────────────────
+
+export interface WeightDay {
+  date: string;
+  kg: number;
+  source: 'own' | 'imported';
+}
+
+/** Rule 2 for a period: one weight per day, ascending by date; the own entry wins. */
+export function mergeWeightDays(
+  own: readonly { date: string; kg: number }[],
+  imported: readonly Pick<ImportedWeight, 'date' | 'kg'>[],
+): WeightDay[] {
+  const byDate = new Map<string, WeightDay>();
+  for (const entry of imported)
+    byDate.set(entry.date, { date: entry.date, kg: entry.kg, source: 'imported' });
+  for (const entry of own)
+    byDate.set(entry.date, { date: entry.date, kg: entry.kg, source: 'own' });
+  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
+}
+
+/** The weight a day shows: the user's own entry always wins over an imported value. */
+export type DayWeight =
+  | { kind: 'own'; kg: number; imported: ImportedWeight | null }
+  | { kind: 'imported'; kg: number; imported: ImportedWeight }
+  | { kind: 'none' };
+
+/** Rule 2 for one day. */
+export function dayWeight(ownKg: number | null, imported: ImportedWeight | null): DayWeight {
+  if (ownKg !== null) return { kind: 'own', kg: ownKg, imported };
+  if (imported) return { kind: 'imported', kg: imported.kg, imported };
+  return { kind: 'none' };
+}
+
+// ── Rule 3: activity calories ─────────────────────────────────────────────────
 
 /** Imported weights older than this are not used for activity calories. */
 export const ACTIVITY_WEIGHT_WINDOW_DAYS = 60;

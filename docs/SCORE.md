@@ -92,7 +92,9 @@ kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie 
   keinen Höchstwert in den anderen Bereichen und keinen Bonus.
 - **Ohne Ziel** oder **ohne jede Aktivität im Zeitraum** (nicht erfasst ≠ nicht aktiv): neutral.
 - Unabhängig von „Aktivitätskalorien anrechnen“ – die Einstellung wirkt nur auf das Tagesziel
-  der Ernährung, wie in der App überall.
+  der Ernährung, wie in der App überall. Seit Phase 12 ist sie versioniert: Der Ernährungsteil
+  bewertet jeden Tag mit der Einstellung, die an diesem Tag galt; Umschalten ändert keinen
+  vergangenen Score-Tag (`ScoreOptions` enthält nur noch `today`).
 
 ### Regeneration
 

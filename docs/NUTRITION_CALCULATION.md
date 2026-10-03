@@ -94,8 +94,9 @@ Bänder liegen bei etwa 1,2 bei überwiegend liegender oder sitzender Lebensweis
 
 ### Aktivitätskalorien aus Health Connect und manuellen Aktivitäten (Phase 6.3 / 8)
 
-Getrennt von der Berechnung oben und nur, wenn der Nutzer „Aktivitätskalorien anrechnen“
-einschaltet (**[Produkt]** Voreinstellung **aus**):
+Getrennt von der Berechnung oben und nur an Tagen, an denen „Aktivitätskalorien anrechnen“
+eingeschaltet war (**[Produkt]** Voreinstellung **aus**; seit Phase 12 versioniert, eine Änderung
+gilt ab heute):
 
 - Das berechnete bzw. eigene Kalorienziel bleibt das **Basisziel** und wird nie überschrieben.
 - Für jeden Tag kommt die Summe der aktiven Kalorien der an diesem Tag begonnenen, aus Health

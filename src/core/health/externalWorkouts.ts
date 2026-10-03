@@ -213,6 +213,15 @@ export function isSameSession(external: OwnWorkoutSpan, own: OwnWorkoutSpan): bo
   return overlap > 0 && shorter > 0 && overlap / shorter >= SAME_SESSION_OVERLAP;
 }
 
+/**
+ * Whether a session (imported, or manual with a start time) is one of the completed Kalethra
+ * workouts – then it is Kalethra's own training and never counts again as an activity (calorie
+ * budget, score minutes, progress).
+ */
+export function isKalethraWorkout(span: OwnWorkoutSpan, own: readonly OwnWorkoutSpan[]): boolean {
+  return own.some((workout) => isSameSession(span, workout));
+}
+
 export interface ActivityCalories {
   /** Sum of active energy of the activities that may count (100 %, no adjustment). */
   kcal: number;
@@ -234,7 +243,7 @@ export function countableActivityCalories(
   let counted = 0;
   let excluded = 0;
   for (const activity of activities) {
-    if (own.some((workout) => isSameSession(activity, workout))) {
+    if (isKalethraWorkout(activity, own)) {
       excluded++;
       continue;
     }

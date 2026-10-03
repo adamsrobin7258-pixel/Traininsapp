@@ -10,7 +10,7 @@ import {
   type FoodEntry,
   type MealSlot,
 } from '@/core/nutrition';
-import { useSettings } from '@/core/settings';
+import { useTargets } from '@/core/targets';
 import { toLocalDateKey } from '@/shared/lib/date';
 import { PromptSheet, Screen } from '@/ui';
 import { AddSheet } from '../components/AddSheet';
@@ -44,7 +44,8 @@ export function NutritionScreen() {
   const day = resolveDay(params.get(DAY_PARAM), today);
   const [open, setOpen] = useState<Open>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const { countActivityCalories } = useSettings().settings;
+  // … and after a target changed: "Aktivitätskalorien anrechnen" is a versioned target.
+  const { revision: targetRevision } = useTargets();
   // Reloads after a Health Connect sync: imported activities can change the day's budget.
   const { revision: healthRevision } = useHealthSync();
   // … and after a manual activity changed.
@@ -53,10 +54,10 @@ export function NutritionScreen() {
   const data = useNutritionData(
     async (s, profileId) => ({
       day: await s.diary.getDay(profileId, day),
-      goal: await s.goals.dayGoal(profileId, day, { countActivity: countActivityCalories }),
+      goal: await s.goals.dayGoal(profileId, day),
       meals: await s.meals.listAll(profileId),
     }),
-    [day, today, countActivityCalories, healthRevision, activityRevision],
+    [day, today, targetRevision, healthRevision, activityRevision],
   );
 
   function changeDay(next: string) {

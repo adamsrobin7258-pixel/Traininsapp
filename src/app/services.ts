@@ -40,7 +40,7 @@ import {
 import { createBlsCatalog } from '@/core/nutrition/bls';
 import { RecoveryService } from '@/core/recovery';
 import { ScoreService } from '@/core/score';
-import { TargetService } from '@/core/targets';
+import { countsActivityCaloriesOn, TargetService } from '@/core/targets';
 import { SettingsRepository, SettingsService, type AppSettings } from '@/core/settings';
 import { LocalOnlySyncService, type SyncService } from '@/core/sync';
 import { ProfileRepository, ProfileService, type Profile } from '@/core/user';
@@ -102,6 +102,8 @@ export function createServices(
     },
   };
   const activities = new ManualActivityService(db, clock, activityWeight);
+  // Versioned targets – also the switch "Aktivitätskalorien anrechnen" (kind activityCalories).
+  const targets = new TargetService(db, clock);
   const bodyWeight: BodyWeightSource = {
     latestKgOnOrBefore: async (profileId, localDate) =>
       (await weight.getLatestOnOrBefore(profileId, localDate))?.kg ?? null,
@@ -112,12 +114,15 @@ export function createServices(
     pointsBetween: async (profileId, from, to) =>
       (await weight.listBetween(profileId, from, to)).map((e) => ({ date: e.date, kg: e.kg })),
   };
-  async function activityCaloriesBetween(profileId: string, from: string, to: string) {
+  /**
+   * The three activity sources of a period, loaded once for every reader (calorie budget,
+   * score): imported and manual activities plus the completed Kalethra workouts – of the
+   * neighbouring days too, since a workout may have started before midnight.
+   */
+  async function activitySourcesBetween(profileId: string, from: string, to: string) {
     const first = parseLocalDateKey(from);
     const last = parseLocalDateKey(to);
-    const result = new Map<string, { kcal: number; counted: number; excluded: number }>();
-    if (!first || !last) return result;
-    // Neighbouring days too: a Kalethra workout may have started before midnight.
+    if (!first || !last) return null;
     const [imported, manual, own] = await Promise.all([
       healthSync.workoutsBetween(profileId, from, to),
       activities.listBetween(profileId, from, to),
@@ -127,6 +132,14 @@ export function createServices(
         toLocalDateKey(addDays(last, 1)),
       ),
     ]);
+    return { imported, manual, own };
+  }
+
+  async function activityCaloriesBetween(profileId: string, from: string, to: string) {
+    const result = new Map<string, { kcal: number; counted: number; excluded: number }>();
+    const sources = await activitySourcesBetween(profileId, from, to);
+    if (!sources) return result;
+    const { imported, manual, own } = sources;
     const days = new Set([...imported, ...manual].map((activity) => activity.localDate));
     for (const day of days) {
       result.set(
@@ -163,6 +176,10 @@ export function createServices(
           excluded: 0,
         },
       caloriesBetween: activityCaloriesBetween,
+      countingOn: async (profileId) => {
+        const versions = (await targets.history(profileId)).activityCalories;
+        return (localDate) => countsActivityCaloriesOn(versions, localDate);
+      },
     },
   };
   const nutrition = createNutritionServices(
@@ -173,31 +190,18 @@ export function createServices(
     referenceCatalog,
   );
   const recovery = new RecoveryService(db, clock);
-  const targets = new TargetService(db, clock);
   // The score reads the existing services; it has no data of its own.
   const score = new ScoreService({
     goalTypeOn: async (profileId, localDate) =>
       (await nutrition.goals.goalFor(profileId, localDate))?.goal.goalType ?? null,
     nutritionTotals: (profileId, from, to) =>
       nutrition.diary.dailyTotalsBetween(profileId, from, to),
-    nutritionGoals: (profileId, dates, options) =>
-      nutrition.goals.dayGoalsBetween(profileId, dates, options),
+    nutritionGoals: (profileId, dates) => nutrition.goals.dayGoalsBetween(profileId, dates),
     workoutsPerDay: (profileId, from, to) =>
       training.workouts.dailyStatsBetween(profileId, from, to),
     activityMinutesPerDay: async (profileId, from, to) => {
-      const first = parseLocalDateKey(from);
-      const last = parseLocalDateKey(to);
-      if (!first || !last) return [];
-      const [imported, manual, own] = await Promise.all([
-        healthSync.workoutsBetween(profileId, from, to),
-        activities.listBetween(profileId, from, to),
-        training.workouts.completedSpansBetween(
-          profileId,
-          toLocalDateKey(addDays(first, -1)),
-          toLocalDateKey(addDays(last, 1)),
-        ),
-      ]);
-      return countableActivityMinutes(imported, manual, own);
+      const sources = await activitySourcesBetween(profileId, from, to);
+      return sources ? countableActivityMinutes(sources.imported, sources.manual, sources.own) : [];
     },
     recovery: async (profileId, from, to) =>
       (await recovery.listBetween(profileId, from, to)).map((entry) => ({

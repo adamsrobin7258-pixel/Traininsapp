@@ -59,8 +59,16 @@ function activity(
   };
 }
 
-const dayGoal = ({ services, profileId }: Context, countActivity: boolean) =>
-  services.nutrition.goals.dayGoal(profileId, TODAY, { countActivity });
+/**
+ * Today's goal with "Aktivitätskalorien anrechnen" switched on or off from today on (a versioned
+ * target since migration 15); without a value the switch is left as it is.
+ */
+async function dayGoal({ services, profileId }: Context, countActivity?: boolean) {
+  if (countActivity !== undefined) {
+    await services.targets.set(profileId, 'activityCalories', countActivity ? 1 : 0);
+  }
+  return services.nutrition.goals.dayGoal(profileId, TODAY);
+}
 
 const energy = (day: GoalForDay | null) => day?.effective.energyKcal.value;
 const macros = (day: GoalForDay | null) => ({
@@ -83,9 +91,9 @@ describe('activity calories and the daily goal', () => {
     await withGoal(context);
     context.platform.workouts = [activity('a', [7, 0], 45, 500)];
     await context.services.healthSync.connect(context.profileId);
-    expect((await context.services.settings.load()).countActivityCalories).toBe(false);
+    expect((await context.services.targets.current(context.profileId)).activityCalories).toBe(null);
 
-    const day = await dayGoal(context, false);
+    const day = await dayGoal(context);
     expect(energy(day)).toBe(2300);
     expect(day?.effective.energyKcal.origin).toBe('manual');
     expect(day?.activity).toEqual({ kcal: 500, counted: false, baseKcal: 2300, excluded: 0 });
@@ -135,12 +143,13 @@ describe('activity calories and the daily goal', () => {
     await withGoal(context);
     context.platform.workouts = [activity('a', [7, 0], 45, 500)];
     await context.services.healthSync.connect(context.profileId);
-    await context.services.settings.update('countActivityCalories', true);
+    await context.services.targets.set(context.profileId, 'activityCalories', 1);
 
     const restarted = await setup(context.db);
-    const settings = await restarted.services.settings.load();
-    expect(settings.countActivityCalories).toBe(true);
-    expect(energy(await dayGoal(restarted, settings.countActivityCalories))).toBe(2800);
+    expect((await restarted.services.targets.current(restarted.profileId)).activityCalories).toBe(
+      1,
+    );
+    expect(energy(await dayGoal(restarted))).toBe(2800);
   });
 
   it('6 · a later sync with a new activity raises the budget of the day', async () => {

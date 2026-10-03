@@ -266,6 +266,22 @@ aktualisierter Dokumentation.
 - Keine Migration; eingetragene Tage und der Score bleiben unverändert
 - Details: [SETTINGS.md](SETTINGS.md)
 
+## Phase 12 – Regression & Datenfluss-Härtung ✅ (Version 0.17.0)
+
+Keine neuen Funktionen. Gefunden und behoben:
+
+- „Aktivitätskalorien anrechnen“ war unversioniert: Umschalten änderte das Tagesziel aller
+  vergangenen Tage (Tagebuch, Fortschritt, Score). Jetzt versioniert in `goal_targets`
+  (Migration 15); ein bisheriges „an“ gilt ab `1970-01-01`, vergangene Tage bleiben identisch
+- Fortschrittskarte „Aktivitäten“ zählte eine Health-Connect-Einheit, die dasselbe wie ein
+  Kalethra-Training ist, zusätzlich – jetzt dieselben Regeln wie Tagesbudget und Score
+- Doppelte Implementierungen zusammengeführt: Anrechenbarkeit von Aktivitäten, Laden der
+  Aktivitätsquellen, Gewichtsregel 2 (`mergeWeightDays`/`dayWeight`); `mergeWeightDays` gibt nur
+  noch Datum, Gewicht und Quelle zurück
+- Kettentests A–H über alle Module, Regressions-E2E (alle Seiten bei 320/390 px, hell/dunkel,
+  große Schrift, keine Tastatur, Tippflächen)
+- Details: [SETTINGS.md](SETTINGS.md), [ARCHITECTURE.md](ARCHITECTURE.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

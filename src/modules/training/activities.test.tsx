@@ -240,7 +240,8 @@ describe('Aktivitätskalorien anrechnen', () => {
       '100 % der anrechenbaren Aktivitätskalorien werden zum Tagesziel addiert.',
     );
     await waitFor(async () => {
-      expect((await services.settings.load()).countActivityCalories).toBe(true);
+      const profileId = (await services.profile.ensureLocalProfile()).id;
+      expect((await services.targets.current(profileId)).activityCalories).toBe(1);
     });
   });
 
@@ -266,7 +267,7 @@ describe('Aktivitätskalorien anrechnen', () => {
       healthPlatform: platformWith([session('a', [3, 7, 0], 45, { activeKcal: 500 })]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
-        await services.settings.update('countActivityCalories', true);
+        await services.targets.set(profileId, 'activityCalories', 1);
         await connect(services, profileId);
       },
     });
@@ -283,7 +284,7 @@ describe('Aktivitätskalorien anrechnen', () => {
       healthPlatform: platformWith([]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
-        await services.settings.update('countActivityCalories', true);
+        await services.targets.set(profileId, 'activityCalories', 1);
         await connect(services, profileId);
       },
     });
@@ -299,7 +300,7 @@ describe('Aktivitätskalorien anrechnen', () => {
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
         await logToday(services, profileId);
-        await services.settings.update('countActivityCalories', true);
+        await services.targets.set(profileId, 'activityCalories', 1);
         await connect(services, profileId);
       },
     });

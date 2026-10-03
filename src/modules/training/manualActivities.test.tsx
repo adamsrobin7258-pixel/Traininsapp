@@ -395,7 +395,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
       prepare: async (s, id) => {
         currentProfile = id;
         await withGoal(s, id);
-        await s.settings.update('countActivityCalories', true);
+        await s.targets.set(id, 'activityCalories', 1);
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
@@ -412,7 +412,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
       prepare: async (s, id) => {
         currentProfile = id;
         await withGoal(s, id);
-        await s.settings.update('countActivityCalories', true);
+        await s.targets.set(id, 'activityCalories', 1);
         await s.weight.save(id, '2026-10-01', 86);
         // Jogging 72 min at 86 kg → (7 − 1) × 3.5 × 86 ÷ 200 × 72 = 650 kcal.
         const created = await s.activities.create(id, input({ kcalOverride: 700 }));
@@ -432,7 +432,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
       prepare: async (s, id) => {
         currentProfile = id;
         await withGoal(s, id);
-        await s.settings.update('countActivityCalories', true);
+        await s.targets.set(id, 'activityCalories', 1);
         await s.healthSync.connect(id);
         // Same run logged by hand → Health Connect wins.
         await s.activities.create(
@@ -457,7 +457,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         currentProfile = id;
         await withGoal(s, id, 220);
         await logToday(s, id);
-        await s.settings.update('countActivityCalories', true);
+        await s.targets.set(id, 'activityCalories', 1);
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });

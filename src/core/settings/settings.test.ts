@@ -26,7 +26,6 @@ describe('SettingsService', () => {
       language: 'en',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
-      countActivityCalories: false,
     });
   });
 
@@ -46,17 +45,12 @@ describe('SettingsService', () => {
     expect((await service.load()).waterQuickAmountsMl).toEqual([200, 330]);
   });
 
-  it('keeps "Aktivitätskalorien anrechnen" off by default and persists the choice', async () => {
+  it('has no "Aktivitätskalorien anrechnen" any more – it is a versioned target (core/targets)', async () => {
     const { db, service } = await createService();
-    expect((await service.load()).countActivityCalories).toBe(false);
-    await service.update('countActivityCalories', true);
-    // A new service (app restart) reads the stored choice.
-    const restarted = new SettingsService(new SettingsRepository(db, fixedClock()));
-    expect((await restarted.load()).countActivityCalories).toBe(true);
-    // @ts-expect-error – deliberately invalid input
-    await expect(service.update('countActivityCalories', 'yes')).rejects.toThrow(/Invalid value/);
-    await service.update('countActivityCalories', false);
-    expect((await restarted.load()).countActivityCalories).toBe(false);
+    // A key left from before migration 15 is ignored, never read as a setting.
+    await db.run("INSERT INTO app_settings VALUES ('countActivityCalories', 'true', 'x')");
+    expect(await service.load()).toEqual(DEFAULT_SETTINGS);
+    expect('countActivityCalories' in (await service.load())).toBe(false);
   });
 
   it('ignores corrupt or unknown stored values', async () => {
@@ -83,7 +77,6 @@ describe('parseSettings', () => {
       language: 'de',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
-      countActivityCalories: false,
     });
   });
 });

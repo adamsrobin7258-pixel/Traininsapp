@@ -2,30 +2,15 @@
  * Compact weight and activity figures for the progress main page. Pure.
  *
  * Weight: one value per day – the user's own entry wins over a value imported from Health
- * Connect (`dayWeight`). This is display only; nutrition goals keep reading the own entries.
+ * Connect (weight rule 2, ./weightRules.ts). Display only; nutrition goals read own entries.
  * Activities: imported Health Connect sessions, never Kalethra workouts.
  */
 
 import type { ExternalWorkout } from './externalWorkouts';
-import type { ImportedWeight } from './importedHealth';
 
-export interface WeightDay {
-  date: string;
-  kg: number;
-  source: 'own' | 'imported';
-}
-
-/** One weight per day, ascending by date; own entries take precedence over imported ones. */
-export function mergeWeightDays(
-  own: readonly { date: string; kg: number }[],
-  imported: readonly Pick<ImportedWeight, 'date' | 'kg'>[],
-): WeightDay[] {
-  const byDate = new Map<string, WeightDay>();
-  for (const entry of imported) byDate.set(entry.date, { ...entry, source: 'imported' });
-  for (const entry of own)
-    byDate.set(entry.date, { date: entry.date, kg: entry.kg, source: 'own' });
-  return [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date));
-}
+// Rule 2 of the weight rules (one place: ./weightRules.ts), kept importable from here.
+export { mergeWeightDays, type WeightDay } from './weightRules';
+import type { WeightDay } from './weightRules';
 
 export interface ActivityPeriodSummary {
   count: number;

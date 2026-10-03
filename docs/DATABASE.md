@@ -436,8 +436,9 @@ CREATE INDEX external_workouts_profile_type ON external_workouts (profile_id, ac
 - **Abgleich** wie bei Migration 10, über `local_date` im 30-Tage-Fenster.
 - Datenkatalog: Kategorie `activity`, Sensibilität `health`, exportierbar, mit dem Profil
   gelöscht, `syncable: false`. Wird beim Trennen mit „Importierte Daten löschen“ entfernt.
-- Einstellung „Aktivitätskalorien anrechnen“: `app_settings`, Schlüssel `countActivityCalories`
-  (Boolean, Standard `false`). Das Kalorienziel in `nutrition_goals` wird dadurch nie verändert.
+- Einstellung „Aktivitätskalorien anrechnen“: bis Phase 11 `app_settings`, Schlüssel
+  `countActivityCalories`; seit Migration 15 versioniert in `goal_targets` (unten). Das
+  Kalorienziel in `nutrition_goals` wird dadurch nie verändert.
 
 ## Manuelle Aktivitäten (Migration 12, Phase 8)
 
@@ -483,6 +484,7 @@ CREATE TABLE goal_targets (
   id             TEXT PRIMARY KEY NOT NULL,
   profile_id     TEXT NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
   kind           TEXT NOT NULL,   -- trainingsPerWeek | activeMinutesPerWeek | stepsPerDay
+                                  -- | activityCalories (seit Migration 15)
   effective_from TEXT NOT NULL,   -- YYYY-MM-DD, gilt bis zur nächsten Version
   value          INTEGER,         -- NULL = kein Ziel ab diesem Tag; Grenzen per CHECK
   created_at     TEXT NOT NULL,
@@ -499,6 +501,19 @@ CREATE UNIQUE INDEX goal_targets_version ON goal_targets (profile_id, kind, effe
   `INSERT OR IGNORE` macht die Übernahme wiederholbar.
 - Datenkatalog: Kategorie `profile`, Sensibilität `personal`, exportierbar, mit dem Profil
   gelöscht, `syncable: false`. Details: [SETTINGS.md](SETTINGS.md).
+
+## „Aktivitätskalorien anrechnen“ versioniert (Migration 15, Phase 12)
+
+- `goal_targets.kind` erlaubt zusätzlich `activityCalories` (`value` 0 = aus, 1 = an, per
+  `CHECK`). Weil SQLite `CHECK`-Bedingungen nicht ändern kann, wird die Tabelle als
+  `goal_targets_v15` mit identischen Spalten neu angelegt, jede Zeile unverändert kopiert, die
+  alte Tabelle gelöscht, umbenannt und der Index `goal_targets_version` neu erstellt.
+- **Übernahme:** War `app_settings.countActivityCalories` = `true`, bekommt jedes Profil eine
+  Version ab `1970-01-01` mit Wert 1 – alle vergangenen Tage behalten ihr Ziel. „Aus“ braucht
+  keine Zeile. Danach wird der Schlüssel aus `app_settings` gelöscht (eine Quelle).
+- Wiederholbar (`INSERT OR IGNORE`). Getestet: an/aus/fehlend, mehrere Profile, bestehende Zeilen
+  bleiben, erneuter Lauf, `CHECK`/`UNIQUE`, Löschen mit dem Profil, Ziel vergangener Tage
+  identisch.
 
 ## Konventionen für Nutzerdaten-Tabellen
 

@@ -357,10 +357,10 @@ describe('manual activities: Health Connect and calorie budget', () => {
       await activities.listBetween(profileId, '2026-09-27', '2026-10-03'),
     );
     expect(entries).toHaveLength(4);
-    const summary = summarizeAllActivities(entries, WEEK);
+    const summary = summarizeAllActivities(entries, WEEK, []);
     // Tennis (HC) + run (HC) + yoga (manual, 80 kg → 126 kcal); the manual tennis is left out.
     expect(summary).toMatchObject({ count: 3, durationS: (85 + 40 + 60) * 60, activeKcal: 1226 });
-    expect(summarizeAllActivities([], WEEK)).toMatchObject({ count: 0, activeKcal: null });
+    expect(summarizeAllActivities([], WEEK, [])).toMatchObject({ count: 0, activeKcal: null });
   });
 });
 
@@ -373,7 +373,7 @@ describe('migration 12', () => {
       INSERT INTO weight_entries (id, profile_id, date, value, created_at, updated_at)
         VALUES ('w', 'p', '2026-10-01', 82.4, 'x', 'x');
     `);
-    expect(await migrate(db, migrations)).toEqual([12, 13, 14]);
+    expect(await migrate(db, migrations)).toEqual([12, 13, 14, 15]);
     expect(await db.query('SELECT id, value FROM weight_entries')).toEqual([
       { id: 'w', value: 82.4 },
     ]);

@@ -4,7 +4,10 @@ import { TARGET_OPTIONS, useTargetData, useTargets, type TargetKind } from '@/co
 import { Icon, List, ListRow, Section, Sheet } from '@/ui';
 import styles from './GoalTargets.module.css';
 
-const SECTIONS: readonly { kind: TargetKind; group: 'training' | 'activity' | 'health' }[] = [
+/** The targets with a value; the switch "Aktivitätskalorien anrechnen" has its own section. */
+type ValueKind = Exclude<TargetKind, 'activityCalories'>;
+
+const SECTIONS: readonly { kind: ValueKind; group: 'training' | 'activity' | 'health' }[] = [
   { kind: 'trainingsPerWeek', group: 'training' },
   { kind: 'activeMinutesPerWeek', group: 'activity' },
   { kind: 'stepsPerDay', group: 'health' },
@@ -17,11 +20,11 @@ const SECTIONS: readonly { kind: TargetKind; group: 'training' | 'activity' | 'h
  */
 export function GoalTargetsSections() {
   const { t, locale } = useI18n();
-  const [open, setOpen] = useState<TargetKind | null>(null);
+  const [open, setOpen] = useState<ValueKind | null>(null);
   const current = useTargetData((service, profileId) => service.current(profileId), []);
   const value = (kind: TargetKind) => (current.status === 'ready' ? current.data[kind] : null);
   const number = new Intl.NumberFormat(locale);
-  const label = (kind: TargetKind, amount: number | null) =>
+  const label = (kind: ValueKind, amount: number | null) =>
     amount === null
       ? t('settings.targets.none')
       : t(`settings.targets.${kind}.value`, { count: number.format(amount) });
@@ -65,7 +68,7 @@ function TargetSheet({
   label,
   onClose,
 }: {
-  kind: TargetKind;
+  kind: ValueKind;
   current: number | null;
   label: (amount: number | null) => string;
   onClose: () => void;

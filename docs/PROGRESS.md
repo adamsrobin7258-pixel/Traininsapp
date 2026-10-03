@@ -34,12 +34,14 @@ Regeln:
   („Noch keine Trainingsdaten.“ usw.).
 - **Aktivitäten** erscheinen nur, wenn Health Connect verbunden ist oder Aktivitäten (importiert
   oder manuell) im Zeitraum vorhanden sind; sonst entfällt die Karte. Eine manuelle Aktivität,
-  die dieselbe Einheit wie eine Health-Connect-Aktivität ist, zählt einmal
+  die dieselbe Einheit wie eine Health-Connect-Aktivität ist, zählt einmal; eine Einheit, die ein
+  Kalethra-Training ist, zählt dort nicht (seit Phase 12, wie im Score)
   ([ACTIVITIES.md](ACTIVITIES.md)).
 - **Getrennt:** Health-Connect- und manuelle Aktivitäten zählen nie als Kalethra-Training, nie zum
   Trainingsvolumen oder zur Häufigkeit.
-- **Aktivitätskalorien** fließen in das Ø Tagesziel nur ein, wenn „Aktivitätskalorien anrechnen“
-  an ist – genau wie im Ernährungstagebuch (`withActivityCalories`). Gespeichertes Basisziel und
+- **Aktivitätskalorien** fließen in das Ø Tagesziel nur an Tagen ein, an denen „Aktivitätskalorien
+  anrechnen“ an war (seit Phase 12 versioniert) – genau wie im Ernährungstagebuch
+  (`withActivityCalories`). Gespeichertes Basisziel und
   Protein (auch ein individuelles Protein-Ziel) bleiben unverändert.
 - **Gewicht:** Importierte Werte erscheinen nur zur Ansicht („Wert aus Health Connect“, wenn der
   aktuelle Wert importiert ist). Ernährungsziele lesen weiterhin nur die eigenen Einträge.

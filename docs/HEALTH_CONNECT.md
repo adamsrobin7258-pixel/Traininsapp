@@ -12,7 +12,7 @@ Apple Health folgt in einer eigenen Phase.
 | Nur lesen                      | Fünf Leserechte: `READ_WEIGHT`, `READ_STEPS`, `READ_ACTIVE_CALORIES_BURNED`, `READ_EXERCISE`, `READ_DISTANCE`. Keine Schreib-, Verlaufs- oder Hintergrundrechte.           |
 | Nur lokal                      | Importierte Werte liegen in der verschlüsselten Datenbank (`imported_weights`, `daily_activity`, `external_workouts`). Keine Netzwerkverbindung, kein Server, keine Cloud. |
 | Getrennt von eigenen Daten     | `weight_entries` wird durch einen Import nie verändert. Die Ernährungsziele folgen weiter nur den eigenen Gewichtseinträgen (per Test geprüft).                            |
-| Eigene Werte haben Vorrang     | Gibt es für einen Tag ein eigenes Gewicht und einen Import, gilt das eigene (`dayWeight`). Ein Import überschreibt nie einen manuellen Wert.                               |
+| Eigene Werte haben Vorrang     | Gibt es für einen Tag ein eigenes Gewicht und einen Import, gilt das eigene (`dayWeight`, Regel 2 in `weightRules.ts`). Ein Import überschreibt nie einen manuellen Wert.  |
 | Mehrere Messungen an einem Tag | Die zeitlich früheste gültige Messung des lokalen Tages wird gespeichert (08:02 92,4 kg, 12:30 92,8 kg → 92,4 kg).                                                         |
 | Schritte und aktive Kalorien   | Tageswerte über die Health-Connect-Aggregation (`queryAggregated`, Tages-Buckets in Gerätezeit). Health Connect entfernt dabei Doppelungen mehrerer Quellen. Nur Anzeige.  |
 
@@ -46,8 +46,9 @@ Apple Health folgt in einer eigenen Phase.
 ## Aktivitätskalorien anrechnen
 
 Einstellung unter „Einstellungen → Ziele → Aktivitätskalorien“ (bis Phase 9 unter Profil →
-Gesundheitsdaten), gespeichert in `app_settings`
-(`countActivityCalories`), **standardmäßig aus**.
+Gesundheitsdaten), **standardmäßig aus**. Seit Phase 12 versioniert in `goal_targets` (Art
+`activityCalories`, Migration 15): Umschalten gilt ab heute, vergangene Tage behalten die
+Einstellung, die damals galt ([SETTINGS.md](SETTINGS.md)).
 
 - Aus: Das Tagesziel bleibt unverändert; die Aktivitätskalorien werden nur als Information gezeigt
   („Aktivitätskalorien 500 kcal / Nicht auf das Tagesziel angerechnet“).

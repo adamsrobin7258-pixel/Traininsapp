@@ -162,14 +162,5 @@ export function dailyTotals(
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
-/** The weight a day shows: the user's own entry always wins over an imported value. */
-export type DayWeight =
-  | { kind: 'own'; kg: number; imported: ImportedWeight | null }
-  | { kind: 'imported'; kg: number; imported: ImportedWeight }
-  | { kind: 'none' };
-
-export function dayWeight(ownKg: number | null, imported: ImportedWeight | null): DayWeight {
-  if (ownKg !== null) return { kind: 'own', kg: ownKg, imported };
-  if (imported) return { kind: 'imported', kg: imported.kg, imported };
-  return { kind: 'none' };
-}
+// Rule 2 of the weight rules (one place: ./weightRules.ts), kept importable from here.
+export { dayWeight, type DayWeight } from './weightRules';

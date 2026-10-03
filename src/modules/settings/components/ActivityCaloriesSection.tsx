@@ -1,24 +1,28 @@
 import { useId, useState } from 'react';
 import { useI18n } from '@/core/i18n';
-import { useSettings } from '@/core/settings';
+import { useTargetData, useTargets } from '@/core/targets';
 import { List, ListRow, Section } from '@/ui';
 import styles from './HealthData.module.css';
 
 /**
  * "Aktivitätskalorien anrechnen" – a nutrition goal: adds the active calories of Health Connect
  * and manual activities (each session once, none that is a Kalethra workout) to the day's
- * calorie goal. The stored base goal and the macro goals never change. Saved at once.
+ * calorie goal. The stored base goal and the macro goals never change. Saved at once – as a
+ * versioned target (kind `activityCalories`): it applies from today on, past days keep the
+ * setting they had.
  */
 export function ActivityCaloriesSection() {
   const { t } = useI18n();
-  const { settings, updateSetting } = useSettings();
+  const { set } = useTargets();
+  const current = useTargetData((service, profileId) => service.current(profileId), []);
   const [saveFailed, setSaveFailed] = useState(false);
   const countId = useId();
-  const counting = settings.countActivityCalories;
+  const counting = current.status === 'ready' && current.data.activityCalories === 1;
 
   function toggle() {
+    if (current.status !== 'ready') return;
     setSaveFailed(false);
-    updateSetting('countActivityCalories', !counting).catch(() => {
+    set('activityCalories', counting ? 0 : 1).catch(() => {
       setSaveFailed(true);
     });
   }

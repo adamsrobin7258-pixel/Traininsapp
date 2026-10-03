@@ -123,45 +123,45 @@ export class GoalService {
   }
 
   /**
-   * The goal of a day as the daily views show it: the stored goal plus, when `countActivity` is
-   * on, the active calories of that day's imported activities on the calorie budget.
+   * The goal of a day as the daily views show it: the stored goal plus, when "Aktivitätskalorien
+   * anrechnen" was on that day, the day's countable activity calories on the calorie budget.
    */
-  async dayGoal(
-    profileId: string,
-    localDate: string,
-    { countActivity }: { countActivity: boolean },
-  ): Promise<GoalForDay | null> {
+  async dayGoal(profileId: string, localDate: string): Promise<GoalForDay | null> {
     const day = await this.goalFor(profileId, localDate);
-    if (!day || !this.sources.activity) return day;
-    const activity = await this.sources.activity.caloriesOn(profileId, localDate);
-    return withActivityCalories(day, activity, countActivity);
+    const source = this.sources.activity;
+    if (!day || !source) return day;
+    const [activity, counting] = await Promise.all([
+      source.caloriesOn(profileId, localDate),
+      source.countingOn(profileId),
+    ]);
+    return withActivityCalories(day, activity, counting(localDate));
   }
 
   /**
    * Calorie and protein goal of every given day, exactly as `dayGoal` shows them (activity
-   * calories only when `countActivity` is on) – but with one read of the goals and one of the
+   * calories only on days the switch was on) – but with one read of the goals and one of the
    * activities for the whole range. Days without a goal have `null` values.
    */
   async dayGoalsBetween(
     profileId: string,
     dates: readonly string[],
-    { countActivity }: { countActivity: boolean },
   ): Promise<{ localDate: string; energyKcal: number | null; proteinG: number | null }[]> {
     const first = dates[0];
     const last = dates.at(-1);
     if (!first || !last) return [];
     const goals = await this.list(profileId);
-    const activity =
-      countActivity && this.sources.activity
-        ? await this.activityBetween(profileId, first, last, dates)
-        : new Map<string, { kcal: number; counted: number; excluded: number }>();
+    const source = this.sources.activity;
+    const counting = source ? await source.countingOn(profileId) : () => false;
+    const activity = dates.some(counting)
+      ? await this.activityBetween(profileId, first, last, dates)
+      : new Map<string, { kcal: number; counted: number; excluded: number }>();
     return dates.map((localDate) => {
       const goal = goalForDate(goals, localDate);
       if (!goal) return { localDate, energyKcal: null, proteinG: null };
       const day = withActivityCalories(
         { goal, effective: effectiveTargets(goal) },
         activity.get(localDate) ?? { kcal: 0, counted: 0, excluded: 0 },
-        countActivity,
+        counting(localDate),
       );
       return {
         localDate,

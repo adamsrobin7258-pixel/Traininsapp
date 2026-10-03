@@ -42,6 +42,11 @@ export interface ActivityCaloriesSource {
     fromLocalDate: string,
     toLocalDate: string,
   ): Promise<Map<string, { kcal: number; counted: number; excluded: number }>>;
+  /**
+   * The versioned switch "Aktivitätskalorien anrechnen": whether activity calories went onto the
+   * calorie goal of a day – as it was set on that day, so a change today never alters the past.
+   */
+  countingOn(profileId: string): Promise<(localDate: string) => boolean>;
 }
 
 /** Everything the nutrition calculation reads from other areas of the app. */

@@ -158,7 +158,8 @@ abgeschlossenen Kalethra-Training überschneidet, zählt ebenfalls nicht. Die Re
 ## Aktivitätskalorien anrechnen
 
 Dieselbe Einstellung wie in Phase 6.3 (seit Phase 10 „Einstellungen → Ziele → Aktivitätskalorien“, Standard aus), jetzt für
-beide Quellen:
+beide Quellen. Seit Phase 12 versioniert: Sie gilt ab dem Tag, an dem sie umgelegt wird
+([SETTINGS.md](SETTINGS.md)).
 
 - **Aus:** „Aktivitätskalorien werden nicht zum Tagesziel addiert.“ – 2.300 kcal bleiben
   2.300 kcal; die Aktivitätskalorien erscheinen nur zur Information.
@@ -172,7 +173,11 @@ beide Quellen:
 ## Fortschritt
 
 Die Karte „Aktivitäten“ auf der Mainpage zählt beide Quellen (Anzahl, Dauer, aktive kcal,
-Minuten pro Tag), Duplikate einmal. Sie erscheint, sobald Health Connect verbunden ist oder es
+Minuten pro Tag), Duplikate einmal. Seit Phase 12 zählt sie – wie Tagesbudget und Score – keine
+Einheit, die dieselbe wie ein abgeschlossenes Kalethra-Training ist (vorher erschien eine solche
+Health-Connect-Einheit dort zusätzlich). Die Ausschlussregeln stehen einmal in
+`core/activity/combined.ts` (`importedExclusion`, `manualExclusion`) und werden von allen drei
+Lesern genutzt. Sie erscheint, sobald Health Connect verbunden ist oder es
 Aktivitäten im Zeitraum gibt.
 
 ## Katalog

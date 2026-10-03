@@ -242,7 +242,7 @@ describe('migration 9', () => {
     await db.run(
       "INSERT INTO workouts (id, profile_id, training_type, status, started_at, local_date, created_at, updated_at) VALUES ('w', 'p', 'strength', 'active', 'x', '2026-10-01', 'x', 'x')",
     );
-    expect(await migrate(db, migrations)).toEqual([9, 10, 11, 12, 13, 14]);
+    expect(await migrate(db, migrations)).toEqual([9, 10, 11, 12, 13, 14, 15]);
     expect(await db.query('SELECT id, name_de FROM exercises')).toEqual([
       { id: 'u', name_de: 'Eigene' },
     ]);

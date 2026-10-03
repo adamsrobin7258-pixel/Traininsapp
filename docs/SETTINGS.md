@@ -127,7 +127,7 @@ verlinkt nur noch die neuen Adressen.
 | Name, Geschlecht, Geburtsdatum, Größe | Einstellungen → Profil (`updateBodyData`)  | `profiles`                                                    |
 | Körpergewicht                         | **Gesundheit → Gewicht**                   | `weight_entries` (im Profil nur Anzeige + Link)               |
 | Hauptziel, Wunschgewicht, Ernährung   | Einstellungen → Ziele                      | `nutrition_goals` (versioniert, unverändert seit Phase 4.2.2) |
-| Aktivitätskalorien anrechnen          | Einstellungen → Ziele (speichert sofort)   | `app_settings.countActivityCalories`                          |
+| Aktivitätskalorien anrechnen          | Einstellungen → Ziele (speichert sofort)   | `goal_targets`, Art `activityCalories` (versioniert, Mig. 15) |
 | Trainings pro Woche                   | Einstellungen → Ziele → Training           | `goal_targets` (versioniert)                                  |
 | Aktive Minuten pro Woche              | Einstellungen → Ziele → Aktivitäten        | `goal_targets` (versioniert)                                  |
 | Schrittziel pro Tag                   | Einstellungen → Ziele → Gesundheit         | `goal_targets` (versioniert)                                  |
@@ -168,6 +168,26 @@ Eine Änderung heute ändert keinen vergangenen Score.
 - Wiederholbar (`INSERT OR IGNORE` auf dem eindeutigen Index). Getestet mit und ohne Altwerte,
   mit ungültigen Werten, mit mehreren Profilen und mit identischem Score vorher/nachher.
 
+### „Aktivitätskalorien anrechnen“ versioniert (Migration 15, Phase 12)
+
+Bis Phase 11 war der Schalter ein einzelner, unversionierter Wert in `app_settings`. Ein- oder
+Ausschalten änderte deshalb auch das Kalorienziel **aller vergangenen Tage** – im Tagebuch, im
+Fortschritt (Ø Tagesziel) und im Ernährungsteil des Scores. Das widersprach der Regel „eine
+Änderung gilt ab heute“.
+
+- Seit Phase 12 ist der Schalter eine Ziel-Art in `goal_targets`: `activityCalories`, Wert `1`
+  (an) oder `0` (aus); keine Version = aus (Standard). Er gilt ab dem Tag, an dem er umgelegt wird;
+  jeder vergangene Tag behält die Einstellung, die damals galt (`countsActivityCaloriesOn`).
+- Gelesen wird er an einer Stelle: `ActivityCaloriesSource.countingOn` (App-Schicht) liefert für
+  `GoalService.dayGoal` / `dayGoalsBetween` je Tag an/aus. Tagebuch, Fortschritt und Score nutzen
+  dieselben Funktionen; keine Oberfläche reicht den Schalter mehr als Option durch.
+- **Migration 15** baut `goal_targets` mit der erweiterten `CHECK`-Bedingung neu (alle Zeilen
+  unverändert kopiert, Index neu angelegt), übernimmt ein bisheriges „an“ für jedes Profil als
+  Version ab `1970-01-01` – jeder vergangene Tag zeigt nach dem Update dasselbe Ziel wie vorher –
+  und löscht den Schlüssel aus `app_settings`. Wiederholbar (`INSERT OR IGNORE`).
+- **Verhaltensänderung:** Wer den Schalter heute einschaltet, erhöht ab heute das Tagesziel;
+  vergangene Tage bleiben, wie sie waren.
+
 ## Schrittziel
 
 - Schritte kommen **nur** aus Health Connect (`daily_activity.steps`). Keine manuelle Eingabe,
@@ -191,7 +211,9 @@ Bewusst getrennt, zentral beschrieben in `src/core/health/weightRules.ts`:
    eigener oder importierter, wenn neuer (eigener gewinnt am selben Tag); importierte Werte
    höchstens `ACTIVITY_WEIGHT_WINDOW_DAYS` = 60 Tage alt (`pickActivityWeight`).
 
-Phase 10 hat an den Regeln fachlich nichts geändert, nur Namen und Ort vereinheitlicht.
+Phase 10 hat an den Regeln fachlich nichts geändert, nur Namen und Ort vereinheitlicht. Seit
+Phase 12 liegen auch die Funktionen von Regel 2 (`mergeWeightDays`, `dayWeight`) in
+`weightRules.ts`; vorher gab es sie getrennt in `progress.ts` und `importedHealth.ts`.
 
 ## Fortschritt und Score
 

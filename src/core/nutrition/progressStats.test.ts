@@ -55,6 +55,21 @@ async function setup() {
   return { services, platform, profileId, n, eat };
 }
 
+/**
+ * Switches "Aktivitätskalorien anrechnen" on from `localDate` on – a versioned target since
+ * migration 15, so it is set with the clock on that day.
+ */
+async function countActivityFrom(
+  { services, profileId }: Awaited<ReturnType<typeof setup>>,
+  localDate: string,
+) {
+  const today = now;
+  const [year, month, day] = localDate.split('-').map(Number);
+  now = new Date(year ?? 0, (month ?? 1) - 1, day ?? 1, 10);
+  await services.targets.set(profileId, 'activityCalories', 1);
+  now = today;
+}
+
 /** Base goal 2300 kcal / 160 g protein from 1 September. */
 async function withGoal({ n, profileId }: Awaited<ReturnType<typeof setup>>) {
   await n.goals.save(profileId, {
@@ -124,9 +139,7 @@ describe('nutrition progress', () => {
     await withGoal(context);
     context.platform.workouts = [activity('a', 2, 7, 45, 500)];
     await context.services.healthSync.connect(context.profileId);
-    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK, {
-      countActivity: false,
-    });
+    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK);
     expect(goals.find((g) => g.localDate === '2026-10-02')).toEqual({
       localDate: '2026-10-02',
       energyKcal: 2300,
@@ -144,9 +157,8 @@ describe('nutrition progress', () => {
       activity('d', 1, 20, 20, null),
     ];
     await context.services.healthSync.connect(context.profileId);
-    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK, {
-      countActivity: true,
-    });
+    await countActivityFrom(context, '2026-09-01');
+    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK);
     const kcal = Object.fromEntries(goals.map((g) => [g.localDate, g.energyKcal]));
     expect(kcal['2026-10-02']).toBe(2800);
     expect(kcal['2026-10-01']).toBe(2670);
@@ -155,7 +167,7 @@ describe('nutrition progress', () => {
     expect(new Set(goals.map((g) => g.proteinG))).toEqual(new Set([160]));
     // Same values as the daily view uses.
     for (const date of WEEK) {
-      const day = await context.n.goals.dayGoal(context.profileId, date, { countActivity: true });
+      const day = await context.n.goals.dayGoal(context.profileId, date);
       expect(day?.effective.energyKcal.value).toBe(kcal[date]);
     }
     // The stored base goal is untouched.
@@ -185,9 +197,8 @@ describe('nutrition progress', () => {
     await context.n.goals.setProfileOverride(context.profileId, 'proteinG', 220);
     context.platform.workouts = [activity('a', 3, 7, 45, 500)];
     await context.services.healthSync.connect(context.profileId);
-    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK, {
-      countActivity: true,
-    });
+    await countActivityFrom(context, '2026-09-01');
+    const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK);
     // Goals start today (3 October): earlier days have none – not 0.
     expect(goals[0]).toEqual({ localDate: '2026-09-27', energyKcal: null, proteinG: null });
     expect(goals.at(-1)?.proteinG).toBe(220);

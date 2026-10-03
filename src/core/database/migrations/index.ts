@@ -12,6 +12,7 @@ import { migration011ExternalWorkouts } from './011_external_workouts';
 import { migration012ManualActivities } from './012_manual_activities';
 import { migration013RecoveryAndFitnessGoal } from './013_recovery_and_fitness_goal';
 import { migration014GoalTargets } from './014_goal_targets';
+import { migration015ActivityCaloriesTarget } from './015_activity_calories_target';
 import type { Migration } from './types';
 
 /** All migrations in ascending order. Append new migrations at the end. */
@@ -30,6 +31,7 @@ export const migrations: readonly Migration[] = [
   migration012ManualActivities,
   migration013RecoveryAndFitnessGoal,
   migration014GoalTargets,
+  migration015ActivityCaloriesTarget,
 ];
 
 export type { Migration } from './types';

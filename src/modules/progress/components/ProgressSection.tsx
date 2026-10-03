@@ -20,8 +20,9 @@ import {
 import { useI18n } from '@/core/i18n';
 import { summarizeNutrition, useNutritionData } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
+import { useTargets } from '@/core/targets';
 import { summarizeTraining, useTrainingData } from '@/core/training';
-import { parseLocalDateKey } from '@/shared/lib/date';
+import { addDays, parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { formatDayMonth, formatDuration } from '@/shared/lib/format';
 import { Icon, SegmentedControl, type IconName } from '@/ui';
 import {
@@ -172,17 +173,15 @@ function TrainingProgress({
 
 function NutritionProgress({ range, day }: { range: Range; day: (date: string) => string }) {
   const { t, locale } = useI18n();
-  const { countActivityCalories } = useSettings().settings;
+  const { revision: targetRevision } = useTargets();
   const { revision: healthRevision } = useHealthSync();
   const { revision: activityRevision } = useActivities();
   const data = useNutritionData(
     async (s, profileId) => ({
       totals: await s.diary.dailyTotalsBetween(profileId, range.from, range.to),
-      goals: await s.goals.dayGoalsBetween(profileId, range.dates, {
-        countActivity: countActivityCalories,
-      }),
+      goals: await s.goals.dayGoalsBetween(profileId, range.dates),
     }),
-    [range, countActivityCalories, healthRevision, activityRevision],
+    [range, targetRevision, healthRevision, activityRevision],
   );
   const summary =
     data.status === 'ready'
@@ -337,10 +336,17 @@ function ActivityProgress({ range, day }: { range: Range; day: (date: string) =>
     (service, profileId) => service.listBetween(profileId, range.from, range.to),
     [range.from, range.to],
   );
-  // Both sources; a manual entry that duplicates an import counts once.
+  // Completed Kalethra workouts (neighbouring days too: one may start before midnight) – a
+  // session that is one of them belongs to training, not to the activities.
+  const own = useTrainingData(
+    (s, profileId) =>
+      s.workouts.completedSpansBetween(profileId, shiftDay(range.from, -1), shiftDay(range.to, 1)),
+    [range.from, range.to],
+  );
+  // Both sources, each session once – same rule as the calorie budget and the score.
   const summary =
-    imported.status === 'ready' && manual.status === 'ready'
-      ? summarizeAllActivities(combineActivities(imported.data, manual.data), range.dates)
+    imported.status === 'ready' && manual.status === 'ready' && own.status === 'ready'
+      ? summarizeAllActivities(combineActivities(imported.data, manual.data), range.dates, own.data)
       : null;
   const connected = status.state === 'connected' || status.state === 'permissionRequired';
   // Without Health Connect (iOS, browser, never connected) and without any activity this row
@@ -383,4 +389,10 @@ function ActivityProgress({ range, day }: { range: Range; day: (date: string) =>
       )}
     </ProgressRow>
   );
+}
+
+/** The local day `days` before or after `localDate` (YYYY-MM-DD). */
+function shiftDay(localDate: string, days: number): string {
+  const day = parseLocalDateKey(localDate);
+  return day ? toLocalDateKey(addDays(day, days)) : localDate;
 }

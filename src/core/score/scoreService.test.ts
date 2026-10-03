@@ -50,7 +50,7 @@ type Setup = Awaited<ReturnType<typeof setup>>;
 /** Sets a target as if it had been chosen on `day` (the clock is moved there and back). */
 async function targetSince(
   { services, profileId }: Setup,
-  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek',
+  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'activityCalories',
   value: number | null,
   day = new Date(2026, 8, 1, 9),
 ) {
@@ -61,7 +61,6 @@ async function targetSince(
 
 const options = (patch: Partial<ScoreOptions> = {}): ScoreOptions => ({
   today: TODAY,
-  countActivity: false,
   ...patch,
 });
 
@@ -162,13 +161,24 @@ describe('score from the real data', () => {
     await goal(s);
     await eat(s, '2026-10-01', 2800, 160);
     const off = await s.services.score.calculate(s.profileId, WEEK, options());
-    const on = await s.services.score.calculate(
-      s.profileId,
-      WEEK,
-      options({ countActivity: true }),
-    );
+    await targetSince(s, 'activityCalories', 1);
+    const on = await s.services.score.calculate(s.profileId, WEEK, options());
     expect(off.areas.nutrition.score).toBeLessThan(80);
     expect(on.areas.nutrition.score).toBe(100);
+  });
+
+  it('nutrition: switching activity calories on today leaves past score days unchanged', async () => {
+    const s = await setup();
+    s.platform.workouts = [{ ...hc('run', 'running', 1, 7, 45), activeKcal: 500 }];
+    await s.services.healthSync.connect(s.profileId);
+    await goal(s);
+    await eat(s, '2026-10-01', 2800, 160);
+    const before = await s.services.score.calculate(s.profileId, WEEK, options());
+    // Switched on today (3 October): 1 October keeps the setting it had – off.
+    await s.services.targets.set(s.profileId, 'activityCalories', 1);
+    const after = await s.services.score.calculate(s.profileId, WEEK, options());
+    expect(after.areas.nutrition.score).toBe(before.areas.nutrition.score);
+    expect(after.areas.nutrition.score).toBeLessThan(80);
   });
 
   it('training: only Kalethra workouts count – not Health Connect or manual activities', async () => {
@@ -450,7 +460,7 @@ describe('migration 13', () => {
           78.5, 1, '{"x":1}');
     `);
     const before = await db.query('SELECT * FROM nutrition_goals');
-    expect(await migrate(db, migrations)).toEqual([13, 14]);
+    expect(await migrate(db, migrations)).toEqual([13, 14, 15]);
     expect(await db.query('SELECT * FROM nutrition_goals')).toEqual(before);
     // The new goal type is accepted, an unknown one still is not.
     await db.run(
@@ -498,6 +508,7 @@ describe('weekly targets (versioned)', () => {
       trainingsPerWeek: null,
       activeMinutesPerWeek: null,
       stepsPerDay: null,
+      activityCalories: null,
     });
     await s.services.targets.set(s.profileId, 'trainingsPerWeek', 3);
     await s.services.targets.set(s.profileId, 'activeMinutesPerWeek', 150);

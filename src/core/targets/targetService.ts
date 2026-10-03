@@ -33,6 +33,7 @@ export class TargetService {
       trainingsPerWeek: [],
       activeMinutesPerWeek: [],
       stepsPerDay: [],
+      activityCalories: [],
     };
     for (const version of await this.repository.list(profileId)) {
       history[version.kind].push(version);
@@ -53,6 +54,7 @@ export class TargetService {
       trainingsPerWeek: targetOn(history.trainingsPerWeek, today),
       activeMinutesPerWeek: targetOn(history.activeMinutesPerWeek, today),
       stepsPerDay: targetOn(history.stepsPerDay, today),
+      activityCalories: targetOn(history.activityCalories, today),
     };
   }
 

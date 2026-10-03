@@ -238,6 +238,22 @@ Duplikaterkennung (`combined.ts`). In `core`, weil Training (Erfassen), Ernähru
 (Aktivitätskalorien) und Fortschritt sie lesen; die Oberfläche liegt im Trainingsmodul. Details:
 [ACTIVITIES.md](ACTIVITIES.md).
 
+**Datenflüsse (Phase 12).** Jeder Wert hat eine Quelle, jede Regel eine Implementierung:
+
+- Welche Aktivität zählt: `importedExclusion` / `manualExclusion` (`core/activity/combined.ts`)
+  für Tagesbudget, Score-Minuten und Fortschrittskarte gleichermaßen; „ist ein
+  Kalethra-Training“ einmal als `isKalethraWorkout` (`core/health/externalWorkouts.ts`). Die
+  App-Schicht lädt die drei Quellen eines Zeitraums an einer Stelle (`activitySourcesBetween` in
+  `app/services.ts`).
+- Gewicht: drei bewusst getrennte Regeln, alle in `core/health/weightRules.ts`
+  ([SETTINGS.md](SETTINGS.md#drei-gewichtsregeln)).
+- Ziele: Ernährungsziele in `nutrition_goals`, alle übrigen Ziele und der Schalter
+  „Aktivitätskalorien anrechnen“ in `goal_targets` – beide versioniert ab dem Tag der Änderung.
+  Kein Ziel liegt mehr unversioniert in `app_settings`.
+- Kettentests über alle Module: `src/app/dataFlows.test.ts` (Szenarien A–H: Profil → Ernährung →
+  Fortschritt, Trainings-, Aktivitäts- und Schrittziel, Rezept, Vorlage, Gewichts- und
+  Aktivitätsquellen).
+
 **Plan vs. Workout.** Ein Plan (`PlanService`) beschreibt, was trainiert werden soll: Tage,
 Übungen, optionale Vorgaben (Sätze × Wdh.). Ein Workout (`WorkoutService`) ist das Protokoll einer
 tatsächlichen Einheit. Beim Start aus einem Plan werden Übungen kopiert und Sätze vorbelegt
