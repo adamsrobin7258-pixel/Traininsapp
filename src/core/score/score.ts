@@ -9,6 +9,7 @@
  */
 import type { NutritionDayGoal, NutritionDayTotals } from '@/core/nutrition';
 import type { RecoveryState } from '@/core/recovery';
+import { weeklyExpectation as expectation, type TargetValue } from '@/core/targets';
 import {
   DEFAULT_SCORE_GOAL,
   NUTRITION,
@@ -22,6 +23,8 @@ import {
   type ScoreBand,
   type ScoreGoal,
 } from './config';
+
+export type { TargetValue } from '@/core/targets';
 
 export interface ScoreRecoveryDay {
   localDate: string;
@@ -48,31 +51,6 @@ export interface ScoreInput {
    * (versioned targets: a past day keeps the target that applied then).
    */
   targets: { trainingsPerWeek: TargetValue; activeMinutesPerWeek: TargetValue };
-}
-
-/** A target: the same for every day, or looked up per local day; `null` = no target. */
-export type TargetValue = number | null | ((localDate: string) => number | null);
-
-const targetOnDay = (target: TargetValue, localDate: string): number | null => {
-  const value = typeof target === 'function' ? target(localDate) : target;
-  return value !== null && value > 0 ? value : null;
-};
-
-/**
- * The days of the period that have a target and the expected amount over them: the sum of
- * each day's weekly target ÷ 7. With one target for the whole period that is target × days ÷ 7.
- */
-function expectation(target: TargetValue, dates: readonly string[]) {
-  const days = dates.flatMap((date) => {
-    const value = targetOnDay(target, date);
-    return value === null ? [] : [{ date, value }];
-  });
-  return {
-    days: new Set(days.map((day) => day.date)),
-    expected: days.reduce((sum, day) => sum + day.value / 7, 0),
-    /** The target that applies at the end of the period (shown in the explanation). */
-    latest: days.at(-1)?.value ?? null,
-  };
 }
 
 export interface NutritionDetail {

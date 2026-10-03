@@ -87,8 +87,8 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
     .getByRole('link', { name: 'Fortschritt' })
     .click();
   const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText('Ø 370 kcal / Tag')).toBeVisible();
-  await expect(card.getByText('Tagesziel Ø 2.000 kcal · 120 g Protein')).toBeVisible();
+  await expect(card.getByText('Ø 370 von 2.000 kcal')).toBeVisible();
+  await expect(card.getByText('Ø 14 von 120 g Protein')).toBeVisible();
 });
 
 test('days: back to yesterday, never into the future', async ({ page }) => {

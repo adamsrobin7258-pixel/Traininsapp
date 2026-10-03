@@ -300,6 +300,16 @@ Keine neuen Funktionen. Gefunden und behoben:
 - Keine Migration; Details: [SETTINGS.md](SETTINGS.md#training-phase-13),
   [ARCHITECTURE.md](ARCHITECTURE.md)
 
+## Phase 14 – Fortschritt & Zielerreichung ✅ (Version 0.19.0)
+
+- Alle Fortschrittskarten zeigen Ist gegen Ziel aus den Einstellungen: Training („3 von 4
+  Einheiten“), Ernährung (Kalorien je Hauptziel als Obergrenze/Zielgröße/Zielbereich, Protein),
+  Aktivitäten (aktive Minuten), neue Karte Schritte; Gewicht nur als Verlauf („93,0 kg → 91,8 kg“)
+- Zentral: `core/progress` (`ProgressGoalService`), gemeinsame Soll-Berechnung
+  (`weeklyExpectation`) und Schwellen (`goalAttainment.ts`) mit dem Score; Score unverändert
+- Fehlende Daten bleiben neutral, historische Zielversionen werden je Tag verwendet
+- Keine Migration; Details: [PROGRESS.md](PROGRESS.md#zielerreichung-phase-14)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

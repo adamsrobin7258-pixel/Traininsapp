@@ -463,7 +463,8 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
-    expect(await screen.findByText('Tagesziel Ø 2.800 kcal · 220 g Protein')).toBeInTheDocument();
+    expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Ø [\d.]+ von 220 g Protein$/)).toBeInTheDocument();
   });
 
   it('progress: off, the daily goal stays the base goal', async () => {
@@ -475,7 +476,8 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
-    expect(await screen.findByText('Tagesziel Ø 2.300 kcal · 160 g Protein')).toBeInTheDocument();
+    expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
 });
 

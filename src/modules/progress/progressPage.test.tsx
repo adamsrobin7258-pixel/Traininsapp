@@ -212,7 +212,7 @@ describe('Fortschritt – the main page', () => {
       within(list)
         .getAllByRole('link')
         .map((link) => link.textContent.split(/(?=Noch)/)[0]),
-    ).toEqual(['Training', 'Ernährung', 'Gewicht', 'Aktivitäten']);
+    ).toEqual(['Training', 'Ernährung', 'Gewicht', 'Aktivitäten', 'Schritte']);
     expect(card(/^Training/).getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
     expect(
       await (await findCard(/^Ernährung/)).findByText('Noch keine Ernährungsdaten.'),
@@ -220,6 +220,8 @@ describe('Fortschritt – the main page', () => {
     expect(
       await (await findCard(/^Gewicht/)).findByText('Noch keine Gewichtsdaten.'),
     ).toBeInTheDocument();
+    // Steps come only from Health Connect: connected without values → no data, never 0 steps.
+    expect(card(/^Schritte/).getByText('Noch keine Schrittdaten.')).toBeInTheDocument();
     expect(main().queryByRole('img')).not.toBeInTheDocument();
     expect(main().queryByText(/^0 /)).not.toBeInTheDocument();
   });
@@ -306,10 +308,15 @@ describe('Fortschritt – the main page', () => {
         },
       });
       const nutrition = await findCard(/^Ernährung/);
-      // (2.000 + 1.200) / 2 – the five days without entries do not count as 0.
-      expect(await nutrition.findByText('Ø 1.600 kcal / Tag')).toBeInTheDocument();
-      expect(nutrition.getByText('Ø 160 g Protein / Tag')).toBeInTheDocument();
-      expect(nutrition.getByText('Tagesziel Ø 2.300 kcal · 160 g Protein')).toBeInTheDocument();
+      // (2.000 + 1.200) / 2 – the five days without entries do not count as 0 – against the
+      // goal of the same days.
+      expect(await nutrition.findByText('Ø 1.600 von 2.300 kcal')).toBeInTheDocument();
+      expect(nutrition.getByText('Ø 160 von 160 g Protein')).toBeInTheDocument();
+      expect(nutrition.getByText('100 %')).toBeInTheDocument();
+      // Gewicht halten: ±5 % range. 1 Oct (−13 %) is below; today (1.200) is still open.
+      expect(nutrition.getByText('Im Kalorien-Zielbereich an 0 von 1 Tagen')).toBeInTheDocument();
+      // Protein: 1 Oct reached (200 g), today (75 %) still open – not a miss.
+      expect(nutrition.getByText('Proteinziel erreicht an 1 von 1 Tagen')).toBeInTheDocument();
       expect(nutrition.getByText('An 2 von 7 Tagen erfasst')).toBeInTheDocument();
 
       await userEvent.click(main().getByRole('link', { name: /^Ernährung/ }));
@@ -344,7 +351,7 @@ describe('Fortschritt – the main page', () => {
         },
       });
       const nutrition = await findCard(/^Ernährung/);
-      expect(await nutrition.findByText(/· 220 g Protein$/)).toBeInTheDocument();
+      expect(await nutrition.findByText(/von 220 g Protein$/)).toBeInTheDocument();
     });
   });
 
@@ -476,6 +483,226 @@ describe('Fortschritt – the main page', () => {
         },
       });
       expect(await (await findCard(/^Aktivitäten/)).findByText('1 Aktivität')).toBeInTheDocument();
+    });
+  });
+
+  describe('goal attainment (Phase 14)', () => {
+    /** Sets a target as if it had been chosen on 1 September. */
+    async function target(
+      services: AppServices,
+      profileId: string,
+      kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'stepsPerDay',
+      value: number,
+    ) {
+      vi.setSystemTime(new Date(2026, 8, 1, 9));
+      await services.targets.set(profileId, kind, value);
+      vi.setSystemTime(NOW);
+    }
+
+    it('training: 3 of 4 with the goal from Einstellungen, a quiet bar and the percent', async () => {
+      const { container } = await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await target(services, profileId, 'trainingsPerWeek', 4);
+          for (const day of [28, 30, 2])
+            await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
+        },
+      });
+      const training = await findCard(/^Training/);
+      expect(await training.findByText('3 von 4 Einheiten')).toBeInTheDocument();
+      expect(training.getByText('75 %')).toBeInTheDocument();
+      expect(training.getByText('Ziel: 4 pro Woche')).toBeInTheDocument();
+      // The bar is decorative (aria-hidden) – the text carries the information.
+      const meter = container.querySelector('[aria-hidden="true"] > span[style]');
+      expect(meter?.getAttribute('style')).toContain('--meter-ratio: 0.75');
+      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    });
+
+    it('training: 5 of 4 keeps the real value and the bar at 100 %', async () => {
+      const { container } = await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await target(services, profileId, 'trainingsPerWeek', 4);
+          for (const day of [27, 28, 29, 30, 1])
+            await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
+        },
+      });
+      const training = await findCard(/^Training/);
+      expect(await training.findByText('5 von 4 Einheiten')).toBeInTheDocument();
+      expect(training.getByText('125 %')).toBeInTheDocument();
+      const meter = container.querySelector('[aria-hidden="true"] > span[style]');
+      expect(meter?.getAttribute('style')).toContain('--meter-ratio: 1');
+    });
+
+    it('today: no workout yet is no 0 % – only the weekly goal is shown', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'trainingsPerWeek', 4);
+        },
+      });
+      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
+      const training = card(/^Training/);
+      expect(await training.findByText('Ziel: 4 pro Woche')).toBeInTheDocument();
+      expect(training.getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
+      expect(training.queryByText(/%/)).not.toBeInTheDocument();
+    });
+
+    it('activities: manual minutes against the weekly goal, shown even without Health Connect', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'activeMinutesPerWeek', 180);
+          for (const [localDate, durationMin] of [
+            ['2026-09-29', 60],
+            ['2026-10-02', 75],
+          ] as const) {
+            await services.activities.create(profileId, {
+              sportId: 'yoga',
+              localDate,
+              startTime: null,
+              durationMin,
+              distanceKm: null,
+              intensity: null,
+              variant: null,
+              kcalOverride: 100,
+            });
+          }
+        },
+      });
+      const activities = await findCard(/^Aktivitäten/);
+      expect(await activities.findByText('135 von 180 aktiven Min.')).toBeInTheDocument();
+      expect(activities.getByText('75 %')).toBeInTheDocument();
+      expect(activities.getByText('Ziel: 180 Min. pro Woche')).toBeInTheDocument();
+      expect(activities.getByText('2 Aktivitäten')).toBeInTheDocument();
+    });
+
+    it('steps: today against the step goal; over the week only days with data, opens Gesundheit', async () => {
+      const platform = new FakeHealthPlatform();
+      platform.steps = [
+        { dayStart: localIso(2026, 10, 1, 0), value: 9_000 },
+        { dayStart: localIso(2026, 10, 3, 0), value: 7_842 },
+      ];
+      const { router } = await renderApp('/', {
+        healthPlatform: platform,
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'stepsPerDay', 10_000);
+          await services.healthSync.connect(profileId);
+        },
+      });
+      const week = await findCard(/^Schritte/);
+      // (9.000 + 7.842) / 2 – the five days without data are no 0 steps.
+      expect(await week.findByText('Ø 8.421 von 10.000 Schritten')).toBeInTheDocument();
+      expect(
+        week.getByText('An 2 von 7 Tagen mit Daten · Ziel an 0 von 2 Tagen erreicht'),
+      ).toBeInTheDocument();
+      expect(week.getByText('Ziel: 10.000 pro Tag')).toBeInTheDocument();
+
+      await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
+      expect(await card(/^Schritte/).findByText('7.842 von 10.000 Schritten')).toBeInTheDocument();
+      expect(card(/^Schritte/).getByText('78 %')).toBeInTheDocument();
+
+      await userEvent.click(main().getByRole('link', { name: /^Schritte/ }));
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/health');
+      });
+    });
+
+    it('steps: a day without data is "no data", never 0 of 10.000', async () => {
+      await renderApp('/', {
+        healthPlatform: new FakeHealthPlatform(),
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'stepsPerDay', 10_000);
+          await services.healthSync.connect(profileId);
+        },
+      });
+      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
+      const steps = await findCard(/^Schritte/);
+      expect(await steps.findByText('Noch keine Schrittdaten für heute.')).toBeInTheDocument();
+      expect(steps.queryByText(/^0 von/)).not.toBeInTheDocument();
+      expect(steps.queryByText(/%/)).not.toBeInTheDocument();
+    });
+
+    it('steps: the largest importable day (100.000) stays readable text', async () => {
+      // The import keeps at most 100.000 steps a day (plausibility rule of the Health Connect
+      // import); 999.999 can never reach this page – the calculation is tested for it separately.
+      const platform = new FakeHealthPlatform();
+      platform.steps = [{ dayStart: localIso(2026, 10, 3, 0), value: 100_000 }];
+      await renderApp('/', {
+        healthPlatform: platform,
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'stepsPerDay', 10_000);
+          await services.healthSync.connect(profileId);
+        },
+      });
+      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
+      const steps = await findCard(/^Schritte/);
+      expect(await steps.findByText('100.000 von 10.000 Schritten')).toBeInTheDocument();
+      expect(steps.getByText('1.000 %')).toBeInTheDocument();
+    });
+
+    it('steps stay hidden without Health Connect and without imported steps', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await target(services, profileId, 'stepsPerDay', 10_000);
+        },
+      });
+      await (await findCard(/^Gewicht/)).findByText('Noch keine Gewichtsdaten.');
+      expect(main().queryByRole('link', { name: /^Schritte/ })).not.toBeInTheDocument();
+    });
+
+    it('nutrition (Abnehmen): the calorie goal is a limit', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          vi.setSystemTime(new Date(2026, 8, 1, 9));
+          await services.nutrition.goals.save(profileId, {
+            goalType: 'lose',
+            targets: {
+              energyKcal: { auto: null, manual: 2200 },
+              proteinG: { auto: null, manual: 160 },
+            },
+          });
+          vi.setSystemTime(NOW);
+          // 2.100 and 2.200 kcal: kept; 2.500 kcal: over the limit.
+          await eat(services, profileId, [
+            ['2026-09-29', 2100],
+            ['2026-09-30', 2200],
+            ['2026-10-01', 2500],
+          ]);
+        },
+      });
+      const nutrition = await findCard(/^Ernährung/);
+      expect(await nutrition.findByText('Ø 2.267 von 2.200 kcal')).toBeInTheDocument();
+      expect(nutrition.getByText('Kalorienlimit eingehalten an 2 von 3 Tagen')).toBeInTheDocument();
+      expect(nutrition.getByText('An 3 von 7 Tagen erfasst')).toBeInTheDocument();
+    });
+
+    it('weight: only the development in the period – no target weight, no percent', async () => {
+      await renderApp('/', {
+        prepare: async (s, profileId) => {
+          await s.weight.save(profileId, '2026-09-10', 93);
+          await s.weight.save(profileId, '2026-10-03', 91.8);
+        },
+      });
+      await userEvent.click(await main().findByRole('radio', { name: '30 Tage' }));
+      const weight = card(/^Gewicht/);
+      expect(await weight.findByText('93,0 kg → 91,8 kg')).toBeInTheDocument();
+      expect(weight.queryByText(/%/)).not.toBeInTheDocument();
+    });
+
+    it('works in English', async () => {
+      vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await target(services, profileId, 'trainingsPerWeek', 4);
+          await completedWorkout(services, profileId, new Date(2026, 9, 2, 18));
+        },
+      });
+      const training = await within(screen.getByRole('main')).findByRole('link', {
+        name: /^Training/,
+      });
+      expect(await within(training).findByText('1 of 4 workouts')).toBeInTheDocument();
+      expect(within(training).getByText('25%')).toBeInTheDocument();
+      expect(within(training).getByText('Goal: 4 per week')).toBeInTheDocument();
     });
   });
 });

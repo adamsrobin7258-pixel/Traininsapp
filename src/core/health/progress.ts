@@ -59,6 +59,9 @@ export interface WeightPeriodSummary {
   latest: WeightDay | null;
   /** Last minus first value within the period; needs two days with a value in it. */
   changeKg: number | null;
+  /** First and last value within the period – only with two different days (else `null`). */
+  start: WeightDay | null;
+  end: WeightDay | null;
   /** Values within the period, ascending. */
   points: WeightDay[];
 }
@@ -72,10 +75,12 @@ export function summarizeWeightPeriod(
   const points = days.filter((day) => day.date >= from && day.date <= to);
   const first = points[0];
   const last = points.at(-1);
+  const compared = first && last && first.date !== last.date ? { first, last } : null;
   return {
     latest: days.filter((day) => day.date <= to).at(-1) ?? null,
-    changeKg:
-      first && last && first.date !== last.date ? Math.round((last.kg - first.kg) * 10) / 10 : null,
+    changeKg: compared ? Math.round((compared.last.kg - compared.first.kg) * 10) / 10 : null,
+    start: compared?.first ?? null,
+    end: compared?.last ?? null,
     points,
   };
 }

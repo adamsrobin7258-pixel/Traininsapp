@@ -1,3 +1,5 @@
+import type { GoalType } from './goals';
+
 /**
  * Compact nutrition figures for the progress main page. Pure. Averages only cover days on which
  * something was logged – a day without entries is unknown, not 0 kcal.
@@ -13,6 +15,8 @@ export interface NutritionDayGoal {
   localDate: string;
   energyKcal: number | null;
   proteinG: number | null;
+  /** Main goal in force on that day (decides how the calorie goal is read); `null` without. */
+  goalType?: GoalType | null;
 }
 
 export interface NutritionPeriodSummary {

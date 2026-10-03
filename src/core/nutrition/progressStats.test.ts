@@ -146,6 +146,7 @@ describe('nutrition progress', () => {
       localDate: '2026-10-02',
       energyKcal: 2300,
       proteinG: 160,
+      goalType: 'maintain',
     });
   });
 
@@ -202,7 +203,12 @@ describe('nutrition progress', () => {
     await countActivityFrom(context, '2026-09-01');
     const goals = await context.n.goals.dayGoalsBetween(context.profileId, WEEK);
     // Goals start today (3 October): earlier days have none – not 0.
-    expect(goals[0]).toEqual({ localDate: '2026-09-27', energyKcal: null, proteinG: null });
+    expect(goals[0]).toEqual({
+      localDate: '2026-09-27',
+      energyKcal: null,
+      proteinG: null,
+      goalType: null,
+    });
     expect(goals.at(-1)?.proteinG).toBe(220);
   });
 

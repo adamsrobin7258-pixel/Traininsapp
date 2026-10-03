@@ -18,6 +18,7 @@ export {
   type JsonHttpClient,
 } from './providers/openFoodFacts';
 export * from './goals';
+export * from './goalAttainment';
 export {
   GoalService,
   withActivityCalories,

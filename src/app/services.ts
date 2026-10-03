@@ -2,14 +2,17 @@ import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
 import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
 import {
+  combineActivities,
   countableActivityMinutes,
   dayActivityCalories,
+  summarizeAllActivities,
   ManualActivityService,
   type ActivityWeightSource,
 } from '@/core/activity';
 import {
   ACTIVITY_WEIGHT_WINDOW_DAYS,
   HealthSyncService,
+  mergeWeightDays,
   pickActivityWeight,
   WeightRepository,
   WeightService,
@@ -38,6 +41,7 @@ import {
   type ReferenceCatalog,
 } from '@/core/nutrition';
 import { createBlsCatalog } from '@/core/nutrition/bls';
+import { ProgressGoalService } from '@/core/progress';
 import { RecoveryService } from '@/core/recovery';
 import { ScoreService } from '@/core/score';
 import { countsActivityCaloriesOn, TargetService } from '@/core/targets';
@@ -68,6 +72,8 @@ export interface AppServices {
   targets: TargetService;
   /** Kalethra score – calculated from the data above, never stored. */
   score: ScoreService;
+  /** Goal attainment on Fortschritt – the same sources as the score, never stored. */
+  progress: ProgressGoalService;
 }
 
 export function createServices(
@@ -190,32 +196,75 @@ export function createServices(
     referenceCatalog,
   );
   const recovery = new RecoveryService(db, clock);
-  // The score reads the existing services; it has no data of its own.
-  const score = new ScoreService({
-    goalTypeOn: async (profileId, localDate) =>
-      (await nutrition.goals.goalFor(profileId, localDate))?.goal.goalType ?? null,
-    nutritionTotals: (profileId, from, to) =>
+  // Score and progress page read the same functions of the existing services – one definition
+  // of workouts, countable activity minutes, nutrition days and goals, and targets for both.
+  const shared = {
+    nutritionTotals: (profileId: string, from: string, to: string) =>
       nutrition.diary.dailyTotalsBetween(profileId, from, to),
-    nutritionGoals: (profileId, dates) => nutrition.goals.dayGoalsBetween(profileId, dates),
-    workoutsPerDay: (profileId, from, to) =>
+    nutritionGoals: (profileId: string, dates: readonly string[]) =>
+      nutrition.goals.dayGoalsBetween(profileId, dates),
+    workoutsPerDay: (profileId: string, from: string, to: string) =>
       training.workouts.dailyStatsBetween(profileId, from, to),
-    activityMinutesPerDay: async (profileId, from, to) => {
+    activityMinutesPerDay: async (profileId: string, from: string, to: string) => {
       const sources = await activitySourcesBetween(profileId, from, to);
       return sources ? countableActivityMinutes(sources.imported, sources.manual, sources.own) : [];
     },
+    targets: (profileId: string) => targets.history(profileId),
+  };
+  // The score reads the existing services; it has no data of its own.
+  const score = new ScoreService({
+    ...shared,
+    goalTypeOn: async (profileId, localDate) =>
+      (await nutrition.goals.goalFor(profileId, localDate))?.goal.goalType ?? null,
     recovery: async (profileId, from, to) =>
       (await recovery.listBetween(profileId, from, to)).map((entry) => ({
         localDate: entry.localDate,
         state: entry.state,
         restDay: entry.restDay,
       })),
-    targets: (profileId) => targets.history(profileId),
+  });
+  const progress = new ProgressGoalService({
+    ...shared,
+    activitySummary: async (profileId, dates) => {
+      const from = dates[0] ?? '';
+      const to = dates.at(-1) ?? from;
+      const sources = await activitySourcesBetween(profileId, from, to);
+      return summarizeAllActivities(
+        combineActivities(sources?.imported ?? [], sources?.manual ?? []),
+        dates,
+        sources?.own ?? [],
+      );
+    },
+    // Steps come only from Health Connect – there is no manual step source.
+    steps: async (profileId, from, to) =>
+      (await healthSync.activityBetween(profileId, from, to)).map((day) => ({
+        date: day.date,
+        steps: day.steps,
+      })),
+    // Weight rule 2 (display): own entries win, Health Connect values are secondary.
+    weights: async (profileId, from, to) => {
+      const [ownInPeriod, ownLatest, importedInPeriod, importedLatest] = await Promise.all([
+        weight.listBetween(profileId, from, to),
+        weight.getLatestOnOrBefore(profileId, to),
+        healthSync.weightsBetween(profileId, from, to),
+        healthSync.latestWeight(profileId),
+      ]);
+      const withLatest = <T extends { date: string }>(list: T[], latest: T | null) =>
+        latest && latest.date <= to && !list.some((entry) => entry.date === latest.date)
+          ? [latest, ...list]
+          : list;
+      return mergeWeightDays(
+        withLatest(ownInPeriod, ownLatest),
+        withLatest(importedInPeriod, importedLatest),
+      );
+    },
   });
   return {
     activities,
     recovery,
     targets,
     score,
+    progress,
     storage: new StorageService(db, security, clock),
     weight,
     healthSync,

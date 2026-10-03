@@ -29,6 +29,7 @@ import {
 } from './calculation/calculate';
 import { ACTIVITY_LEVELS, INPUT_LIMITS, TRAINING, WEIGHT_TREND } from './calculation/parameters';
 import type { NutritionStore } from './nutritionStore';
+import type { NutritionDayGoal } from './progress';
 
 /**
  * A goal as the user sets it. It always applies from today: there is no start day in the input,
@@ -144,10 +145,7 @@ export class GoalService {
    * calories only on days the switch was on) – but with one read of the goals and one of the
    * activities for the whole range. Days without a goal have `null` values.
    */
-  async dayGoalsBetween(
-    profileId: string,
-    dates: readonly string[],
-  ): Promise<{ localDate: string; energyKcal: number | null; proteinG: number | null }[]> {
+  async dayGoalsBetween(profileId: string, dates: readonly string[]): Promise<NutritionDayGoal[]> {
     const first = dates[0];
     const last = dates.at(-1);
     if (!first || !last) return [];
@@ -159,7 +157,7 @@ export class GoalService {
       : new Map<string, { kcal: number; counted: number; excluded: number }>();
     return dates.map((localDate) => {
       const goal = goalForDate(goals, localDate);
-      if (!goal) return { localDate, energyKcal: null, proteinG: null };
+      if (!goal) return { localDate, energyKcal: null, proteinG: null, goalType: null };
       const day = withActivityCalories(
         { goal, effective: effectiveTargets(goal) },
         activity.get(localDate) ?? { kcal: 0, counted: 0, excluded: 0 },
@@ -169,6 +167,7 @@ export class GoalService {
         localDate,
         energyKcal: day.effective.energyKcal.value,
         proteinG: day.effective.proteinG.value,
+        goalType: goal.goalType,
       };
     });
   }

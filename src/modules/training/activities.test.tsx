@@ -306,7 +306,8 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
-    expect(await screen.findByText('Tagesziel Ø 2.800 kcal · 160 g Protein')).toBeInTheDocument();
+    expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
 
   it('progress main page: off, the daily goal stays the base goal', async () => {
@@ -318,6 +319,7 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
-    expect(await screen.findByText('Tagesziel Ø 2.300 kcal · 160 g Protein')).toBeInTheDocument();
+    expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
 });

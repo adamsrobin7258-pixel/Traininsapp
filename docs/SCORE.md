@@ -13,6 +13,8 @@ deterministisch, offline, ohne KI und ohne externen Dienst. Er kann also nicht v
 | Datei                                      | Inhalt                                                                                                 |
 | ------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
 | `src/core/score/config.ts`                 | **Alle Stellschrauben**: Gewichte je Ziel, Toleranzen, Punkte, Vorläufig-Regel, Trend-Schwelle, Stufen |
+| `src/core/nutrition/goalAttainment.ts`     | Kalorien-Toleranz (5 %) und Protein-Schwelle (90 %) – seit Phase 14 von Score und Fortschritt geteilt  |
+| `src/core/targets/targets.ts`              | `weeklyExpectation` (Soll eines Wochenziels im Zeitraum) – seit Phase 14 von Score und Fortschritt     |
 | `src/core/score/score.ts`                  | Reine Berechnung: vier Teilwerte, Gesamtscore, Vorläufig, Trend                                        |
 | `src/core/score/scoreService.ts`           | Liest die bestehenden Services (`ScoreSources`), rechnet Zeitraum + Vorzeitraum                        |
 | `src/app/services.ts`                      | Verdrahtung der Quellen (Tagebuch, Tagesziele, Workouts, Aktivitäten, Regeneration)                    |
@@ -154,6 +156,13 @@ Luft nach oben“. Keine Ampelfarben, keine Wertung der Person.
   Ziel); bis Phase 9 unversioniert in `app_settings`, bei der Migration ab `1970-01-01` übernommen.
   Das Schrittziel liegt in derselben Tabelle, fließt aber **nicht** in den Score ein
   ([SETTINGS.md](SETTINGS.md)).
+
+## Fortschrittskarten (Phase 14)
+
+Die Karten auf „Fortschritt“ zeigen Ist gegen Ziel ([PROGRESS.md](PROGRESS.md#zielerreichung-phase-14))
+mit denselben Quellen, derselben Soll-Berechnung und denselben Schwellen wie der Score. Der Score
+selbst ist dadurch **nicht** verändert: keine neuen Bereiche, keine neue Gewichtung, Schritte
+bleiben draußen.
 
 ## Grenzen
 

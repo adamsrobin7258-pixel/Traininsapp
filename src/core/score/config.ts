@@ -5,7 +5,7 @@
  * formula. They are kept here, in one place, so they can be tuned without touching the
  * calculation (see docs/SCORE.md).
  */
-import type { GoalType } from '@/core/nutrition';
+import { KCAL_GOAL_TOLERANCE, PROTEIN_GOAL_REACHED, type GoalType } from '@/core/nutrition';
 import type { RecoveryState } from '@/core/recovery';
 
 export const SCORE_AREAS = ['nutrition', 'training', 'activity', 'recovery'] as const;
@@ -29,12 +29,15 @@ export const NUTRITION = {
   /** Share of calories and protein in a day's nutrition value (when both goals exist). */
   kcalShare: 0.7,
   proteinShare: 0.3,
-  /** Up to this deviation from the calorie goal (either way) a day keeps 100 points … */
-  kcalTolerance: 0.05,
+  /**
+   * Up to this deviation from the calorie goal (either way) a day keeps 100 points … (shared with
+   * the progress page: core/nutrition/goalAttainment.ts)
+   */
+  kcalTolerance: KCAL_GOAL_TOLERANCE,
   /** … beyond it, 2 points per further percent (10 % → 90, 20 % → 70, 30 % → 50, 55 % → 0). */
   kcalPointsPerPercent: 2,
   /** Protein from 90 % of the goal on counts as reached; more is never a penalty … */
-  proteinReached: 0.9,
+  proteinReached: PROTEIN_GOAL_REACHED,
   /** … below it, 2 points per missing percent (80 % → 80, 70 % → 60, 50 % → 20). */
   proteinPointsPerPercent: 2,
 } as const;

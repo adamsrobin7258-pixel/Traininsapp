@@ -210,7 +210,9 @@ verwaltet; ohne Plan verweist der Start-Dialog dorthin. Gestartet wird nur im Tr
 **Fortschritt (Mainpage).** Seit Phase 7.1 die Startseite ohne Eingaben (siehe
 [PROGRESS.md](PROGRESS.md)): Training, Ernährung, Gewicht und Aktivitäten der letzten 7 bzw. 30
 Tage aus aggregierten Abfragen der Bereiche und reinen Auswertungsfunktionen in
-`core/*/progress.ts`. Keine Tagesübersicht; jede Karte öffnet ihren Bereich.
+`core/*/progress.ts`. Keine Tagesübersicht; jede Karte öffnet ihren Bereich. Seit Phase 14 liefert
+`core/progress` (`ProgressGoalService`, `useProgressGoals`) alle Karten mit Ist gegen Ziel aus
+denselben Quellen wie der Score (`shared` in `app/services.ts`); die UI rechnet nichts.
 
 **Kalethra-Score.** Seit Phase 9 in `core/score` (reine Berechnung, zentrale Konfiguration in
 `config.ts`) und `core/recovery` (tägliche Regeneration). Der `ScoreService` liest nur die

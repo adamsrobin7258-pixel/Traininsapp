@@ -97,3 +97,42 @@ export type TargetHistory = Record<TargetKind, readonly TargetVersion[]>;
 export function emptyTargetHistory(): TargetHistory {
   return { trainingsPerWeek: [], activeMinutesPerWeek: [], stepsPerDay: [], activityCalories: [] };
 }
+
+/** A target: the same for every day, or looked up per local day; `null` = no target. */
+export type TargetValue = number | null | ((localDate: string) => number | null);
+
+/** The positive target in force on a day; `null` (or 0) means no target on that day. */
+export function targetValueOn(target: TargetValue, localDate: string): number | null {
+  const value = typeof target === 'function' ? target(localDate) : target;
+  return value !== null && value > 0 ? value : null;
+}
+
+export interface WeeklyExpectation {
+  /** The days of the period that have a target. */
+  days: ReadonlySet<string>;
+  /** Expected amount over those days: the sum of each day's weekly target ÷ 7. */
+  expected: number;
+  /** The target that applies at the end of the period (`null` without any). */
+  latest: number | null;
+}
+
+/**
+ * A weekly target spread over the days of a period, each day with the version in force on it:
+ * 3 per week → 3 in 7 days, ≈12.9 in 30; target 4 for three days and 3 for four days → 3.4.
+ * Days without a target do not count. The one definition used by the score and the progress
+ * cards (Phase 14).
+ */
+export function weeklyExpectation(
+  target: TargetValue,
+  dates: readonly string[],
+): WeeklyExpectation {
+  const days = dates.flatMap((date) => {
+    const value = targetValueOn(target, date);
+    return value === null ? [] : [{ date, value }];
+  });
+  return {
+    days: new Set(days.map((day) => day.date)),
+    expected: days.reduce((sum, day) => sum + day.value / 7, 0),
+    latest: days.at(-1)?.value ?? null,
+  };
+}

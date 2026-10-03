@@ -26,6 +26,12 @@ describe('steps against the step goal', () => {
       today: { steps: 6200, goal: 8000, ratio: 0.775 },
       ratedDays: 3,
       reachedDays: 1,
+      // The day with `null` is no 0: averages cover the three days with a value.
+      daysWithData: 3,
+      avgSteps: 7733,
+      avgGoal: 8000,
+      avgRatedSteps: 7733,
+      latestGoal: 8000,
     });
   });
 
@@ -39,7 +45,17 @@ describe('steps against the step goal', () => {
       dates,
       goalOn,
     );
-    expect(result).toEqual({ today: null, ratedDays: 1, reachedDays: 1 });
+    expect(result).toEqual({
+      today: null,
+      ratedDays: 1,
+      reachedDays: 1,
+      daysWithData: 2,
+      avgSteps: 6000,
+      // Only the day that had a goal is compared with it.
+      avgGoal: 5000,
+      avgRatedSteps: 6000,
+      latestGoal: null,
+    });
   });
 
   it('shows today’s goal without steps as not yet known', () => {
@@ -47,6 +63,11 @@ describe('steps against the step goal', () => {
       today: { steps: null, goal: 8000, ratio: null },
       ratedDays: 0,
       reachedDays: 0,
+      daysWithData: 0,
+      avgSteps: null,
+      avgGoal: null,
+      avgRatedSteps: null,
+      latestGoal: 8000,
     });
   });
 });

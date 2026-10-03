@@ -15,6 +15,16 @@ export interface StepGoalSummary {
   ratedDays: number;
   /** … and those on which the goal was reached. */
   reachedDays: number;
+  /** Days of the period with a step value (a day without one is unknown, never 0 steps). */
+  daysWithData: number;
+  /** Average steps over the days with a value; `null` without any. */
+  avgSteps: number | null;
+  /** Average goal of the rated days (each with its own version) … */
+  avgGoal: number | null;
+  /** … and the average steps of the same days; both `null` without a rated day. */
+  avgRatedSteps: number | null;
+  /** The goal in force on the last day of the period; `null` without one. */
+  latestGoal: number | null;
 }
 
 export function summarizeStepGoal(
@@ -25,11 +35,17 @@ export function summarizeStepGoal(
   const steps = new Map(days.map((day) => [day.date, day.steps]));
   let ratedDays = 0;
   let reachedDays = 0;
+  let goalSum = 0;
+  let ratedSteps = 0;
+  const values: number[] = [];
   for (const date of dates) {
     const goal = goalOn(date);
     const value = steps.get(date) ?? null;
+    if (value !== null) values.push(value);
     if (goal === null || value === null) continue;
     ratedDays++;
+    goalSum += goal;
+    ratedSteps += value;
     if (value >= goal) reachedDays++;
   }
   const today = dates.at(-1);
@@ -46,5 +62,13 @@ export function summarizeStepGoal(
           },
     ratedDays,
     reachedDays,
+    daysWithData: values.length,
+    avgSteps:
+      values.length > 0
+        ? Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+        : null,
+    avgGoal: ratedDays > 0 ? Math.round(goalSum / ratedDays) : null,
+    avgRatedSteps: ratedDays > 0 ? Math.round(ratedSteps / ratedDays) : null,
+    latestGoal: todayGoal,
   };
 }

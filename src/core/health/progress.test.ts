@@ -34,6 +34,8 @@ describe('weight progress', () => {
     expect(summarizeWeightPeriod([], '2026-09-27', '2026-10-03')).toEqual({
       latest: null,
       changeKg: null,
+      start: null,
+      end: null,
       points: [],
     });
   });
