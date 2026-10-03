@@ -24,6 +24,9 @@ export function ActiveWorkoutScreen() {
   const { restTimerSeconds } = useSettings().settings;
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
+  // The workout being finished: finishing reloads the active workout, which can arrive before
+  // the navigation below – then it is gone and this screen must still lead to its summary.
+  const [finishing, setFinishing] = useState<string | null>(null);
   const active = useTrainingData((s, profileId) => s.workouts.getActive(profileId), []);
 
   if (active.status === 'loading') return null;
@@ -35,7 +38,13 @@ export function ActiveWorkoutScreen() {
     );
   }
   const workout = active.data;
-  if (!workout) return <Navigate to={ROUTES.training} replace />;
+  if (!workout) {
+    return finishing ? (
+      <Navigate to={TRAINING_LINKS.workout(finishing)} replace state={{ summary: true }} />
+    ) : (
+      <Navigate to={ROUTES.training} replace />
+    );
+  }
 
   const completedSets = workout.exercises.reduce(
     (sum, exercise) => sum + exercise.sets.filter((set) => set.completed).length,
@@ -90,7 +99,13 @@ export function ActiveWorkoutScreen() {
           closeLabel={t('common.close')}
           errorText={t('training.errors.saveFailed')}
           onConfirm={async () => {
-            await mutate((s, profileId) => s.workouts.finish(profileId, workout.id));
+            setFinishing(workout.id);
+            try {
+              await mutate((s, profileId) => s.workouts.finish(profileId, workout.id));
+            } catch (error) {
+              setFinishing(null);
+              throw error;
+            }
             // The finished workout opens with its summary; back leads to Training.
             await navigate(TRAINING_LINKS.workout(workout.id), {
               replace: true,
