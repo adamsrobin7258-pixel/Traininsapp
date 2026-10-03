@@ -8,6 +8,7 @@ import {
   INITIAL_EFFECTIVE_FROM,
   TargetError,
   targetOn,
+  weeklyExpectation,
   type TargetKind,
 } from './targets';
 
@@ -486,5 +487,16 @@ describe('migration 15 – "Aktivitätskalorien anrechnen" becomes a versioned t
       2700,
     );
     expect((await goals.dayGoal(first.profileId, '2026-10-03'))?.activity).toBeUndefined();
+  });
+});
+
+describe('weekly expectation in whole units (Phase 16)', () => {
+  it('rounds once, for the progress card and the score alike', () => {
+    expect(weeklyExpectation(180, ['2026-10-03'])).toMatchObject({ expectedWhole: 26 });
+    expect(weeklyExpectation(182, ['2026-10-03'])).toMatchObject({ expectedWhole: 26 });
+    const week = ['27', '28', '29', '30'].map((d) => `2026-09-${d}`);
+    expect(
+      weeklyExpectation(150, [...week, '2026-10-01', '2026-10-02', '2026-10-03']),
+    ).toMatchObject({ expectedWhole: 150 });
   });
 });

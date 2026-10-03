@@ -50,23 +50,21 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
 
   const number = new Intl.NumberFormat(locale);
   const todayActivity = ready?.activity.find((day) => day.date === todayKey);
-  const stepDays = (ready?.activity ?? []).filter((day) => day.steps !== null);
-  const average =
-    stepDays.length > 0
-      ? Math.round(stepDays.reduce((sum, day) => sum + (day.steps ?? 0), 0) / stepDays.length)
-      : null;
   const none = <EmptyValue label={t('common.noValue')} />;
   const weekDates = Array.from({ length: 7 }, (_, index) =>
     toLocalDateKey(addDays(today, index - 6)),
   );
-  const stepGoal =
-    ready && stepGoals.status === 'ready'
-      ? summarizeStepGoal(
-          ready.activity.map((day) => ({ date: day.date, steps: day.steps })),
-          weekDates,
-          (date) => targetOn(stepGoals.data, date),
-        )
-      : null;
+  // The one step evaluation (also used by Fortschritt and the score): days without data are
+  // left out, each day with the step goal that applied then.
+  const stepSummary = ready
+    ? summarizeStepGoal(
+        ready.activity.map((day) => ({ date: day.date, steps: day.steps })),
+        weekDates,
+        (date) => (stepGoals.status === 'ready' ? targetOn(stepGoals.data, date) : null),
+      )
+    : null;
+  const stepGoal = stepGoals.status === 'ready' ? stepSummary : null;
+  const average = stepSummary?.avgSteps ?? null;
   const lastSuccessAt =
     status.state === 'connected' || status.state === 'permissionRequired'
       ? status.lastSuccessAt

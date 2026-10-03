@@ -297,12 +297,13 @@ describe('D · step goal', () => {
 
     const after = await services.score.calculate(profileId, WEEK, options);
     // Since the Phase 14 follow-up, steps are a signal inside "Aktivitäten" (no area of its own):
-    // 1 Oct 100, 2 Oct 6.500 / 8.000 → 81,25; today (4.000 < 8.000) still open → (100 + 81,25) / 2.
+    // 1 Oct 100, 2 Oct 6.500 / 8.000 → 81,25, today 4.000 / 8.000 → 50 (proportional since
+    // Phase 16) → (100 + 81,25 + 50) / 3.
     expect(before.areas.activity.score).toBeNull();
-    expect(after.areas.activity.score).toBe(91);
+    expect(after.areas.activity.score).toBe(77);
     expect(after.areas.activity.detail.steps).toMatchObject({
       target: 8000,
-      ratedDays: 2,
+      ratedDays: 3,
       reachedDays: 1,
     });
     // Everything else stays exactly as it was – same areas, same weights.

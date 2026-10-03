@@ -105,7 +105,7 @@ core/health/            importedHealth.ts, externalWorkouts.ts (Regeln, rein),
                         healthConnectionRepository.ts, healthSyncService.ts,
                         HealthSyncProvider.tsx (Hooks)
 app/HealthSyncTrigger.tsx       App-Start und Vordergrund
-modules/profile/        Bereich „Gesundheitsdaten“, Verbinden- und Trennen-Dialog
+modules/settings/       Bereich „Gesundheitsdaten“, Verbinden- und Trennen-Dialog
 modules/health/         „Aus Health Connect“ (Schritte, aktive Kalorien, Gewicht)
 modules/training/       „Aktivitäten“ (Liste, Details)
 modules/nutrition/      Basisziel + Aktivitätskalorien im Ernährungstagebuch
@@ -115,6 +115,23 @@ modules/progress/       Mainpage „Fortschritt“: Aktivitäten und Gewicht üb
 
 Das Plugin ist nur in `core/platform` erlaubt (ESLint). Auf iOS ist es per
 `ios.includePlugins` ausgeschlossen, bis Apple Health umgesetzt wird.
+
+### Datenfluss (Phase 16 geprüft)
+
+Health Connect → `HealthSyncService` (Import, Normalisierung, Abgleich des 30-Tage-Fensters) →
+eigene verschlüsselte Tabellen (`imported_weights`, `daily_activity`, `external_workouts`) →
+zentrale Core-Funktionen → Gesundheit, Fortschritt und Score. Kein Fachmodul fragt Health Connect
+selbst ab; alle lesen über `HealthSyncService`.
+
+- **Schritte:** eine Auswertung (`summarizeStepGoal`, Tagesquote `stepDayRatio`, gedeckelt bei
+  100 %, heute anteilig) für Gesundheit, Fortschritt und Score.
+- **Aktivitäten:** eine Anrechenbarkeit (`countableActivities`) für Aktivitätskalorien, Summen der
+  Fortschrittskarte, aktive Minuten des Scores und Schritte außerhalb von Aktivitäten.
+- **Gewicht:** drei bewusst getrennte Regeln, je an einer Stelle (`weightRules.ts`,
+  `weightTrend`).
+- **Sync:** App-Start, Rückkehr in den Vordergrund und Öffnen einer Gesundheitsansicht, höchstens
+  alle 15 Minuten; manuell jederzeit. Upsert nach Health-Connect-ID (keine Duplikate, auch nach
+  erneutem Verbinden); Entfernen nur nach vollständig erfolgreichem Lesen.
 
 ## Android-Konfiguration
 

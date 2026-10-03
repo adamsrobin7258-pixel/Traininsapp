@@ -14,6 +14,7 @@ import {
   type NutritionDayTotals,
 } from '@/core/nutrition';
 import type { RecoveryState } from '@/core/recovery';
+import { summarizeStepGoal } from '@/core/health';
 import { targetValueOn, weeklyExpectation as expectation, type TargetValue } from '@/core/targets';
 import {
   DEFAULT_SCORE_GOAL,
@@ -268,38 +269,25 @@ export function trainingScore(input: ScoreInput): AreaScores['training'] {
 }
 
 /**
- * Steps outside tracked activities against the daily step goal: per day the share of the goal,
- * capped at 100 – the mean of the rated days. Days without a goal or without step data are not
- * rated (never 0 steps). Today is still running: below the goal is not judged yet, reaching it
- * is (the same rule as calories and protein).
+ * Steps outside tracked activities against the daily step goal – through the one step
+ * evaluation (`summarizeStepGoal`, core/health/steps.ts) that Gesundheit and Fortschritt use too:
+ * each day its share of the goal, capped at 100 – today as well (proportional since Phase 16);
+ * the mean of the rated days. Days without a goal or without step data are not rated (never 0
+ * steps).
  */
 export function stepsPart(input: ScoreInput): StepsDetail {
   const target = input.targets.stepsPerDay ?? null;
-  const steps = new Map(
-    (input.activity.stepsPerDay ?? []).map((day) => [day.localDate, day.steps]),
+  const summary = summarizeStepGoal(
+    (input.activity.stepsPerDay ?? []).map((day) => ({ date: day.localDate, steps: day.steps })),
+    input.dates,
+    (date) => targetValueOn(target, date),
   );
-  const dayScores: number[] = [];
-  const counted: number[] = [];
-  let reachedDays = 0;
-  for (const date of input.dates) {
-    const goal = targetValueOn(target, date);
-    const value = steps.get(date);
-    if (goal === null || value === undefined) continue;
-    const ratio = value / goal;
-    if (date === input.today && ratio < 1) continue;
-    dayScores.push(Math.min(1, ratio) * 100);
-    counted.push(value);
-    if (ratio >= 1) reachedDays++;
-  }
-  const score = mean(dayScores);
-  const avgSteps = mean(counted);
-  const last = input.dates.at(-1);
   return {
-    target: last === undefined ? null : targetValueOn(target, last),
-    avgSteps: avgSteps === null ? null : Math.round(avgSteps),
-    ratedDays: dayScores.length,
-    reachedDays,
-    score: score === null ? null : round(score),
+    target: summary.latestGoal,
+    avgSteps: summary.avgRatedSteps,
+    ratedDays: summary.ratedDays,
+    reachedDays: summary.reachedDays,
+    score: summary.avgRatio === null ? null : round(summary.avgRatio * 100),
   };
 }
 
@@ -338,14 +326,15 @@ export function activityScore(input: ScoreInput): AreaScores['activity'] {
   }
   // Only days with a target count – with one target for the whole period that is every day.
   const { minutes, activeDays } = active((date) => plan.days.has(date));
-  const expected = plan.expected;
+  // The goal in whole minutes – the one the progress card shows (20 of 26 → 77 on both).
+  const expected = Math.max(1, plan.expectedWhole);
   const minutesScore = minutes === 0 ? null : round((Math.min(minutes, expected) / expected) * 100);
   return {
     score: combine(minutesScore),
     detail: {
       target: plan.latest,
       minutes,
-      expectedMinutes: Math.round(expected),
+      expectedMinutes: expected,
       activeDays,
       minutesScore,
       steps,

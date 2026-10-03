@@ -109,7 +109,10 @@ kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie 
   der Ernährung, wie in der App überall. Seit Phase 12 ist sie versioniert: Der Ernährungsteil
   bewertet jeden Tag mit der Einstellung, die an diesem Tag galt; Umschalten ändert keinen
   vergangenen Score-Tag (`ScoreOptions` enthält nur noch `today`).
-- Heute wird – unverändert seit Phase 9 – mit dem Tagesanteil des Wochenziels verglichen.
+- Heute wird – unverändert seit Phase 9 – mit dem Tagesanteil des Wochenziels verglichen,
+  anteilig (20 von 26 → 77). Seit Phase 16 in ganzen Minuten (`weeklyExpectation.expectedWhole`) –
+  genau das Ziel, das die Fortschrittskarte zeigt; vorher rechnete der Score mit 25,7 und kam auf
+  78, die Karte auf 77.
 
 **Signal 2 – Schritte (Alltagsbewegung).** Schrittziel pro Tag (Einstellungen → Ziele →
 Gesundheit, versioniert, keine neue Einstellung). Schritte kommen nur aus Health Connect.
@@ -117,8 +120,11 @@ Gesundheit, versioniert, keine neue Einstellung). Schritte kommen nur aus Health
 - Je Tag mit Schrittziel **und** Schrittdaten: anrechenbare Schritte ÷ Tagesziel, gedeckelt bei
   100; Zeitraum = Mittelwert dieser Tage. Tage ohne Ziel oder ohne Daten sind neutral (nie 0
   Schritte).
-- **Heute** läuft noch (dieselbe Regel wie bei Kalorien und Protein): unter dem Ziel wird heute
-  nicht bewertet, erreicht = 100. 2.000 von 10.000 um 10 Uhr sind kein schlechter Tag.
+- **Heute** zählt seit Phase 16 ebenfalls anteilig (2.000 von 10.000 → 20, gedeckelt bei 100) –
+  wie die aktiven Minuten; vorher galt „unter dem Ziel = noch offen“. Kalorien und Protein
+  behalten ihre Regel für den laufenden Tag.
+- **Eine Auswertung für alles:** `summarizeStepGoal` (`core/health/steps.ts`, Tagesquote
+  `stepDayRatio`) liefert den Wert für Gesundheit, Fortschrittskarte und Score.
 - **Doppelzählung:** Schritte innerhalb getrackter Aktivitäten zählen über die Aktivität, nicht
   noch einmal als Alltagsbewegung (`countableStepsPerDay`, `core/activity/combined.ts`). Grundlage
   sind genau die anrechenbaren Aktivitäten der aktiven Minuten (`countableActivities` – eine

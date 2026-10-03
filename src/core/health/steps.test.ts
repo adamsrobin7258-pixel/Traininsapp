@@ -1,4 +1,4 @@
-import { summarizeStepGoal } from './steps';
+import { stepDayRatio, summarizeStepGoal } from './steps';
 
 const dates = [
   '2026-09-27',
@@ -22,7 +22,10 @@ describe('steps against the step goal', () => {
       dates,
       () => 8000,
     );
-    expect(result).toEqual({
+    const { avgRatio, ...rest } = result;
+    // Mean of the capped day shares: (1 + 0.999875 + 0.775) / 3.
+    expect(avgRatio).toBeCloseTo(0.92496, 4);
+    expect(rest).toEqual({
       today: { steps: 6200, goal: 8000, ratio: 0.775 },
       ratedDays: 3,
       reachedDays: 1,
@@ -54,6 +57,7 @@ describe('steps against the step goal', () => {
       // Only the day that had a goal is compared with it.
       avgGoal: 5000,
       avgRatedSteps: 6000,
+      avgRatio: 1, // 6.000 of 5.000 counts as 100 %
       latestGoal: null,
     });
   });
@@ -67,7 +71,24 @@ describe('steps against the step goal', () => {
       avgSteps: null,
       avgGoal: null,
       avgRatedSteps: null,
+      avgRatio: null,
       latestGoal: 8000,
     });
+  });
+});
+
+describe('one day against the step goal (Phase 16)', () => {
+  it('is proportional and capped at 100 %', () => {
+    expect(stepDayRatio(0, 10_000)).toBe(0);
+    expect(stepDayRatio(5_000, 10_000)).toBe(0.5);
+    expect(stepDayRatio(9_000, 10_000)).toBe(0.9);
+    expect(stepDayRatio(10_000, 10_000)).toBe(1);
+    expect(stepDayRatio(12_000, 10_000)).toBe(1);
+  });
+
+  it('today is proportional as well – no "open" day', () => {
+    const summary = summarizeStepGoal([{ date: '2026-10-03', steps: 2_000 }], dates, () => 10_000);
+    expect(summary.today).toEqual({ steps: 2_000, goal: 10_000, ratio: 0.2 });
+    expect(summary).toMatchObject({ ratedDays: 1, avgRatio: 0.2 });
   });
 });

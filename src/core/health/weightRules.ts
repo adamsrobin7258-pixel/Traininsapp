@@ -3,7 +3,7 @@
  * and are NOT to be merged into one "current weight":
  *
  * 1. Nutrition goals – own entries only (`weight_entries`), smoothed as the median of the last
- *    7 days (`trendWeight`, core/nutrition/calculation/trend.ts); the protein reference weight
+ *    7 days (`weightTrend`, core/nutrition/calculation/trend.ts); the protein reference weight
  *    caps it at BMI 27.5. Imported values never change a nutrition goal.
  * 2. Display (progress weight card, Health Connect overview) – own and Health Connect values
  *    side by side, one per day, the own entry wins on the same day (`mergeWeightDays` for a
@@ -13,7 +13,7 @@
  *    the same day), imported values at most `ACTIVITY_WEIGHT_WINDOW_DAYS` old
  *    (`pickActivityWeight`, below). Stored with the activity as a snapshot.
  *
- * Pure. Every module reads weight through these functions (or `trendWeight` for rule 1); none
+ * Pure. Every module reads weight through these functions (or `weightTrend` for rule 1); none
  * repeats the rules.
  */
 

@@ -16,8 +16,10 @@ const span = (from: [number, number], to: [number, number]) => ({
   endedAt: iso(...to),
 });
 const activity = (from: [number, number], to: [number, number]): CountableActivity => ({
+  key: `hc:${String(from)}`,
   localDate: '2026-10-02',
   durationS: 0,
+  kcal: null,
   span: span(from, to),
 });
 const record = (from: [number, number], to: [number, number], steps: number): StepRecord => ({
@@ -142,7 +144,9 @@ describe('steps outside tracked activities', () => {
   it('D: an activity without a usable time excludes nothing', () => {
     const yoga = manual(null, 60);
     const activities = countableActivities([], [yoga], []);
-    expect(activities).toEqual([{ localDate: '2026-10-02', durationS: 3600, span: null }]);
+    expect(activities).toEqual([
+      { key: 'manual:m', localDate: '2026-10-02', durationS: 3600, kcal: null, span: null },
+    ]);
     expect(countableStepsPerDay([record([10, 0], [11, 0], 3000)], activities)[0]).toMatchObject({
       steps: 3000,
       excludedSteps: 0,

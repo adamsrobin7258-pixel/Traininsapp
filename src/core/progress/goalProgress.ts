@@ -151,9 +151,10 @@ export function activityGoalProgress(
   const plan = weeklyExpectation(target, dates);
   if (plan.latest === null) return { mode: 'none', minutes: minutesOn((d) => dates.includes(d)) };
   const minutes = minutesOn((date) => plan.days.has(date));
-  const expectedMinutes = Math.round(plan.expected);
+  // Whole minutes, the same expectation the score divides by (`expectedWhole`).
+  const expectedMinutes = Math.max(1, plan.expectedWhole);
   const targetSince = coveredSince(plan.days, dates);
-  const reached = attainment(minutes, plan.expected);
+  const reached = attainment(minutes, expectedMinutes);
   if (minutes === 0 || !reached) {
     return { mode: 'noData', weeklyTarget: plan.latest, expectedMinutes, targetSince };
   }
@@ -163,7 +164,7 @@ export function activityGoalProgress(
     weeklyTarget: plan.latest,
     expectedMinutes,
     targetSince,
-    attainment: attainment(minutes, expectedMinutes) ?? reached,
+    attainment: reached,
   };
 }
 
@@ -338,7 +339,9 @@ export function nutritionGoalProgress(
 
 /**
  * Average steps against the average daily goal of the days that have both – days without step
- * data are left out instead of counting as 0 steps. `null` without such a day.
+ * data are left out instead of counting as 0 steps. The percent is the mean of the days' shares
+ * of their goal, each capped at 100 % – the same value as the score's steps part (Phase 16);
+ * the real average stays visible. `null` without such a day.
  */
 export function stepGoalProgress(summary: StepGoalSummary): {
   summary: StepGoalSummary;
@@ -347,8 +350,14 @@ export function stepGoalProgress(summary: StepGoalSummary): {
   return {
     summary,
     attainment:
-      summary.avgRatedSteps !== null && summary.avgGoal !== null
-        ? attainment(summary.avgRatedSteps, summary.avgGoal)
+      summary.avgRatedSteps !== null && summary.avgGoal !== null && summary.avgRatio !== null
+        ? {
+            actual: summary.avgRatedSteps,
+            target: summary.avgGoal,
+            ratio: summary.avgRatio,
+            shownRatio: summary.avgRatio,
+            percent: Math.round(summary.avgRatio * 100),
+          }
         : null,
   };
 }

@@ -636,7 +636,8 @@ describe('Fortschritt – the main page', () => {
       await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
       const steps = await findCard(/^Schritte/);
       expect(await steps.findByText('100.000 von 10.000 Schritten')).toBeInTheDocument();
-      expect(steps.getByText('1.000 %')).toBeInTheDocument();
+      // A day counts at most 100 % (Phase 16); the real value stays visible.
+      expect(steps.getByText('100 %')).toBeInTheDocument();
     });
 
     it('steps stay hidden without Health Connect and without imported steps', async () => {

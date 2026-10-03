@@ -216,7 +216,7 @@ Fortschritt (Ø Tagesziel) und im Ernährungsteil des Scores. Das widersprach de
 
 Bewusst getrennt, zentral beschrieben in `src/core/health/weightRules.ts`:
 
-1. **Ernährungsziele:** nur eigene Einträge, Median der letzten 7 Tage (`trendWeight`);
+1. **Ernährungsziele:** nur eigene Einträge, Median der letzten 7 Tage (`weightTrend`);
    Protein-Referenz bei BMI 27,5 gedeckelt. Importierte Werte ändern nie ein Ernährungsziel.
 2. **Fortschritt (Gewichtskarte):** eigene und Health-Connect-Werte, einer je Tag, der eigene
    gewinnt am selben Tag (`mergeWeightDays`). Nur Anzeige.

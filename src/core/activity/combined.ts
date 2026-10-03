@@ -13,7 +13,6 @@
  */
 
 import {
-  countableActivityCalories,
   isKalethraWorkout,
   isSameSession,
   summarizeActivities,
@@ -148,20 +147,13 @@ export function dayActivityCalories(
   manual: readonly ManualActivity[],
   own: readonly OwnWorkoutSpan[],
 ): DayActivityCalories {
-  const fromImport = countableActivityCalories(imported, own);
-  let kcal = fromImport.kcal;
-  let counted = fromImport.counted;
-  let excluded = fromImport.excluded;
-  for (const activity of manual) {
-    if (manualExclusion(activity, imported, own) !== null) {
-      excluded++;
-      continue;
-    }
-    if (activity.kcal === null) continue;
-    kcal += activity.kcal;
-    counted++;
-  }
-  return { kcal: Math.round(kcal), counted, excluded };
+  const countable = countableActivities(imported, manual, own);
+  const withKcal = countable.flatMap((activity) => (activity.kcal === null ? [] : [activity.kcal]));
+  return {
+    kcal: Math.round(withKcal.reduce((sum, kcal) => sum + kcal, 0)),
+    counted: withKcal.length,
+    excluded: imported.length + manual.length - countable.length,
+  };
 }
 
 /**
@@ -177,37 +169,34 @@ export function summarizeAllActivities(
   const imported = entries.flatMap((entry) =>
     entry.source === 'healthConnect' ? [entry.activity] : [],
   );
+  const manual = entries.flatMap((entry) => (entry.source === 'manual' ? [entry.activity] : []));
   return summarizeActivities(
-    entries
-      .filter((entry) =>
-        entry.source === 'healthConnect'
-          ? importedExclusion(entry.activity, own) === null
-          : manualExclusion(entry.activity, imported, own) === null,
-      )
-      .map((entry) => {
-        const figures = entryFigures(entry);
-        return {
-          externalId: entry.key,
-          localDate: entry.activity.localDate,
-          durationS: figures.durationS,
-          activeKcal: figures.kcal,
-        };
-      }),
+    countableActivities(imported, manual, own).map((activity) => ({
+      externalId: activity.key,
+      localDate: activity.localDate,
+      durationS: activity.durationS,
+      activeKcal: activity.kcal,
+    })),
     dates,
   );
 }
 
 /** One activity that counts (either source), with its time span when one is known. */
 export interface CountableActivity {
+  /** Same key as the activity list (`hc:<id>` / `manual:<id>`). */
+  key: string;
   localDate: string;
   durationS: number;
+  /** Active kcal (imported) or the manual activity's kcal; `null` when unknown. */
+  kcal: number | null;
   /** Start and end – `null` for a manual activity without a start time (no reliable time). */
   span: OwnWorkoutSpan | null;
 }
 
 /**
- * Every activity of both sources that counts – the one eligibility used for the score's active
- * minutes and for the steps outside tracked activities: an imported session unless it is a
+ * Every activity of both sources that counts – the one eligibility used for the calorie budget
+ * (`dayActivityCalories`), the progress totals (`summarizeAllActivities`), the score's active
+ * minutes (`countableActivityMinutes`) and the steps outside tracked activities: an imported session unless it is a
  * Kalethra workout, a manual one unless it duplicates an import or is a Kalethra workout.
  */
 export function countableActivities(
@@ -219,8 +208,10 @@ export function countableActivities(
   for (const activity of imported) {
     if (importedExclusion(activity, own) === null) {
       result.push({
+        key: `hc:${activity.id}`,
         localDate: activity.localDate,
         durationS: activity.durationS,
+        kcal: activity.activeKcal,
         span: { startedAt: activity.startedAt, endedAt: activity.endedAt },
       });
     }
@@ -228,8 +219,10 @@ export function countableActivities(
   for (const activity of manual) {
     if (manualExclusion(activity, imported, own) === null) {
       result.push({
+        key: `manual:${activity.id}`,
         localDate: activity.localDate,
         durationS: activity.durationS,
+        kcal: activity.kcal,
         span: manualSpan(activity),
       });
     }

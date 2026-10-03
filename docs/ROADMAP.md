@@ -323,6 +323,16 @@ Keine neuen Funktionen. Gefunden und behoben:
   Barcode-Ablauf mit dem Eintragen); historische Tage bleiben unverändert
 - Keine Migration; Details: [SCORE.md](SCORE.md#ernährung), [SETTINGS.md](SETTINGS.md)
 
+## Phase 16 – Gesundheit & Health Connect konsolidiert ✅ (Version 0.21.0)
+
+- Schritte: eine Auswertung für Gesundheit, Fortschritt und Score (Tag anteilig, max. 100 %, heute
+  ebenfalls anteilig); eigener Durchschnitt der Gesundheitsansicht entfernt
+- Aktive Minuten: Karte und Score mit demselben Ganzminuten-Ziel (keine 77/78-Differenz mehr)
+- Aktivitäten: Kalorienbudget, Kartensummen, Minuten und Schritte über eine Anrechenbarkeit
+  (`countableActivities`)
+- Sync, Berechtigungen, Trennen/Verbinden, Gewichtsregeln, Regeneration geprüft – unverändert
+- Keine Migration; Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

@@ -701,7 +701,7 @@ describe('activity area with steps (Phase 14 follow-up)', () => {
     expect(result.score).toBe(75);
   });
 
-  it('today is still running: below the step goal is not judged, reaching it is', () => {
+  it('today counts proportionally (Phase 16) – capped at 100', () => {
     const today = (steps: number) =>
       activityScore(
         input({
@@ -710,10 +710,14 @@ describe('activity area with steps (Phase 14 follow-up)', () => {
           targets: targets(null, 10_000),
         }),
       );
-    // 2.000 of 10.000 at 10:00 is no bad day.
-    expect(today(2_000).score).toBeNull();
-    expect(today(2_000).detail.steps.ratedDays).toBe(0);
+    // Phase 16: today is rated by its share of the goal, like any other day.
+    expect(today(0).score).toBe(0);
+    expect(today(2_000).score).toBe(20);
+    expect(today(5_000).score).toBe(50);
+    expect(today(9_000).score).toBe(90);
+    expect(today(10_000).score).toBe(100);
     expect(today(12_000).score).toBe(100);
+    expect(today(2_000).detail.steps.ratedDays).toBe(1);
   });
 
   it('more steps than the goal give no bonus (capped at 100)', () => {

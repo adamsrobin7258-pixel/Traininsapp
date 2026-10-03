@@ -143,6 +143,9 @@ Die Wortwahl der Kalorienzeile richtet sich nach dem Hauptziel am letzten Tag de
 - **Score unverändert:** keine neuen Bereiche, keine neue Gewichtung, keine geänderte Formel.
   Beide nutzen dieselben Basisdaten und dieselbe Soll-Berechnung, deshalb stimmen „3 von 4“ auf
   der Karte und „3 von 4 geplanten Einheiten“ in der Score-Erklärung immer überein.
+- **Schritte, Prozentwert (seit Phase 16):** Mittel der Tagesanteile, je Tag höchstens 100 %
+  (12.000 und 6.000 bei 10.000 → 80 %), derselbe Wert wie im Score; der echte Ø bleibt sichtbar.
+  Heute zählt anteilig. Aktive Minuten: Karte und Score teilen durch dasselbe Ganzminuten-Ziel.
 - **Schritte im Score:** seit dem Phase-14-Nachtrag ein zweites Signal **innerhalb** von
   „Aktivitäten“ (Schritte außerhalb getrackter Aktivitäten, kein eigener Bereich, Gewicht
   unverändert, [SCORE.md](SCORE.md#aktivitäten)). Die Schrittkarte zeigt weiter die

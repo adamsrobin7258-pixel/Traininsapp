@@ -162,7 +162,8 @@ describe('steps goal', () => {
     const { attainment: value } = stepGoalProgress(summary);
     expect(summary).toMatchObject({ daysWithData: 2, avgSteps: 9_000, reachedDays: 1 });
     // (12.000 + 6.000) / 2 = 9.000 of 10.000 – not 18.000 / 7.
-    expect(value).toMatchObject({ actual: 9_000, target: 10_000, percent: 90 });
+    // Percent: the mean of the days' capped shares (100 + 60) / 2 – the score's steps value.
+    expect(value).toMatchObject({ actual: 9_000, target: 10_000, percent: 80 });
   });
 
   it('has no ratio without step data or without a goal', () => {

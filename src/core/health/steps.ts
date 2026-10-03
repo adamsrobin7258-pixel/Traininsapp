@@ -1,10 +1,13 @@
 import { addDays, parseLocalDateKey } from '@/shared/lib/date';
 
 /**
- * Steps against the daily step goal (Einstellungen → Ziele → Gesundheit). Steps come only from
- * Health Connect (`daily_activity.steps`); a day without a value is unknown and neither reached
- * nor missed. Each day uses the goal that applied on that day. Pure. (The score reads the steps
- * outside tracked activities instead – `countableStepsPerDay` in core/activity.)
+ * Steps against the daily step goal (Einstellungen → Ziele → Gesundheit) – the one step
+ * evaluation for Gesundheit, Fortschritt and the score (Phase 16). Steps come only from Health
+ * Connect (`daily_activity.steps`); a day without a value is unknown and neither reached nor
+ * missed. Each day uses the goal that applied on that day, and counts with its share of the goal
+ * capped at 100 % – today as well (proportional, not "open"). Several days: the mean of the
+ * rated days' shares. Pure. (The score passes the steps outside tracked activities –
+ * `countableStepsPerDay` in core/activity; with daily totals they equal the real steps.)
  */
 export interface StepDay {
   date: string;
@@ -21,8 +24,13 @@ export function stepDaySpan(date: string): { startedAt: string; endedAt: string 
   return { startedAt: day.toISOString(), endedAt: addDays(day, 1).toISOString() };
 }
 
+/** One day's steps against its goal: 0 → 0, 9.000 / 10.000 → 0.9, 12.000 / 10.000 → 1. */
+export function stepDayRatio(steps: number, goal: number): number {
+  return goal > 0 ? Math.min(1, Math.max(0, steps) / goal) : 0;
+}
+
 export interface StepGoalSummary {
-  /** Today's steps against today's goal; `null` without a goal today. */
+  /** Today's steps against today's goal (`ratio` capped at 1); `null` without a goal today. */
   today: { steps: number | null; goal: number; ratio: number | null } | null;
   /** Days with a goal and a step value … */
   ratedDays: number;
@@ -36,6 +44,8 @@ export interface StepGoalSummary {
   avgGoal: number | null;
   /** … and the average steps of the same days; both `null` without a rated day. */
   avgRatedSteps: number | null;
+  /** Mean of the rated days' shares of their goal (each capped at 1); `null` without one. */
+  avgRatio: number | null;
   /** The goal in force on the last day of the period; `null` without one. */
   latestGoal: number | null;
 }
@@ -50,6 +60,7 @@ export function summarizeStepGoal(
   let reachedDays = 0;
   let goalSum = 0;
   let ratedSteps = 0;
+  let ratioSum = 0;
   const values: number[] = [];
   for (const date of dates) {
     const goal = goalOn(date);
@@ -59,6 +70,7 @@ export function summarizeStepGoal(
     ratedDays++;
     goalSum += goal;
     ratedSteps += value;
+    ratioSum += stepDayRatio(value, goal);
     if (value >= goal) reachedDays++;
   }
   const today = dates.at(-1);
@@ -71,7 +83,7 @@ export function summarizeStepGoal(
         : {
             steps: todaySteps,
             goal: todayGoal,
-            ratio: todaySteps === null ? null : todaySteps / todayGoal,
+            ratio: todaySteps === null ? null : stepDayRatio(todaySteps, todayGoal),
           },
     ratedDays,
     reachedDays,
@@ -82,6 +94,7 @@ export function summarizeStepGoal(
         : null,
     avgGoal: ratedDays > 0 ? Math.round(goalSum / ratedDays) : null,
     avgRatedSteps: ratedDays > 0 ? Math.round(ratedSteps / ratedDays) : null,
+    avgRatio: ratedDays > 0 ? ratioSum / ratedDays : null,
     latestGoal: todayGoal,
   };
 }

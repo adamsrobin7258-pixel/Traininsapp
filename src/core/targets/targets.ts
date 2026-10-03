@@ -112,6 +112,11 @@ export interface WeeklyExpectation {
   days: ReadonlySet<string>;
   /** Expected amount over those days: the sum of each day's weekly target ÷ 7. */
   expected: number;
+  /**
+   * The expectation in whole units (e.g. active minutes: 180 per week → 26 today) – what the
+   * progress card shows and what the score divides by, so both read the same goal (Phase 16).
+   */
+  expectedWhole: number;
   /** The target that applies at the end of the period (`null` without any). */
   latest: number | null;
 }
@@ -130,9 +135,11 @@ export function weeklyExpectation(
     const value = targetValueOn(target, date);
     return value === null ? [] : [{ date, value }];
   });
+  const expected = days.reduce((sum, day) => sum + day.value / 7, 0);
   return {
     days: new Set(days.map((day) => day.date)),
-    expected: days.reduce((sum, day) => sum + day.value / 7, 0),
+    expected,
+    expectedWhole: Math.round(expected),
     latest: days.at(-1)?.value ?? null,
   };
 }
