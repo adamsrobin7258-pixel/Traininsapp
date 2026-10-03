@@ -201,7 +201,8 @@ Fortschritt (Ø Tagesziel) und im Ernährungsteil des Scores. Das widersprach de
 - Seit Phase 14 auch auf **Fortschritt** (Karte „Schritte“): heute „7.842 von 10.000 Schritten“,
   über 7/30 Tage Ø über die Tage mit Daten ([PROGRESS.md](PROGRESS.md#zielerreichung-phase-14)).
 - Reine Auswertung: `summarizeStepGoal` (`src/core/health/steps.ts`).
-- **Nicht** Teil des Kalethra-Scores.
+- Im Kalethra-Score seit dem Phase-14-Nachtrag ein Signal **innerhalb** von „Aktivitäten“
+  (Schritte außerhalb getrackter Aktivitäten), kein eigener Bereich ([SCORE.md](SCORE.md#aktivitäten)).
 
 ## Drei Gewichtsregeln
 

@@ -58,8 +58,8 @@ export const en: TranslationSchema = {
       preliminary: 'Preliminary',
       preliminaryHint: 'Not all data for this period is in yet.',
       trend: {
-        up: 'Improved',
-        down: 'Declined',
+        up: 'Increased',
+        down: 'Decreased',
         steady: 'About the same',
         none: 'Not enough data to compare yet',
       },
@@ -117,6 +117,10 @@ export const en: TranslationSchema = {
           progress:
             '{minutes} of {expected} active minutes (target: {target} per week) · active days: {days}.',
           capped: 'More than the target gives no extra points.',
+          steps:
+            'Steps outside tracked activities: avg {steps} per day (goal: {goal}) · goal reached on {reached} of {total} days.',
+          stepsNone: 'Step goal {goal} – no step data to rate yet, not counted.',
+          combined: 'Active minutes and steps count half each.',
         },
         recovery: {
           none: 'No recovery notes in this period.',
@@ -1402,7 +1406,7 @@ export const en: TranslationSchema = {
         title: 'Daily step goal',
         value: '{count} steps',
         footer:
-          'Steps come from Health Connect and appear under Health and Progress. The step goal is not part of the Kalethra score.',
+          'Steps come from Health Connect and appear under Health and Progress. In the Kalethra score they count within “Activities”.',
         hint: 'How many steps you want to reach per day. Kalethra reads steps from Health Connect only – there is no second source.',
       },
     },

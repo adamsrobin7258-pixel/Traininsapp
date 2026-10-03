@@ -60,8 +60,8 @@ export const de = {
       preliminary: 'Vorläufig',
       preliminaryHint: 'Noch nicht alle Daten für diesen Zeitraum sind vorhanden.',
       trend: {
-        up: 'Verbessert',
-        down: 'Verschlechtert',
+        up: 'Gestiegen',
+        down: 'Gesunken',
         steady: 'Ungefähr gleich',
         none: 'Noch keine ausreichenden Vergleichsdaten',
       },
@@ -122,6 +122,10 @@ export const de = {
           progress:
             '{minutes} von {expected} aktiven Minuten (Ziel: {target} pro Woche) · aktive Tage: {days}.',
           capped: 'Mehr als das Ziel bringt keine Extrapunkte.',
+          steps:
+            'Schritte außerhalb getrackter Aktivitäten: Ø {steps} pro Tag (Ziel: {goal}) · Ziel an {reached} von {total} Tagen erreicht.',
+          stepsNone: 'Schrittziel {goal} – noch keine bewertbaren Schrittdaten, zählt nicht mit.',
+          combined: 'Aktive Minuten und Schritte zählen je zur Hälfte.',
         },
         recovery: {
           none: 'Keine Angaben zur Regeneration in diesem Zeitraum.',
@@ -1424,7 +1428,7 @@ export const de = {
         title: 'Schrittziel pro Tag',
         value: '{count} Schritte',
         footer:
-          'Schritte kommen aus Health Connect und erscheinen unter Gesundheit und Fortschritt. Das Schrittziel fließt nicht in den Kalethra-Score ein.',
+          'Schritte kommen aus Health Connect und erscheinen unter Gesundheit und Fortschritt. Im Kalethra-Score zählen sie innerhalb von „Aktivitäten“.',
         hint: 'Wie viele Schritte du am Tag erreichen möchtest. Die Schritte liest Kalethra nur aus Health Connect – es gibt keine zweite Quelle.',
       },
     },

@@ -1,11 +1,24 @@
+import { addDays, parseLocalDateKey } from '@/shared/lib/date';
+
 /**
  * Steps against the daily step goal (Einstellungen → Ziele → Gesundheit). Steps come only from
  * Health Connect (`daily_activity.steps`); a day without a value is unknown and neither reached
- * nor missed. Each day uses the goal that applied on that day. Pure; not part of the score.
+ * nor missed. Each day uses the goal that applied on that day. Pure. (The score reads the steps
+ * outside tracked activities instead – `countableStepsPerDay` in core/activity.)
  */
 export interface StepDay {
   date: string;
   steps: number | null;
+}
+
+/**
+ * The time span of a stored daily step total: the whole local day (Health Connect is read in
+ * day buckets – there is no finer time information). `null` for a malformed day.
+ */
+export function stepDaySpan(date: string): { startedAt: string; endedAt: string } | null {
+  const day = parseLocalDateKey(date);
+  if (!day) return null;
+  return { startedAt: day.toISOString(), endedAt: addDays(day, 1).toISOString() };
 }
 
 export interface StepGoalSummary {

@@ -50,7 +50,7 @@ type Setup = Awaited<ReturnType<typeof setup>>;
 /** Sets a target as if it had been chosen on `day` (the clock is moved there and back). */
 async function targetSince(
   { services, profileId }: Setup,
-  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'activityCalories',
+  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'activityCalories' | 'stepsPerDay',
   value: number | null,
   day = new Date(2026, 8, 1, 9),
 ) {
@@ -271,6 +271,52 @@ describe('score from the real data', () => {
     const noTarget = await s.services.score.calculate(s.profileId, WEEK, options());
     expect(noTarget.areas.activity.score).toBeNull();
     expect(noTarget.areas.activity.detail.minutes).toBe(30);
+  });
+
+  it('activity with steps: Health Connect steps rate the area when there is no activity', async () => {
+    const s = await setup();
+    s.platform.steps = [
+      { dayStart: localIso(2026, 9, 30, 0, 0), value: 10_000 },
+      { dayStart: localIso(2026, 10, 1, 0, 0), value: 6_000 },
+    ];
+    await s.services.healthSync.connect(s.profileId);
+    await targetSince(s, 'activeMinutesPerWeek', 150);
+    await targetSince(s, 'stepsPerDay', 10_000);
+    const result = await s.services.score.calculate(s.profileId, WEEK, options());
+    // No activity minutes → only the steps: (100 + 60) / 2.
+    expect(result.areas.activity.score).toBe(80);
+    expect(result.areas.activity.detail.minutesScore).toBeNull();
+    expect(result.areas.activity.detail.steps).toMatchObject({ ratedDays: 2, avgSteps: 8000 });
+  });
+
+  it('activity with steps: a tracked walk and the day’s steps – daily totals are not cut', async () => {
+    const s = await setup();
+    // 75 active minutes of 150 → 50; 10.000 steps of 10.000 → 100 → 75.
+    s.platform.workouts = [hc('walk', 'walking', 1, 10, 75)];
+    s.platform.steps = [{ dayStart: localIso(2026, 10, 1, 0, 0), value: 10_000 }];
+    await s.services.healthSync.connect(s.profileId);
+    await targetSince(s, 'activeMinutesPerWeek', 150);
+    await targetSince(s, 'stepsPerDay', 10_000);
+    const result = await s.services.score.calculate(s.profileId, WEEK, options());
+    expect(result.areas.activity.detail.minutesScore).toBe(50);
+    // Health Connect only delivers a daily total: no time to place the walk's steps in, so
+    // nothing is deducted (no invented share, never the whole day).
+    expect(result.areas.activity.detail.steps).toMatchObject({ avgSteps: 10_000, score: 100 });
+    expect(result.areas.activity.score).toBe(75);
+  });
+
+  it('activity with steps: a Kalethra workout recorded by the watch still counts only as training', async () => {
+    const s = await setup();
+    s.platform.workouts = [hc('watch-strength', 'strengthTraining', 29, 18, 55)];
+    s.platform.steps = [{ dayStart: localIso(2026, 9, 29, 0, 0), value: 8_000 }];
+    await s.services.healthSync.connect(s.profileId);
+    await workout(s, new Date(2026, 8, 29, 18));
+    await targetSince(s, 'activeMinutesPerWeek', 150);
+    await targetSince(s, 'stepsPerDay', 10_000);
+    const result = await s.services.score.calculate(s.profileId, WEEK, options());
+    expect(result.areas.activity.detail.minutes).toBe(0);
+    expect(result.areas.activity.detail.minutesScore).toBeNull();
+    expect(result.areas.activity.score).toBe(80);
   });
 
   it('recovery: reads the daily entries', async () => {

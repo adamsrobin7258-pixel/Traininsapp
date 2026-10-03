@@ -244,13 +244,27 @@ describe('score with versioned targets', () => {
     expect(oldAgain.areas.activity).toEqual(old.areas.activity);
   });
 
-  it('the step target never changes the score', async () => {
+  it('a step target without step data never changes the score', async () => {
     const s = await setup();
     await s.services.recovery.save(s.profileId, '2026-10-03', { state: 'good', restDay: false });
     const before = await s.services.score.calculate(s.profileId, week(10, 3), scoreOptions);
     await setOn(s, at(9, 1), 'stepsPerDay', 10000);
     const after = await s.services.score.calculate(s.profileId, week(10, 3), scoreOptions);
-    expect(after).toEqual(before);
+    // Since the Phase 14 follow-up steps are a signal inside "Aktivitäten" – without step data
+    // that signal is neutral: no score value moves, only the explanation knows the goal.
+    expect(after.score).toBe(before.score);
+    expect(after.preliminary).toBe(before.preliminary);
+    expect(after.areas.activity.score).toBe(before.areas.activity.score);
+    expect(after.areas.nutrition).toEqual(before.areas.nutrition);
+    expect(after.areas.training).toEqual(before.areas.training);
+    expect(after.areas.recovery).toEqual(before.areas.recovery);
+    expect(after.areas.activity.detail.steps).toEqual({
+      target: 10000,
+      avgSteps: null,
+      ratedDays: 0,
+      reachedDays: 0,
+      score: null,
+    });
   });
 });
 

@@ -8,7 +8,8 @@
  *   each day with the target version in force on it;
  * - calories and protein use `calorieGoalStatus` / `proteinGoalStatus` (core/nutrition), the same
  *   thresholds as the score;
- * - steps use `summarizeStepGoal` (core/health); they are not part of the score.
+ * - steps use `summarizeStepGoal` (core/health) – the real steps; the score's activity area
+ *   uses the steps outside tracked activities (`countableStepsPerDay`).
  * Missing data stays missing: days without food or step data are neither 0 nor a miss.
  */
 import {

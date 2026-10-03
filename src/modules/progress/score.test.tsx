@@ -90,7 +90,7 @@ async function eat(
 async function targetSince(
   s: AppServices,
   profileId: string,
-  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek',
+  kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'stepsPerDay',
   value: number,
 ) {
   vi.setSystemTime(new Date(2026, 8, 1, 9));
@@ -227,7 +227,7 @@ describe('Kalethra-Score on Fortschritt', () => {
     });
     const card = await scoreCard();
     expect(
-      await card.findByText('Verbessert gegenüber den 7 Tagen davor · +35 Punkte'),
+      await card.findByText('Gestiegen gegenüber den 7 Tagen davor · +35 Punkte'),
     ).toBeInTheDocument();
   });
 
@@ -242,7 +242,7 @@ describe('Kalethra-Score on Fortschritt', () => {
     expect(
       await (
         await scoreCard()
-      ).findByText(/^Verschlechtert gegenüber den 7 Tagen davor · [-−]21 Punkte$/),
+      ).findByText(/^Gesunken gegenüber den 7 Tagen davor · [-−]21 Punkte$/),
     ).toBeInTheDocument();
   });
 
@@ -359,6 +359,38 @@ describe('score details', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+  });
+
+  it('explains steps as part of "Aktivitäten" – active minutes and steps half each', async () => {
+    const platform = new FakeHealthPlatform();
+    platform.workouts = [hc('walk', 'walking', 1, 10, 120)];
+    platform.steps = [
+      { dayStart: localIso(2026, 10, 1, 0), value: 6_000 },
+      { dayStart: localIso(2026, 10, 2, 0), value: 6_000 },
+    ];
+    await renderApp('/', {
+      healthPlatform: platform,
+      prepare: async (s, profileId) => {
+        await s.healthSync.connect(profileId);
+        await targetSince(s, profileId, 'activeMinutesPerWeek', 150);
+        await targetSince(s, profileId, 'stepsPerDay', 10_000);
+      },
+    });
+    // Minutes 120 of 150 → 80, steps 6.000 of 10.000 → 60 → activity 70 (the only rated area).
+    await expectScore(70);
+    await userEvent.click(await scoreButton());
+    const sheet = within(await screen.findByRole('dialog', { name: 'Kalethra-Score' }));
+    expect(
+      sheet.getByText(
+        'Schritte außerhalb getrackter Aktivitäten: Ø 6.000 pro Tag (Ziel: 10.000) · Ziel an 0 von 2 Tagen erreicht.',
+      ),
+    ).toBeInTheDocument();
+    expect(
+      sheet.getByText('Aktive Minuten und Schritte zählen je zur Hälfte.'),
+    ).toBeInTheDocument();
+    // Still four areas with the weights of the main goal – no "Schritte" area.
+    expect(sheet.getByText('Aktivitäten 25 %')).toBeInTheDocument();
+    expect(sheet.queryByText(/^Schritte \d+ %$/)).not.toBeInTheDocument();
   });
 
   it('links to the place where recovery is entered', async () => {

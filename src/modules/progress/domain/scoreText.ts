@@ -79,21 +79,43 @@ export function areaExplanation(
       return lines;
     }
     case 'activity': {
-      const { score, detail } = areas.activity;
+      const { detail } = areas.activity;
+      const lines: string[] = [];
       if (detail.target === null || detail.expectedMinutes === null) {
-        return [t('progress.score.detail.activity.noTarget', { minutes: detail.minutes })];
+        lines.push(t('progress.score.detail.activity.noTarget', { minutes: detail.minutes }));
+      } else if (detail.minutes === 0) {
+        lines.push(t('progress.score.detail.activity.none'));
+      } else {
+        lines.push(
+          t('progress.score.detail.activity.progress', {
+            minutes: detail.minutes,
+            expected: detail.expectedMinutes,
+            target: detail.target,
+            days: detail.activeDays,
+          }),
+        );
+        if (detail.minutesScore === 100 && detail.minutes > detail.expectedMinutes) {
+          lines.push(t('progress.score.detail.activity.capped'));
+        }
       }
-      if (detail.minutes === 0) return [t('progress.score.detail.activity.none')];
-      const lines = [
-        t('progress.score.detail.activity.progress', {
-          minutes: detail.minutes,
-          expected: detail.expectedMinutes,
-          target: detail.target,
-          days: detail.activeDays,
-        }),
-      ];
-      if (score === 100 && detail.minutes > detail.expectedMinutes) {
-        lines.push(t('progress.score.detail.activity.capped'));
+      // Steps are a second signal inside this area – mentioned only when a step goal exists.
+      const steps = detail.steps;
+      if (steps.target !== null && steps.avgSteps !== null) {
+        lines.push(
+          t('progress.score.detail.activity.steps', {
+            steps: number.format(steps.avgSteps),
+            goal: number.format(steps.target),
+            reached: steps.reachedDays,
+            total: steps.ratedDays,
+          }),
+        );
+        if (detail.minutesScore !== null) {
+          lines.push(t('progress.score.detail.activity.combined'));
+        }
+      } else if (steps.target !== null) {
+        lines.push(
+          t('progress.score.detail.activity.stepsNone', { goal: number.format(steps.target) }),
+        );
       }
       return lines;
     }

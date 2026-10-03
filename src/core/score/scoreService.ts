@@ -34,6 +34,15 @@ export interface ScoreSources {
     from: string,
     to: string,
   ): Promise<{ localDate: string; minutes: number }[]>;
+  /**
+   * Steps per day outside tracked activities (Health Connect, `countableStepsPerDay`); days
+   * without step data are missing. An additional signal of the activity area.
+   */
+  stepsPerDay(
+    profileId: string,
+    from: string,
+    to: string,
+  ): Promise<{ localDate: string; steps: number }[]>;
   recovery(profileId: string, from: string, to: string): Promise<ScoreRecoveryDay[]>;
   /** Versioned weekly targets (TargetService); each day is judged by its own version. */
   targets(profileId: string): Promise<TargetHistory>;
@@ -64,12 +73,13 @@ export class ScoreService {
     const to = dates.at(-1);
     if (!from || !to) throw new Error('A score needs at least one day');
     const s = this.sources;
-    const [goal, totals, goals, workouts, minutes, recovery, targets] = await Promise.all([
+    const [goal, totals, goals, workouts, minutes, steps, recovery, targets] = await Promise.all([
       s.goalTypeOn(profileId, to),
       s.nutritionTotals(profileId, from, to),
       s.nutritionGoals(profileId, dates),
       s.workoutsPerDay(profileId, from, to),
       s.activityMinutesPerDay(profileId, from, to),
+      s.stepsPerDay(profileId, from, to),
       s.recovery(profileId, from, to),
       s.targets(profileId),
     ]);
@@ -79,11 +89,12 @@ export class ScoreService {
       today: options.today,
       nutrition: { totals, goals },
       training: { workoutsPerDay: workouts },
-      activity: { minutesPerDay: minutes },
+      activity: { minutesPerDay: minutes, stepsPerDay: steps },
       recovery,
       targets: {
         trainingsPerWeek: (date) => targetOn(targets.trainingsPerWeek, date),
         activeMinutesPerWeek: (date) => targetOn(targets.activeMinutesPerWeek, date),
+        stepsPerDay: (date) => targetOn(targets.stepsPerDay, date),
       },
     });
   }

@@ -131,7 +131,10 @@ Die Wortwahl der Kalorienzeile richtet sich nach dem Hauptziel am letzten Tag de
 - **Score unverändert:** keine neuen Bereiche, keine neue Gewichtung, keine geänderte Formel.
   Beide nutzen dieselben Basisdaten und dieselbe Soll-Berechnung, deshalb stimmen „3 von 4“ auf
   der Karte und „3 von 4 geplanten Einheiten“ in der Score-Erklärung immer überein.
-- **Schritte sind nicht Teil des Scores.**
+- **Schritte im Score:** seit dem Phase-14-Nachtrag ein zweites Signal **innerhalb** von
+  „Aktivitäten“ (Schritte außerhalb getrackter Aktivitäten, kein eigener Bereich, Gewicht
+  unverändert, [SCORE.md](SCORE.md#aktivitäten)). Die Schrittkarte zeigt weiter die
+  tatsächlichen Schritte.
 - **Gewicht hat keine Zielgewichtsberechnung**; das Wunschgewicht aus dem Ernährungsprofil wird
   hier nicht verwendet. Die drei Gewichtsregeln bleiben getrennt (`weightRules.ts`).
 - **Keine Wertung:** keine Medaillen, Streaks, Vergleiche oder Wörter wie „gut/schlecht“; der

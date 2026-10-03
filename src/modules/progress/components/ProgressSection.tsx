@@ -453,7 +453,8 @@ function ActivityProgress({ data, range, day }: CardProps) {
 }
 
 /**
- * Steps from Health Connect against the daily step goal (not part of the score). A day without
+ * Steps from Health Connect against the daily step goal – the real steps (the score uses them
+ * inside "Aktivitäten", outside tracked activities). A day without
  * step data is neither 0 steps nor a missed goal – averages cover the days with data only.
  */
 function StepsProgress({ data, range, period }: Omit<CardProps, 'day'>) {

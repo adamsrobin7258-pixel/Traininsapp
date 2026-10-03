@@ -309,6 +309,9 @@ Keine neuen Funktionen. Gefunden und behoben:
   (`weeklyExpectation`) und Schwellen (`goalAttainment.ts`) mit dem Score; Score unverändert
 - Fehlende Daten bleiben neutral, historische Zielversionen werden je Tag verwendet
 - Keine Migration; Details: [PROGRESS.md](PROGRESS.md#zielerreichung-phase-14)
+- Nachtrag: Schritte außerhalb getrackter Aktivitäten als zweites Signal im Score-Bereich
+  „Aktivitäten“ (Mittelwert mit den aktiven Minuten, Gewichtung unverändert); Tendenz neutral
+  „Gestiegen“ / „Gesunken“ / „Ungefähr gleich“
 
 ## Phase 6.4 – geplant
 

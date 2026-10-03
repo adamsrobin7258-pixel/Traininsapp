@@ -9,7 +9,7 @@
  */
 import type { NutritionDayGoal, NutritionDayTotals } from '@/core/nutrition';
 import type { RecoveryState } from '@/core/recovery';
-import { weeklyExpectation as expectation, type TargetValue } from '@/core/targets';
+import { targetValueOn, weeklyExpectation as expectation, type TargetValue } from '@/core/targets';
 import {
   DEFAULT_SCORE_GOAL,
   NUTRITION,
@@ -43,14 +43,26 @@ export interface ScoreInput {
   nutrition: { totals: readonly NutritionDayTotals[]; goals: readonly NutritionDayGoal[] };
   /** Completed Kalethra workouts per day; Health Connect and manual activities never count. */
   training: { workoutsPerDay: readonly { localDate: string; workouts: number }[] };
-  /** Countable activity minutes per day (both sources, duplicates once, no Kalethra workouts). */
-  activity: { minutesPerDay: readonly { localDate: string; minutes: number }[] };
+  activity: {
+    /** Countable activity minutes per day (both sources, duplicates once, no Kalethra workouts). */
+    minutesPerDay: readonly { localDate: string; minutes: number }[];
+    /**
+     * Steps per day outside tracked activities (`countableStepsPerDay`, Health Connect only);
+     * a day without step data is missing here, never 0.
+     */
+    stepsPerDay?: readonly { localDate: string; steps: number }[];
+  };
   recovery: readonly ScoreRecoveryDay[];
   /**
    * Weekly targets – one value for the whole period, or the value in force on each day
    * (versioned targets: a past day keeps the target that applied then).
    */
-  targets: { trainingsPerWeek: TargetValue; activeMinutesPerWeek: TargetValue };
+  targets: {
+    trainingsPerWeek: TargetValue;
+    activeMinutesPerWeek: TargetValue;
+    /** Daily step goal – an additional signal inside the activity area, no area of its own. */
+    stepsPerDay?: TargetValue;
+  };
 }
 
 export interface NutritionDetail {
@@ -75,6 +87,22 @@ export interface ActivityDetail {
   minutes: number;
   expectedMinutes: number | null;
   activeDays: number;
+  /** Part score of the active minutes (`null` = not rated). */
+  minutesScore: number | null;
+  /** Steps outside tracked activities against the daily step goal. */
+  steps: StepsDetail;
+}
+
+export interface StepsDetail {
+  /** Step goal on the last day of the period; `null` without one. */
+  target: number | null;
+  /** Average counted steps of the rated days; `null` without a rated day. */
+  avgSteps: number | null;
+  /** Days with a step goal and step data that could be judged (today below the goal is open). */
+  ratedDays: number;
+  reachedDays: number;
+  /** Part score of the steps (`null` = not rated). */
+  score: number | null;
 }
 
 export interface RecoveryDetail {
@@ -231,10 +259,49 @@ export function trainingScore(input: ScoreInput): AreaScores['training'] {
 }
 
 /**
- * Activity: active minutes (manual and Health Connect, a duplicate once, sessions that are a
- * Kalethra workout not again) against the weekly target, pro rata, capped at 100 – more activity
- * than the target gives no extra points. Without a target, or without any activity data in the
- * period (not tracked is not the same as not active), the area is neutral.
+ * Steps outside tracked activities against the daily step goal: per day the share of the goal,
+ * capped at 100 – the mean of the rated days. Days without a goal or without step data are not
+ * rated (never 0 steps). Today is still running: below the goal is not judged yet, reaching it
+ * is (the same rule as calories and protein).
+ */
+export function stepsPart(input: ScoreInput): StepsDetail {
+  const target = input.targets.stepsPerDay ?? null;
+  const steps = new Map(
+    (input.activity.stepsPerDay ?? []).map((day) => [day.localDate, day.steps]),
+  );
+  const dayScores: number[] = [];
+  const counted: number[] = [];
+  let reachedDays = 0;
+  for (const date of input.dates) {
+    const goal = targetValueOn(target, date);
+    const value = steps.get(date);
+    if (goal === null || value === undefined) continue;
+    const ratio = value / goal;
+    if (date === input.today && ratio < 1) continue;
+    dayScores.push(Math.min(1, ratio) * 100);
+    counted.push(value);
+    if (ratio >= 1) reachedDays++;
+  }
+  const score = mean(dayScores);
+  const avgSteps = mean(counted);
+  const last = input.dates.at(-1);
+  return {
+    target: last === undefined ? null : targetValueOn(target, last),
+    avgSteps: avgSteps === null ? null : Math.round(avgSteps),
+    ratedDays: dayScores.length,
+    reachedDays,
+    score: score === null ? null : round(score),
+  };
+}
+
+/**
+ * Activity: two signals inside the one activity area (its weight is unchanged):
+ * - active minutes (manual and Health Connect, a duplicate once, sessions that are a Kalethra
+ *   workout not again) against the weekly target, pro rata, capped at 100 – more activity than
+ *   the target gives no extra points. Without a target, or without any activity data in the
+ *   period (not tracked is not the same as not active), this signal is not rated;
+ * - steps outside tracked activities against the daily step goal (`stepsPart`).
+ * Both rated → their mean; one rated → that one; none → the area is neutral.
  */
 export function activityScore(input: ScoreInput): AreaScores['activity'] {
   const active = (include: (date: string) => boolean) => {
@@ -246,22 +313,35 @@ export function activityScore(input: ScoreInput): AreaScores['activity'] {
       activeDays: perDay.length,
     };
   };
+  const steps = stepsPart(input);
+  const combine = (minutesScore: number | null) => {
+    const parts = [minutesScore, steps.score].flatMap((part) => (part === null ? [] : [part]));
+    const value = mean(parts);
+    return value === null ? null : round(value);
+  };
   const plan = expectation(input.targets.activeMinutesPerWeek, input.dates);
   if (plan.latest === null) {
     const all = active((date) => input.dates.includes(date));
-    return { score: null, detail: { target: null, ...all, expectedMinutes: null } };
+    return {
+      score: combine(null),
+      detail: { target: null, ...all, expectedMinutes: null, minutesScore: null, steps },
+    };
   }
   // Only days with a target count – with one target for the whole period that is every day.
   const { minutes, activeDays } = active((date) => plan.days.has(date));
   const expected = plan.expected;
-  const detail = {
-    target: plan.latest,
-    minutes,
-    expectedMinutes: Math.round(expected),
-    activeDays,
+  const minutesScore = minutes === 0 ? null : round((Math.min(minutes, expected) / expected) * 100);
+  return {
+    score: combine(minutesScore),
+    detail: {
+      target: plan.latest,
+      minutes,
+      expectedMinutes: Math.round(expected),
+      activeDays,
+      minutesScore,
+      steps,
+    },
   };
-  if (minutes === 0) return { score: null, detail };
-  return { score: round((Math.min(minutes, expected) / expected) * 100), detail };
 }
 
 /**

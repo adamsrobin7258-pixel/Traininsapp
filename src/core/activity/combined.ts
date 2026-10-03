@@ -197,6 +197,46 @@ export function summarizeAllActivities(
   );
 }
 
+/** One activity that counts (either source), with its time span when one is known. */
+export interface CountableActivity {
+  localDate: string;
+  durationS: number;
+  /** Start and end – `null` for a manual activity without a start time (no reliable time). */
+  span: OwnWorkoutSpan | null;
+}
+
+/**
+ * Every activity of both sources that counts – the one eligibility used for the score's active
+ * minutes and for the steps outside tracked activities: an imported session unless it is a
+ * Kalethra workout, a manual one unless it duplicates an import or is a Kalethra workout.
+ */
+export function countableActivities(
+  imported: readonly ExternalWorkout[],
+  manual: readonly ManualActivity[],
+  own: readonly OwnWorkoutSpan[],
+): CountableActivity[] {
+  const result: CountableActivity[] = [];
+  for (const activity of imported) {
+    if (importedExclusion(activity, own) === null) {
+      result.push({
+        localDate: activity.localDate,
+        durationS: activity.durationS,
+        span: { startedAt: activity.startedAt, endedAt: activity.endedAt },
+      });
+    }
+  }
+  for (const activity of manual) {
+    if (manualExclusion(activity, imported, own) === null) {
+      result.push({
+        localDate: activity.localDate,
+        durationS: activity.durationS,
+        span: manualSpan(activity),
+      });
+    }
+  }
+  return result;
+}
+
 /**
  * Active minutes per local day that count for the Kalethra score: both sources, a manual
  * duplicate of an import once, and no session that is the same as a completed Kalethra workout
@@ -208,18 +248,88 @@ export function countableActivityMinutes(
   own: readonly OwnWorkoutSpan[],
 ): { localDate: string; minutes: number }[] {
   const minutes = new Map<string, number>();
-  const add = (localDate: string, durationS: number) => {
-    minutes.set(localDate, (minutes.get(localDate) ?? 0) + durationS / 60);
-  };
-  for (const activity of imported) {
-    if (importedExclusion(activity, own) === null) add(activity.localDate, activity.durationS);
-  }
-  for (const activity of manual) {
-    if (manualExclusion(activity, imported, own) === null) {
-      add(activity.localDate, activity.durationS);
-    }
+  for (const activity of countableActivities(imported, manual, own)) {
+    minutes.set(
+      activity.localDate,
+      (minutes.get(activity.localDate) ?? 0) + activity.durationS / 60,
+    );
   }
   return [...minutes]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([localDate, value]) => ({ localDate, minutes: Math.round(value) }));
+}
+
+/** A time interval in epoch milliseconds, `start` < `end`. */
+export interface TimeInterval {
+  start: number;
+  end: number;
+}
+
+/**
+ * Overlapping (or touching) intervals become one: 10:00–10:45 and 10:30–11:15 → 10:00–11:15, so
+ * no time is excluded twice. Spans without a valid start and end are dropped – no time is made up.
+ */
+export function mergeIntervals(spans: readonly OwnWorkoutSpan[]): TimeInterval[] {
+  const intervals = spans
+    .map((span) => ({ start: Date.parse(span.startedAt), end: Date.parse(span.endedAt) }))
+    .filter((i) => Number.isFinite(i.start) && Number.isFinite(i.end) && i.end > i.start)
+    .sort((a, b) => a.start - b.start);
+  const merged: TimeInterval[] = [];
+  for (const interval of intervals) {
+    const last = merged.at(-1);
+    if (last && interval.start <= last.end) last.end = Math.max(last.end, interval.end);
+    else merged.push({ ...interval });
+  }
+  return merged;
+}
+
+/** Steps recorded over a known time span (e.g. one Health Connect bucket). */
+export interface StepRecord {
+  localDate: string;
+  steps: number;
+  startedAt: string;
+  endedAt: string;
+}
+
+export interface CountableStepDay {
+  localDate: string;
+  /** Steps outside tracked activities (everyday movement). */
+  steps: number;
+  /** Steps of records that lie within a tracked activity – those count through the activity. */
+  excludedSteps: number;
+}
+
+/**
+ * Steps per day that count as everyday movement for the score's activity area: a step record is
+ * left out only when it lies completely within a countable activity (overlapping activities
+ * merged first). Records that only partly overlap stay – how steps spread within a record is
+ * unknown, nothing is estimated. A record covering the whole day (Health Connect today delivers
+ * daily totals) therefore always counts in full; activities without a known time exclude
+ * nothing. Days without a record are missing (not in the result), never 0 steps.
+ */
+export function countableStepsPerDay(
+  records: readonly StepRecord[],
+  activities: readonly CountableActivity[],
+): CountableStepDay[] {
+  const tracked = mergeIntervals(
+    activities.flatMap((activity) => (activity.span ? [activity.span] : [])),
+  );
+  const days = new Map<string, CountableStepDay>();
+  for (const record of records) {
+    const start = Date.parse(record.startedAt);
+    const end = Date.parse(record.endedAt);
+    const inside =
+      Number.isFinite(start) &&
+      Number.isFinite(end) &&
+      tracked.some((interval) => interval.start <= start && end <= interval.end);
+    const day = days.get(record.localDate) ?? {
+      localDate: record.localDate,
+      steps: 0,
+      excludedSteps: 0,
+    };
+    if (inside) day.excludedSteps += record.steps;
+    else day.steps += record.steps;
+    days.set(record.localDate, day);
+  }
+  return [...days.values()].sort((a, b) => a.localDate.localeCompare(b.localDate));
 }

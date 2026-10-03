@@ -84,7 +84,11 @@ Ziel). Seit Phase 10 versioniert: Jeder Tag zählt mit dem Ziel, das an ihm galt
 
 ### Aktivitäten
 
-Wochenziel **„Aktive Minuten pro Woche“** (Einstellungen → Ziele → Aktivitäten, 60–300, Standard:
+Seit dem Phase-14-Nachtrag bewertet der Bereich **zwei Signale**: aktive Minuten und Schritte
+außerhalb getrackter Aktivitäten. Schritte sind **kein eigener Bereich**; das Gewicht von
+„Aktivitäten“ (z. B. 20 % bei Abnehmen) ist unverändert.
+
+**Signal 1 – aktive Minuten.** Wochenziel **„Aktive Minuten pro Woche“** (Einstellungen → Ziele → Aktivitäten, 60–300, Standard:
 kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie das Trainingsziel.
 
 - Minuten aus manuellen und Health-Connect-Aktivitäten mit den bestehenden Regeln aus Phase 8:
@@ -97,6 +101,34 @@ kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie 
   der Ernährung, wie in der App überall. Seit Phase 12 ist sie versioniert: Der Ernährungsteil
   bewertet jeden Tag mit der Einstellung, die an diesem Tag galt; Umschalten ändert keinen
   vergangenen Score-Tag (`ScoreOptions` enthält nur noch `today`).
+- Heute wird – unverändert seit Phase 9 – mit dem Tagesanteil des Wochenziels verglichen.
+
+**Signal 2 – Schritte (Alltagsbewegung).** Schrittziel pro Tag (Einstellungen → Ziele →
+Gesundheit, versioniert, keine neue Einstellung). Schritte kommen nur aus Health Connect.
+
+- Je Tag mit Schrittziel **und** Schrittdaten: anrechenbare Schritte ÷ Tagesziel, gedeckelt bei
+  100; Zeitraum = Mittelwert dieser Tage. Tage ohne Ziel oder ohne Daten sind neutral (nie 0
+  Schritte).
+- **Heute** läuft noch (dieselbe Regel wie bei Kalorien und Protein): unter dem Ziel wird heute
+  nicht bewertet, erreicht = 100. 2.000 von 10.000 um 10 Uhr sind kein schlechter Tag.
+- **Doppelzählung:** Schritte innerhalb getrackter Aktivitäten zählen über die Aktivität, nicht
+  noch einmal als Alltagsbewegung (`countableStepsPerDay`, `core/activity/combined.ts`). Grundlage
+  sind genau die anrechenbaren Aktivitäten der aktiven Minuten (`countableActivities` – eine
+  Eligibility für beides). Überlappende Aktivitäten werden zu einem Intervall zusammengeführt
+  (10:00–10:45 und 10:30–11:15 → 10:00–11:15, `mergeIntervals`). Ein Schritt-Datensatz fällt nur
+  heraus, wenn er **vollständig** in einem solchen Intervall liegt; teilweise Überlappung bleibt
+  (wie sich Schritte darin verteilen, ist unbekannt – es wird nichts geschätzt).
+- **Datenqualität (Stand jetzt):** Health Connect wird in Tages-Buckets gelesen
+  (`queryAggregated`, `bucket: 'day'`); gespeichert ist eine Tagessumme ohne Uhrzeit
+  (`daily_activity.steps`). Importierte Einheiten tragen keine eigenen Schritte. Eine Tagessumme
+  liegt nie vollständig in einer Aktivität – sie bleibt daher **voll anrechenbar**; es wird nie
+  der ganze Tag oder ein geschätzter Anteil abgezogen. Aktivitäten ohne Uhrzeit (manuell ohne
+  Startzeit) schließen ebenfalls nichts aus. Die Ausschlusslogik greift automatisch, sobald
+  feinere Schritt-Intervalle vorliegen (siehe Grenzen).
+
+**Kombination.** Beide Signale bewertet → Mittelwert (Minuten 80, Schritte 60 → 70, keine
+Summe); nur eines → nur dieses; keines → Bereich neutral. Ohne Schrittziel oder Schrittdaten ist
+das Ergebnis exakt wie vor dem Nachtrag.
 
 ### Regeneration
 
@@ -133,7 +165,9 @@ Tendenz = Score des Zeitraums gegen den unmittelbar vorhergehenden gleich langen
 (`previousPeriodRange`: gestern / die 7 Tage davor / die 30 Tage davor):
 
 - |Differenz| < **3 Punkte** → „Ungefähr gleich“ (keine hektischen Richtungswechsel),
-- sonst „Verbessert“ / „Verschlechtert“ mit Punktzahl,
+- sonst „Gestiegen“ / „Gesunken“ mit Punktzahl (seit dem Phase-14-Nachtrag neutral formuliert,
+  vorher „Verbessert“ / „Verschlechtert“; Berechnung unverändert; Englisch „Increased“ /
+  „Decreased“ / „About the same“),
 - „Noch keine ausreichenden Vergleichsdaten“, wenn der Vorzeitraum keinen Score hat oder weniger
   dokumentierte Tage als ein nicht vorläufiger Score bräuchte.
 
@@ -154,17 +188,24 @@ Luft nach oben“. Keine Ampelfarben, keine Wertung der Person.
   SQLite `CHECK`-Bedingungen nicht ändern kann; alle Zeilen werden unverändert kopiert).
 - Wochenziele in `goal_targets` (Migration 14, versioniert mit `effective_from`, `NULL` = kein
   Ziel); bis Phase 9 unversioniert in `app_settings`, bei der Migration ab `1970-01-01` übernommen.
-  Das Schrittziel liegt in derselben Tabelle, fließt aber **nicht** in den Score ein
+  Das Schrittziel liegt in derselben Tabelle und fließt seit dem Phase-14-Nachtrag als zweites
+  Signal in den Bereich **Aktivitäten** ein (kein eigener Bereich)
   ([SETTINGS.md](SETTINGS.md)).
 
 ## Fortschrittskarten (Phase 14)
 
 Die Karten auf „Fortschritt“ zeigen Ist gegen Ziel ([PROGRESS.md](PROGRESS.md#zielerreichung-phase-14))
 mit denselben Quellen, derselben Soll-Berechnung und denselben Schwellen wie der Score. Der Score
-selbst ist dadurch **nicht** verändert: keine neuen Bereiche, keine neue Gewichtung, Schritte
-bleiben draußen.
+selbst ist dadurch **nicht** verändert: keine neuen Bereiche, keine neue Gewichtung. (Die Karte
+zeigt die tatsächlichen Schritte; der Score nutzt seit dem Nachtrag die Schritte außerhalb
+getrackter Aktivitäten innerhalb von „Aktivitäten“.)
 
 ## Grenzen
+
+- Schritte gibt es nur als Tagessumme: Die Herausnahme von Schritten innerhalb getrackter
+  Aktivitäten wirkt erst mit feineren Daten (Health Connect könnte stündliche Buckets liefern;
+  das bräuchte eine Import- und Schemaänderung und ist nicht umgesetzt).
+- Schritte zählen nicht als „eigener Eintrag“ für die Vorläufig-Regel (importiert, wie bisher).
 
 - Regeneration nur für heute eintragbar (kein Nachtragen vergangener Tage in dieser Phase).
 - Kein Schlaf, keine HRV, keine Wearable-Recovery-Werte (Health Connect später möglich).

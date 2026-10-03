@@ -270,7 +270,7 @@ describe('C · activity goal', () => {
 });
 
 describe('D · step goal', () => {
-  it('rates steps from Health Connect against each day’s goal and never changes the score', async () => {
+  it('rates steps from Health Connect against each day’s goal – inside the activity area only', async () => {
     const s = await setup();
     const { services, profileId, platform } = s;
     await fixedGoal(s);
@@ -296,7 +296,21 @@ describe('D · step goal', () => {
     expect(summary.today).toEqual({ steps: 4000, goal: 8000, ratio: 0.5 });
 
     const after = await services.score.calculate(profileId, WEEK, options);
-    expect(after).toEqual(before);
+    // Since the Phase 14 follow-up, steps are a signal inside "Aktivitäten" (no area of its own):
+    // 1 Oct 100, 2 Oct 6.500 / 8.000 → 81,25; today (4.000 < 8.000) still open → (100 + 81,25) / 2.
+    expect(before.areas.activity.score).toBeNull();
+    expect(after.areas.activity.score).toBe(91);
+    expect(after.areas.activity.detail.steps).toMatchObject({
+      target: 8000,
+      ratedDays: 2,
+      reachedDays: 1,
+    });
+    // Everything else stays exactly as it was – same areas, same weights.
+    expect(after.areas.nutrition).toEqual(before.areas.nutrition);
+    expect(after.areas.training).toEqual(before.areas.training);
+    expect(after.areas.recovery).toEqual(before.areas.recovery);
+    expect(after.weights).toEqual(before.weights);
+    expect(Object.keys(after.areas)).toEqual(['nutrition', 'training', 'activity', 'recovery']);
   });
 });
 

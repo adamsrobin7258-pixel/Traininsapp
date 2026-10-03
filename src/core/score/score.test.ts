@@ -297,7 +297,15 @@ describe('activity', () => {
     );
     expect(result).toEqual({
       score: 50,
-      detail: { target: 150, minutes: 75, expectedMinutes: 150, activeDays: 2 },
+      detail: {
+        target: 150,
+        minutes: 75,
+        expectedMinutes: 150,
+        activeDays: 2,
+        minutesScore: 50,
+        // No step goal: the steps signal is not rated and changes nothing.
+        steps: { target: null, avgSteps: null, ratedDays: 0, reachedDays: 0, score: null },
+      },
     });
   });
 
@@ -543,5 +551,148 @@ describe('trend', () => {
     expect(scoreTrend({ score: null }, previous(70), 7).trend).toBe('none');
     expect(scoreTrend({ score: 80 }, previous(70, 3), 7).trend).toBe('none');
     expect(scoreTrend({ score: 80 }, previous(70, 1), 1).trend).toBe('up');
+  });
+});
+
+describe('activity area with steps (Phase 14 follow-up)', () => {
+  const activity = (
+    minutes: [string, number][],
+    steps: [string, number][],
+  ): ScoreInput['activity'] => ({
+    minutesPerDay: minutes.map(([localDate, value]) => ({ localDate, minutes: value })),
+    stepsPerDay: steps.map(([localDate, value]) => ({ localDate, steps: value })),
+  });
+  const targets = (activeMinutesPerWeek: number | null, stepsPerDay: number | null) => ({
+    trainingsPerWeek: null,
+    activeMinutesPerWeek,
+    stepsPerDay,
+  });
+
+  it('G: only steps → the activity area is rated by the steps', () => {
+    const result = activityScore(
+      input({
+        activity: activity(
+          [],
+          [
+            ['2026-09-30', 10_000],
+            ['2026-10-01', 6_000],
+          ],
+        ),
+        targets: targets(150, 10_000),
+      }),
+    );
+    // (100 + 60) / 2; active minutes have no data → not rated, not 0.
+    expect(result.score).toBe(80);
+    expect(result.detail.minutesScore).toBeNull();
+    expect(result.detail.steps).toEqual({
+      target: 10_000,
+      avgSteps: 8000,
+      ratedDays: 2,
+      reachedDays: 1,
+      score: 80,
+    });
+  });
+
+  it('H: only active minutes → exactly the previous behaviour', () => {
+    const withoutSteps = activityScore(
+      input({ activity: activity([['2026-09-29', 75]], []), targets: targets(150, 10_000) }),
+    );
+    const before = activityScore(
+      input({
+        activity: { minutesPerDay: [{ localDate: '2026-09-29', minutes: 75 }] },
+        targets: { trainingsPerWeek: null, activeMinutesPerWeek: 150 },
+      }),
+    );
+    expect(withoutSteps.score).toBe(50);
+    expect(before.score).toBe(50);
+  });
+
+  it('I: both → the mean of active minutes and steps, not their sum', () => {
+    // Minutes: 120 of 150 → 80; steps: 6.000 of 10.000 → 60 → 70.
+    const result = activityScore(
+      input({
+        activity: activity([['2026-09-29', 120]], [['2026-09-29', 6_000]]),
+        targets: targets(150, 10_000),
+      }),
+    );
+    expect(result.detail.minutesScore).toBe(80);
+    expect(result.detail.steps.score).toBe(60);
+    expect(result.score).toBe(70);
+  });
+
+  it('E: no step data → the steps part is neutral, never 0', () => {
+    const result = activityScore(
+      input({ activity: activity([['2026-09-29', 120]], []), targets: targets(150, 10_000) }),
+    );
+    expect(result.detail.steps).toMatchObject({ ratedDays: 0, score: null, avgSteps: null });
+    expect(result.score).toBe(80);
+  });
+
+  it('F: neither activity nor step data → the area stays neutral', () => {
+    expect(
+      activityScore(input({ activity: activity([], []), targets: targets(150, 10_000) })).score,
+    ).toBeNull();
+  });
+
+  it('days without a step goal are neutral; each day uses its own goal version', () => {
+    const goal = (date: string) =>
+      date < '2026-10-01' ? null : date < '2026-10-02' ? 5000 : 10_000;
+    const result = activityScore(
+      input({
+        activity: activity(
+          [],
+          [
+            ['2026-09-29', 1_000], // no goal yet → not rated
+            ['2026-10-01', 5_000], // 5.000 of 5.000 → 100
+            ['2026-10-02', 5_000], // 5.000 of 10.000 → 50
+          ],
+        ),
+        targets: { trainingsPerWeek: null, activeMinutesPerWeek: null, stepsPerDay: goal },
+      }),
+    );
+    expect(result.detail.steps).toMatchObject({ ratedDays: 2, reachedDays: 1, target: 10_000 });
+    expect(result.score).toBe(75);
+  });
+
+  it('today is still running: below the step goal is not judged, reaching it is', () => {
+    const today = (steps: number) =>
+      activityScore(
+        input({
+          dates: [TODAY],
+          activity: activity([], [[TODAY, steps]]),
+          targets: targets(null, 10_000),
+        }),
+      );
+    // 2.000 of 10.000 at 10:00 is no bad day.
+    expect(today(2_000).score).toBeNull();
+    expect(today(2_000).detail.steps.ratedDays).toBe(0);
+    expect(today(12_000).score).toBe(100);
+  });
+
+  it('more steps than the goal give no bonus (capped at 100)', () => {
+    expect(
+      activityScore(
+        input({ activity: activity([], [['2026-10-01', 40_000]]), targets: targets(null, 10_000) }),
+      ).score,
+    ).toBe(100);
+  });
+
+  it('steps are no area of their own: same four areas, same weights, 0–100', () => {
+    const result = calculateScore(
+      input({
+        goal: 'lose',
+        nutrition: eating([['2026-10-01', 2300, 160]]),
+        activity: activity([], [['2026-10-01', 5_000]]),
+        targets: targets(null, 10_000),
+      }),
+    );
+    expect(SCORE_AREAS).toEqual(['nutrition', 'training', 'activity', 'recovery']);
+    expect(Object.keys(result.areas)).toEqual([...SCORE_AREAS]);
+    expect(result.weights).toEqual(SCORE_WEIGHTS.lose);
+    expect(result.weights.activity).toBe(0.2);
+    // Nutrition 100 (weight .45) and activity 50 (weight .2): (45 + 10) / .65 = 84.6 → 85.
+    expect(result.areas.activity.score).toBe(50);
+    expect(result.score).toBe(85);
+    expect(result.ratedAreas).toBe(2);
   });
 });

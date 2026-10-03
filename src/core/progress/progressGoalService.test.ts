@@ -302,14 +302,17 @@ describe('progress goals from the real data (Phase 14)', () => {
       expect(result.steps.attainment).toBeNull();
     });
 
-    it('stays outside the Kalethra score', async () => {
+    it('counts in the score only inside "Aktivitäten" – no area of its own', async () => {
       const s = await setup();
       s.platform.steps = [{ dayStart: localIso(2026, 10, 3, 0, 0), value: 20_000 }];
       await s.services.healthSync.connect(s.profileId);
       await s.services.targets.set(s.profileId, 'stepsPerDay', 5000);
       const score = await s.score([TODAY]);
-      expect(score.score).toBeNull();
+      expect(score.areas.activity.score).toBe(100);
+      expect(score.ratedAreas).toBe(1);
       expect(Object.keys(score.areas)).toEqual(['nutrition', 'training', 'activity', 'recovery']);
+      // The card keeps showing the real steps (20.000), not a score value.
+      expect((await s.progress([TODAY])).steps.attainment).toMatchObject({ actual: 20_000 });
     });
   });
 

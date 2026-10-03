@@ -52,7 +52,7 @@ export interface ProgressSources {
 export interface ProgressGoals {
   training: { summary: TrainingPeriodSummary; goal: TrainingGoalProgress };
   activity: { summary: ActivityPeriodSummary; goal: ActivityGoalProgress };
-  /** Steps against the step goal – shown on the progress page, never part of the score. */
+  /** Real steps against the step goal (the score's activity area reads countable steps). */
   steps: { summary: StepGoalSummary; attainment: Attainment | null };
   nutrition: NutritionGoalProgress;
   /** Pure development of the weight; there is no target weight. */

@@ -3,7 +3,9 @@ import { getPlatform, httpGetJson } from '@/core/platform';
 import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
 import {
   combineActivities,
+  countableActivities,
   countableActivityMinutes,
+  countableStepsPerDay,
   dayActivityCalories,
   summarizeAllActivities,
   ManualActivityService,
@@ -14,6 +16,7 @@ import {
   HealthSyncService,
   mergeWeightDays,
   pickActivityWeight,
+  stepDaySpan,
   WeightRepository,
   WeightService,
 } from '@/core/health';
@@ -214,6 +217,24 @@ export function createServices(
   // The score reads the existing services; it has no data of its own.
   const score = new ScoreService({
     ...shared,
+    // Steps outside tracked activities: the same countable activities as the active minutes.
+    // Health Connect delivers daily totals, so each record spans its whole local day.
+    stepsPerDay: async (profileId, from, to) => {
+      const [days, sources] = await Promise.all([
+        healthSync.activityBetween(profileId, from, to),
+        activitySourcesBetween(profileId, from, to),
+      ]);
+      const records = days.flatMap((day) => {
+        const span = stepDaySpan(day.date);
+        return day.steps === null || !span
+          ? []
+          : [{ localDate: day.date, steps: day.steps, ...span }];
+      });
+      return countableStepsPerDay(
+        records,
+        sources ? countableActivities(sources.imported, sources.manual, sources.own) : [],
+      ).map((day) => ({ localDate: day.localDate, steps: day.steps }));
+    },
     goalTypeOn: async (profileId, localDate) =>
       (await nutrition.goals.goalFor(profileId, localDate))?.goal.goalType ?? null,
     recovery: async (profileId, from, to) =>
