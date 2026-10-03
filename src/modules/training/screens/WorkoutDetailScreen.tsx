@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import { useLocation, useNavigate, useParams } from 'react-router';
 import { ROUTES } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
@@ -17,6 +17,7 @@ import { formatLongDate } from '@/shared/lib/format';
 import { ConfirmSheet, Button, List, ListRow, Screen, Section, Stat } from '@/ui';
 import { WorkoutDetailsSheet } from '../components/WorkoutDetailsSheet';
 import { WorkoutEditor } from '../components/WorkoutEditor';
+import { WorkoutSummarySheet } from '../components/WorkoutSummarySheet';
 import { formatDuration, formatLoad, formatSetShort, trainingTypeLabel } from '../domain/format';
 import styles from './WorkoutScreens.module.css';
 
@@ -27,6 +28,11 @@ export function WorkoutDetailScreen() {
   const { weightUnit: unit } = useSettings().settings;
   const { mutate } = useTraining();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Right after finishing, the summary opens once (state set by the finish action).
+  const [summary, setSummary] = useState(
+    () => (location.state as { summary?: boolean } | null)?.summary === true,
+  );
   const [editing, setEditing] = useState(false);
   const [dialog, setDialog] = useState<'delete' | 'details' | null>(null);
   const detail = useTrainingData(
@@ -130,7 +136,7 @@ export function WorkoutDetailScreen() {
           <WorkoutEditor workout={workout} />
           <List>
             <ListRow
-              title={t('training.workout.details')}
+              title={t('training.workout.detailsFinished')}
               onPress={() => {
                 setDialog('details');
               }}
@@ -195,6 +201,24 @@ export function WorkoutDetailScreen() {
           }}
           onClose={() => {
             setDialog(null);
+          }}
+        />
+      ) : null}
+      {summary ? (
+        <WorkoutSummarySheet
+          workout={workout}
+          onClose={() => {
+            // Like system back: the finish replaced the workout page, so the entry before is
+            // Training. Without one (opened directly) Training replaces this page.
+            void navigate(location.pathname, { replace: true, state: null });
+            const index = (window.history.state as { idx?: number } | null)?.idx ?? 0;
+            if (index > 0) void navigate(-1);
+            else void navigate(ROUTES.training, { replace: true });
+          }}
+          onView={() => {
+            setSummary(false);
+            // A reload or back to this page does not show the summary again.
+            void navigate(location.pathname, { replace: true, state: null });
           }}
         />
       ) : null}

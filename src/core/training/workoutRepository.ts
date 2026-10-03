@@ -490,22 +490,119 @@ export class WorkoutRepository {
     exerciseId: string,
     excludeWorkoutId: string | null,
   ): Promise<LastPerformance | null> {
+    const [last] = await this.recentPerformances(profileId, exerciseId, excludeWorkoutId, 1);
+    return last ?? null;
+  }
+
+  /**
+   * The completed sets of the exercise in its last `limit` completed workouts, newest first –
+   * one entry per workout (its first occurrence of the exercise with a completed set).
+   */
+  async recentPerformances(
+    profileId: string,
+    exerciseId: string,
+    excludeWorkoutId: string | null,
+    limit: number,
+  ): Promise<LastPerformance[]> {
     const workouts = await this.db.query<{ id: string; local_date: string; we_id: string }>(
-      `SELECT w.id, w.local_date, we.id AS we_id FROM workout_exercises we
+      `SELECT w.id, w.local_date, we.id AS we_id, MIN(we.position) AS first_position
+       FROM workout_exercises we
        JOIN workouts w ON w.id = we.workout_id
        WHERE we.exercise_id = ? AND w.profile_id = ? AND w.status = 'completed'
          AND (? IS NULL OR w.id <> ?)
          AND EXISTS (SELECT 1 FROM workout_sets s WHERE s.workout_exercise_id = we.id AND s.completed = 1)
-       ORDER BY w.started_at DESC, we.position LIMIT 1`,
-      [exerciseId, profileId, excludeWorkoutId, excludeWorkoutId],
+       GROUP BY w.id
+       ORDER BY w.started_at DESC LIMIT ?`,
+      [exerciseId, profileId, excludeWorkoutId, excludeWorkoutId, limit],
     );
-    const hit = workouts[0];
-    if (!hit) return null;
-    const sets = await this.db.query<SetRow>(
-      `SELECT * FROM workout_sets WHERE workout_exercise_id = ? AND completed = 1
-       ORDER BY position`,
-      [hit.we_id],
+    const result: LastPerformance[] = [];
+    for (const hit of workouts) {
+      const sets = await this.db.query<SetRow>(
+        `SELECT * FROM workout_sets WHERE workout_exercise_id = ? AND completed = 1
+         ORDER BY position`,
+        [hit.we_id],
+      );
+      result.push({ workoutId: hit.id, localDate: hit.local_date, sets: sets.map(toSet) });
+    }
+    return result;
+  }
+
+  /**
+   * The heaviest completed working set of the exercise in completed workouts that started
+   * before `startedAt` (the workout itself excluded); `null` without any.
+   */
+  async heaviestWorkingBefore(
+    profileId: string,
+    exerciseId: string,
+    startedAt: string,
+    excludeWorkoutId: string,
+  ): Promise<number | null> {
+    const rows = await this.db.query<{ heaviest: number | null }>(
+      `SELECT MAX(s.weight_kg) AS heaviest FROM workout_sets s
+       JOIN workout_exercises we ON we.id = s.workout_exercise_id
+       JOIN workouts w ON w.id = we.workout_id
+       WHERE we.exercise_id = ? AND w.profile_id = ? AND w.status = 'completed'
+         AND w.id <> ? AND w.started_at < ?
+         AND s.completed = 1 AND s.set_type = 'working'`,
+      [exerciseId, profileId, excludeWorkoutId, startedAt],
     );
-    return { workoutId: hit.id, localDate: hit.local_date, sets: sets.map(toSet) };
+    return rows[0]?.heaviest ?? null;
+  }
+
+  /** Plan and day of every completed workout from a plan, newest first. */
+  async completedPlanDays(profileId: string): Promise<{ planId: string; dayId: string | null }[]> {
+    const rows = await this.db.query<{ plan_id: string; plan_day_id: string | null }>(
+      `SELECT plan_id, plan_day_id FROM workouts
+       WHERE profile_id = ? AND status = 'completed' AND plan_id IS NOT NULL
+       ORDER BY started_at DESC`,
+      [profileId],
+    );
+    return rows.map((row) => ({ planId: row.plan_id, dayId: row.plan_day_id }));
+  }
+
+  /** Points a workout exercise to another exercise (snapshot of name and type). */
+  async updateExerciseSnapshot(
+    exercise: Pick<WorkoutExercise, 'id' | 'exerciseId' | 'nameDe' | 'nameEn' | 'exerciseType'>,
+    now: string,
+  ): Promise<void> {
+    await this.db.run(
+      `UPDATE workout_exercises SET exercise_id = ?, name_de = ?, name_en = ?, exercise_type = ?,
+         updated_at = ? WHERE id = ?`,
+      [
+        exercise.exerciseId,
+        exercise.nameDe,
+        exercise.nameEn,
+        exercise.exerciseType,
+        now,
+        exercise.id,
+      ],
+    );
+  }
+
+  /** Type, chain and position of one set (values unchanged). */
+  async updateSetStructure(
+    id: string,
+    structure: { position: number; setType: string; dropOf: string | null },
+    now: string,
+  ): Promise<void> {
+    await this.db.run(
+      'UPDATE workout_sets SET position = ?, set_type = ?, drop_of = ?, updated_at = ? WHERE id = ?',
+      [structure.position, structure.setType, structure.dropOf, now, id],
+    );
+  }
+
+  async deleteSetsOf(workoutExerciseId: string): Promise<void> {
+    await this.db.run('DELETE FROM workout_sets WHERE workout_exercise_id = ?', [
+      workoutExerciseId,
+    ]);
+  }
+
+  /** End and duration of a completed workout. */
+  async updateTiming(id: string, endedAt: string, durationS: number, now: string): Promise<void> {
+    await this.db.run(
+      `UPDATE workouts SET ended_at = ?, duration_s = ?, updated_at = ?
+       WHERE id = ? AND status = 'completed'`,
+      [endedAt, durationS, now, id],
+    );
   }
 }

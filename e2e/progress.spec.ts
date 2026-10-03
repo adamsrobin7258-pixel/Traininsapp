@@ -150,6 +150,11 @@ test('progress over a day: food, workout, activity calories and period', async (
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).click();
   await page.getByRole('button', { name: 'Training beenden' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Training beenden' }).click();
+  // The summary shows the volume; "Training ansehen" leads to the finished workout.
+  const summary = page.getByRole('dialog', { name: 'Training abgeschlossen' });
+  await expect(summary.getByText('600 kg')).toBeVisible();
+  await summary.getByRole('button', { name: 'Training ansehen' }).click();
+  await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('600 kg')).toBeVisible();
 
   // Fortschritt: the workout and the logged day, by period (week is the default).

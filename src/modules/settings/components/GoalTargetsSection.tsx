@@ -3,6 +3,7 @@ import { useI18n } from '@/core/i18n';
 import { TARGET_OPTIONS, useTargetData, useTargets, type TargetKind } from '@/core/targets';
 import { Icon, List, ListRow, Section, Sheet } from '@/ui';
 import styles from './GoalTargets.module.css';
+import { ProgressionRow } from './TrainingSettingsRows';
 
 /** The targets with a value; the switch "Aktivitätskalorien anrechnen" has its own section. */
 type ValueKind = Exclude<TargetKind, 'activityCalories'>;
@@ -45,6 +46,7 @@ export function GoalTargetsSections() {
                 setOpen(kind);
               }}
             />
+            {group === 'training' ? <ProgressionRow /> : null}
           </List>
         </Section>
       ))}

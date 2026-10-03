@@ -133,6 +133,8 @@ verlinkt nur noch die neuen Adressen.
 | Schrittziel pro Tag                   | Einstellungen → Ziele → Gesundheit         | `goal_targets` (versioniert)                                  |
 | Wasserziel                            | Einstellungen → Ziele (Teil der Ernährung) | `nutrition_goals`                                             |
 | Wasser-Schnellmengen                  | Einstellungen → App                        | `app_settings`                                                |
+| Gewichtssteigerung vorschlagen        | Einstellungen → Ziele → Training           | `app_settings.progressionMode` (Standard „Normal“)            |
+| Pausenzeit                            | Einstellungen → App → Training             | `app_settings.restTimerSeconds` (Standard 90 s, 0 = aus)      |
 
 Die Ernährungslogik (Aktivitätsniveau, Training einbeziehen, automatisch/manuell, Bestätigung,
 Schwellen, Protein-Referenz BMI 27,5, Mifflin-St-Jeor) ist unverändert; nur der Ort der
@@ -221,3 +223,63 @@ Fortschritt bleibt reine Auswertung. Die Links „Ziele anpassen“ im Score-Det
 festlegen“ bzw. die Ziel-Links in Ernährung führen nach Einstellungen → Ziele. Die Score-Formel ist unverändert,
 außer dass Trainings- und Minutenziel je Tag aus der gültigen Version kommen
 ([SCORE.md](SCORE.md)).
+
+## Training (Phase 13)
+
+Beide Einstellungen sind Vorlieben, keine Ziele: Sie bewerten keinen Tag und ändern keine
+Historie, deshalb liegen sie unversioniert in `app_settings`. Gewählt wird aus einer Liste –
+keine Tastatur.
+
+### Gewichtssteigerung vorschlagen (`progressionMode`)
+
+Aus / Vorsichtig / Normal (Standard) / Progressiv. Ein Vorschlag ist nur ein Hinweis: Kalethra
+erhöht nie selbst, der Nutzer übernimmt („Vorschlag übernehmen“ füllt die offenen Arbeitssätze)
+oder ignoriert ihn und kann jeden Wert überschreiben. Gespeichert wird kein Vorschlag – er wird
+bei jedem Öffnen aus der Trainingshistorie, dem Plan und der Einstellung berechnet
+(`suggestProgression`, `src/core/training/progression.ts`, rein, ohne Netz, deterministisch).
+
+**Wann entsteht ein Vorschlag?**
+
+1. Die Übung hat im Plan-Tag, aus dem das Training gestartet wurde, ein Wiederholungsziel
+   (z. B. 3 × 8). Ohne Ziel (freies Training, Übung ohne Vorgabe, ersetzte Übung): kein Vorschlag.
+   Ziele über 12 Wiederholungen: kein Vorschlag (die Epley-Schätzung ist darüber unzuverlässig).
+2. Eine Einheit ist **erfolgreich**, wenn alle abgeschlossenen Arbeitssätze dasselbe Gewicht haben,
+   jeder das Wiederholungsziel erreicht und – falls der Plan die Satzzahl vorgibt – mindestens so
+   viele Arbeitssätze abgeschlossen wurden. Aufwärm- und Drop-Sätze zählen nicht.
+3. Die **letzten N Einheiten in Folge** (jüngste zuerst) sind erfolgreich, alle mit demselben
+   Gewicht. Eine schwächere Einheit dazwischen (z. B. 80 × 8, 5, 4) setzt den Zähler zurück.
+
+| Modus      | Erfolgreiche Einheiten (N) | Erhöhung |
+| ---------- | -------------------------- | -------- |
+| Vorsichtig | 4                          | +2,5 %   |
+| Normal     | 3                          | +5 %     |
+| Progressiv | 2                          | +7,5 %   |
+
+**Gewicht und Wiederholungen hängen zusammen:**
+
+- Erhöhung = Prozentsatz des Gewichts, auf 1,25 kg (bzw. 2,5 lb bei Pfund) gerundet, mindestens
+  ein Schritt.
+- Neue Wiederholungen = so viele, dass die geschätzte Maximalkraft (Epley, wie in `metrics.ts`)
+  gleich bleibt, abgerundet und immer weniger als das Ziel:
+  `Wdh. = ⌊30 × (Gewicht × (1 + Ziel/30) ÷ neues Gewicht − 1)⌋`.
+- Beispiel 80 kg × 8: Vorsichtig **82,5 kg × 6**, Normal **83,75 kg × 6**, Progressiv
+  **86,25 kg × 5**.
+- Der nächste Vorschlag kommt erst, wenn das Wiederholungsziel beim neuen Gewicht wieder mehrmals
+  erreicht wurde (Doppel-Progression) – das Ziel wandert nie nach unten.
+
+Die Schwellen stehen zentral in `PROGRESSION_RULES` und sind in
+`src/core/training/progression.test.ts` als Tests dokumentiert. Eine nachträglich korrigierte
+Einheit zählt mit ihren neuen Werten.
+
+### Pausenzeit (`restTimerSeconds`)
+
+Aus (0), 30, 60, 90 (Standard), 120, 180, 240 oder 300 Sekunden.
+
+- Nach dem Abhaken eines Satzes im laufenden Training startet der Timer (nicht beim Bearbeiten
+  eines abgeschlossenen Trainings). Bei 0 gibt es keinen Timer – auch keinen versteckten.
+- Eine kleine Leiste über der Tab-Leiste zeigt die Restzeit; Anhalten/Weiter und Überspringen;
+  sie blockiert keine Eingabe, alle Sätze bleiben erreichbar. System-Zurück schließt sie zuerst.
+- Die Zeit läuft über Zeitstempel: nach Bildschirm aus oder App im Hintergrund stimmt die
+  Restzeit wieder. Am Ende: dezenter Hinweis „Pause vorbei“ und auf dem Gerät eine kurze
+  Vibration (`@capacitor/haptics`; ob sie spürbar ist, entscheidet das System). Kein Ton, keine
+  Systembenachrichtigung, keine Animation (Reduced Motion bleibt unberührt).

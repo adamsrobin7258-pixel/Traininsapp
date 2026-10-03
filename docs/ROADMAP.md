@@ -286,6 +286,20 @@ Keine neuen Funktionen. Gefunden und behoben:
   große Schrift, keine Tastatur, Tippflächen)
 - Details: [SETTINGS.md](SETTINGS.md), [ARCHITECTURE.md](ARCHITECTURE.md)
 
+## Phase 13 – Trainingserlebnis & Progression ✅ (Version 0.18.0)
+
+- Nächstes Training je Plan aus der eigenen Historie, ohne „aktiven Plan“; freie Wahl jedes Tages
+- Letzte Werte je Satz beim Training (tatsächliche Leistung, Drops mit ↓)
+- Optionale Gewichtssteigerungs-Vorschläge (Aus/Vorsichtig/Normal/Progressiv, Einstellungen →
+  Ziele → Training): erst nach mehreren erfolgreichen Einheiten in Folge, mehr Gewicht → weniger
+  Wiederholungen, nie automatisch
+- Pausentimer (Einstellungen → App → Training, 0 = aus) mit Anhalten, Überspringen, Vibration
+- Übung im Training ersetzen (Plan bleibt), Satztyp ändern und einzelne Sätze löschen
+- Zusammenfassung nach dem Abschluss (Dauer, Übungen, Sätze, Volumen, neues Höchstgewicht)
+- Abgeschlossene Trainings vollständig bearbeitbar, auch die Dauer
+- Keine Migration; Details: [SETTINGS.md](SETTINGS.md#training-phase-13),
+  [ARCHITECTURE.md](ARCHITECTURE.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

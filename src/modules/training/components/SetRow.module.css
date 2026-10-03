@@ -6,12 +6,24 @@
 
 .grid {
   display: grid;
-  grid-template-columns: 1.5rem repeat(var(--fields), minmax(0, 1fr)) var(--size-tap-target);
+  grid-template-columns: var(--size-tap-target) repeat(var(--fields), minmax(0, 1fr)) var(
+      --size-tap-target
+    );
   align-items: center;
-  gap: var(--space-2);
+  gap: var(--space-1);
 }
 
+/* The set marker opens the set's options (type, delete): a full-size touch target. */
 .number {
+  display: grid;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
   font-size: var(--font-size-subhead);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
@@ -81,7 +93,7 @@
 }
 
 .error {
-  padding-left: calc(1.5rem + var(--space-2));
+  padding-left: calc(var(--size-tap-target) + var(--space-1));
   font-size: var(--font-size-footnote);
   color: var(--color-critical);
 }

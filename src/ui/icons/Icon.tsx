@@ -45,6 +45,10 @@ const paths = {
   ),
   /** "About the same" (score trend). */
   arrowRight: <path d="M5.5 12h13M13.25 6.75 18.5 12l-5.25 5.25" />,
+  /** Two opposite arrows – replace one thing with another. */
+  swap: <path d="M6.75 7.75h11.5M15 4.5l3.25 3.25L15 11M17.25 16.25H5.75M9 13l-3.25 3.25L9 19.5" />,
+  /** A stopwatch – the rest timer. */
+  timer: <path d="M12 20.75a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM12 10.25v3.5l2.25 1.5M9.75 3.25h4.5" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
   plan: <path d="M9 6.75h10.25M9 12h10.25M9 17.25h10.25M4.75 6.75h.5M4.75 12h.5M4.75 17.25h.5" />,
   chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,

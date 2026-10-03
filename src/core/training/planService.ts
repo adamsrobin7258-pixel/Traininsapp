@@ -224,19 +224,33 @@ export class PlanService {
    * Next day to train: continues the plan used most recently, otherwise starts the most
    * recently edited plan. `null` when there is no plan with days – no invented suggestions.
    */
-  async nextWorkout(profileId: string): Promise<NextPlanDay | null> {
-    const usage = await this.store.repos.plans.lastPlanUsage(profileId);
-    if (usage) {
-      const plan = await this.store.repos.plans.findPlan(profileId, usage.planId);
-      const next = plan ? nextPlanDay(plan, usage.dayId) : null;
-      if (next) return next;
-    }
+  /**
+   * The next day of every plan, derived from that plan's own completed workouts: the day after
+   * the last one trained (wrapping around), or its first day. No plan is "active" – each plan
+   * keeps its own sequence, and any day can still be chosen freely. Plans without days are
+   * left out.
+   */
+  async nextDays(profileId: string): Promise<Map<string, NextPlanDay>> {
+    const usage = await this.store.repos.workouts.completedPlanDays(profileId);
+    const result = new Map<string, NextPlanDay>();
     for (const summary of await this.listPlans(profileId)) {
       const plan = await this.store.repos.plans.findPlan(profileId, summary.id);
-      const next = plan ? nextPlanDay(plan, null) : null;
-      if (next) return next;
+      if (!plan) continue;
+      const last = usage.find((entry) => entry.planId === plan.id)?.dayId ?? null;
+      const next = nextPlanDay(plan, last);
+      if (next) result.set(plan.id, next);
     }
-    return null;
+    return result;
+  }
+
+  /**
+   * The suggestion on the training page: the next day of the plan trained most recently, else
+   * of the first plan with days. Derived from history – nothing is stored as "active plan".
+   */
+  async nextWorkout(profileId: string): Promise<NextPlanDay | null> {
+    const [recent] = await this.store.repos.workouts.completedPlanDays(profileId);
+    const next = await this.nextDays(profileId);
+    return (recent ? next.get(recent.planId) : undefined) ?? next.values().next().value ?? null;
   }
 
   private async requireDay(profileId: string, dayId: string) {

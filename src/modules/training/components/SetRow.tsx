@@ -19,6 +19,7 @@ import { dismissKeyboard, Icon } from '@/ui';
 import { formatDecimalInput, fromKg, type WeightUnit } from '@/shared/lib/units';
 import { describeSetError, describeTrainingError } from '../domain/errors';
 import { headerKey } from '../domain/setFields';
+import { useRestTimer } from '../hooks/useRestTimer';
 import styles from './SetRow.module.css';
 
 /** Fields entered in a set row (RPE is no longer entered; stored values are kept). */
@@ -59,6 +60,9 @@ interface SetRowProps {
   completeLabel: string;
   reopenLabel: string;
   exerciseType: ExerciseType;
+  /** Opens type change and delete for this set ("Optionen für Satz 2"). */
+  optionsLabel: string;
+  onOptions: () => void;
 }
 
 /**
@@ -76,10 +80,13 @@ export function SetRow({
   completeLabel,
   reopenLabel,
   exerciseType,
+  optionsLabel,
+  onOptions,
 }: SetRowProps) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const { mutate } = useTraining();
+  const restTimer = useRestTimer();
   const fields = setFieldsFor(exerciseType).filter((field): field is Field => field !== 'rpe');
   const snapshot = JSON.stringify([set, unit, locale]);
   const [synced, setSynced] = useState(() => ({ snapshot, base: toDrafts(set, unit, locale) }));
@@ -129,6 +136,8 @@ export function SetRow({
       await mutate((s, profileId) => s.workouts.updateSet(profileId, set.id, values, completed));
       setError(null);
       setInvalid([]);
+      // A set just completed during a workout starts the rest (not when only a value changed).
+      if (completed && !set.completed) restTimer?.start();
     } catch (failure) {
       if (failure instanceof TrainingError) {
         setInvalid(
@@ -142,9 +151,17 @@ export function SetRow({
   return (
     <div className={styles.row} data-completed={set.completed} data-type={set.setType}>
       <div className={styles.grid} style={{ '--fields': fields.length } as CSSProperties}>
-        <span className={styles.number} aria-hidden="true">
+        <button
+          type="button"
+          className={styles.number}
+          aria-label={optionsLabel}
+          onClick={() => {
+            dismissKeyboard();
+            onOptions();
+          }}
+        >
           {badge}
-        </span>
+        </button>
         {fields.map((field) => (
           <input
             key={field}

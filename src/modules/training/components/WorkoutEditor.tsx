@@ -27,6 +27,7 @@ export function WorkoutEditor({ workout }: { workout: WorkoutDetail }) {
           exercise={exercise}
           index={index}
           count={workout.exercises.length}
+          live={workout.status === 'active'}
         />
       ))}
       <Button

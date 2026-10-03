@@ -1,7 +1,7 @@
 {
   "name": "kalethra",
   "private": true,
-  "version": "0.17.0",
+  "version": "0.18.0",
   "type": "module",
   "description": "Modulare Fitness- und Gesundheits-App für Android und iOS (React, TypeScript, Vite, Capacitor, SQLite).",
   "engines": {
@@ -32,6 +32,7 @@
     "@capacitor/app": "^8.1.1",
     "@capacitor/barcode-scanner": "^3.1.2",
     "@capacitor/core": "^8.5.2",
+    "@capacitor/haptics": "^8.0.2",
     "@capacitor/ios": "^8.5.2",
     "@capgo/capacitor-health": "^8.11.4",
     "jeep-sqlite": "^2.8.0",

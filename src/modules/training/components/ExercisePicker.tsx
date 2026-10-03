@@ -11,6 +11,10 @@ import styles from './ExercisePicker.module.css';
 interface ExercisePickerProps {
   onPick: (exercise: Exercise) => Promise<void>;
   onClose: () => void;
+  /** Sheet title; "Übung auswählen" by default. */
+  title?: string;
+  /** A short line above the search, e.g. that replacing changes only this workout. */
+  note?: string;
 }
 
 /**
@@ -21,7 +25,7 @@ interface ExercisePickerProps {
  * its height within the visible viewport; search and filters stay on top and only the list
  * scrolls, so every exercise stays reachable with or without the keyboard.
  */
-export function ExercisePicker({ onPick, onClose }: ExercisePickerProps) {
+export function ExercisePicker({ onPick, onClose, title, note }: ExercisePickerProps) {
   const { t } = useI18n();
   const searchId = useId();
   const [query, setQuery] = useState('');
@@ -79,11 +83,12 @@ export function ExercisePicker({ onPick, onClose }: ExercisePickerProps) {
 
   return (
     <Sheet
-      title={t('training.exercises.pick')}
+      title={title ?? t('training.exercises.pick')}
       onClose={onClose}
       closeLabel={t('common.close')}
       fill
     >
+      {note ? <p className={styles.note}>{note}</p> : null}
       <label htmlFor={searchId} className="visually-hidden">
         {t('training.exercises.search')}
       </label>

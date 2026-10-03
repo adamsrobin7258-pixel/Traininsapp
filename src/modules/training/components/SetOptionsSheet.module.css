@@ -6,7 +6,7 @@
 }
 
 .options {
-  margin: 0;
+  margin: 0 0 var(--space-4);
   padding: 0;
   list-style: none;
   border-radius: var(--radius-lg);
@@ -36,37 +36,11 @@
 
 .option[aria-pressed='true'] {
   font-weight: var(--font-weight-semibold);
-}
-
-.option:active {
-  background: var(--color-surface-pressed);
-}
-
-.option:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: -2px;
-}
-
-.check {
-  flex: none;
   color: var(--color-accent-text);
 }
 
 .error {
-  margin-top: var(--space-3);
+  margin-bottom: var(--space-3);
   font-size: var(--font-size-footnote);
   color: var(--color-critical);
-}
-
-.optionText {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.optionDetail {
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-regular);
-  color: var(--color-text-secondary);
 }

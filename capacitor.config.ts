@@ -7,7 +7,13 @@ const config: CapacitorConfig = {
   ios: {
     // Health integration is Android-only for now (phase 6.2). Apple Health follows in its own
     // phase with entitlement and usage texts; until then the iOS app must not link HealthKit.
-    includePlugins: ['@capacitor-community/sqlite', '@capacitor/app', '@capacitor/barcode-scanner'],
+    // Haptics: the short vibration when the rest timer ends (phase 13).
+    includePlugins: [
+      '@capacitor-community/sqlite',
+      '@capacitor/app',
+      '@capacitor/barcode-scanner',
+      '@capacitor/haptics',
+    ],
   },
   plugins: {
     CapacitorSQLite: {

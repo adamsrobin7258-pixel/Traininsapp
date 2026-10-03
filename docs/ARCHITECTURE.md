@@ -272,6 +272,28 @@ begrenzt.
 deaktiviert. Änderungen an Plänen und Übungen verändern damit nie vergangene Trainings (Details
 und Tests: [DATABASE.md](DATABASE.md#training-migration-4)).
 
+**Planänderung vs. Workout-Änderung (Phase 13).** Ein Plan wird nur unter Einstellungen → Meine
+Inhalte geändert. Alles im Training – Übung ersetzen (`WorkoutService.replaceExercise`), Sätze,
+Satztyp (`changeSetType`), Reihenfolge – ändert nur dieses eine Workout; die nächste Einheit
+startet wieder mit den Planübungen. Ein abgeschlossenes Training ist vollständig bearbeitbar
+(Übungen, Sätze, Werte, Satztyp, Titel, Notizen, Dauer über `updateDuration`, Löschen) – genau
+dieses Training ändert sich, und alles Abgeleitete liest es neu: Volumen, Verlauf, Fortschritt,
+Kalethra-Score, letzte Werte, Progressionsvorschläge, Höchstgewichte und die Überschneidung mit
+Health-Connect-Einheiten (Ende = Start + Dauer). Getestet in
+`src/core/training/workoutExperience.test.ts`.
+
+**Nächstes Training.** Kein „aktiver Plan“: Jeder Plan leitet seinen nächsten Tag aus seinen
+eigenen abgeschlossenen Trainings ab (`PlanService.nextDays`, Tag nach dem zuletzt trainierten,
+zyklisch, sonst der erste). Die Startauswahl markiert ihn je Plan; jeder Tag bleibt wählbar. Die
+Trainingsseite schlägt den nächsten Tag des zuletzt trainierten Plans vor.
+
+**Letzte Werte, Vorschläge, Rekorde.** Alles wird aus der Historie berechnet, nichts gespeichert:
+letzte Werte (`lastPerformance`, letzte tatsächliche Arbeitssätze mit Drops – keine Plan-Sollwerte,
+nichts erfunden), Progressionsvorschläge (`progression.ts`, siehe
+[SETTINGS.md](SETTINGS.md#training-phase-13)) und in der Zusammenfassung nach dem Abschluss nur
+„Neues Höchstgewicht“: schwerster abgeschlossener Arbeitssatz einer gewichteten Übung, höher als in
+allen früheren Trainings (das erste Mal ist kein Rekord). Keine Migration in Phase 13.
+
 **Laufendes Workout.** Jede Eingabe wird beim Verlassen des Feldes bzw. beim Abhaken gespeichert;
 das aktive Workout liegt in der Datenbank (höchstens eines pro Profil) und wird nach Neustart
 wieder geöffnet. Gleichzeitige Speichervorgänge serialisiert die Datenbankschicht.

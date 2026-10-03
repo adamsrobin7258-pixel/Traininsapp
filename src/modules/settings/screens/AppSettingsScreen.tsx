@@ -13,6 +13,7 @@ import { List, ListRow, Screen, Section, SegmentedControl } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { HealthDataSection } from '../components/HealthDataSection';
 import { PrivacySection } from '../components/PrivacySection';
+import { TrainingAppSection } from '../components/TrainingSettingsRows';
 import { WaterQuickAmountsSection } from '../components/WaterQuickAmountsRow';
 
 function reportError(error: unknown) {
@@ -84,6 +85,8 @@ export function AppSettingsScreen() {
       </Section>
 
       <WaterQuickAmountsSection />
+
+      <TrainingAppSection />
 
       <HealthDataSection />
 

@@ -1,6 +1,7 @@
 export { getDeviceLanguages, getPlatform, isNativePlatform, type Platform } from './platform';
 export { exitApp, onSystemBack } from './backButton';
 export { setSystemBarsTheme } from './systemBars';
+export { notifyHaptic } from './haptics';
 export type {
   LocationPermission,
   LocationSample,

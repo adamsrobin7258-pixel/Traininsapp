@@ -14,7 +14,8 @@ interface StartWorkoutSheetProps {
 
 /**
  * The start flow offers exactly two ways in: a free workout or a day from an existing plan.
- * Plans are created and edited in the plan management only – never from here.
+ * Every plan marks its own next day; any day can be chosen. Plans are created and edited in
+ * the plan management only – never from here.
  */
 export function StartWorkoutSheet({
   onStart,
@@ -104,7 +105,8 @@ function PlanDays({
     const plans = await s.plans.listPlans(profileId);
     return {
       plans: await Promise.all(plans.map((plan) => s.plans.getPlan(profileId, plan.id))),
-      next: await s.plans.nextWorkout(profileId),
+      // The next day of every plan, from that plan's own history – no plan is "active".
+      next: await s.plans.nextDays(profileId),
     };
   }, []);
 
@@ -146,7 +148,11 @@ function PlanDays({
                           ? t('training.exerciseCountOne')
                           : t('training.exerciseCount', { count })
                     }
-                    value={next?.dayId === day.id ? t('training.startSheet.next') : undefined}
+                    value={
+                      next.get(plan.id)?.dayId === day.id
+                        ? t('training.startSheet.next')
+                        : undefined
+                    }
                     disabled={busy || count === 0}
                     onPress={() => {
                       onStart(day.id);

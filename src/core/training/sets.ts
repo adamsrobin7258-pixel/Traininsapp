@@ -199,3 +199,100 @@ export function groupSets(sets: readonly WorkoutSet[]): GroupedSets {
   }
   return { warmups: ordered.filter((set) => set.setType === 'warmup'), working };
 }
+
+export interface SetStructure {
+  id: string;
+  position: number;
+  setType: SetType;
+  dropOf: string | null;
+}
+
+/**
+ * The set types a set can be changed to, besides its own:
+ * - a working set becomes a warm-up only without drops, and a drop only after another working
+ *   set (it then continues that set; its own drops move along);
+ * - a warm-up can become a working set; it cannot be a drop (no working set before it);
+ * - a drop can become a working set (later drops of its chain then continue it) or a warm-up.
+ */
+export function allowedSetTypes(sets: readonly WorkoutSet[], setId: string): SetType[] {
+  const set = sets.find((s) => s.id === setId);
+  if (!set) return [];
+  const { working } = groupSets(sets);
+  switch (set.setType) {
+    case 'working': {
+      const index = working.findIndex((group) => group.set.id === setId);
+      const group = working[index];
+      const types: SetType[] = [];
+      if (group && group.drops.length === 0) types.push('warmup');
+      if (index > 0) types.push('drop');
+      return types;
+    }
+    case 'warmup':
+      return ['working'];
+    case 'drop':
+      return ['working', 'warmup'];
+  }
+}
+
+/**
+ * The new structure (type, chain and position of every set) after changing one set's type, or
+ * `null` when the change is not allowed (see `allowedSetTypes`). Values are never touched.
+ * Positions follow the usual order: warm-ups, then each working set followed by its drops.
+ */
+export function changeSetType(
+  sets: readonly WorkoutSet[],
+  setId: string,
+  setType: SetType,
+): SetStructure[] | null {
+  const set = sets.find((s) => s.id === setId);
+  if (!set) return null;
+  if (set.setType === setType) return null;
+  if (!allowedSetTypes(sets, setId).includes(setType)) return null;
+  const ordered = [...sets].sort((a, b) => a.position - b.position);
+  const next = ordered.map((s) => ({ ...s }));
+  const target = next.find((s) => s.id === setId);
+  if (!target) return null;
+
+  if (setType === 'drop') {
+    // Continues the working set before it; its own drops move along to that set.
+    const { working } = groupSets(sets);
+    const index = working.findIndex((group) => group.set.id === setId);
+    const previous = working[index - 1]?.set.id ?? null;
+    if (!previous) return null;
+    for (const s of next) if (s.dropOf === setId) s.dropOf = previous;
+    target.setType = 'drop';
+    target.dropOf = previous;
+  } else if (target.setType === 'drop') {
+    // The later drops of the same chain now continue this set.
+    const chain = target.dropOf;
+    for (const s of next) {
+      if (
+        setType === 'working' &&
+        s.setType === 'drop' &&
+        s.dropOf === chain &&
+        s.position > target.position
+      ) {
+        s.dropOf = target.id;
+      }
+    }
+    target.setType = setType;
+    target.dropOf = null;
+  } else {
+    target.setType = setType;
+    target.dropOf = null;
+  }
+
+  const grouped = groupSets(next);
+  const order = [
+    ...grouped.warmups,
+    ...grouped.working.flatMap((group) => [group.set, ...group.drops]),
+  ];
+  // Every set must keep its place in the structure (no orphaned drop).
+  if (order.length !== sets.length) return null;
+  return order.map((s, position) => ({
+    id: s.id,
+    position,
+    setType: s.setType,
+    dropOf: s.dropOf,
+  }));
+}

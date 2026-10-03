@@ -3,8 +3,17 @@ import { addDays, toLocalDateKey } from '@/shared/lib/date';
 import { createId } from '@/shared/lib/id';
 import { TrainingError } from './errors';
 import { EXERCISE_TYPES, isOneOf, type Exercise } from './exercise';
+import type { ProgressionMode } from '@/core/settings/types';
+import type { WeightUnit } from '@/shared/lib/units';
 import { moveItem } from './plan';
 import {
+  PROGRESSION_MAX_SESSIONS,
+  suggestProgression,
+  type ProgressionSuggestion,
+  type ProgressionTarget,
+} from './progression';
+import {
+  changeSetType,
   EMPTY_SET_VALUES,
   groupSets,
   validateSet,
@@ -25,6 +34,16 @@ import {
   type WorkoutSummary,
 } from './workout';
 import type { LastPerformance } from './workoutRepository';
+
+/** A new heaviest working set of an exercise, compared with all earlier workouts. */
+export interface WorkoutRecord {
+  workoutExerciseId: string;
+  weightKg: number;
+  previousKg: number;
+}
+
+/** Longest duration that can be entered for a finished workout (minutes). */
+export const WORKOUT_DURATION_LIMITS_MIN = { min: 1, max: 24 * 60 } as const;
 
 export interface TrainingOverview {
   last: WorkoutSummary | null;
@@ -127,6 +146,63 @@ export class WorkoutService {
     return this.store.repos.workouts.lastPerformance(profileId, exerciseId, excludeWorkoutId);
   }
 
+  /**
+   * The weight increase suggestion for an exercise of a workout, or `null` (see
+   * progression.ts). Needs the plan's rep target of the exercise in the plan day the workout
+   * was started from; computed from the history, never stored.
+   */
+  async progression(
+    profileId: string,
+    workoutExerciseId: string,
+    mode: ProgressionMode,
+    unit: WeightUnit,
+  ): Promise<ProgressionSuggestion | null> {
+    if (mode === 'off') return null;
+    const owner = await this.requireExercise(profileId, workoutExerciseId);
+    const detail = await this.getDetail(profileId, owner.workoutId);
+    const exercise = detail.exercises.find((e) => e.id === workoutExerciseId);
+    if (!exercise?.exerciseId || exercise.exerciseType !== 'weighted') return null;
+    const target = await this.planTarget(profileId, detail.planDayId, exercise.exerciseId);
+    if (!target) return null;
+    const sessions = await this.store.repos.workouts.recentPerformances(
+      profileId,
+      exercise.exerciseId,
+      detail.id,
+      PROGRESSION_MAX_SESSIONS,
+    );
+    return suggestProgression(
+      sessions.map((session) => session.sets),
+      target,
+      mode,
+      unit,
+    );
+  }
+
+  /** New heaviest working sets of a finished workout (weighted exercises with earlier data). */
+  async records(profileId: string, workoutId: string): Promise<WorkoutRecord[]> {
+    const detail = await this.getDetail(profileId, workoutId);
+    const records: WorkoutRecord[] = [];
+    for (const exercise of detail.exercises) {
+      if (!exercise.exerciseId || exercise.exerciseType !== 'weighted') continue;
+      const loads = exercise.sets
+        .filter((set) => set.completed && set.setType === 'working' && set.weightKg !== null)
+        .map((set) => set.weightKg ?? 0);
+      if (loads.length === 0) continue;
+      const heaviest = Math.max(...loads);
+      const previous = await this.store.repos.workouts.heaviestWorkingBefore(
+        profileId,
+        exercise.exerciseId,
+        detail.startedAt,
+        detail.id,
+      );
+      // No earlier value: the first time is no record.
+      if (previous !== null && heaviest > previous) {
+        records.push({ workoutExerciseId: exercise.id, weightKg: heaviest, previousKg: previous });
+      }
+    }
+    return records;
+  }
+
   // ── Starting ───────────────────────────────────────────────────────────────
 
   /** Starts a workout without a plan. Only one workout can be in progress. */
@@ -221,6 +297,87 @@ export class WorkoutService {
       );
       await repos.workouts.touch(workoutId, now);
       return workoutExercise.id;
+    });
+  }
+
+  /**
+   * Replaces the exercise of this workout only – the plan is never changed. With the same
+   * exercise type the sets stay; while the workout is in progress and nothing of the exercise
+   * is completed yet, their values are pre-filled from the new exercise's last performance.
+   * With another type the sets are created anew (same warm-up, working and drop structure,
+   * pre-filled the same way): the old values would mean something else.
+   */
+  async replaceExercise(
+    profileId: string,
+    workoutExerciseId: string,
+    exerciseId: string,
+  ): Promise<void> {
+    const owner = await this.requireExercise(profileId, workoutExerciseId);
+    const detail = await this.getDetail(profileId, owner.workoutId);
+    const current = detail.exercises.find((e) => e.id === workoutExerciseId);
+    if (!current) throw new TrainingError('not-found');
+    const exercise = await this.store.repos.exercises.findById(exerciseId);
+    if (!exercise || (exercise.profileId !== null && exercise.profileId !== profileId)) {
+      throw new TrainingError('not-found');
+    }
+    if (!exercise.active) throw new TrainingError('exercise-inactive');
+    if (current.exerciseId === exercise.id) return;
+    const now = this.now();
+    const sameType = current.exerciseType === exercise.exerciseType;
+    const untouched = detail.status === 'active' && !current.sets.some((set) => set.completed);
+    await this.store.atomic(async (repos) => {
+      await repos.workouts.updateExerciseSnapshot(
+        { ...this.snapshot(detail.id, exercise, current.position), id: current.id },
+        now,
+      );
+      if (sameType && !untouched) {
+        await repos.workouts.touch(detail.id, now);
+        return;
+      }
+      const last = await repos.workouts.lastPerformance(profileId, exercise.id, detail.id);
+      const previous = groupSets(last?.sets ?? []);
+      const { warmups, working } = groupSets(current.sets);
+      if (sameType) {
+        // Same structure, values of the new exercise (reps kept where it has no history).
+        for (const [index, set] of warmups.entries()) {
+          const source = nearest(previous.warmups, index);
+          await repos.workouts.updateSet(set.id, this.refill(set, source), false, now);
+        }
+        for (const [index, group] of working.entries()) {
+          const source = nearest(previous.working, index)?.set;
+          await repos.workouts.updateSet(group.set.id, this.refill(group.set, source), false, now);
+          const drops = previous.working.at(-1)?.drops ?? [];
+          for (const [d, drop] of group.drops.entries()) {
+            await repos.workouts.updateSet(
+              drop.id,
+              this.refill(drop, nearest(drops, d)),
+              false,
+              now,
+            );
+          }
+        }
+      } else {
+        await repos.workouts.deleteSetsOf(current.id);
+        let position = 0;
+        const insert = async (values: SetValues, setType: SetType, dropOf: string | null) => {
+          const set = this.newSet(current.id, position, values, setType, dropOf);
+          position += 1;
+          await repos.workouts.insertSet(set, now);
+          return set;
+        };
+        for (const [index] of warmups.entries()) {
+          await insert(prefill(nearest(previous.warmups, index)), 'warmup', null);
+        }
+        const count = Math.max(1, working.length);
+        for (let index = 0; index < count; index += 1) {
+          const set = await insert(prefill(nearest(previous.working, index)?.set), 'working', null);
+          const drops = previous.working.at(-1)?.drops ?? [];
+          for (const [d] of (working[index]?.drops ?? []).entries()) {
+            await insert(prefill(nearest(drops, d)), 'drop', set.id);
+          }
+        }
+      }
+      await repos.workouts.touch(detail.id, now);
     });
   }
 
@@ -331,6 +488,23 @@ export class WorkoutService {
     });
   }
 
+  /**
+   * Changes a set to a warm-up, working set or drop (see `allowedSetTypes`); its values stay.
+   * Positions are renumbered so the usual order is kept.
+   */
+  async changeSetType(profileId: string, setId: string, setType: SetType): Promise<void> {
+    const owner = await this.store.repos.workouts.setOwner(setId);
+    if (owner?.profileId !== profileId) throw new TrainingError('not-found');
+    const sets = await this.exerciseSets(profileId, owner.workoutId, owner.workoutExerciseId);
+    const structure = changeSetType(sets, setId, setType);
+    if (!structure) throw new TrainingError('invalid-value');
+    const now = this.now();
+    await this.store.atomic(async (repos) => {
+      for (const set of structure) await repos.workouts.updateSetStructure(set.id, set, now);
+      await repos.workouts.touch(owner.workoutId, now);
+    });
+  }
+
   async deleteSet(profileId: string, setId: string): Promise<void> {
     const owner = await this.store.repos.workouts.setOwner(setId);
     if (owner?.profileId !== profileId) throw new TrainingError('not-found');
@@ -354,6 +528,19 @@ export class WorkoutService {
       normalizeOptionalText(notes, WORKOUT_NOTES_MAX_LENGTH),
       this.now(),
     );
+  }
+
+  /** Corrects the duration of a finished workout; the start stays, the end follows. */
+  async updateDuration(profileId: string, workoutId: string, minutes: number): Promise<void> {
+    const workout = await this.requireWorkout(profileId, workoutId);
+    if (workout.status !== 'completed') throw new TrainingError('workout-not-active');
+    const { min, max } = WORKOUT_DURATION_LIMITS_MIN;
+    if (!Number.isInteger(minutes) || minutes < min || minutes > max) {
+      throw new TrainingError('invalid-value');
+    }
+    const durationS = minutes * 60;
+    const endedAt = new Date(Date.parse(workout.startedAt) + durationS * 1000).toISOString();
+    await this.store.repos.workouts.updateTiming(workoutId, endedAt, durationS, this.now());
   }
 
   // ── Ending ─────────────────────────────────────────────────────────────────
@@ -412,6 +599,28 @@ export class WorkoutService {
       createdAt: now,
       updatedAt: now,
     };
+  }
+
+  /** The rep target of an exercise in the plan day a workout came from (current plan). */
+  private async planTarget(
+    profileId: string,
+    planDayId: string | null,
+    exerciseId: string,
+  ): Promise<ProgressionTarget | null> {
+    if (!planDayId) return null;
+    const owner = await this.store.repos.plans.dayOwner(planDayId);
+    if (owner?.profileId !== profileId) return null;
+    const plan = await this.store.repos.plans.findPlan(profileId, owner.planId);
+    const planned = plan?.days
+      .find((day) => day.id === planDayId)
+      ?.exercises.find((e) => e.exerciseId === exerciseId);
+    if (planned?.targetReps == null) return null;
+    return { reps: planned.targetReps, sets: planned.targetSets };
+  }
+
+  /** A set's values from the new exercise's history; without history only the reps stay. */
+  private refill(set: WorkoutSet, source: WorkoutSet | undefined): SetValues {
+    return source ? prefill(source) : { ...EMPTY_SET_VALUES, reps: set.reps };
   }
 
   private snapshot(workoutId: string, exercise: Exercise, position: number): WorkoutExercise {

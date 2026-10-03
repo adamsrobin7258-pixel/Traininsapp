@@ -276,4 +276,67 @@ describe('system back', () => {
       }),
     ).toBeInTheDocument();
   });
+
+  it('training: the rest timer and the exercise picker close first, then back to Training', async () => {
+    const { router } = await renderApp('/training', {
+      prepare: async (s, profileId) => {
+        await s.training.exercises.ensureCatalog();
+        await s.settings.update('restTimerSeconds', 60);
+        const workout = await s.training.workouts.startFree(profileId);
+        await s.training.workouts.addExercise(profileId, workout.id, 'sys.bench-press');
+      },
+    });
+    await act(() => router.navigate('/training/workout'));
+    await userEvent.type(await screen.findByLabelText('Satz 1: Gewicht'), '60');
+    await userEvent.type(screen.getByLabelText('Satz 1: Wdh.'), '8');
+    await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
+    expect(await screen.findByRole('timer')).toBeInTheDocument();
+
+    // The picker opened over the timer closes first, then the timer, then the page.
+    await userEvent.click(screen.getByRole('button', { name: 'Übung ersetzen' }));
+    expect(await screen.findByRole('dialog', { name: 'Übung ersetzen' })).toBeInTheDocument();
+    await pressBack();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(screen.getByRole('timer')).toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/training/workout');
+    await pressBack();
+    expect(screen.queryByRole('timer')).not.toBeInTheDocument();
+    expect(router.state.location.pathname).toBe('/training/workout');
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/training');
+  });
+
+  it('training: the summary of a finished workout closes first, then back to Training', async () => {
+    const { router } = await renderApp('/training', {
+      prepare: async (s, profileId) => {
+        await s.training.exercises.ensureCatalog();
+        const workout = await s.training.workouts.startFree(profileId);
+        await s.training.workouts.addExercise(profileId, workout.id, 'sys.bench-press');
+        const [exercise] = (await s.training.workouts.getDetail(profileId, workout.id)).exercises;
+        await s.training.workouts.updateSet(
+          profileId,
+          exercise?.sets[0]?.id ?? '',
+          { weightKg: 80, reps: 8, durationS: null, distanceM: null, rpe: null },
+          true,
+        );
+      },
+    });
+    await act(() => router.navigate('/training/workout'));
+    await userEvent.click(await screen.findByRole('button', { name: 'Training beenden' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: 'Training beenden' }),
+    );
+    expect(
+      await screen.findByRole('dialog', { name: 'Training abgeschlossen' }),
+    ).toBeInTheDocument();
+    await pressBack();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(router.state.location.pathname).toMatch(/^\/training\/workouts\//);
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/training');
+  });
 });

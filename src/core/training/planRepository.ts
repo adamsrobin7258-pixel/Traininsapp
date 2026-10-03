@@ -222,16 +222,4 @@ export class PlanRepository {
     const row = rows[0];
     return row ? { dayId: row.day_id, planId: row.plan_id, profileId: row.profile_id } : null;
   }
-
-  /** Plan and day of the most recent workout started from any of the profile's plans. */
-  async lastPlanUsage(profileId: string): Promise<{ planId: string; dayId: string | null } | null> {
-    const rows = await this.db.query<{ plan_id: string; plan_day_id: string | null }>(
-      `SELECT plan_id, plan_day_id FROM workouts
-       WHERE profile_id = ? AND plan_id IS NOT NULL
-       ORDER BY started_at DESC LIMIT 1`,
-      [profileId],
-    );
-    const row = rows[0];
-    return row ? { planId: row.plan_id, dayId: row.plan_day_id } : null;
-  }
 }

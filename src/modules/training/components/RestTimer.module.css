@@ -1,0 +1,54 @@
+/* Sits above the tab bar; it never covers the inputs it belongs to for long. */
+.bar {
+  position: fixed;
+  right: max(var(--space-4), var(--safe-right));
+  bottom: calc(var(--safe-bottom) + var(--size-tab-bar) + var(--space-2));
+  left: max(var(--space-4), var(--safe-left));
+  z-index: 9;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: calc(var(--layout-max-width) - 2 * var(--space-4));
+  margin: 0 auto;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3);
+  border-radius: var(--radius-lg);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-separator);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar[data-status='done'] {
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+.text {
+  flex: 1 1 8rem;
+  min-width: 0;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-semibold);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--size-tap-target);
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: inherit;
+  background: var(--color-surface-muted);
+  font: inherit;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+/* Room below the last exercise, so the bar never hides it. */
+.spacer {
+  height: calc(var(--size-tap-target) + var(--space-4));
+}

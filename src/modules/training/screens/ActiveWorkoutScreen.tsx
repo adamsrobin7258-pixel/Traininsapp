@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
+import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
 import { Button, ConfirmSheet, List, ListRow, Screen } from '@/ui';
+import { RestTimerProvider } from '../components/RestTimer';
 import { WorkoutDetailsSheet } from '../components/WorkoutDetailsSheet';
 import { WorkoutEditor } from '../components/WorkoutEditor';
 import { formatDuration, trainingTypeLabel } from '../domain/format';
@@ -19,6 +21,7 @@ type Dialog = 'finish' | 'discard' | 'details' | null;
 export function ActiveWorkoutScreen() {
   const { t } = useI18n();
   const { mutate } = useTraining();
+  const { restTimerSeconds } = useSettings().settings;
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
   const active = useTrainingData((s, profileId) => s.workouts.getActive(profileId), []);
@@ -46,7 +49,9 @@ export function ActiveWorkoutScreen() {
       back={{ to: ROUTES.training, label: t('training.back') }}
     >
       <Elapsed startedAt={workout.startedAt} />
-      <WorkoutEditor workout={workout} />
+      <RestTimerProvider seconds={restTimerSeconds}>
+        <WorkoutEditor workout={workout} />
+      </RestTimerProvider>
       <List>
         <ListRow
           title={t('training.workout.details')}
@@ -86,7 +91,11 @@ export function ActiveWorkoutScreen() {
           errorText={t('training.errors.saveFailed')}
           onConfirm={async () => {
             await mutate((s, profileId) => s.workouts.finish(profileId, workout.id));
-            await navigate(TRAINING_LINKS.workout(workout.id), { replace: true });
+            // The finished workout opens with its summary; back leads to Training.
+            await navigate(TRAINING_LINKS.workout(workout.id), {
+              replace: true,
+              state: { summary: true },
+            });
           }}
           onClose={() => {
             setDialog(null);

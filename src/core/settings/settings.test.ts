@@ -26,6 +26,8 @@ describe('SettingsService', () => {
       language: 'en',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
+      progressionMode: 'normal',
+      restTimerSeconds: 90,
     });
   });
 
@@ -53,6 +55,30 @@ describe('SettingsService', () => {
     expect('countActivityCalories' in (await service.load())).toBe(false);
   });
 
+  it('training: suggestions "Normal" and a 90 s rest timer by default, choices persist', async () => {
+    const { db, service } = await createService();
+    expect(await service.load()).toMatchObject({ progressionMode: 'normal', restTimerSeconds: 90 });
+    await service.update('progressionMode', 'cautious');
+    await service.update('restTimerSeconds', 0);
+    const restarted = new SettingsService(new SettingsRepository(db, fixedClock()));
+    expect(await restarted.load()).toMatchObject({
+      progressionMode: 'cautious',
+      restTimerSeconds: 0,
+    });
+    for (const mode of ['off', 'progressive', 'normal'] as const) {
+      await service.update('progressionMode', mode);
+      expect((await restarted.load()).progressionMode).toBe(mode);
+    }
+    for (const seconds of [30, 60, 120, 180, 240, 300] as const) {
+      await service.update('restTimerSeconds', seconds);
+      expect((await restarted.load()).restTimerSeconds).toBe(seconds);
+    }
+    // @ts-expect-error – deliberately invalid input
+    await expect(service.update('progressionMode', 'aggressive')).rejects.toThrow(/Invalid value/);
+    // @ts-expect-error – only the offered steps are valid
+    await expect(service.update('restTimerSeconds', 45)).rejects.toThrow(/Invalid value/);
+  });
+
   it('ignores corrupt or unknown stored values', async () => {
     const { db, service } = await createService();
     await db.run("INSERT INTO app_settings VALUES ('theme', '\"neon\"', 'x')");
@@ -77,6 +103,8 @@ describe('parseSettings', () => {
       language: 'de',
       weightUnit: 'kg',
       waterQuickAmountsMl: [250, 500, 750],
+      progressionMode: 'normal',
+      restTimerSeconds: 90,
     });
   });
 });

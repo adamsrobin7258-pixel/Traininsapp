@@ -49,16 +49,77 @@
 }
 
 .last {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-2);
   margin-top: calc(var(--space-2) * -1);
   font-size: var(--font-size-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
 }
 
+.lastTitle {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+/* One entry per set: "80 kg × 8", a drop chain in the same entry. */
+.lastList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lastList li {
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+}
+
+.suggestion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-subtle);
+}
+
+.suggestionText {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.suggestionValue {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-accent-text);
+}
+
+.suggestionHint {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
 .head {
   display: grid;
-  grid-template-columns: 1.5rem repeat(var(--fields), minmax(0, 1fr)) var(--size-tap-target);
-  gap: var(--space-2);
+  grid-template-columns: var(--size-tap-target) repeat(var(--fields), minmax(0, 1fr)) var(
+      --size-tap-target
+    );
+  gap: var(--space-1);
   font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   text-align: center;

@@ -93,9 +93,13 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
   await page.reload();
   await expect(page.getByLabel('Satz 2: Wdh.')).toHaveValue('8');
 
-  // Finish: 60 × 10 + 60 × 8 = 1.080 kg.
+  // Finish: first the summary – 60 × 10 + 60 × 8 = 1.080 kg – then the workout.
   await page.getByRole('button', { name: 'Training beenden' }).click();
   await sheet(page).getByRole('button', { name: 'Training beenden' }).click();
+  const summary = page.getByRole('dialog', { name: 'Training abgeschlossen' });
+  await expect(summary.getByText('1.080 kg')).toBeVisible();
+  await summary.getByRole('button', { name: 'Training ansehen' }).click();
+  await expect(sheet(page)).toHaveCount(0);
   await expect(page.getByText('1.080 kg')).toBeVisible();
 
   // History lists it; reopening shows the stored sets.
@@ -113,7 +117,8 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
   await sheet(page)
     .getByRole('button', { name: /^Tag A/ })
     .click();
-  await expect(page.getByText('Letztes Mal: 60 kg × 10 · 60 kg × 8')).toBeVisible();
+  const last = page.getByRole('region', { name: 'Werte vom letzten Training' });
+  await expect(last.getByRole('listitem')).toHaveText(['60 kg × 10', '60 kg × 8']);
 });
 
 test('A – the set check keeps values, focus and the workout', async ({ page }) => {

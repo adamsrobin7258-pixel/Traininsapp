@@ -2,18 +2,22 @@ import { useState, type CSSProperties } from 'react';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
+  EMPTY_SET_VALUES,
   exerciseDisplayName,
   groupSets,
   setFieldsFor,
   useTraining,
   useTrainingData,
+  type Exercise,
   type WorkoutExerciseWithSets,
   type WorkoutSet,
 } from '@/core/training';
 import { ConfirmSheet, dismissKeyboard, Icon } from '@/ui';
 import { describeTrainingError } from '../domain/errors';
-import { formatWorkingSets } from '../domain/format';
+import { formatLoad, formatSetShort } from '../domain/format';
 import { headerKey, type EntryField } from '../domain/setFields';
+import { ExercisePicker } from './ExercisePicker';
+import { SetOptionsSheet } from './SetOptionsSheet';
 import { SetRow } from './SetRow';
 import styles from './ExerciseCard.module.css';
 
@@ -21,6 +25,8 @@ interface ExerciseCardProps {
   exercise: WorkoutExerciseWithSets;
   index: number;
   count: number;
+  /** The workout is in progress: suggestions are offered (not when editing history). */
+  live: boolean;
 }
 
 interface SetNames {
@@ -31,15 +37,19 @@ interface SetNames {
 }
 
 /**
- * One exercise of a workout: warm-ups, working sets with their drops, last performance and
- * quick actions. Set types are shown by a small marker and, with warm-ups, by group captions.
+ * One exercise of a workout: warm-ups, working sets with their drops, the last performance, an
+ * optional weight increase suggestion and quick actions. Set types are shown by a small marker
+ * (tap it for type and delete) and, with warm-ups, by group captions.
  */
-export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
+export function ExerciseCard({ exercise, index, count, live }: ExerciseCardProps) {
   const { t, locale } = useI18n();
-  const { weightUnit: unit } = useSettings().settings;
+  const { weightUnit: unit, progressionMode } = useSettings().settings;
   const { mutate } = useTraining();
   const [error, setError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState(false);
+  const [replacing, setReplacing] = useState(false);
+  const [confirmReplace, setConfirmReplace] = useState<Exercise | null>(null);
+  const [options, setOptions] = useState<{ set: WorkoutSet; label: string } | null>(null);
   const name = exerciseDisplayName(exercise, locale);
   const fields = setFieldsFor(exercise.exerciseType).filter(
     (field): field is EntryField => field !== 'rpe',
@@ -55,10 +65,21 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
         : Promise.resolve(null),
     [exercise.exerciseId, exercise.workoutId],
   );
-  const lastTime =
-    last.status === 'ready' && last.data
-      ? formatWorkingSets(last.data.sets, exercise.exerciseType, unit, locale)
-      : '';
+  // The last real performance: working sets with their drops (warm-ups only prepare).
+  const lastGroups = last.status === 'ready' && last.data ? groupSets(last.data.sets).working : [];
+
+  const suggestion = useTrainingData(
+    (s, profileId) =>
+      live && exercise.exerciseType === 'weighted'
+        ? s.workouts.progression(profileId, exercise.id, progressionMode, unit)
+        : Promise.resolve(null),
+    [exercise.id, live, progressionMode, unit],
+  );
+  const suggested = suggestion.status === 'ready' ? suggestion.data : null;
+  const openWorking = working.filter((group) => !group.set.completed).map((group) => group.set);
+  const applied =
+    suggested !== null &&
+    openWorking.every((set) => set.weightKg === suggested.weightKg && set.reps === suggested.reps);
 
   function run(change: Parameters<typeof mutate>[0]) {
     // A still-focused set field saves first (blur), then this change runs.
@@ -78,8 +99,21 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
       completeLabel={names.complete}
       reopenLabel={names.reopen}
       exerciseType={exercise.exerciseType}
+      optionsLabel={t('training.workout.setOptions', { label: names.label })}
+      onOptions={() => {
+        setOptions({ set, label: names.label });
+      }}
     />
   );
+
+  function replaceWith(next: Exercise) {
+    // Another kind of exercise gets new sets: ask first when values were already logged.
+    if (next.exerciseType !== exercise.exerciseType && exercise.sets.some((set) => set.completed)) {
+      setConfirmReplace(next);
+      return;
+    }
+    run((s, profileId) => s.workouts.replaceExercise(profileId, exercise.id, next.id));
+  }
 
   const warmupNames = (number: number): SetNames => ({
     label: t('training.workout.warmupNumber', { number }),
@@ -140,8 +174,73 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
         </div>
       </header>
 
-      {lastTime ? (
-        <p className={styles.last}>{t('training.workout.lastTime', { sets: lastTime })}</p>
+      {lastGroups.length > 0 ? (
+        <section className={styles.last} aria-label={t('training.workout.lastListLabel')}>
+          <h4 className={styles.lastTitle}>{t('training.workout.lastTitle')}</h4>
+          <ol className={styles.lastList}>
+            {lastGroups.map((group) => (
+              <li key={group.set.id}>
+                {[group.set, ...group.drops]
+                  .map((set) => formatSetShort(set, exercise.exerciseType, unit, locale))
+                  .join(' ↓ ')}
+              </li>
+            ))}
+          </ol>
+        </section>
+      ) : null}
+
+      {suggested ? (
+        <section className={styles.suggestion} aria-label={t('training.workout.suggestionTitle')}>
+          <div className={styles.suggestionText}>
+            <h4 className={styles.lastTitle}>{t('training.workout.suggestionTitle')}</h4>
+            <p className={styles.suggestionValue}>
+              {t('training.workout.suggestionValue', {
+                load: formatLoad(suggested.weightKg, unit, locale),
+                reps: suggested.reps,
+              })}
+            </p>
+            <p className={styles.suggestionHint}>
+              {t('training.workout.suggestionHint', {
+                sessions: suggested.sessions,
+                from: formatLoad(suggested.fromKg, unit, locale),
+                target: suggested.fromReps,
+              })}
+            </p>
+          </div>
+          {!applied ? (
+            <button
+              type="button"
+              className={styles.addSet}
+              aria-label={t('training.workout.suggestionApplyLabel', {
+                value: t('training.workout.suggestionValue', {
+                  load: formatLoad(suggested.weightKg, unit, locale),
+                  reps: suggested.reps,
+                }),
+                name,
+              })}
+              onClick={() => {
+                // Fills the open working sets – nothing is completed, everything stays editable.
+                run(async (s, profileId) => {
+                  for (const set of openWorking) {
+                    await s.workouts.updateSet(
+                      profileId,
+                      set.id,
+                      {
+                        ...EMPTY_SET_VALUES,
+                        weightKg: suggested.weightKg,
+                        reps: suggested.reps,
+                        rpe: set.rpe,
+                      },
+                      false,
+                    );
+                  }
+                });
+              }}
+            >
+              {t('training.workout.suggestionApply')}
+            </button>
+          ) : null}
+        </section>
       ) : null}
 
       <div
@@ -221,17 +320,30 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
             </button>
           ) : null}
         </div>
-        {lastSet ? (
+        <div className={styles.adds}>
           <button
             type="button"
             className={styles.secondary}
             onClick={() => {
-              run((s, profileId) => s.workouts.deleteSet(profileId, lastSet.id));
+              dismissKeyboard();
+              setReplacing(true);
             }}
           >
-            {t('training.workout.removeLastSet')}
+            <Icon name="swap" size={16} />
+            {t('training.workout.replaceExercise')}
           </button>
-        ) : null}
+          {lastSet ? (
+            <button
+              type="button"
+              className={styles.secondary}
+              onClick={() => {
+                run((s, profileId) => s.workouts.deleteSet(profileId, lastSet.id));
+              }}
+            >
+              {t('training.workout.removeLastSet')}
+            </button>
+          ) : null}
+        </div>
       </div>
       {error ? (
         <p className={styles.error} role="alert">
@@ -239,6 +351,49 @@ export function ExerciseCard({ exercise, index, count }: ExerciseCardProps) {
         </p>
       ) : null}
 
+      {replacing ? (
+        <ExercisePicker
+          title={t('training.workout.replaceTitle')}
+          note={live ? t('training.workout.replaceNote') : undefined}
+          onPick={(next) => {
+            setReplacing(false);
+            replaceWith(next);
+            return Promise.resolve();
+          }}
+          onClose={() => {
+            setReplacing(false);
+          }}
+        />
+      ) : null}
+      {confirmReplace ? (
+        <ConfirmSheet
+          title={t('training.workout.confirmReplaceTitle')}
+          body={t('training.workout.confirmReplaceBody', { name })}
+          confirmLabel={t('training.workout.replaceExercise')}
+          cancelLabel={t('common.cancel')}
+          closeLabel={t('common.close')}
+          errorText={t('training.errors.saveFailed')}
+          destructive
+          onConfirm={async () => {
+            await mutate((s, profileId) =>
+              s.workouts.replaceExercise(profileId, exercise.id, confirmReplace.id),
+            );
+          }}
+          onClose={() => {
+            setConfirmReplace(null);
+          }}
+        />
+      ) : null}
+      {options ? (
+        <SetOptionsSheet
+          set={options.set}
+          sets={exercise.sets}
+          label={options.label}
+          onClose={() => {
+            setOptions(null);
+          }}
+        />
+      ) : null}
       {confirmRemove ? (
         <ConfirmSheet
           title={t('training.workout.confirmRemoveExerciseTitle')}

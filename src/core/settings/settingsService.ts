@@ -3,6 +3,8 @@ import {
   DEFAULT_SETTINGS,
   isValidWaterQuickAmounts,
   LANGUAGE_PREFERENCES,
+  PROGRESSION_MODES,
+  REST_TIMER_OPTIONS_S,
   THEME_PREFERENCES,
   WEIGHT_UNIT_PREFERENCES,
   type AppSettings,
@@ -19,6 +21,9 @@ const validators: Validators = {
   language: oneOf(LANGUAGE_PREFERENCES),
   weightUnit: oneOf(WEIGHT_UNIT_PREFERENCES),
   waterQuickAmountsMl: isValidWaterQuickAmounts,
+  progressionMode: oneOf(PROGRESSION_MODES),
+  restTimerSeconds: (value: unknown): value is AppSettings['restTimerSeconds'] =>
+    (REST_TIMER_OPTIONS_S as readonly unknown[]).includes(value),
 };
 
 /** Merges stored values with defaults. Unknown keys and invalid values are ignored. */

@@ -127,7 +127,15 @@ describe('training', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Training beenden' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Training beenden' }));
 
+    // First the summary of the finished workout, then the workout itself.
+    const summary = within(await screen.findByRole('dialog', { name: 'Training abgeschlossen' }));
     // 80 × 8 + 80 × 6
+    expect(summary.getByText('1.120 kg')).toBeInTheDocument();
+    expect(summary.getByText('2 Sätze · bester Satz 80 kg × 8')).toBeInTheDocument();
+    await userEvent.click(summary.getByRole('button', { name: 'Training ansehen' }));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
     expect(await screen.findByText('1.120 kg')).toBeInTheDocument();
     expect(await setRows(db)).toEqual([
       { weight_kg: 80, reps: 8, completed: 1 },
