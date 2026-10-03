@@ -160,6 +160,10 @@ export const de = {
       avgKcalProgress: 'Ø {value} von {goal} kcal',
       proteinProgress: '{value} von {goal} g Protein',
       avgProteinProgress: 'Ø {value} von {goal} g Protein',
+      carbsProgress: '{value} von {goal} g Kohlenhydraten',
+      carbsAvgProgress: 'Ø {value} von {goal} g Kohlenhydraten',
+      fatProgress: '{value} von {goal} g Fett',
+      fatAvgProgress: 'Ø {value} von {goal} g Fett',
       kcalDays: {
         limit: 'Kalorienlimit eingehalten an {count} von {total} Tagen',
         minimum: 'Kalorienziel erreicht an {count} von {total} Tagen',
@@ -650,6 +654,11 @@ export const de = {
         'Änderungen gelten für neue Einträge. Bereits eingetragene Tage bleiben unverändert.',
       deleted: '„{name}“ wurde gelöscht.',
       deactivated: '„{name}“ wird noch verwendet und wurde ausgeblendet.',
+      saved: '„{name}“ wurde gespeichert.',
+      barcodeFound: '„{name}“ ist bereits gespeichert.',
+      reference: 'Aus dem BLS',
+      referenceHint:
+        'Beim Öffnen wird das BLS-Lebensmittel gespeichert und kann als eigene Kopie bearbeitet werden.',
     },
     mealsManage: {
       title: 'Mahlzeiten des Tages',

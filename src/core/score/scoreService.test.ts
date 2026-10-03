@@ -140,9 +140,10 @@ describe('score from the real data', () => {
     const s = await setup();
     await goal(s);
     await eat(s, '2026-09-30', 2300, 160);
-    await eat(s, '2026-10-01', 2530, 160); // +10 % → 90 (kcal), protein 100 → 93
+    // Gewicht halten (Phase 15): +10 % → 60 (kcal), protein 100 → 60 × 0.7 + 100 × 0.3 = 72
+    await eat(s, '2026-10-01', 2530, 160);
     const result = await s.services.score.calculate(s.profileId, WEEK, options());
-    expect(result.areas.nutrition.score).toBe(97); // (100 + 93) / 2 = 96.5
+    expect(result.areas.nutrition.score).toBe(86); // (100 + 72) / 2
     expect(result.areas.nutrition.detail.loggedDays).toBe(2);
     expect(result.goal).toBe('maintain');
     expect(result.goalSet).toBe(true);
@@ -346,13 +347,14 @@ describe('score from the real data', () => {
   it('compares with the period right before it', async () => {
     const s = await setup();
     await goal(s);
-    for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, date, 2990, 160); // 65 each
+    // +30 % → 0 kcal points (Phase 15), protein 100 → 30 each
+    for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, date, 2990, 160);
     for (const date of WEEK.slice(0, 4)) await eat(s, date, 2300, 160); // 100 each
     const result = await s.services.score.withTrend(s.profileId, WEEK, PREVIOUS_WEEK, options());
     expect(result.current.score).toBe(100);
-    expect(result.previous.score).toBe(65);
+    expect(result.previous.score).toBe(30);
     expect(result.trend).toBe('up');
-    expect(result.delta).toBe(35);
+    expect(result.delta).toBe(70);
   });
 
   it('has no trend when the previous period has too little data', async () => {
@@ -427,8 +429,8 @@ describe('score from the real data', () => {
     await goal(s);
     await eat(s, '2026-10-01', 2300, 160);
     expect((await s.services.score.calculate(s.profileId, WEEK, options())).score).toBe(100);
-    await eat(s, '2026-10-01', 690, 0); // now +30 %
-    expect((await s.services.score.calculate(s.profileId, WEEK, options())).score).toBe(65);
+    await eat(s, '2026-10-01', 690, 0); // now +30 % → 0 kcal points, protein 100 → 30
+    expect((await s.services.score.calculate(s.profileId, WEEK, options())).score).toBe(30);
     const tables = await s.db.query<{ name: string }>(
       "SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%score%'",
     );

@@ -7,7 +7,12 @@
  * main goal, renormalised over those areas – a missing area neither adds nor costs points.
  * It describes goal achievement inside Kalethra only; it is no health or medical rating.
  */
-import type { NutritionDayGoal, NutritionDayTotals } from '@/core/nutrition';
+import {
+  calorieGoalScore,
+  type GoalType,
+  type NutritionDayGoal,
+  type NutritionDayTotals,
+} from '@/core/nutrition';
 import type { RecoveryState } from '@/core/recovery';
 import { targetValueOn, weeklyExpectation as expectation, type TargetValue } from '@/core/targets';
 import {
@@ -140,16 +145,18 @@ export const clampScore = (value: number) => Math.min(100, Math.max(0, value));
 const round = (value: number) => Math.round(clampScore(value));
 
 /**
- * One day's calories against its goal. Up to ±5 % keeps 100 points, beyond that 2 points per
- * percent – a small miss costs little, only a large one costs a lot. Today, being below the goal
- * is not judged (the day is not over): `null`.
+ * One day's calories against its goal, by the day's main goal – the shared rule of score and
+ * progress card (`calorieGoalScore`, core/nutrition/goalAttainment.ts): lose = upper limit,
+ * gain = reached from 95 %, maintain/fitness = 95–105 %. Today, being below the goal is not
+ * judged (the day is not over): `null`.
  */
-export function kcalDayScore(eaten: number, goal: number, isToday: boolean): number | null {
-  if (goal <= 0) return null;
-  const deviation = (eaten - goal) / goal;
-  if (isToday && deviation < 0) return null;
-  const beyond = Math.max(0, Math.abs(deviation) - NUTRITION.kcalTolerance);
-  return clampScore(100 - beyond * 100 * NUTRITION.kcalPointsPerPercent);
+export function kcalDayScore(
+  eaten: number,
+  goal: number,
+  isToday: boolean,
+  goalType: GoalType | null = null,
+): number | null {
+  return calorieGoalScore(goalType, eaten, goal, isToday);
 }
 
 /** One day's protein: from 90 % of the goal 100 points, below 2 points per missing percent. */
@@ -182,7 +189,9 @@ export function nutritionScore(input: ScoreInput): AreaScores['nutrition'] {
     const goal = goals.get(day.localDate);
     const isToday = day.localDate === input.today;
     const kcal =
-      goal?.energyKcal != null ? kcalDayScore(day.energyKcal, goal.energyKcal, isToday) : null;
+      goal?.energyKcal != null
+        ? kcalDayScore(day.energyKcal, goal.energyKcal, isToday, goal.goalType ?? null)
+        : null;
     const protein =
       goal?.proteinG != null ? proteinDayScore(day.proteinG, goal.proteinG, isToday) : null;
     if (kcal !== null && goal?.energyKcal != null) {

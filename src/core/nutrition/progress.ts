@@ -9,12 +9,18 @@ export interface NutritionDayTotals {
   localDate: string;
   energyKcal: number;
   proteinG: number;
+  /** Carbohydrates and fat of the logged entries (information only, not part of the score). */
+  carbsG?: number;
+  fatG?: number;
 }
 
 export interface NutritionDayGoal {
   localDate: string;
   energyKcal: number | null;
   proteinG: number | null;
+  /** Carbohydrate and fat targets of that day (stored values, never changed by activity). */
+  carbsG?: number | null;
+  fatG?: number | null;
   /** Main goal in force on that day (decides how the calorie goal is read); `null` without. */
   goalType?: GoalType | null;
 }

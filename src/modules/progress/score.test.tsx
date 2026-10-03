@@ -202,32 +202,34 @@ describe('Kalethra-Score on Fortschritt', () => {
     await renderApp('/', {
       prepare: async (s, profileId) => {
         await goal(s, profileId);
-        await eat(s, profileId, '2026-10-03', 2990); // today: +30 % → kcal 50, protein 100 → 65
+        // today: +30 % → kcal 0 (Gewicht halten, Phase 15), protein 100 → 30
+        await eat(s, profileId, '2026-10-03', 2990);
         await eat(s, profileId, '2026-09-30', 2300); // 100
         await eat(s, profileId, '2026-09-10', 2300); // 100 (only in 30 days)
         await eat(s, profileId, '2026-09-11', 2300);
       },
     });
     const radio = (name: string) => main().getByRole('radio', { name });
-    await expectScore(83); // (65 + 100) / 2
+    await expectScore(65); // (30 + 100) / 2
     await userEvent.click(radio('Heute'));
-    await expectScore(65);
+    await expectScore(30);
     expect(main().getByText('03.10.')).toBeInTheDocument();
     await userEvent.click(radio('30 Tage'));
-    await expectScore(91); // (65 + 3 × 100) / 4
+    await expectScore(83); // (30 + 3 × 100) / 4 = 82.5
   });
 
   it('shows the trend against the period before', async () => {
     await renderApp('/', {
       prepare: async (s, profileId) => {
         await goal(s, profileId);
+        // +30 % → 0 kcal points, protein 100 → 30 (Phase 15); then 100.
         for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, profileId, date, 2990);
         for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2300);
       },
     });
     const card = await scoreCard();
     expect(
-      await card.findByText('Gestiegen gegenüber den 7 Tagen davor · +35 Punkte'),
+      await card.findByText('Gestiegen gegenüber den 7 Tagen davor · +70 Punkte'),
     ).toBeInTheDocument();
   });
 
@@ -236,28 +238,31 @@ describe('Kalethra-Score on Fortschritt', () => {
       prepare: async (s, profileId) => {
         await goal(s, profileId);
         for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, profileId, date, 2300);
-        for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2760); // +20 % → 79
+        // +20 % → 20 kcal points (Phase 15), protein 100 → 44
+        for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2760);
       },
     });
     expect(
       await (
         await scoreCard()
-      ).findByText(/^Gesunken gegenüber den 7 Tagen davor · [-−]21 Punkte$/),
+      ).findByText(/^Gesunken gegenüber den 7 Tagen davor · [-−]56 Punkte$/),
     ).toBeInTheDocument();
   });
 
   it('trend: about the same within 3 points', async () => {
     await renderApp('/', {
       prepare: async (s, profileId) => {
-        await goal(s, profileId);
+        // Abnehmen: slightly over the limit (+0.4 % → 98.3 kcal points, day 98.8 → 99). With the
+        // Phase 15 maintain rule a small difference outside ±5 % is no longer possible.
+        await goal(s, profileId, 'lose');
         for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, profileId, date, 2300);
-        for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2445); // +6.3 % → 98
+        for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2310);
       },
     });
     expect(
       await (
         await scoreCard()
-      ).findByText(/^Ungefähr gleich gegenüber den 7 Tagen davor · [-−]2 Punkte$/),
+      ).findByText(/^Ungefähr gleich gegenüber den 7 Tagen davor · [-−]1 Punkte$/),
     ).toBeInTheDocument();
   });
 

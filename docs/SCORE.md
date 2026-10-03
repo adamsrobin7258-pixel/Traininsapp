@@ -53,9 +53,17 @@ Eintrag = Ernährungstage) und `GoalService.dayGoalsBetween` (Tagesziel wie im T
 vor automatisch, eigenes Protein-Ziel, BMI-27,5-Regel, Aktivitätskalorien **nur** bei
 eingeschalteter Einstellung). Keine eigene Zielberechnung.
 
-- **Kalorien je Tag:** bis ±5 % Abweichung 100 Punkte, danach 2 Punkte je weiterem Prozent
-  (+10 % → 90, +20 % → 70, +30 % → 50, ab +55 % → 0). Kleine Abweichungen kosten wenig, keine
-  Sprünge.
+- **Kalorien je Tag (seit Phase 15 nach Hauptziel des Tages)** – eine Regel für Score und
+  Fortschrittskarte (`calorieGoalScore`, `core/nutrition/goalAttainment.ts`), jeweils mit Hauptziel
+  und Kalorienziel, die an diesem Tag galten:
+  - **Abnehmen** – Obergrenze: bis zum Ziel 100; darüber linear bis 0 bei +25 % (+5 % → 80,
+    +10 % → 60, +20 % → 20). Darunter weder Bonus noch Abzug.
+  - **Muskelaufbau** – ab 95 % 100; darunter linear bis 0 bei 70 % (75 % → 20, 85 % → 60).
+    Darüber weder Bonus noch Abzug.
+  - **Gewicht halten** und **Allgemeine Fitness** (gleiche Formel): 95–105 % → 100; außerhalb
+    zählt die Abweichung vom Ziel, 0 bei ±25 % (±10 % → 60, ±20 % → 20). An der Bereichsgrenze
+    fällt der Wert deshalb von 100 auf etwa 80 – so durch die Produktbeispiele festgelegt.
+  - Vorher (bis Phase 14.1): für alle Hauptziele ±5 % → 100, danach 2 Punkte je Prozent.
 - **Protein je Tag:** ab 90 % des Ziels 100 Punkte, mehr ist nie ein Minus; darunter 2 Punkte je
   fehlendem Prozent (80 % → 80, 50 % → 20).
 - **Tageswert:** 70 % Kalorien + 30 % Protein (nur was ein Ziel hat).

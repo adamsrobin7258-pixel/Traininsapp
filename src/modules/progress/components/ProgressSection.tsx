@@ -3,7 +3,7 @@ import { Link } from 'react-router';
 import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import { formatWeight, formatWeightChange, fromKg, useHealthSync } from '@/core/health';
 import { useI18n, type TranslationKey } from '@/core/i18n';
-import type { CalorieGoalKind, CalorieGoalStatus } from '@/core/nutrition';
+import type { CalorieGoalKind, CalorieGoalStatus, NutrientAttainment } from '@/core/nutrition';
 import { useProgressGoals, type Attainment, type ProgressGoals } from '@/core/progress';
 import { useSettings } from '@/core/settings';
 import { parseLocalDateKey } from '@/shared/lib/date';
@@ -113,8 +113,20 @@ function ProgressRow({
  * Actual against goal: the figures as text, a quiet bar (never beyond 100 %, so "5 of 4" keeps
  * the layout) and the percent. The bar is decorative – everything it shows is in the text.
  */
-function GoalMeter({ value, attainment }: { value: string; attainment: Attainment | null }) {
+function GoalMeter({
+  value,
+  attainment,
+}: {
+  value: string;
+  /** Workouts, minutes, steps keep their real percent (125 %); nutrients stop at 100 %. */
+  attainment: Attainment | NutrientAttainment | null;
+}) {
   const { t, locale } = useI18n();
+  const bar = attainment
+    ? 'shownRatio' in attainment
+      ? attainment.shownRatio
+      : attainment.ratio
+    : 0;
   return (
     <span className={styles.goal}>
       <span className={styles.figures}>
@@ -129,10 +141,7 @@ function GoalMeter({ value, attainment }: { value: string; attainment: Attainmen
       </span>
       {attainment ? (
         <span className={styles.meter} aria-hidden="true">
-          <span
-            className={styles.meterFill}
-            style={{ '--meter-ratio': attainment.shownRatio } as CSSProperties}
-          />
+          <span className={styles.meterFill} style={{ '--meter-ratio': bar } as CSSProperties} />
         </span>
       ) : null}
     </span>
@@ -303,6 +312,26 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
             </span>
           ) : null}
           {proteinNote ? <span className={styles.note}>{proteinNote}</span> : null}
+          {/* Carbohydrates and fat: information only, not part of the score. */}
+          {(
+            [
+              ['carbs', nutrition?.carbs ?? null],
+              ['fat', nutrition?.fat ?? null],
+            ] as const
+          ).map(([key, macro]) =>
+            macro ? (
+              <GoalMeter
+                key={key}
+                value={t(
+                  today
+                    ? `progress.nutrition.${key}Progress`
+                    : `progress.nutrition.${key}AvgProgress`,
+                  { value: number.format(macro.avgG), goal: number.format(macro.avgGoalG) },
+                )}
+                attainment={macro.attainment}
+              />
+            ) : null,
+          )}
           <span className={styles.note}>
             {t('progress.nutrition.logged', {
               count: summary.loggedDays,

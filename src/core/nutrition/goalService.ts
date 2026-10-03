@@ -157,7 +157,16 @@ export class GoalService {
       : new Map<string, { kcal: number; counted: number; excluded: number }>();
     return dates.map((localDate) => {
       const goal = goalForDate(goals, localDate);
-      if (!goal) return { localDate, energyKcal: null, proteinG: null, goalType: null };
+      if (!goal) {
+        return {
+          localDate,
+          energyKcal: null,
+          proteinG: null,
+          carbsG: null,
+          fatG: null,
+          goalType: null,
+        };
+      }
       const day = withActivityCalories(
         { goal, effective: effectiveTargets(goal) },
         activity.get(localDate) ?? { kcal: 0, counted: 0, excluded: 0 },
@@ -167,6 +176,8 @@ export class GoalService {
         localDate,
         energyKcal: day.effective.energyKcal.value,
         proteinG: day.effective.proteinG.value,
+        carbsG: day.effective.carbsG.value,
+        fatG: day.effective.fatG.value,
         goalType: goal.goalType,
       };
     });

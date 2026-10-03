@@ -1,24 +1,33 @@
 /**
  * Whether a day's calories and protein meet the day goal – the one definition the progress page
- * and the score share (Phase 14). Pure.
+ * and the score share (Phase 14, calorie points by main goal since Phase 15). Pure.
  *
- * The thresholds are the existing ones of the Kalethra score (Phase 9), moved here so that no
- * second set of tolerances exists:
- * - `KCAL_GOAL_TOLERANCE`: up to ±5 % from the calorie goal counts as "on the goal".
- * - `PROTEIN_GOAL_REACHED`: protein from 90 % of the goal counts as reached; more is never a minus.
+ * Calories – what "meeting" the goal means and how many points a day gets depends on the main
+ * goal of that day:
+ * - lose: the goal is an upper limit. At or below it → 100; above it the points fall linearly to
+ *   0 at +25 % (+5 % → 80, +10 % → 60, +20 % → 20).
+ * - gain: the goal is an amount to reach. From 95 % on → 100 (more is no bonus and no minus);
+ *   below it the points fall linearly to 0 at 70 % (75 % → 20, 85 % → 60).
+ * - maintain and fitness (calculated exactly like maintain): 95–105 % → 100; outside the range
+ *   the points follow the deviation from the goal, 0 at ±25 % (±10 % → 60, ±20 % → 20) – so at
+ *   the edge of the range they drop from 100 to about 80 (product decision, Phase 15).
+ * Protein from 90 % of the goal counts as reached; more is never a minus.
  *
- * What "meeting" the calorie goal means depends on the main goal:
- * - lose: the goal is an upper limit – at or below it is kept, above it is over.
- * - gain: the goal is an amount to reach – from 95 % on it is reached, more is fine.
- * - maintain and fitness (calculated exactly like maintain): a range of ±5 % around the goal.
- *
- * Today is still running: falling short of a goal is not judged yet (`open`) – the same rule as
- * in the score. Being over a limit is judged today too.
+ * Today is still running: falling short of the goal is not judged yet (status `open`, no points)
+ * – the same rule as before. Being over a goal is judged today too.
  */
-import type { GoalType } from './goals';
+import { goalProgress, type GoalType } from './goals';
 
+/** ±5 %: the range of maintain/fitness, and gain counts as reached from 95 %. */
 export const KCAL_GOAL_TOLERANCE = 0.05;
+/** lose and maintain/fitness: 0 points at 25 % from the goal. */
+export const KCAL_ZERO_DEVIATION = 0.25;
+/** gain: 0 points at 70 % of the goal. */
+export const KCAL_GAIN_ZERO_RATIO = 0.7;
 export const PROTEIN_GOAL_REACHED = 0.9;
+
+/** Floating point slack for the range edges (2.375 of 2.500 kcal is exactly −5 %). */
+const EDGE = 1e-9;
 
 /** `within` = goal kept / reached / in range; `open` = today and not reached yet (neutral). */
 export type CalorieGoalStatus = 'within' | 'below' | 'above' | 'open';
@@ -49,13 +58,13 @@ export function calorieGoalStatus(
       status = eatenKcal <= goalKcal ? 'within' : 'above';
       break;
     case 'minimum':
-      status = deviation >= -KCAL_GOAL_TOLERANCE ? 'within' : 'below';
+      status = deviation >= -KCAL_GOAL_TOLERANCE - EDGE ? 'within' : 'below';
       break;
     case 'range':
       status =
-        deviation > KCAL_GOAL_TOLERANCE
+        deviation > KCAL_GOAL_TOLERANCE + EDGE
           ? 'above'
-          : deviation < -KCAL_GOAL_TOLERANCE
+          : deviation < -KCAL_GOAL_TOLERANCE - EDGE
             ? 'below'
             : 'within';
   }
@@ -71,4 +80,60 @@ export function proteinGoalStatus(
   if (goalG === null || goalG <= 0) return null;
   if (eatenG / goalG >= PROTEIN_GOAL_REACHED) return 'reached';
   return isToday ? 'open' : 'below';
+}
+
+const clamp100 = (value: number) => Math.min(100, Math.max(0, value));
+
+/**
+ * The points (0–100) of one day's calories against its goal, by the day's main goal (see the
+ * rules above). `null` when the day has no calorie goal, or today while below the goal (not
+ * judged yet). Not rounded – the score rounds its area values.
+ */
+export function calorieGoalScore(
+  goalType: GoalType | null,
+  eatenKcal: number,
+  goalKcal: number | null,
+  isToday: boolean,
+): number | null {
+  if (goalKcal === null || goalKcal <= 0) return null;
+  if (isToday && eatenKcal < goalKcal) return null;
+  const ratio = eatenKcal / goalKcal;
+  const deviation = ratio - 1;
+  switch (calorieGoalKind(goalType)) {
+    case 'limit':
+      return deviation <= 0 ? 100 : clamp100(100 - (deviation / KCAL_ZERO_DEVIATION) * 100);
+    case 'minimum': {
+      const reached = 1 - KCAL_GOAL_TOLERANCE;
+      if (ratio >= reached - EDGE) return 100;
+      return clamp100(((ratio - KCAL_GAIN_ZERO_RATIO) / (reached - KCAL_GAIN_ZERO_RATIO)) * 100);
+    }
+    case 'range':
+      return Math.abs(deviation) <= KCAL_GOAL_TOLERANCE + EDGE
+        ? 100
+        : clamp100(100 - (Math.abs(deviation) / KCAL_ZERO_DEVIATION) * 100);
+  }
+}
+
+/** Actual against target of a nutrient (e.g. carbohydrates, fat): no bonus beyond 100 %. */
+export interface NutrientAttainment {
+  actual: number;
+  target: number;
+  /** 0…1 – never more than the target. */
+  ratio: number;
+  /** Whole percent, at most 100. */
+  percent: number;
+}
+
+/**
+ * Simple goal attainment of a nutrient – the eaten amount against its target, capped at 100 %
+ * (built on `goalProgress`, the diary's meter). `null` without a target; missing data are not
+ * passed in (an unlogged day is no 0 g).
+ */
+export function nutrientAttainment(
+  actual: number,
+  target: number | null,
+): NutrientAttainment | null {
+  if (target === null || target <= 0 || !Number.isFinite(actual)) return null;
+  const { ratio } = goalProgress(actual, target);
+  return { actual, target, ratio, percent: Math.round(ratio * 100) };
 }

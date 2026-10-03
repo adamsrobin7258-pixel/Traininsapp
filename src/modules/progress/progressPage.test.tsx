@@ -649,6 +649,36 @@ describe('Fortschritt – the main page', () => {
       expect(main().queryByRole('link', { name: /^Schritte/ })).not.toBeInTheDocument();
     });
 
+    it('nutrition: carbohydrates and fat as plain attainment, at most 100 % – not in the score', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          vi.setSystemTime(new Date(2026, 8, 1, 9));
+          await services.nutrition.goals.save(profileId, {
+            goalType: 'maintain',
+            targets: {
+              energyKcal: { auto: null, manual: 2300 },
+              proteinG: { auto: null, manual: 160 },
+              carbsG: { auto: null, manual: 250 },
+              fatG: { auto: null, manual: 30 },
+            },
+          });
+          vi.setSystemTime(NOW);
+          // Test food per 100 g: 100 kcal, 10 g protein, 10 g carbs, 2 g fat.
+          await eat(services, profileId, [
+            ['2026-10-01', 1800],
+            ['2026-10-02', 1800],
+          ]);
+        },
+      });
+      const nutrition = await findCard(/^Ernährung/);
+      expect(await nutrition.findByText('Ø 180 von 250 g Kohlenhydraten')).toBeInTheDocument();
+      expect(nutrition.getByText('72 %')).toBeInTheDocument();
+      // 36 g of 30 g fat: the real value stays, the attainment stops at 100 %.
+      expect(nutrition.getByText('Ø 36 von 30 g Fett')).toBeInTheDocument();
+      expect(nutrition.getAllByText('100 %').length).toBeGreaterThanOrEqual(1);
+      expect(nutrition.queryByText(/gut|schlecht/i)).not.toBeInTheDocument();
+    });
+
     it('nutrition (Abnehmen): the calorie goal is a limit', async () => {
       await renderApp('/', {
         prepare: async (services, profileId) => {

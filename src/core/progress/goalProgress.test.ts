@@ -253,7 +253,7 @@ describe('nutrition goal', () => {
       reachedDays: 2,
       today: null,
     });
-    expect(result.protein?.attainment).toMatchObject({ percent: 100, shownRatio: 1 });
+    expect(result.protein?.attainment).toMatchObject({ percent: 100, ratio: 1 });
   });
 
   it('uses a manual protein goal as given (no new calculation)', () => {
@@ -300,5 +300,58 @@ describe('nutrition goal', () => {
     expect(result.calories).toBeNull();
     expect(result.protein).toBeNull();
     expect(result.summary.avgKcal).toBe(1800);
+  });
+});
+
+describe('carbohydrates and fat (Phase 15) – information only', () => {
+  const goals: NutritionDayGoal[] = WEEK.map((localDate) => ({
+    localDate,
+    energyKcal: 2200,
+    proteinG: 160,
+    carbsG: localDate < '2026-10-01' ? null : 250,
+    fatG: 80,
+    goalType: 'maintain',
+  }));
+
+  it('averages the logged days that have a target, capped at 100 %', () => {
+    const result = nutritionGoalProgress(
+      [
+        { localDate: '2026-09-29', energyKcal: 2200, proteinG: 160, carbsG: 400, fatG: 100 },
+        { localDate: '2026-10-01', energyKcal: 2200, proteinG: 160, carbsG: 160, fatG: 50 },
+        { localDate: '2026-10-02', energyKcal: 2200, proteinG: 160, carbsG: 200, fatG: 80 },
+      ],
+      goals,
+      WEEK,
+      TODAY,
+    );
+    // Carbs: 29 Sep had no target → only 1 and 2 Oct: Ø 180 of 250 = 72 %.
+    expect(result.carbs).toMatchObject({ avgG: 180, avgGoalG: 250, days: 2 });
+    expect(result.carbs?.attainment).toMatchObject({ percent: 72 });
+    // Fat: Ø 77 of 80 → 96 %; a day over the goal gives no bonus on its own.
+    expect(result.fat).toMatchObject({ avgG: 77, avgGoalG: 80, days: 3 });
+    expect(result.fat?.attainment.percent).toBe(96);
+  });
+
+  it('more than the target stays at 100 %', () => {
+    const result = nutritionGoalProgress(
+      [{ localDate: '2026-10-02', energyKcal: 2200, proteinG: 160, carbsG: 320, fatG: 80 }],
+      goals,
+      WEEK,
+      TODAY,
+    );
+    expect(result.carbs?.attainment).toMatchObject({ actual: 320, percent: 100, ratio: 1 });
+  });
+
+  it('no target or no data → nothing shown (never 0 g)', () => {
+    const noTarget = goals.map((goal) => ({ ...goal, carbsG: null, fatG: null }));
+    expect(
+      nutritionGoalProgress(
+        [{ localDate: '2026-10-02', energyKcal: 2200, proteinG: 160, carbsG: 200, fatG: 70 }],
+        noTarget,
+        WEEK,
+        TODAY,
+      ),
+    ).toMatchObject({ carbs: null, fat: null });
+    expect(nutritionGoalProgress([], goals, WEEK, TODAY)).toMatchObject({ carbs: null, fat: null });
   });
 });

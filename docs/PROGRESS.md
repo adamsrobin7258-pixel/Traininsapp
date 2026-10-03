@@ -97,10 +97,22 @@ Nicht überall „Ist ÷ Ziel“ – das Hauptziel des jeweiligen Tages entschei
 - **Gewicht halten** und **Allgemeine Fitness** (wird exakt wie „Halten“ berechnet): Zielbereich
   ±5 %.
 
-Die 5 % sind keine neue Toleranz: Es ist die bestehende Kalorien-Toleranz des Scores (Phase 9),
-jetzt an einer Stelle (`KCAL_GOAL_TOLERANCE`) für beide. Protein gilt wie im Score ab 90 % als
-erreicht (Anzeige trotzdem mit dem echten Wert, z. B. „145 von 160 g · 91 %“). Für Kalorien gibt es
-bewusst keinen Balken (bei einer Obergrenze wäre „voll“ missverständlich), nur Wert und Status.
+Seit Phase 15 vergibt der Score die Kalorienpunkte nach genau diesen Grenzen
+(`calorieGoalScore` neben `calorieGoalStatus` in `core/nutrition/goalAttainment.ts`; ein Test prüft,
+dass „im Ziel“ auf der Karte und 100 Punkte im Score an jeder Grenze übereinstimmen) – Details und
+Punktverläufe in [SCORE.md](SCORE.md#ernährung). Protein gilt wie im Score ab 90 % als erreicht.
+Für Kalorien gibt es bewusst keinen Balken (bei einer Obergrenze wäre „voll“ missverständlich), nur
+Wert und Status.
+
+### Protein, Kohlenhydrate und Fett (Phase 15)
+
+„Ø 142 von 160 g Protein · 89 %“, „Ø 180 von 250 g Kohlenhydraten · 72 %“, „Ø 65 von 80 g Fett ·
+81 %“: Ø der erfassten Tage, die ein Ziel haben, gegen das Ø Ziel derselben Tage, je Tag die
+damals gültige Zielversion. Eine Funktion für alle drei (`nutrientAttainment`, baut auf
+`goalProgress` des Tagebuchs auf): Prozent und Balken höchstens 100 %, der echte Wert bleibt
+sichtbar. Ohne Ziel oder ohne erfassten Tag erscheint die Zeile nicht (nie „0 g“). Kohlenhydrate
+und Fett sind reine Information – kein Score-Bereich, kein Einfluss auf Kalorienpunkte oder
+Gewichtung. (Bis Phase 14.1 zeigte die Protein-Zeile auch Werte über 100 %.)
 
 ### Fehlende Daten
 

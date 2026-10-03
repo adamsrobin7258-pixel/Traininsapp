@@ -3,33 +3,18 @@ import { useI18n, type TranslateFn } from '@/core/i18n';
 import {
   useNutrition,
   useNutritionData,
-  type BarcodeLookup,
-  type ExternalProduct,
   type Food,
   type FoodSearchResult,
   type ReferenceFood,
 } from '@/core/nutrition';
-import { scanBarcode } from '@/core/platform';
 import { dismissKeyboard, EmptyState, FoodArt, Icon, List, ListRow } from '@/ui';
 import { describeNutritionError, foodSourceLabel, formatQuantity } from '../domain/format';
-import {
-  BarcodeEntrySheet,
-  BarcodeLookupSheet,
-  BarcodeNotFoundSheet,
-  CameraDeniedSheet,
-} from './BarcodeSheets';
+import { useBarcodeFlow } from './useBarcodeFlow';
 import { FoodFormSheet } from './FoodFormSheet';
 import { FavoriteMark, FoodThumb } from './FoodThumb';
 import styles from './Nutrition.module.css';
 
-type Step =
-  | { kind: 'search' }
-  | { kind: 'create'; name: string; barcode?: string }
-  | { kind: 'barcode-entry'; notice?: string }
-  | { kind: 'barcode-lookup'; barcode: string }
-  | { kind: 'barcode-not-found'; barcode: string }
-  | { kind: 'camera-denied' }
-  | { kind: 'import'; product: ExternalProduct };
+type Step = { kind: 'search' } | { kind: 'create'; name: string };
 
 /** How many recently used foods the search shows before the full list. */
 const RECENT_SHOWN = 8;
@@ -112,92 +97,19 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
     );
   }
 
-  async function scan() {
-    dismissKeyboard();
-    const outcome = await scanBarcode({
-      instructions: t('nutrition.lookup.scanInstructions'),
-      cancel: t('common.cancel'),
-    });
-    if (outcome.kind === 'scanned') setStep({ kind: 'barcode-lookup', barcode: outcome.code });
-    else if (outcome.kind === 'denied') setStep({ kind: 'camera-denied' });
-    else if (outcome.kind === 'unavailable') {
-      setStep({ kind: 'barcode-entry', notice: t('nutrition.lookup.scannerUnavailable') });
-    }
-  }
+  // Barcode (scan or type) – the shared flow, also used by the food management.
+  const barcode = useBarcodeFlow({
+    onLocal: picked,
+    onSaved: picked,
+    createName: () => query.trim(),
+  });
 
-  function handleLookup(result: BarcodeLookup) {
-    if (result.kind === 'local') picked(result.food);
-    else if (result.kind === 'external') setStep({ kind: 'import', product: result.product });
-    else setStep({ kind: 'barcode-not-found', barcode: result.barcode });
-  }
-
-  let overlay: ReactNode = null;
-  switch (step.kind) {
-    case 'create':
-      overlay = (
-        <FoodFormSheet
-          initialName={step.name}
-          initialBarcode={step.barcode}
-          onSaved={picked}
-          onClose={back}
-        />
-      );
-      break;
-    case 'import':
-      overlay = <FoodFormSheet product={step.product} onSaved={picked} onClose={back} />;
-      break;
-    case 'barcode-entry':
-      overlay = (
-        <BarcodeEntrySheet
-          notice={step.notice}
-          onSubmit={(barcode) => {
-            setStep({ kind: 'barcode-lookup', barcode });
-          }}
-          onClose={back}
-        />
-      );
-      break;
-    case 'barcode-lookup':
-      overlay = (
-        <BarcodeLookupSheet
-          barcode={step.barcode}
-          onResult={handleLookup}
-          onEnterManually={() => {
-            setStep({ kind: 'barcode-entry' });
-          }}
-          onClose={back}
-        />
-      );
-      break;
-    case 'barcode-not-found':
-      overlay = (
-        <BarcodeNotFoundSheet
-          barcode={step.barcode}
-          onCreate={() => {
-            setStep({ kind: 'create', name: query.trim(), barcode: step.barcode });
-          }}
-          onSearchByName={back}
-          onClose={back}
-        />
-      );
-      break;
-    case 'camera-denied':
-      overlay = (
-        <CameraDeniedSheet
-          onRetry={() => {
-            back();
-            void scan();
-          }}
-          onEnterManually={() => {
-            setStep({ kind: 'barcode-entry' });
-          }}
-          onClose={back}
-        />
-      );
-      break;
-    case 'search':
-      break;
-  }
+  const overlay: ReactNode =
+    step.kind === 'create' ? (
+      <FoodFormSheet initialName={step.name} onSaved={picked} onClose={back} />
+    ) : (
+      barcode.overlay
+    );
 
   const ready = data.status === 'ready' ? data.data : null;
   const searching = query.trim() !== '';
@@ -254,16 +166,10 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
   const panel = (
     <>
       <div className={`${styles.quick} ${styles.quickWide}`}>
-        <button type="button" className={styles.chip} onClick={() => void scan()}>
+        <button type="button" className={styles.chip} onClick={() => void barcode.scan()}>
           <Icon name="barcode" size={18} /> {t('nutrition.lookup.scan')}
         </button>
-        <button
-          type="button"
-          className={styles.chip}
-          onClick={() => {
-            setStep({ kind: 'barcode-entry' });
-          }}
-        >
+        <button type="button" className={styles.chip} onClick={barcode.enter}>
           {t('nutrition.lookup.enterBarcode')}
         </button>
       </div>

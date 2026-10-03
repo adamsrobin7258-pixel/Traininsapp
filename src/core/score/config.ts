@@ -30,12 +30,11 @@ export const NUTRITION = {
   kcalShare: 0.7,
   proteinShare: 0.3,
   /**
-   * Up to this deviation from the calorie goal (either way) a day keeps 100 points … (shared with
-   * the progress page: core/nutrition/goalAttainment.ts)
+   * The calorie points of a day depend on the main goal (lose = upper limit, gain = from 95 %,
+   * maintain/fitness = ±5 %) – one rule for score and progress card, kept with its thresholds in
+   * core/nutrition/goalAttainment.ts (`calorieGoalScore`). This is the ±5 % range shared there.
    */
   kcalTolerance: KCAL_GOAL_TOLERANCE,
-  /** … beyond it, 2 points per further percent (10 % → 90, 20 % → 70, 30 % → 50, 55 % → 0). */
-  kcalPointsPerPercent: 2,
   /** Protein from 90 % of the goal on counts as reached; more is never a penalty … */
   proteinReached: PROTEIN_GOAL_REACHED,
   /** … below it, 2 points per missing percent (80 % → 80, 70 % → 60, 50 % → 20). */

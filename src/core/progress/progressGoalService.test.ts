@@ -374,6 +374,76 @@ describe('progress goals from the real data (Phase 14)', () => {
     });
   });
 
+  describe('nutrition – Phase 15', () => {
+    it('a goal change keeps a past day judged by its own main goal and calorie goal', async () => {
+      const s = await setup();
+      await at(new Date(2026, 8, 1, 9), () =>
+        s.services.nutrition.goals.save(s.profileId, {
+          goalType: 'lose',
+          targets: {
+            energyKcal: { auto: null, manual: 2200 },
+            proteinG: { auto: null, manual: 160 },
+          },
+        }),
+      );
+      // 30 Sep: 2.420 kcal under "Abnehmen 2.200" → +10 % over the limit → 60 points.
+      await eat(s, '2026-09-30', 2420, 160);
+      const before = await s.score();
+      // From 1 Oct "Muskelaufbau 3.000" – 30 Sep must keep its old goal.
+      await at(new Date(2026, 9, 1, 8), () =>
+        s.services.nutrition.goals.save(s.profileId, {
+          goalType: 'gain',
+          targets: {
+            energyKcal: { auto: null, manual: 3000 },
+            proteinG: { auto: null, manual: 160 },
+          },
+        }),
+      );
+      const after = await s.score();
+      expect(after.areas.nutrition).toEqual(before.areas.nutrition);
+      // 60 × 0.7 + 100 × 0.3 = 72 – not "2.420 of 3.000 = 80 % → 40" under the new goal.
+      expect(after.areas.nutrition.score).toBe(72);
+      const card = (await s.progress()).nutrition.calories;
+      expect(card).toMatchObject({ avgGoalKcal: 2200, aboveDays: 1, withinDays: 0 });
+      // The wording follows the goal on the last day of the period.
+      expect(card?.kind).toBe('minimum');
+    });
+
+    it('card, day goal and score read the same day with the same main goal', async () => {
+      const s = await setup();
+      await at(new Date(2026, 8, 1, 9), () =>
+        s.services.nutrition.goals.save(s.profileId, {
+          goalType: 'gain',
+          targets: {
+            energyKcal: { auto: null, manual: 3000 },
+            proteinG: { auto: null, manual: 160 },
+            carbsG: { auto: null, manual: 350 },
+            fatG: { auto: null, manual: 90 },
+          },
+        }),
+      );
+      await eat(s, '2026-10-01', 2850, 160); // 95 % → reached
+      await eat(s, '2026-10-02', 2250, 160); // 75 % → 20 points, below
+      const [dayGoal] = await s.services.nutrition.goals.dayGoalsBetween(s.profileId, [
+        '2026-10-01',
+      ]);
+      expect(dayGoal).toMatchObject({ goalType: 'gain', energyKcal: 3000, carbsG: 350 });
+      const progress = await s.progress();
+      expect(progress.nutrition.calories).toMatchObject({
+        kind: 'minimum',
+        ratedDays: 2,
+        withinDays: 1,
+        belowDays: 1,
+      });
+      const score = await s.score();
+      // Day 1: 100 × 0.7 + 30 = 100, day 2: 20 × 0.7 + 30 = 44 → 72.
+      expect(score.areas.nutrition.score).toBe(72);
+      // The test food has no carbohydrates or fat: 0 g of a target is a real 0 %.
+      expect(progress.nutrition.carbs).toMatchObject({ avgG: 0, avgGoalG: 350 });
+      expect(progress.nutrition.carbs?.attainment.percent).toBe(0);
+    });
+  });
+
   describe('weight', () => {
     it('H: own entry wins, Health Connect is the fallback; only the development, no target', async () => {
       const s = await setup();

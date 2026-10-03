@@ -1,16 +1,27 @@
-import { useId, useState } from 'react';
+import { useDeferredValue, useId, useState } from 'react';
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
-import { matchesFoodSearch, useNutritionData, type Food } from '@/core/nutrition';
-import { EmptyState, FoodArt, List, ListRow, Screen, Section } from '@/ui';
+import {
+  matchesFoodSearch,
+  useNutrition,
+  useNutritionData,
+  type Food,
+  type ReferenceFood,
+} from '@/core/nutrition';
+import { EmptyState, FoodArt, Icon, List, ListRow, Screen, Section } from '@/ui';
 import { FoodFormSheet } from '../components/FoodFormSheet';
 import { FavoriteMark, FoodThumb } from '../components/FoodThumb';
-import { foodSourceLabel, formatQuantity } from '../domain/format';
+import { useBarcodeFlow } from '../components/useBarcodeFlow';
+import { describeNutritionError, foodSourceLabel, formatQuantity } from '../domain/format';
 import styles from '../components/Nutrition.module.css';
 
 /**
- * The stored foods: own foods, saved products and BLS foods used before. Own foods can be
- * corrected, hidden or deleted; BLS foods open read-only (edit as own copy).
+ * The one food management (Einstellungen → Meine Inhalte → Lebensmittel): own foods, saved
+ * products and BLS foods used before. Own foods can be corrected, hidden or deleted (a food in
+ * use is only hidden – logged days keep their snapshot); BLS foods open read-only (edit as own
+ * copy). The search also finds BLS foods not used yet. A barcode (scan or type) uses the same
+ * flow as logging: a known code opens its food, an unknown one is looked up at Open Food Facts
+ * and reviewed in the food form before it is stored.
  */
 export function FoodsScreen() {
   const { t, locale } = useI18n();
@@ -18,6 +29,47 @@ export function FoodsScreen() {
   const [query, setQuery] = useState('');
   const [editing, setEditing] = useState<Food | 'new' | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [failure, setFailure] = useState<string | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
+  const { mutate } = useNutrition();
+  const barcode = useBarcodeFlow({
+    onLocal: (food) => {
+      setNotice(t('nutrition.foods.barcodeFound', { name: food.name }));
+      setEditing(food);
+    },
+    onSaved: (food) => {
+      setNotice(t('nutrition.foods.saved', { name: food.name }));
+    },
+    createName: () => query.trim(),
+  });
+  // BLS foods not used yet – the offline search of the lookup (stored foods are listed below).
+  const searchQuery = useDeferredValue(query.trim());
+  const references = useNutritionData(
+    async (s, profileId) =>
+      searchQuery === ''
+        ? []
+        : (await s.lookup.search(profileId, searchQuery)).flatMap((result) =>
+            result.kind === 'reference' ? [result.reference] : [],
+          ),
+    [searchQuery],
+  );
+  /** A BLS food is stored when it is opened (like on first use), then shown read-only. */
+  function openReference(reference: ReferenceFood) {
+    if (opening) return;
+    setOpening(reference.code);
+    setFailure(null);
+    mutate((s) => s.lookup.useReference(reference)).then(
+      (food) => {
+        setOpening(null);
+        setNotice(null);
+        setEditing(food);
+      },
+      (error: unknown) => {
+        setOpening(null);
+        setFailure(describeNutritionError(error, t));
+      },
+    );
+  }
   const foods = useNutritionData(
     (s, profileId) => s.foods.list(profileId, { includeInactive: true }),
     [],
@@ -46,6 +98,28 @@ export function FoodsScreen() {
       title={t('nutrition.foods.title')}
       back={{ to: SETTINGS_LINKS.content, label: t('settings.content.title') }}
     >
+      <div className={`${styles.quick} ${styles.quickWide}`}>
+        <button
+          type="button"
+          className={styles.chip}
+          onClick={() => {
+            setNotice(null);
+            void barcode.scan();
+          }}
+        >
+          <Icon name="barcode" size={18} /> {t('nutrition.lookup.scan')}
+        </button>
+        <button
+          type="button"
+          className={styles.chip}
+          onClick={() => {
+            setNotice(null);
+            barcode.enter();
+          }}
+        >
+          {t('nutrition.lookup.enterBarcode')}
+        </button>
+      </div>
       <label htmlFor={searchId} className="visually-hidden">
         {t('nutrition.add.search')}
       </label>
@@ -61,6 +135,11 @@ export function FoodsScreen() {
           setQuery(event.target.value);
         }}
       />
+      {failure ? (
+        <p className={styles.error} role="alert">
+          {failure}
+        </p>
+      ) : null}
       {foods.status === 'error' ? (
         <p className={styles.error} role="alert">
           {t('nutrition.errors.loadFailed')}
@@ -130,6 +209,29 @@ export function FoodsScreen() {
           )
         ) : null}
       </Section>
+      {references.status === 'ready' && references.data.length > 0 ? (
+        <Section
+          title={t('nutrition.foods.reference')}
+          footer={`${t('nutrition.foods.referenceHint')} ${t('nutrition.sources.blsAttribution', {
+            version: references.data[0]?.version ?? '',
+          })}`}
+        >
+          <List label={t('nutrition.foods.reference')}>
+            {references.data.map((reference) => (
+              <ListRow
+                key={`bls-${reference.code}`}
+                title={reference.name}
+                subtitle={t('nutrition.sources.bls', { version: reference.version })}
+                leading={<FoodThumb food={reference} />}
+                disabled={opening !== null}
+                onPress={() => {
+                  openReference(reference);
+                }}
+              />
+            ))}
+          </List>
+        </Section>
+      ) : null}
       {hidden.length > 0 ? (
         <Section title={t('nutrition.foods.hidden')} footer={t('nutrition.foods.hiddenHint')}>
           <List label={t('nutrition.foods.hidden')}>
@@ -149,6 +251,7 @@ export function FoodsScreen() {
         </Section>
       ) : null}
 
+      {barcode.overlay}
       {editing ? (
         <FoodFormSheet
           food={editing === 'new' ? undefined : editing}

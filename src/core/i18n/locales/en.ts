@@ -155,6 +155,10 @@ export const en: TranslationSchema = {
       avgKcalProgress: 'Avg {value} of {goal} kcal',
       proteinProgress: '{value} of {goal} g protein',
       avgProteinProgress: 'Avg {value} of {goal} g protein',
+      carbsProgress: '{value} of {goal} g carbohydrates',
+      carbsAvgProgress: 'Avg {value} of {goal} g carbohydrates',
+      fatProgress: '{value} of {goal} g fat',
+      fatAvgProgress: 'Avg {value} of {goal} g fat',
       kcalDays: {
         limit: 'Calorie limit kept on {count} of {total} days',
         minimum: 'Calorie goal reached on {count} of {total} days',
@@ -639,6 +643,10 @@ export const en: TranslationSchema = {
       editHint: 'Changes apply to new entries. Days already logged stay unchanged.',
       deleted: '“{name}” was deleted.',
       deactivated: '“{name}” is still in use and was hidden.',
+      saved: '“{name}” was saved.',
+      barcodeFound: '“{name}” is already saved.',
+      reference: 'From the BLS',
+      referenceHint: 'Opening a BLS food saves it; it can then be edited as your own copy.',
     },
     mealsManage: {
       title: 'Meals of the day',

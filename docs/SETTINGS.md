@@ -102,8 +102,16 @@ Produkte, BLS), Barcode scannen/eingeben und „Neues Lebensmittel anlegen“ (`
 wird beim Eintragen, für Rezeptzutaten und für Vorlagen genutzt – ein dort neu angelegtes
 Lebensmittel steht überall zur Verfügung. Die Auswahl öffnet ohne Tastatur.
 
-**Noch nicht umgesetzt:** Kein Barcode-Einstieg in der zentralen Lebensmittelverwaltung; der
-Scanner bleibt in der Lebensmittelauswahl (Eintragen, Rezept, Vorlage).
+**Barcode und BLS in der Lebensmittelverwaltung (Phase 15).** Meine Inhalte → Lebensmittel hat
+„Barcode scannen“ und „Barcode eingeben“ – derselbe Ablauf wie beim Eintragen (`useBarcodeFlow`,
+gemeinsam mit der Lebensmittelauswahl): bekannter Barcode → das gespeicherte Lebensmittel öffnet
+sich (offline, ohne Anfrage); unbekannt → Open Food Facts → Werte im Lebensmittelformular prüfen
+und bearbeiten → erst „Speichern“ legt es an; nicht gefunden → eigenes Lebensmittel mit
+vorausgefülltem Barcode; offline ohne Treffer → bestehende Fehlermeldung mit „Erneut versuchen“.
+Die Suche zeigt zusätzlich BLS-Lebensmittel („Aus dem BLS“); beim Öffnen wird eines wie bei der
+ersten Verwendung gespeichert und schreibgeschützt gezeigt (als eigene Kopie bearbeitbar).
+Bearbeiten ändert keine eingetragenen Tage (Einträge speichern ihre Nährwerte als Momentaufnahme);
+Löschen blendet ein verwendetes Lebensmittel nur aus.
 
 ### Alte Adressen
 

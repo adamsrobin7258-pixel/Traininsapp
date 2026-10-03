@@ -110,8 +110,23 @@ describe('nutrition progress', () => {
       '2026-10-03',
     );
     expect(totals).toEqual([
-      { localDate: '2026-10-01', energyKcal: 2000, proteinG: 200, entries: 2 },
-      { localDate: '2026-10-03', energyKcal: 1200, proteinG: 120, entries: 1 },
+      // Carbohydrates and fat are summed as well (Phase 15, information on the progress card).
+      {
+        localDate: '2026-10-01',
+        energyKcal: 2000,
+        proteinG: 200,
+        carbsG: 200,
+        fatG: 40,
+        entries: 2,
+      },
+      {
+        localDate: '2026-10-03',
+        energyKcal: 1200,
+        proteinG: 120,
+        carbsG: 120,
+        fatG: 24,
+        entries: 1,
+      },
     ]);
     const summary = summarizeNutrition(totals, [], WEEK);
     // (2000 + 1200) / 2 logged days – not / 7.
@@ -146,6 +161,9 @@ describe('nutrition progress', () => {
       localDate: '2026-10-02',
       energyKcal: 2300,
       proteinG: 160,
+      // No carbohydrate or fat target set – `null`, never 0.
+      carbsG: null,
+      fatG: null,
       goalType: 'maintain',
     });
   });
@@ -207,6 +225,8 @@ describe('nutrition progress', () => {
       localDate: '2026-09-27',
       energyKcal: null,
       proteinG: null,
+      carbsG: null,
+      fatG: null,
       goalType: null,
     });
     expect(goals.at(-1)?.proteinG).toBe(220);

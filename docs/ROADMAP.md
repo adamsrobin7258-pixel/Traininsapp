@@ -313,6 +313,16 @@ Keine neuen Funktionen. Gefunden und behoben:
   „Aktivitäten“ (Mittelwert mit den aktiven Minuten, Gewichtung unverändert); Tendenz neutral
   „Gestiegen“ / „Gesunken“ / „Ungefähr gleich“
 
+## Phase 15 – Ernährung konsolidieren ✅ (Version 0.20.0)
+
+- Kalorienpunkte im Score nach Hauptziel des Tages (Abnehmen Obergrenze, Muskelaufbau ab 95 %,
+  Halten/Fitness 95–105 %) – eine Funktion für Score und Fortschrittskarte
+- Protein unverändert (90 %); Kohlenhydrate und Fett als Zielerreichung auf der Fortschrittskarte,
+  ohne Einfluss auf den Score; Gewichte und vier Bereiche unverändert
+- Lebensmittelverwaltung mit Barcode und BLS-Suche unter Einstellungen → Meine Inhalte (gemeinsamer
+  Barcode-Ablauf mit dem Eintragen); historische Tage bleiben unverändert
+- Keine Migration; Details: [SCORE.md](SCORE.md#ernährung), [SETTINGS.md](SETTINGS.md)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

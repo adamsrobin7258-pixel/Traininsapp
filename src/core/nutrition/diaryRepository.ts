@@ -84,15 +84,26 @@ export class DiaryRepository {
     profileId: string,
     fromDate: string,
     toDate: string,
-  ): Promise<{ localDate: string; energyKcal: number; proteinG: number; entries: number }[]> {
+  ): Promise<
+    {
+      localDate: string;
+      energyKcal: number;
+      proteinG: number;
+      carbsG: number;
+      fatG: number;
+      entries: number;
+    }[]
+  > {
     const rows = await this.db.query<{
       local_date: string;
       energy: number;
       protein: number;
+      carbs: number;
+      fat: number;
       entries: number;
     }>(
       `SELECT local_date, SUM(energy_kcal) AS energy, SUM(protein_g) AS protein,
-         COUNT(*) AS entries
+         SUM(carbs_g) AS carbs, SUM(fat_g) AS fat, COUNT(*) AS entries
        FROM food_entries WHERE profile_id = ? AND local_date BETWEEN ? AND ?
        GROUP BY local_date ORDER BY local_date`,
       [profileId, fromDate, toDate],
@@ -101,6 +112,8 @@ export class DiaryRepository {
       localDate: row.local_date,
       energyKcal: row.energy,
       proteinG: row.protein,
+      carbsG: row.carbs,
+      fatG: row.fat,
       entries: row.entries,
     }));
   }

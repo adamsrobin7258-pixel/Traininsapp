@@ -15,12 +15,14 @@
 import {
   calorieGoalKind,
   calorieGoalStatus,
+  nutrientAttainment,
   proteinGoalStatus,
   summarizeNutrition,
   type CalorieGoalKind,
   type CalorieGoalStatus,
   type NutritionDayGoal,
   type NutritionDayTotals,
+  type NutrientAttainment,
   type NutritionPeriodSummary,
   type ProteinGoalStatus,
 } from '@/core/nutrition';
@@ -187,8 +189,21 @@ export interface ProteinGoalProgress {
   avgGoalG: number;
   ratedDays: number;
   reachedDays: number;
-  attainment: Attainment;
+  /** Average against average goal, at most 100 % (`nutrientAttainment`). */
+  attainment: NutrientAttainment;
   today: ProteinGoalStatus | null;
+}
+
+/**
+ * Carbohydrates or fat: information only – no score, no status, no judgement. Averages of the
+ * logged days that have a target; at most 100 %.
+ */
+export interface MacroGoalProgress {
+  avgG: number;
+  avgGoalG: number;
+  /** Logged days with a target the average covers. */
+  days: number;
+  attainment: NutrientAttainment;
 }
 
 export interface NutritionGoalProgress {
@@ -198,6 +213,32 @@ export interface NutritionGoalProgress {
   calories: CalorieGoalProgress | null;
   /** `null` without a logged day that has a protein goal. */
   protein: ProteinGoalProgress | null;
+  /** `null` without a logged day that has a target (no target or no data → nothing shown). */
+  carbs: MacroGoalProgress | null;
+  fat: MacroGoalProgress | null;
+}
+
+/** Average of a macro over the logged days that have a target and a logged value. */
+function macroProgress(
+  logged: readonly NutritionDayTotals[],
+  goalByDate: ReadonlyMap<string, NutritionDayGoal>,
+  key: 'carbsG' | 'fatG',
+): MacroGoalProgress | null {
+  const eaten: number[] = [];
+  const goals: number[] = [];
+  for (const day of logged) {
+    const value = day[key];
+    const target = goalByDate.get(day.localDate)?.[key] ?? null;
+    if (value === undefined || target === null || target <= 0) continue;
+    eaten.push(value);
+    goals.push(target);
+  }
+  const avgG = average(eaten);
+  const avgGoalG = average(goals);
+  const reached = avgG !== null && avgGoalG !== null ? nutrientAttainment(avgG, avgGoalG) : null;
+  return avgG !== null && avgGoalG !== null && reached
+    ? { avgG, avgGoalG, days: eaten.length, attainment: reached }
+    : null;
 }
 
 const average = (values: readonly number[]) =>
@@ -259,7 +300,9 @@ export function nutritionGoalProgress(
   const avgProtein = average(protein.eaten);
   const avgGoalProtein = average(protein.goal);
   const proteinAttainment =
-    avgProtein !== null && avgGoalProtein !== null ? attainment(avgProtein, avgGoalProtein) : null;
+    avgProtein !== null && avgGoalProtein !== null
+      ? nutrientAttainment(avgProtein, avgGoalProtein)
+      : null;
   return {
     summary,
     calories:
@@ -286,6 +329,8 @@ export function nutritionGoalProgress(
             today: proteinToday,
           }
         : null,
+    carbs: macroProgress(logged, goalByDate, 'carbsG'),
+    fat: macroProgress(logged, goalByDate, 'fatG'),
   };
 }
 
