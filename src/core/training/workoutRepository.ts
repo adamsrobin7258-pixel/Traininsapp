@@ -334,7 +334,8 @@ export class WorkoutRepository {
       id,
       profileId,
     ]);
-    return result.changes === 1;
+    // > 0, not === 1: the native plugin also counts rows removed or cleared by foreign keys.
+    return result.changes > 0;
   }
 
   async nextExercisePosition(workoutId: string): Promise<number> {

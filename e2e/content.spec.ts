@@ -37,13 +37,13 @@ test('Meine Inhalte: overview, content pages, old addresses and back', async ({ 
   await expect(main.getByRole('heading', { level: 1, name: 'Meine Inhalte' })).toBeVisible();
   const nutrition = main.getByRole('list', { name: 'Ernährung' });
   const training = main.getByRole('list', { name: 'Training' });
-  await expect(nutrition.getByRole('link')).toHaveCount(3);
+  await expect(nutrition.getByRole('link')).toHaveCount(4);
   await expect(training.getByRole('link')).toHaveCount(2);
   await expect(nutrition.getByRole('link', { name: /^Mahlzeiten des Tages/ })).toBeVisible();
   for (const link of await main.getByRole('listitem').getByRole('link').all()) {
     expect((await link.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   }
-  await expect(main.getByText(/Rezept/)).toHaveCount(0);
+  await expect(nutrition.getByRole('link', { name: /^Rezepte/ })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
   expect(await noBrokenWords(page)).toBe(true);
 

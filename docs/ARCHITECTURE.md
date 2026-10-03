@@ -284,12 +284,18 @@ Gleiches Muster wie Training: Repositories → `NutritionStore` (Transaktionen) 
 - **Fortschritt** (Mainpage) liest Tagessummen des Tagebuchs und die gültigen Ziele über einen Zeitraum, speichert nichts.
 - **Oberfläche (Phase 4.2.1)** in `modules/nutrition`: Tagesansicht `/nutrition?day=YYYY-MM-DD`
   (zukünftige oder ungültige Tage fallen auf heute zurück), Verwaltungsseiten Lebensmittel,
-  Mahlzeiten des Tages und Vorlagen (seit Phase 11 als `contentRoutes` unter
-  `/settings/content/…` registriert). Der Hinzufügen-Ablauf ist eine Schrittfolge aus Sheets; „Zurück“ führt aus
+  Mahlzeiten des Tages, Vorlagen (mit Bearbeitungsseite) und Rezepte (seit Phase 11/11B als
+  `contentRoutes` unter `/settings/content/…` registriert). Die Lebensmittelauswahl
+  (`useFoodPicker`) und das Rezeptformular (`RecipeFormSheet`) gibt es je einmal; Eintragen,
+  Rezepte und Vorlagen nutzen sie gemeinsam. Der Hinzufügen-Ablauf ist eine Schrittfolge aus Sheets; „Zurück“ führt aus
   jedem Schritt zur Suche statt den Ablauf zu verlassen. Nährwerte in der Vorschau rechnet
   ausschließlich die Kernlogik (`nutrientsForQuantity`, `scaleNutrients`).
 - **Löschen von Lebensmitteln:** `FoodService.remove` löscht nur, wenn kein Eintrag, keine
   Vorlage und kein Rezept darauf verweist; sonst wird ausgeblendet.
+- **Geänderte Zeilen (`RunResult.changes`):** Das native SQLite-Plugin (und sein Web-Pendant)
+  zählt auch Zeilen, die über Fremdschlüssel mitgelöscht oder geleert werden; sql.js zählt nur die
+  Zeilen der Anweisung. Repositories prüfen beim Löschen deshalb `changes > 0`, nicht `=== 1`
+  (abgesichert in `core/database/cascadeChanges.test.ts`).
 - **Ernährungsprofil (Phase 4.2.2):** `core/nutrition/calculation/` ist der einzige Ort der
   Bedarfsberechnung (rein funktional, Parameter zentral in `parameters.ts`, siehe
   [NUTRITION_CALCULATION.md](NUTRITION_CALCULATION.md)). `GoalService` liest Gewicht, Workouts

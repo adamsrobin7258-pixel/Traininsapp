@@ -3,6 +3,8 @@ import { ROUTES } from '@/app/routes';
 import { FoodsScreen } from './screens/FoodsScreen';
 import { MealsScreen } from './screens/MealsScreen';
 import { NutritionScreen } from './screens/NutritionScreen';
+import { RecipesScreen } from './screens/RecipesScreen';
+import { TemplateScreen } from './screens/TemplateScreen';
 import { TemplatesScreen } from './screens/TemplatesScreen';
 
 export const nutritionModule: AppModule = {
@@ -14,6 +16,8 @@ export const nutritionModule: AppModule = {
     { path: 'foods', Screen: FoodsScreen },
     { path: 'meals', Screen: MealsScreen },
     { path: 'templates', Screen: TemplatesScreen },
+    { path: 'templates/:templateId', Screen: TemplateScreen },
+    { path: 'recipes', Screen: RecipesScreen },
   ],
   tab: { labelKey: 'nav.nutrition', icon: 'nutrition' },
 };

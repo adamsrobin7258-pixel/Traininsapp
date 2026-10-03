@@ -4,7 +4,14 @@ import { formatGrams, formatKcal } from '../domain/format';
 import styles from './Nutrition.module.css';
 
 /** Live nutrients of the amount being entered; "–" while the amount is not valid. */
-export function NutrientPreview({ nutrients }: { nutrients: Nutrients | null }) {
+export function NutrientPreview({
+  nutrients,
+  label,
+}: {
+  nutrients: Nutrients | null;
+  /** Accessible name of the group; by default "Nährwerte für diese Menge". */
+  label?: string;
+}) {
   const { t, locale } = useI18n();
   const items = [
     {
@@ -29,7 +36,7 @@ export function NutrientPreview({ nutrients }: { nutrients: Nutrients | null }) 
       className={styles.preview}
       role="group"
       aria-live="polite"
-      aria-label={t('nutrition.add.preview')}
+      aria-label={label ?? t('nutrition.add.preview')}
     >
       {items.map((item) => (
         <div key={item.label} className={styles.figure}>

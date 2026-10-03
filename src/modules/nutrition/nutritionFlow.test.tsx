@@ -502,14 +502,15 @@ describe('meals, templates and foods', () => {
         });
       },
     });
-    await userEvent.click(await screen.findByRole('button', { name: /Porridge/ }));
-    await userEvent.click(dialog().getByRole('button', { name: 'Umbenennen' }));
-    await userEvent.clear(dialog().getByLabelText('Name der Vorlage'));
-    await userEvent.type(dialog().getByLabelText('Name der Vorlage'), 'Haferbrei');
-    await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
-    await closed();
-    await userEvent.click(await screen.findByRole('button', { name: /Haferbrei/ }));
-    await userEvent.click(dialog().getByRole('button', { name: 'Vorlage löschen' }));
+    // A template opens its own page; the name is changed there and saved.
+    await userEvent.click(await screen.findByRole('link', { name: /Porridge/ }));
+    await userEvent.clear(await screen.findByLabelText('Name der Vorlage'));
+    await userEvent.type(screen.getByLabelText('Name der Vorlage'), 'Haferbrei');
+    await userEvent.click(screen.getByRole('button', { name: 'Vorlage speichern' }));
+    expect(await screen.findByRole('status')).toHaveTextContent('Vorlage gespeichert.');
+    await userEvent.click(screen.getByRole('link', { name: 'Vorlagen' }));
+    await userEvent.click(await screen.findByRole('link', { name: /Haferbrei/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Vorlage löschen' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Löschen' }));
     await closed();
     expect(await screen.findByText(/Noch keine Vorlagen/)).toBeInTheDocument();

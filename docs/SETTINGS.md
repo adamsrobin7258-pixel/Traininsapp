@@ -22,20 +22,23 @@ Zurück: jede Unterseite → `/settings`, `/settings` → Fortschritt (`/`), wie
 (`backTarget`). Android-Zurück und Browser-Verlauf folgen derselben Regel. Die Seiten von Meine
 Inhalte liegen eine Ebene tiefer, die Plan-Detailseite zwei (bewusst so entschieden, Phase 11).
 
-## Meine Inhalte (Phase 11)
+## Meine Inhalte (Phase 11 und 11B)
 
-| Route                             | Seite                | Inhalt                                                                                                                                    |
-| --------------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| `/settings/content`               | Meine Inhalte        | Ernährung: Lebensmittel, Mahlzeiten des Tages, Vorlagen · Training: Trainingspläne, Übungen – je mit kurzer Beschreibung und Anzahl       |
-| `/settings/content/foods`         | Lebensmittel         | Suche, Favoriten, eigene und ausgeblendete Lebensmittel; bearbeiten, löschen/ausblenden, BLS als eigene Kopie (`FoodFormSheet`)           |
-| `/settings/content/meals`         | Mahlzeiten des Tages | Abschnitte des Tagebuchs (Frühstück …): hinzufügen, umbenennen, verschieben, ein-/ausblenden; mindestens einer bleibt sichtbar            |
-| `/settings/content/templates`     | Vorlagen             | anzeigen, umbenennen, löschen                                                                                                             |
-| `/settings/content/plans`         | Trainingspläne       | Liste, neuer Plan                                                                                                                         |
-| `/settings/content/plans/:planId` | Plan                 | Tage und Übungen hinzufügen, umbenennen, verschieben, löschen; Satz-/Wiederholungsziele, Aufwärm- und Drop-Sätze; Plan umbenennen/löschen |
-| `/settings/content/exercises`     | Übungen              | Bibliothek (schreibgeschützt) mit Suche, Filtern, Details und Favoriten; eigene Übungen anlegen, bearbeiten, (de)aktivieren               |
+| Route                                     | Seite                | Inhalt                                                                                                                                       |
+| ----------------------------------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/settings/content`                       | Meine Inhalte        | Ernährung: Lebensmittel, Mahlzeiten des Tages, Vorlagen, Rezepte · Training: Trainingspläne, Übungen – je mit kurzer Beschreibung und Anzahl |
+| `/settings/content/foods`                 | Lebensmittel         | Suche, Favoriten, eigene und ausgeblendete Lebensmittel; bearbeiten, löschen/ausblenden, BLS als eigene Kopie (`FoodFormSheet`)              |
+| `/settings/content/meals`                 | Mahlzeiten des Tages | Abschnitte des Tagebuchs (Frühstück …): hinzufügen, umbenennen, verschieben, ein-/ausblenden; mindestens einer bleibt sichtbar               |
+| `/settings/content/templates`             | Vorlagen             | Liste; jede Vorlage öffnet ihre Bearbeitung                                                                                                  |
+| `/settings/content/templates/:templateId` | Vorlage              | Name, Mahlzeit (oder keine), Lebensmittel und Mengen ändern, entfernen, hinzufügen; speichern; löschen (Phase 11B)                           |
+| `/settings/content/recipes`               | Rezepte              | Suche, Liste mit Portionen, Zutaten und kcal pro Portion; Rezept anlegen, öffnen/bearbeiten, löschen (Phase 11B)                             |
+| `/settings/content/plans`                 | Trainingspläne       | Liste, neuer Plan                                                                                                                            |
+| `/settings/content/plans/:planId`         | Plan                 | Tage und Übungen hinzufügen, umbenennen, verschieben, löschen; Satz-/Wiederholungsziele, Aufwärm- und Drop-Sätze; Plan umbenennen/löschen    |
+| `/settings/content/exercises`             | Übungen              | Bibliothek (schreibgeschützt) mit Suche, Filtern, Details und Favoriten; eigene Übungen anlegen, bearbeiten, (de)aktivieren                  |
 
-Zurück: Inhaltsseite → Meine Inhalte → Einstellungen → Fortschritt; Plan → Trainingspläne. Nach
-dem Löschen eines Plans geht es (ohne Verlaufseintrag) zur Planliste.
+Zurück: Inhaltsseite → Meine Inhalte → Einstellungen → Fortschritt; Plan → Trainingspläne;
+Vorlage → Vorlagen. Nach dem Löschen eines Plans oder einer Vorlage geht es (ohne Verlaufseintrag)
+zur Liste.
 
 **Technik.** Die Seiten gehören weiter ihren Fachmodulen (`modules/nutrition`,
 `modules/training`) und werden dort über `AppModule.contentRoutes` unter `/settings/content/…`
@@ -49,7 +52,8 @@ Migration; alle Schreibwege bleiben dieselben Services (Lebensmittel, Mahlzeiten
 bleiben Schnellzugriffe, die dieselben Formulare und Services nutzen:
 
 - Ernährung, Hinzufügen-Fenster: „Neues Lebensmittel anlegen“, Barcode scannen/eingeben (inkl.
-  „unbekannt → anlegen“), Vorlagen anwenden; im Tagebuch „Als Vorlage speichern“.
+  „unbekannt → anlegen“), Vorlagen anwenden, Rezepte eintragen, „Neues Rezept anlegen“ (dasselbe
+  Rezeptformular, danach direkt eintragen); im Tagebuch „Als Vorlage speichern“.
 - Training, Übungsauswahl (Plan bearbeiten, laufendes und abgeschlossenes Training): „Eigene Übung
   anlegen“.
 - Training, Start-Fenster ohne Plan: „Zu Plänen“ führt zu Meine Inhalte → Trainingspläne.
@@ -58,14 +62,48 @@ bleiben Schnellzugriffe, die dieselben Formulare und Services nutzen:
 „Freies Training“ und „Aus Plan starten“ mit allen Tagen aller Pläne). Die Planseite hat keinen
 Start-Knopf mehr.
 
-**Noch nicht umgesetzt** (bewusst nicht Teil von Phase 11):
+### Rezepte (Phase 11B)
 
-- Rezepte haben eine fertige Datengrundlage (`RecipeService`, `recipes`, Eintragen über
-  `DiaryService.addRecipe`), aber noch keine Oberfläche; sie erscheinen deshalb nicht in Meine
-  Inhalte.
-- Vorlagen können nicht inhaltlich bearbeitet werden (nur umbenennen und löschen; Mengen lassen
-  sich beim Anwenden anpassen).
-- Kein Barcode-Einstieg in der Lebensmittelverwaltung; der Scanner bleibt im Hinzufügen-Fenster.
+- **Ein Formular:** `RecipeFormSheet` (in `modules/nutrition`) für neue und bestehende Rezepte –
+  in Meine Inhalte → Rezepte und als Schnellzugriff im Hinzufügen-Fenster. Felder: Name, Portionen
+  (über 0 bis 100), Zubereitung in Minuten (optional, ganze Zahl bis 1440), Zutaten (Lebensmittel,
+  Menge, Einheit, Hinweis), Beschreibung und Notizen (optional). Ein Rezept ohne Zutaten ist
+  erlaubt (wie im Service) und hat keine Nährwerte.
+- **Nährwerte:** gesamt und pro Portion aus `recipeNutrition` (Summe der Zutaten nach Menge ÷
+  Portionen) – dieselbe Funktion, die der `RecipeService` und das Eintragen nutzen; die Oberfläche
+  rechnet nichts selbst.
+- **Speichern/Löschen:** `RecipeService.create/update/delete` (Tabellen `recipes`,
+  `recipe_ingredients`). Löschen fragt nach; eingetragene Tage behalten ihren Eintrag (die
+  Rezept-Referenz wird geleert, `ON DELETE SET NULL`).
+- **Eintragen:** Hinzufügen-Fenster → Reiter „Rezepte“ (Suche, Liste, „Neues Rezept anlegen“) →
+  Portionen (z. B. 0,5 oder 2) und Mahlzeit → `DiaryService.addRecipe`. Der Eintrag speichert die
+  Nährwerte als Momentaufnahme; spätere Änderungen am Rezept oder an Lebensmitteln ändern
+  vergangene Tage (und damit den Score) nicht.
+- **Ausgeblendete Zutaten** bleiben im Rezept und werden als „Ausgeblendet – bleibt erhalten“
+  markiert, nie ersetzt.
+
+### Vorlagen bearbeiten (Phase 11B)
+
+- Seite `/settings/content/templates/:templateId`: Name, Mahlzeit (auch „Keine feste Mahlzeit“),
+  Lebensmittel mit Menge und Einheit ändern, entfernen und hinzufügen; speichern über
+  `MealService.updateSavedMeal`, löschen über `deleteSavedMeal`. Mindestens ein Lebensmittel bleibt
+  Pflicht (Regel des Service).
+- Änderungen gelten fürs nächste Anwenden; bereits eingetragene Tage bleiben unverändert (das
+  Anwenden erzeugt eigene Einträge mit Momentaufnahme).
+- Erstellt werden Vorlagen weiter im Tagebuch („Als Vorlage speichern“), angewendet im
+  Hinzufügen-Fenster. Rezepte und Vorlagen bleiben getrennte Konzepte und Tabellen; gemeinsam ist
+  nur die Bearbeitungszeile für Lebensmittel und Mengen (`QuantityRows`).
+
+### Gemeinsame Lebensmittel-Auswahl
+
+`useFoodPicker` / `FoodPickerSheet` (in `modules/nutrition`) ist die eine Lebensmittelauswahl:
+Zuletzt verwendet, Favoriten, alle gespeicherten Lebensmittel, Offline-Suche (eigene, gespeicherte
+Produkte, BLS), Barcode scannen/eingeben und „Neues Lebensmittel anlegen“ (`FoodFormSheet`). Sie
+wird beim Eintragen, für Rezeptzutaten und für Vorlagen genutzt – ein dort neu angelegtes
+Lebensmittel steht überall zur Verfügung. Die Auswahl öffnet ohne Tastatur.
+
+**Noch nicht umgesetzt:** Kein Barcode-Einstieg in der zentralen Lebensmittelverwaltung; der
+Scanner bleibt in der Lebensmittelauswahl (Eintragen, Rezept, Vorlage).
 
 ### Alte Adressen
 

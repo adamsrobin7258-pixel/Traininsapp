@@ -124,7 +124,7 @@ async function content(services: AppServices, profileId: string) {
 }
 
 describe('Einstellungen → Meine Inhalte', () => {
-  it('lists nutrition and training content with counts – no recipes yet', async () => {
+  it('lists nutrition and training content with counts, recipes included', async () => {
     await renderApp('/settings/content', { prepare: content });
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Meine Inhalte' }),
@@ -135,6 +135,7 @@ describe('Einstellungen → Meine Inhalte', () => {
       '/settings/content/foods',
       '/settings/content/meals',
       '/settings/content/templates',
+      '/settings/content/recipes',
     ]);
     expect(training.getAllByRole('link').map((link) => link.getAttribute('href'))).toEqual([
       '/settings/content/plans',
@@ -152,7 +153,7 @@ describe('Einstellungen → Meine Inhalte', () => {
       await training.findByRole('link', { name: /^Trainingspläne1 · Trainingstage/ }),
     ).toBeInTheDocument();
     expect(training.getByRole('link', { name: /^Übungen.*Favoriten/ })).toBeInTheDocument();
-    expect(main().queryByText(/Rezept/)).not.toBeInTheDocument();
+    expect(nutrition.getByRole('link', { name: /^Rezepte0 · Zutaten/ })).toBeInTheDocument();
   });
 
   it.each([

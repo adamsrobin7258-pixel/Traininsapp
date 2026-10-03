@@ -6,21 +6,27 @@ import { List, ListRow, Screen, Section } from '@/ui';
 
 /**
  * Einstellungen → Meine Inhalte: the one place where the user's own content is managed –
- * foods, meals of the day and templates for nutrition, plans and exercises for training.
- * The pages themselves belong to their areas (mounted here via `AppModule.contentRoutes`);
- * the areas keep only tracking and quick access (a new food or template while logging, a new
- * exercise in the picker). Recipes have no interface yet and are not listed.
+ * foods, meals of the day, templates and recipes for nutrition, plans and exercises for
+ * training. The pages themselves belong to their areas (mounted here via
+ * `AppModule.contentRoutes`); the areas keep only tracking and quick access (a new food,
+ * template or recipe while logging, a new exercise in the picker).
  */
 export function ContentScreen() {
   const { t, locale } = useI18n();
   // Small counts from the existing lists; the rows are usable before they arrive.
   const nutrition = useNutritionData(async (s, profileId) => {
-    const [foods, meals, templates] = await Promise.all([
+    const [foods, meals, templates, recipes] = await Promise.all([
       s.foods.list(profileId),
       s.meals.listActive(profileId),
       s.meals.listSavedMeals(profileId),
+      s.recipes.list(profileId),
     ]);
-    return { foods: foods.length, meals: meals.length, templates: templates.length };
+    return {
+      foods: foods.length,
+      meals: meals.length,
+      templates: templates.length,
+      recipes: recipes.length,
+    };
   }, []);
   const plans = useTrainingData(
     async (s, profileId) => (await s.plans.listPlans(profileId)).length,
@@ -59,6 +65,12 @@ export function ContentScreen() {
             title={t('nutrition.templates.title')}
             subtitle={hint('settings.content.templatesHint', counts?.templates)}
             to={CONTENT_LINKS.templates}
+          />
+          <ListRow
+            icon="flame"
+            title={t('nutrition.recipes.title')}
+            subtitle={hint('settings.content.recipesHint', counts?.recipes)}
+            to={CONTENT_LINKS.recipes}
           />
         </List>
       </Section>

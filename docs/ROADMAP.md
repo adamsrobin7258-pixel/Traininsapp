@@ -252,11 +252,19 @@ aktualisierter Dokumentation.
 - Alte Adressen leiten weiter (Plan-ID bleibt erhalten)
 - Details: [SETTINGS.md](SETTINGS.md)
 
-## Phase 11B – Vorschlag
+## Phase 11B – Rezepte und Vorlagen bearbeiten ✅ (Version 0.16.0)
 
-- Rezepte: Oberfläche zum Anlegen und Bearbeiten (Zutaten, Mengen, Portionen) auf dem bestehenden
-  `RecipeService`, Eintragen im Hinzufügen-Fenster, Platz unter Meine Inhalte
-- Vorlagen inhaltlich bearbeiten (Positionen und Mengen; `MealService.updateSavedMeal` existiert)
+- Rezeptverwaltung unter Meine Inhalte → Rezepte: anlegen, bearbeiten (Zutaten, Mengen,
+  Portionen), löschen; Nährwerte gesamt und pro Portion aus der bestehenden Kernberechnung
+- Rezepte im Hinzufügen-Fenster eintragen (Portionen frei wählbar), „Neues Rezept anlegen“ als
+  Schnellzugriff mit demselben Formular
+- Vorlagen inhaltlich bearbeiten (`/settings/content/templates/:templateId`)
+- Eine gemeinsame Lebensmittelauswahl für Eintragen, Rezepte und Vorlagen
+- Behoben: Löschen von Rezepten, Vorlagen, Plänen, Trainingstagen und Trainings mit abhängigen
+  Daten meldete auf Android und im Browser fälschlich einen Fehler (das Plugin zählt
+  mitgelöschte Zeilen mit)
+- Keine Migration; eingetragene Tage und der Score bleiben unverändert
+- Details: [SETTINGS.md](SETTINGS.md)
 
 ## Phase 6.4 – geplant
 
@@ -264,7 +272,6 @@ aktualisierter Dokumentation.
 
 ## Phase 4.6 – Vorschlag
 
-- Rezepte in der Oberfläche (Erstellen, Anzeigen, Eintragen) im neuen Design
 - Such-Synonyme für den BLS (z. B. „Brokkoli“ → „Broccoli“)
 - Manuelle „Daten aktualisieren“-Funktion für importierte Produkte (mit Änderungsvorschau)
 

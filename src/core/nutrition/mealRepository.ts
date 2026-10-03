@@ -176,7 +176,8 @@ export class MealRepository {
       id,
       profileId,
     ]);
-    return result.changes === 1;
+    // > 0, not === 1: the native plugin also counts rows removed or cleared by foreign keys.
+    return result.changes > 0;
   }
 
   private async replaceItems(savedMealId: string, items: readonly SavedMealItem[]) {

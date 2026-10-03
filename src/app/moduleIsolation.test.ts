@@ -79,7 +79,7 @@ describe('content routes (Einstellungen → Meine Inhalte)', () => {
     expect(owners).toEqual({
       progress: [],
       training: ['plans', 'plans/:planId', 'exercises'],
-      nutrition: ['foods', 'meals', 'templates'],
+      nutrition: ['foods', 'meals', 'templates', 'templates/:templateId', 'recipes'],
       health: [],
       settings: [],
     });
@@ -93,6 +93,8 @@ describe('content routes (Einstellungen → Meine Inhalte)', () => {
       CONTENT_LINKS.plans,
       CONTENT_LINKS.plan('abc'),
       CONTENT_LINKS.exercises,
+      CONTENT_LINKS.recipes,
+      CONTENT_LINKS.template('abc'),
     ];
     for (const link of links) {
       expect(contentPatterns.some((pattern) => matchPath(pattern, link))).toBe(true);

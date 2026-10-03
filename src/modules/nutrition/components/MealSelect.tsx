@@ -10,17 +10,21 @@ export function MealSelect({
   value,
   onChange,
   current,
+  noneLabel,
 }: {
   meals: readonly MealSlot[];
   value: string;
   onChange: (mealId: string) => void;
   /** The entry's meal when it is hidden by now (keeps the select's value valid). */
   current?: { id: string; label: string } | null;
+  /** Offers "no meal" (value `''`), e.g. for a template that belongs to no meal. */
+  noneLabel?: string;
 }) {
   const { t } = useI18n();
   const id = useId();
   const options = meals.map((meal) => ({ id: meal.id, label: mealName(meal, t) }));
   if (current && !options.some((option) => option.id === current.id)) options.push(current);
+  if (noneLabel !== undefined) options.unshift({ id: '', label: noneLabel });
   return (
     <div className={styles.pairItem}>
       <label htmlFor={id} className={styles.label}>

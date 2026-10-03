@@ -89,7 +89,7 @@ test('Einstellungen: profile, goals, content and app – each in one place', asy
   await expect(page).toHaveURL(/\/settings$/);
   await entries.getByRole('link', { name: /^Meine Inhalte/ }).click();
   await expect(main.getByRole('heading', { level: 1, name: 'Meine Inhalte' })).toBeVisible();
-  await expect(main.getByRole('link')).toHaveCount(6); // back link + five content pages
+  await expect(main.getByRole('link')).toHaveCount(7); // back link + six content pages
   await page.goBack();
 
   // App: appearance, water quick buttons, Health Connect, privacy – no goals.

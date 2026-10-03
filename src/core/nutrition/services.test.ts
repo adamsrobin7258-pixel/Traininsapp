@@ -367,6 +367,238 @@ describe('recipes', () => {
     expect(kept).toMatchObject({ name: 'Overnight Oats', recipeId: null });
     expect(kept?.nutrients.energyKcal).toBe(300);
   });
+
+  it('creates, reads, edits and deletes a recipe with its ingredients', async () => {
+    const { n, profileId } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    const milk = await n.foods.create(profileId, {
+      name: 'Milch',
+      reference: { amount: 100, unit: 'ml' },
+      nutrients: { ...ZERO_NUTRIENTS, energyKcal: 64, proteinG: 3.4, carbsG: 4.8, fatG: 3.5 },
+    });
+    const berries = await n.foods.create(profileId, {
+      name: 'Beeren',
+      reference: { amount: 100, unit: 'g' },
+      nutrients: { ...ZERO_NUTRIENTS, energyKcal: 40, proteinG: 1, carbsG: 8, fatG: 0 },
+    });
+    const created = await n.recipes.create(profileId, {
+      name: ' Porridge ',
+      description: 'Warm',
+      servings: 2,
+      prepMinutes: 10,
+      notes: '',
+      ingredients: [
+        { foodId: oats.id, amount: 100, unit: 'g', note: 'kernig' },
+        { foodId: milk.id, amount: 0.5, unit: 'l' },
+      ],
+    });
+    const read = await n.recipes.get(profileId, created.id);
+    expect(read).toMatchObject({
+      name: 'Porridge',
+      description: 'Warm',
+      servings: 2,
+      prepMinutes: 10,
+      notes: null,
+    });
+    expect(read.ingredients.map((i) => [i.foodId, i.amount, i.unit, i.position, i.note])).toEqual([
+      [oats.id, 100, 'g', 0, 'kernig'],
+      [milk.id, 0.5, 'l', 1, null],
+    ]);
+    // 200 kcal (100 g oats) + 320 kcal (500 ml milk) = 520 kcal; 2 servings → 260 kcal each.
+    let nutrition = await n.recipes.nutrition(profileId, created.id);
+    expect(nutrition.total.totals.energyKcal).toBe(520);
+    expect(nutrition.perServing.totals.energyKcal).toBe(260);
+    expect(nutrition.perServing.totals.proteinG).toBe(18.5);
+
+    // Change an amount, remove milk, add berries, change the servings.
+    await n.recipes.update(profileId, created.id, {
+      name: 'Porridge mit Beeren',
+      servings: 4,
+      ingredients: [
+        { foodId: oats.id, amount: 200, unit: 'g' },
+        { foodId: berries.id, amount: 150, unit: 'g' },
+      ],
+    });
+    const updated = await n.recipes.get(profileId, created.id);
+    expect(updated.ingredients.map((i) => [i.foodId, i.amount])).toEqual([
+      [oats.id, 200],
+      [berries.id, 150],
+    ]);
+    expect(updated).toMatchObject({ name: 'Porridge mit Beeren', servings: 4, description: null });
+    nutrition = await n.recipes.nutrition(profileId, created.id);
+    expect(nutrition.total.totals.energyKcal).toBe(460); // 400 + 60
+    expect(nutrition.perServing.totals.energyKcal).toBe(115);
+
+    expect((await n.recipes.list(profileId)).map((r) => r.name)).toEqual(['Porridge mit Beeren']);
+    await n.recipes.delete(profileId, created.id);
+    expect(await n.recipes.list(profileId)).toEqual([]);
+    expect(await code(n.recipes.get(profileId, created.id))).toBe('not-found');
+  });
+
+  it('allows a recipe without ingredients (no nutrients) and validates its values', async () => {
+    const { n, profileId } = await setup();
+    const empty = await n.recipes.create(profileId, { name: 'Idee', servings: 1, ingredients: [] });
+    expect((await n.recipes.nutrition(profileId, empty.id)).total.totals.energyKcal).toBe(0);
+    const oats = await n.foods.create(profileId, oatsInput);
+    const input = { name: 'X', servings: 1, ingredients: [] };
+    expect(await code(n.recipes.create(profileId, { ...input, name: ' ' }))).toBe('invalid-name');
+    expect(await code(n.recipes.create(profileId, { ...input, servings: 0 }))).toBe(
+      'invalid-value',
+    );
+    expect(await code(n.recipes.create(profileId, { ...input, servings: 101 }))).toBe(
+      'invalid-value',
+    );
+    expect(await code(n.recipes.create(profileId, { ...input, prepMinutes: 1.5 }))).toBe(
+      'invalid-value',
+    );
+    expect(
+      await code(
+        n.recipes.create(profileId, {
+          ...input,
+          ingredients: [{ foodId: oats.id, amount: 0, unit: 'g' }],
+        }),
+      ),
+    ).toBe('invalid-value');
+    expect(
+      await code(
+        n.recipes.create(profileId, {
+          ...input,
+          ingredients: [{ foodId: 'unknown', amount: 10, unit: 'g' }],
+        }),
+      ),
+    ).toBe('not-found');
+  });
+
+  it('changing or deleting a recipe never changes logged days', async () => {
+    const { n, profileId, lunch } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    const recipe = await n.recipes.create(profileId, {
+      name: 'Oats',
+      servings: 2,
+      ingredients: [{ foodId: oats.id, amount: 200, unit: 'g' }],
+    });
+    const logged = await n.diary.addRecipe(profileId, {
+      recipeId: recipe.id,
+      servings: 0.5,
+      localDate: '2026-10-02',
+      mealId: lunch.id,
+    });
+    expect(logged.nutrients.energyKcal).toBe(100);
+
+    await n.recipes.update(profileId, recipe.id, {
+      name: 'Oats XL',
+      servings: 1,
+      ingredients: [{ foodId: oats.id, amount: 400, unit: 'g' }],
+    });
+    // Also correcting the food itself changes nothing in the past.
+    await n.foods.update(profileId, oats.id, {
+      ...oatsInput,
+      nutrients: { ...oatsInput.nutrients, energyKcal: 999 },
+    });
+    let [entry] = (await n.diary.getDay(profileId, '2026-10-02')).entries;
+    expect(entry).toMatchObject({ name: 'Oats', recipeId: recipe.id, amount: 0.5 });
+    expect(entry?.nutrients.energyKcal).toBe(100);
+
+    // New entries use the recipe as it is now.
+    const next = await n.diary.addRecipe(profileId, {
+      recipeId: recipe.id,
+      servings: 1,
+      localDate: '2026-10-03',
+      mealId: lunch.id,
+    });
+    expect(next).toMatchObject({ name: 'Oats XL' });
+    expect(next.nutrients.energyKcal).toBe(3996);
+
+    await n.recipes.delete(profileId, recipe.id);
+    [entry] = (await n.diary.getDay(profileId, '2026-10-02')).entries;
+    expect(entry).toMatchObject({ name: 'Oats', recipeId: null, amount: 0.5 });
+    expect(entry?.nutrients.energyKcal).toBe(100);
+    expect((await n.diary.dailyTotalsBetween(profileId, '2026-10-02', '2026-10-03')).length).toBe(
+      2,
+    );
+  });
+
+  it('keeps a hidden ingredient as it is; the food cannot be deleted while it is used', async () => {
+    const { n, profileId } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    const recipe = await n.recipes.create(profileId, {
+      name: 'Oats',
+      servings: 1,
+      ingredients: [{ foodId: oats.id, amount: 50, unit: 'g' }],
+    });
+    expect(await n.foods.remove(profileId, oats.id)).toBe('deactivated');
+    expect((await n.foods.findMany(profileId, [oats.id]))[0]?.active).toBe(false);
+    // Still computable and still editable with the hidden food.
+    expect((await n.recipes.nutrition(profileId, recipe.id)).total.totals.energyKcal).toBe(100);
+    await n.recipes.update(profileId, recipe.id, {
+      name: 'Oats',
+      servings: 1,
+      ingredients: [{ foodId: oats.id, amount: 100, unit: 'g' }],
+    });
+    expect((await n.recipes.get(profileId, recipe.id)).ingredients[0]?.foodId).toBe(oats.id);
+  });
+});
+
+describe('template editing', () => {
+  it('changes items and amounts; logged days stay, new entries use the new version', async () => {
+    const { n, profileId, breakfast } = await setup();
+    const oats = await n.foods.create(profileId, oatsInput);
+    const milk = await n.foods.create(profileId, {
+      name: 'Milch',
+      reference: { amount: 100, unit: 'ml' },
+      nutrients: { ...ZERO_NUTRIENTS, energyKcal: 64, proteinG: 3.4, carbsG: 4.8, fatG: 3.5 },
+    });
+    const berries = await n.foods.create(profileId, {
+      name: 'Beeren',
+      reference: { amount: 100, unit: 'g' },
+      nutrients: { ...ZERO_NUTRIENTS, energyKcal: 40, proteinG: 1, carbsG: 8, fatG: 0 },
+    });
+    const template = await n.meals.saveMeal(profileId, {
+      name: 'Frühstück',
+      mealId: breakfast.id,
+      items: [
+        { foodId: oats.id, amount: 60, unit: 'g' },
+        { foodId: milk.id, amount: 250, unit: 'ml' },
+      ],
+    });
+    await n.diary.addSavedMeal(profileId, {
+      savedMealId: template.id,
+      localDate: '2026-10-02',
+      mealId: breakfast.id,
+    });
+    const before = (await n.diary.getDay(profileId, '2026-10-02')).entries;
+
+    // Change the oats amount, remove milk, add berries, no fixed meal.
+    await n.meals.updateSavedMeal(profileId, template.id, {
+      name: 'Frühstück leicht',
+      mealId: null,
+      items: [
+        { foodId: oats.id, amount: 40, unit: 'g' },
+        { foodId: berries.id, amount: 100, unit: 'g' },
+      ],
+    });
+    const changed = await n.meals.getSavedMeal(profileId, template.id);
+    expect(changed).toMatchObject({ name: 'Frühstück leicht', mealId: null });
+    expect(changed.items.map((i) => [i.foodId, i.amount, i.position])).toEqual([
+      [oats.id, 40, 0],
+      [berries.id, 100, 1],
+    ]);
+    expect((await n.diary.getDay(profileId, '2026-10-02')).entries).toEqual(before);
+
+    const applied = await n.diary.addSavedMeal(profileId, {
+      savedMealId: template.id,
+      localDate: '2026-10-03',
+      mealId: breakfast.id,
+    });
+    expect(applied.map((e) => [e.name, e.nutrients.energyKcal])).toEqual([
+      ['Haferflocken', 80],
+      ['Beeren', 40],
+    ]);
+    // A template needs at least one food (unchanged rule).
+    expect(
+      await code(n.meals.updateSavedMeal(profileId, template.id, { name: 'Leer', items: [] })),
+    ).toBe('invalid-value');
+  });
 });
 
 describe('water', () => {

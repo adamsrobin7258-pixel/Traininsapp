@@ -306,6 +306,64 @@ describe('score from the real data', () => {
     expect(result.trend).toBe('none');
   });
 
+  it('changing a recipe or a template later never changes a past score', async () => {
+    const s = await setup();
+    await goal(s);
+    const n = s.services.nutrition;
+    await n.meals.ensureDefaults(s.profileId);
+    const [meal] = await n.meals.listActive(s.profileId);
+    const mealId = meal?.id ?? '';
+    const food = await n.foods.create(s.profileId, {
+      name: 'Base',
+      reference: { amount: 100, unit: 'g' },
+      nutrients: {
+        energyKcal: 1150,
+        proteinG: 80,
+        carbsG: 0,
+        fatG: 0,
+        fiberG: null,
+        sugarG: null,
+        saturatedFatG: null,
+      },
+    });
+    // 2 servings of a recipe of 2 × 100 g → 1150 kcal / 80 g protein per serving.
+    const recipe = await n.recipes.create(s.profileId, {
+      name: 'Bowl',
+      servings: 2,
+      ingredients: [{ foodId: food.id, amount: 200, unit: 'g' }],
+    });
+    await n.diary.addRecipe(s.profileId, {
+      recipeId: recipe.id,
+      servings: 2,
+      localDate: '2026-09-30',
+      mealId,
+    });
+    const template = await n.meals.saveMeal(s.profileId, {
+      name: 'Day',
+      items: [{ foodId: food.id, amount: 200, unit: 'g' }],
+    });
+    await n.diary.addSavedMeal(s.profileId, {
+      savedMealId: template.id,
+      localDate: '2026-10-01',
+      mealId,
+    });
+    const before = await s.services.score.calculate(s.profileId, WEEK, options());
+    expect(before.areas.nutrition.score).toBe(100);
+
+    await n.recipes.update(s.profileId, recipe.id, {
+      name: 'Bowl',
+      servings: 1,
+      ingredients: [{ foodId: food.id, amount: 600, unit: 'g' }],
+    });
+    await n.meals.updateSavedMeal(s.profileId, template.id, {
+      name: 'Day',
+      items: [{ foodId: food.id, amount: 50, unit: 'g' }],
+    });
+    await n.recipes.delete(s.profileId, recipe.id);
+    const after = await s.services.score.calculate(s.profileId, WEEK, options());
+    expect(after).toEqual(before);
+  });
+
   it('stores nothing: the score follows every change at once', async () => {
     const s = await setup();
     await goal(s);

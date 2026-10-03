@@ -53,6 +53,8 @@ export const CONTENT_LINKS = {
   foods: `${SETTINGS_LINKS.content}/foods`,
   meals: `${SETTINGS_LINKS.content}/meals`,
   templates: `${SETTINGS_LINKS.content}/templates`,
+  template: (id: string) => `${SETTINGS_LINKS.content}/templates/${id}`,
+  recipes: `${SETTINGS_LINKS.content}/recipes`,
   plans: `${SETTINGS_LINKS.content}/plans`,
   plan: (id: string) => `${SETTINGS_LINKS.content}/plans/${id}`,
   exercises: `${SETTINGS_LINKS.content}/exercises`,

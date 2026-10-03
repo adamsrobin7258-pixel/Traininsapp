@@ -119,7 +119,8 @@ export class PlanRepository {
       planId,
       profileId,
     ]);
-    return result.changes === 1;
+    // > 0, not === 1: the native plugin also counts rows removed or cleared by foreign keys.
+    return result.changes > 0;
   }
 
   async insertDay(day: PlanDay, now: string): Promise<void> {
@@ -140,7 +141,8 @@ export class PlanRepository {
 
   async deleteDay(dayId: string): Promise<boolean> {
     const result = await this.db.run('DELETE FROM training_plan_days WHERE id = ?', [dayId]);
-    return result.changes === 1;
+    // > 0, not === 1: the native plugin also counts rows removed or cleared by foreign keys.
+    return result.changes > 0;
   }
 
   async setDayPositions(orderedIds: readonly string[], now: string): Promise<void> {

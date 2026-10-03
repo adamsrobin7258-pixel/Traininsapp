@@ -42,6 +42,8 @@ describe('back target', () => {
     ['/settings/content/foods', '/settings/content'],
     ['/settings/content/meals', '/settings/content'],
     ['/settings/content/templates', '/settings/content'],
+    ['/settings/content/templates/abc', '/settings/content/templates'],
+    ['/settings/content/recipes', '/settings/content'],
     ['/settings/content/plans/abc', '/settings/content/plans'],
     ['/settings/content/plans', '/settings/content'],
     ['/settings/content/exercises', '/settings/content'],
@@ -116,6 +118,42 @@ describe('system back', () => {
     });
     // Replaced, not pushed: the old address leaves no entry in the history.
     expect(router.state.historyAction).toBe('REPLACE');
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings/content');
+  });
+
+  it('closes the food selection of a template first, then goes up to the template list', async () => {
+    const { router, services } = await renderApp('/');
+    const profileId = (await services.profile.ensureLocalProfile()).id;
+    const n = services.nutrition;
+    const food = await n.foods.create(profileId, {
+      name: 'Haferflocken',
+      reference: { amount: 100, unit: 'g' },
+      nutrients: {
+        energyKcal: 370,
+        proteinG: 13,
+        carbsG: 59,
+        fatG: 7,
+        fiberG: null,
+        sugarG: null,
+        saturatedFatG: null,
+      },
+    });
+    const template = await n.meals.saveMeal(profileId, {
+      name: 'Haferbrei',
+      items: [{ foodId: food.id, amount: 60, unit: 'g' }],
+    });
+    await act(() => router.navigate(`/settings/content/templates/${template.id}`));
+    await userEvent.click(await screen.findByRole('button', { name: 'Lebensmittel hinzufügen' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+
+    await pressBack();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+    expect(router.state.location.pathname).toBe(`/settings/content/templates/${template.id}`);
+    await pressBack();
+    expect(router.state.location.pathname).toBe('/settings/content/templates');
     await pressBack();
     expect(router.state.location.pathname).toBe('/settings/content');
   });

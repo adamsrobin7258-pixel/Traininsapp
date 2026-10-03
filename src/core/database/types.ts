@@ -2,7 +2,11 @@
 export type SqlValue = string | number | null;
 
 export interface RunResult {
-  /** Number of rows changed by the statement. */
+  /**
+   * Number of rows changed. The native plugin reports `total_changes()` before and after, so
+   * rows removed or cleared by foreign keys (ON DELETE CASCADE / SET NULL) count too; sql.js
+   * reports only the statement's own rows. Check `> 0` to know whether a row was affected.
+   */
   changes: number;
 }
 
