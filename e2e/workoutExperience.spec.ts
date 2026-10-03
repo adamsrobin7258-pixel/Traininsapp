@@ -243,6 +243,8 @@ test('4 – equal sessions lead to a suggestion with more load and fewer reps', 
   // Overwrite freely.
   await page.getByLabel('Satz 1: Gewicht').fill('82,5');
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
+  // Saved (the check is confirmed) before the page is left.
+  await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
   await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
   expect(await noHorizontalScroll(page)).toBe(true);
 
@@ -253,8 +255,11 @@ test('4 – equal sessions lead to a suggestion with more load and fewer reps', 
     .getByRole('button', { name: /^Vorsichtig/ })
     .click();
   await expect(sheet(page)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Gewichtssteigerung vorschlagen/ })).toContainText(
+    'Vorsichtig',
+  );
   await page.goto('/training/workout');
-  await expect(page.getByLabel('Satz 1: Gewicht')).toBeVisible();
+  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
   await expect(page.getByRole('region', { name: 'Vorschlag' })).toHaveCount(0);
 });
 
