@@ -113,30 +113,37 @@ describe('nutrition', () => {
   });
 
   it.each(['maintain', 'fitness'] as const)(
-    '%s: 95–105 %% full points, outside by the deviation, 0 at ±25 %%',
+    '%s: 95–105 %% full points, outside continuous to 0 at ±25 %%',
     (goal) => {
       const keep = (kcal: number) => kcalDayScore(kcal, 2500, false, goal);
-      expect(keep(1875)).toBe(0); // −25 %
-      expect(keep(2000)).toBeCloseTo(20, 5); // −20 %
-      expect(keep(2250)).toBeCloseTo(60, 5); // −10 %
-      expect(keep(2375)).toBe(100); // −5 %
+      expect(keep(1500)).toBe(0); // below 75 %
+      expect(keep(1875)).toBeCloseTo(0, 5); // 75 %
+      expect(keep(2000)).toBeCloseTo(25, 5); // 80 %
+      expect(keep(2250)).toBeCloseTo(75, 5); // 90 %
+      expect(keep(2350)).toBeCloseTo(95, 5); // 94 %
+      expect(keep(2375)).toBe(100); // 95 %
       expect(keep(2500)).toBe(100);
-      expect(keep(2625)).toBe(100); // +5 %
-      expect(keep(2750)).toBeCloseTo(60, 5); // +10 %
-      expect(keep(3000)).toBeCloseTo(20, 5); // +20 %
-      expect(keep(3125)).toBe(0); // +25 %
+      expect(keep(2625)).toBe(100); // 105 %
+      expect(keep(2650)).toBeCloseTo(95, 5); // 106 %
+      expect(keep(2750)).toBeCloseTo(75, 5); // 110 %
+      expect(keep(3000)).toBeCloseTo(25, 5); // 120 %
+      expect(keep(3125)).toBeCloseTo(0, 5); // 125 %
+      expect(keep(4000)).toBe(0); // above 125 %
     },
   );
 
-  it('changes gradually for lose and gain – no jumps between neighbouring values', () => {
+  it('changes gradually for every main goal – no jumps, also at the ±5 % edges', () => {
     for (const [goal, target] of [
       ['lose', 2200],
       ['gain', 3000],
+      ['maintain', 2500],
+      ['fitness', 2500],
     ] as const) {
       for (let kcal = 1500; kcal <= 3800; kcal += 10) {
         const a = kcalDayScore(kcal, target, false, goal) ?? 0;
         const b = kcalDayScore(kcal + 10, target, false, goal) ?? 0;
-        expect(Math.abs(a - b)).toBeLessThanOrEqual(2);
+        // Steepest: maintain, 10 kcal of 2.500 = 0.4 % → 2 points (plus float noise).
+        expect(Math.abs(a - b)).toBeLessThanOrEqual(2 + 1e-9);
       }
     }
   });
@@ -147,7 +154,7 @@ describe('nutrition', () => {
     expect(kcalDayScore(900, 2300, true, 'maintain')).toBeNull();
     expect(kcalDayScore(1700, 2200, true, 'lose')).toBeNull();
     // Over the goal is judged today too.
-    expect(kcalDayScore(2750, 2500, true, 'maintain')).toBeCloseTo(60, 5);
+    expect(kcalDayScore(2750, 2500, true, 'maintain')).toBeCloseTo(75, 5);
     expect(kcalDayScore(2640, 2200, true, 'lose')).toBeCloseTo(20, 5);
     expect(kcalDayScore(3300, 3000, true, 'gain')).toBe(100);
     expect(proteinDayScore(40, 160, true)).toBeNull();
@@ -155,7 +162,7 @@ describe('nutrition', () => {
   });
 
   it('a day without a main goal is read like maintain', () => {
-    expect(kcalDayScore(2750, 2500, false)).toBeCloseTo(60, 5);
+    expect(kcalDayScore(2750, 2500, false)).toBeCloseTo(75, 5);
   });
 
   it('rewards reaching the protein goal and judges a shortfall moderately', () => {
@@ -171,11 +178,11 @@ describe('nutrition', () => {
       input({
         nutrition: eating([
           ['2026-10-01', 2300, 160], // 100
-          ['2026-10-02', 2760, 128], // +20 % → 20 (Phase 15); 20 × 0.7 + 80 × 0.3 = 38
+          ['2026-10-02', 2760, 128], // +20 % → 25; 25 × 0.7 + 80 × 0.3 = 41.5
         ]),
       }),
     );
-    expect(result.score).toBe(69); // (100 + 38) / 2
+    expect(result.score).toBe(71); // (100 + 41.5) / 2 = 70.75
     expect(result.detail).toMatchObject({
       loggedDays: 2,
       ratedDays: 2,
@@ -473,12 +480,12 @@ describe('total score', () => {
     const result = calculateScore(
       input({
         goal: 'lose',
-        nutrition: eating(WEEK.slice(0, 4).map((date) => [date, 2760, 128])), // 38 (Phase 15)
+        nutrition: eating(WEEK.slice(0, 4).map((date) => [date, 2760, 128])), // 41.5 → 42
         recovery: [{ localDate: TODAY, state: 'good', restDay: false }], // 100
       }),
     );
-    // (38 × 0.45 + 100 × 0.1) / 0.55 = 49.3
-    expect(result.score).toBe(49);
+    // (42 × 0.45 + 100 × 0.1) / 0.55 = 52.5
+    expect(result.score).toBe(53);
     expect(result.ratedAreas).toBe(2);
   });
 

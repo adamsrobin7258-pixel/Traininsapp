@@ -101,15 +101,32 @@ describe('calorie points by main goal (Phase 15) – one rule for score and prog
     expect(points('gain', 0.3)).toBe(0);
   });
 
-  it.each(['maintain', 'fitness'] as const)('%s: 95–105 %% → 100, 0 at ±25 %%', (goal) => {
-    expect(points(goal, 0.75)).toBeCloseTo(0, 5);
-    expect(points(goal, 0.9)).toBeCloseTo(60, 5);
-    expect(points(goal, 0.95)).toBe(100);
-    expect(points(goal, 1)).toBe(100);
-    expect(points(goal, 1.05)).toBe(100);
-    expect(points(goal, 1.1)).toBeCloseTo(60, 5);
-    expect(points(goal, 1.25)).toBeCloseTo(0, 5);
-  });
+  it.each(['maintain', 'fitness'] as const)(
+    '%s: 95–105 %% → 100, continuous to 0 at 75 %% and 125 %%',
+    (goal) => {
+      const cases: [number, number][] = [
+        [0.5, 0],
+        [0.75, 0],
+        [0.8, 25],
+        [0.9, 75],
+        [0.94, 95],
+        [0.95, 100],
+        [1, 100],
+        [1.05, 100],
+        [1.06, 95],
+        [1.1, 75],
+        [1.2, 25],
+        [1.25, 0],
+        [1.6, 0],
+      ];
+      for (const [ratio, expected] of cases) {
+        expect(points(goal, ratio), `${ratio * 100} %`).toBeCloseTo(expected, 5);
+      }
+      // No jump at the range edges: just outside is just below 100.
+      expect(points(goal, 0.9499)).toBeGreaterThan(99.5);
+      expect(points(goal, 1.0501)).toBeGreaterThan(99.5);
+    },
+  );
 
   it('status and points agree at every edge (no slightly different second rule)', () => {
     const cases = [
@@ -133,7 +150,7 @@ describe('calorie points by main goal (Phase 15) – one rule for score and prog
     expect(calorieGoalScore('gain', 2400, 3000, true)).toBeNull();
     expect(calorieGoalScore('lose', 1500, 2200, true)).toBeNull();
     expect(calorieGoalScore('lose', 2420, 2200, true)).toBeCloseTo(60, 5);
-    expect(calorieGoalScore('maintain', 2750, 2500, true)).toBeCloseTo(60, 5);
+    expect(calorieGoalScore('maintain', 2750, 2500, true)).toBeCloseTo(75, 5);
   });
 
   it('has no points without a calorie goal', () => {

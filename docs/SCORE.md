@@ -61,8 +61,8 @@ eingeschalteter Einstellung). Keine eigene Zielberechnung.
   - **Muskelaufbau** – ab 95 % 100; darunter linear bis 0 bei 70 % (75 % → 20, 85 % → 60).
     Darüber weder Bonus noch Abzug.
   - **Gewicht halten** und **Allgemeine Fitness** (gleiche Formel): 95–105 % → 100; außerhalb
-    zählt die Abweichung vom Ziel, 0 bei ±25 % (±10 % → 60, ±20 % → 20). An der Bereichsgrenze
-    fällt der Wert deshalb von 100 auf etwa 80 – so durch die Produktbeispiele festgelegt.
+    stetig linear bis 0 bei 75 % bzw. 125 % (94 % → 95, 90 % → 75, 80 % → 25, 106 % → 95,
+    110 % → 75, 120 % → 25). Kein Sprung an der Bereichsgrenze (korrigiert nach Phase 15).
   - Vorher (bis Phase 14.1): für alle Hauptziele ±5 % → 100, danach 2 Punkte je Prozent.
 - **Protein je Tag:** ab 90 % des Ziels 100 Punkte, mehr ist nie ein Minus; darunter 2 Punkte je
   fehlendem Prozent (80 % → 80, 50 % → 20).

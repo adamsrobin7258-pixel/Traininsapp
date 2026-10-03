@@ -238,14 +238,14 @@ describe('Kalethra-Score on Fortschritt', () => {
       prepare: async (s, profileId) => {
         await goal(s, profileId);
         for (const date of PREVIOUS_WEEK.slice(0, 4)) await eat(s, profileId, date, 2300);
-        // +20 % → 20 kcal points (Phase 15), protein 100 → 44
+        // +20 % → 25 kcal points, protein 100 → 47.5 → 48
         for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2760);
       },
     });
     expect(
       await (
         await scoreCard()
-      ).findByText(/^Gesunken gegenüber den 7 Tagen davor · [-−]56 Punkte$/),
+      ).findByText(/^Gesunken gegenüber den 7 Tagen davor · [-−]52 Punkte$/),
     ).toBeInTheDocument();
   });
 

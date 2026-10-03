@@ -9,8 +9,7 @@
  * - gain: the goal is an amount to reach. From 95 % on → 100 (more is no bonus and no minus);
  *   below it the points fall linearly to 0 at 70 % (75 % → 20, 85 % → 60).
  * - maintain and fitness (calculated exactly like maintain): 95–105 % → 100; outside the range
- *   the points follow the deviation from the goal, 0 at ±25 % (±10 % → 60, ±20 % → 20) – so at
- *   the edge of the range they drop from 100 to about 80 (product decision, Phase 15).
+ *   linear and continuous from 100 at the edge to 0 at ±25 % (94 % → 95, 90 % → 75, 80 % → 25).
  * Protein from 90 % of the goal counts as reached; more is never a minus.
  *
  * Today is still running: falling short of the goal is not judged yet (status `open`, no points)
@@ -108,9 +107,15 @@ export function calorieGoalScore(
       return clamp100(((ratio - KCAL_GAIN_ZERO_RATIO) / (reached - KCAL_GAIN_ZERO_RATIO)) * 100);
     }
     case 'range':
+      // Continuous: 100 at the edge of the range (±5 %), 0 at ±25 %.
       return Math.abs(deviation) <= KCAL_GOAL_TOLERANCE + EDGE
         ? 100
-        : clamp100(100 - (Math.abs(deviation) / KCAL_ZERO_DEVIATION) * 100);
+        : clamp100(
+            100 -
+              ((Math.abs(deviation) - KCAL_GOAL_TOLERANCE) /
+                (KCAL_ZERO_DEVIATION - KCAL_GOAL_TOLERANCE)) *
+                100,
+          );
   }
 }
 

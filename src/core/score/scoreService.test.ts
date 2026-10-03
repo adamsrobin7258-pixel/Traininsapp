@@ -140,10 +140,10 @@ describe('score from the real data', () => {
     const s = await setup();
     await goal(s);
     await eat(s, '2026-09-30', 2300, 160);
-    // Gewicht halten (Phase 15): +10 % → 60 (kcal), protein 100 → 60 × 0.7 + 100 × 0.3 = 72
+    // Gewicht halten: +10 % → 75 (kcal), protein 100 → 75 × 0.7 + 100 × 0.3 = 82.5
     await eat(s, '2026-10-01', 2530, 160);
     const result = await s.services.score.calculate(s.profileId, WEEK, options());
-    expect(result.areas.nutrition.score).toBe(86); // (100 + 72) / 2
+    expect(result.areas.nutrition.score).toBe(91); // (100 + 82.5) / 2 = 91.25
     expect(result.areas.nutrition.detail.loggedDays).toBe(2);
     expect(result.goal).toBe('maintain');
     expect(result.goalSet).toBe(true);
