@@ -1,3 +1,4 @@
+import { importedPace } from '@/core/activity';
 import { isSameSession, type ExternalWorkout } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useTrainingData } from '@/core/training';
@@ -9,10 +10,14 @@ import {
   activityTypeLabel,
   formatActivityKcal,
   formatDistance,
+  formatPace,
 } from '../domain/activities';
 import styles from './ActivityDetailSheet.module.css';
 
-/** Everything the source delivered for one imported activity – nothing invented. */
+/**
+ * Everything the source delivered for one imported activity, plus the pace derived from its
+ * distance and duration (on-foot types only) – nothing invented.
+ */
 export function ActivityDetailSheet({
   activity,
   onClose,
@@ -36,6 +41,7 @@ export function ActivityDetailSheet({
     [activity.id, activity.startedAt, activity.endedAt],
   );
   const number = new Intl.NumberFormat(locale);
+  const pace = importedPace(activity.activityType, activity.distanceM, activity.durationS);
 
   return (
     <Sheet title={t('activities.detailTitle')} onClose={onClose} closeLabel={t('common.close')}>
@@ -61,6 +67,9 @@ export function ActivityDetailSheet({
             title={t('activities.distance')}
             value={formatDistance(activity.distanceM, locale, t)}
           />
+        ) : null}
+        {pace !== null ? (
+          <ListRow title={t('activities.pace')} value={formatPace(pace, t)} />
         ) : null}
         {activity.steps !== null ? (
           <ListRow

@@ -449,6 +449,19 @@ export const de = {
       description: 'Ausführung',
       systemHint:
         'Übung aus der Bibliothek. Sie kann nicht bearbeitet werden; lege bei Bedarf eine eigene Übung an.',
+      performance: {
+        title: 'Deine Leistung',
+        best: 'Bestwert',
+        latest: 'Zuletzt',
+        estimate: '≈ {value} geschätztes Maximum · {date}',
+        trend: {
+          up: '↑ Stärker als in den Trainings davor',
+          down: '↓ Schwächer als in den Trainings davor',
+          steady: '→ Etwa wie in den Trainings davor',
+          best: '↑ Neuer Bestwert',
+        },
+        note: 'Geschätztes Maximum für eine Wiederholung (Epley) aus abgeschlossenen Arbeitssätzen mit 1–12 Wiederholungen.',
+      },
     },
     muscleFilters: {
       chest: 'Brust',
@@ -560,6 +573,8 @@ export const de = {
       noGoalBody:
         'Lege deine Tagesziele selbst fest, um den Fortschritt zu sehen. Die App setzt keine Werte für dich.',
       noGoalValue: 'Kein Ziel',
+      fiberAtLeast: 'mind. {value}',
+      fiberIncomplete: 'nicht für alle Lebensmittel bekannt',
     },
     nutrients: {
       energy: 'Kalorien',
@@ -1111,6 +1126,8 @@ export const de = {
     duration: 'Dauer',
     activeKcal: 'Aktive Kalorien',
     distance: 'Distanz',
+    pace: 'Pace',
+    paceValue: '{value} min/km',
     stepsLabel: 'Schritte',
     source: 'Quelle',
     sourceValue: 'Health Connect · {source}',

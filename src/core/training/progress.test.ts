@@ -125,3 +125,56 @@ describe('training progress', () => {
     ).toMatchObject({ workouts: 1, volumeKg: null });
   });
 });
+
+describe('exercise performance from the stored history', () => {
+  it('reads best, latest and trend of completed working sets only', async () => {
+    const context = await setup();
+    const { workouts, profileId } = context;
+    await workoutOn(context, new Date(2026, 8, 20, 18), [
+      [60, 10, true, 'warmup'],
+      [80, 8, true],
+    ]);
+    await workoutOn(context, new Date(2026, 8, 27, 18), [
+      [82.5, 8, true],
+      [100, 8, false], // not completed: no best
+    ]);
+    await workoutOn(context, new Date(2026, 9, 1, 18), [[85, 8, true]]);
+
+    // An active workout never counts.
+    const active = await workouts.startFree(profileId);
+    await workouts.addExercise(profileId, active.id, 'sys.bench-press');
+    const [set] = (await workouts.getDetail(profileId, active.id)).exercises[0]?.sets ?? [];
+    if (!set) throw new Error('set expected');
+    await workouts.updateSet(
+      profileId,
+      set.id,
+      { ...EMPTY_SET_VALUES, weightKg: 150, reps: 5 },
+      true,
+    );
+
+    const progress = await workouts.exerciseProgress(profileId, 'sys.bench-press');
+    expect(progress.sessions).toBe(3);
+    expect(progress.best).toMatchObject({ weightKg: 85, reps: 8, localDate: '2026-10-01' });
+    expect(progress.best?.estimatedOneRepMaxKg).toBeCloseTo(107.67, 2);
+    expect(progress.latest).toEqual(progress.best);
+    expect(progress.latestIsBest).toBe(true);
+    expect(progress.trend).toBe('up');
+
+    // Other exercises have their own history.
+    expect((await workouts.exerciseProgress(profileId, 'sys.back-squat')).best).toBeNull();
+  });
+
+  it('follows edits and deletions of past workouts', async () => {
+    const context = await setup();
+    const { workouts, profileId } = context;
+    await workoutOn(context, new Date(2026, 8, 20, 18), [[80, 8, true]]);
+    await workoutOn(context, new Date(2026, 9, 1, 18), [[90, 8, true]]);
+    const [newest] = await workouts.getHistory(profileId, { limit: 1 });
+    if (!newest) throw new Error('workout expected');
+
+    await workouts.delete(profileId, newest.id);
+    const progress = await workouts.exerciseProgress(profileId, 'sys.bench-press');
+    expect(progress.best).toMatchObject({ weightKg: 80, localDate: '2026-09-20' });
+    expect(progress.sessions).toBe(1);
+  });
+});

@@ -158,6 +158,9 @@ describe('Aktivitäten', () => {
     expect(facts.getByText('42 min')).toBeInTheDocument();
     expect(facts.getByText('386 kcal')).toBeInTheDocument();
     expect(facts.getByText('5,8 km')).toBeInTheDocument();
+    // Derived, not imported: 42 min ÷ 5,8 km = 7:14 min/km.
+    expect(facts.getByText('Pace')).toBeInTheDocument();
+    expect(facts.getByText('7:14 min/km')).toBeInTheDocument();
     expect(facts.getByText('Health Connect · Pixel Watch')).toBeInTheDocument();
     expect(facts.queryByText('Schritte')).not.toBeInTheDocument();
     expect(sheet.getByText(/Zählt nicht als Kalethra-Training/)).toBeVisible();
@@ -170,7 +173,30 @@ describe('Aktivitäten', () => {
     const yoga = within(await screen.findByRole('dialog', { name: 'Aktivität' }));
     expect(yoga.queryByText('Aktive Kalorien')).not.toBeInTheDocument();
     expect(yoga.queryByText('Distanz')).not.toBeInTheDocument();
+    expect(yoga.queryByText('Pace')).not.toBeInTheDocument();
     expect(yoga.getByText('Health Connect')).toBeInTheDocument();
+  });
+
+  it('shows a pace only for activities on foot with a distance', async () => {
+    await renderApp('/training/activities', {
+      healthPlatform: platformWith([
+        session('ride', [2, 9, 0], 60, { type: 'cycling', distanceM: 24_000 }),
+        session('walk', [3, 7, 0], 48, { type: 'walking', distanceM: 4000 }),
+      ]),
+      prepare: connect,
+    });
+    await userEvent.click(await screen.findByRole('button', { name: /Radfahren/ }));
+    const ride = within(await screen.findByRole('dialog', { name: 'Aktivität' }));
+    expect(ride.getByText('24,0 km')).toBeInTheDocument();
+    expect(ride.queryByText('Pace')).not.toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+
+    await userEvent.click(await screen.findByRole('button', { name: /Gehen/ }));
+    const walk = within(await screen.findByRole('dialog', { name: 'Aktivität' }));
+    expect(walk.getByText('12:00 min/km')).toBeInTheDocument();
   });
 
   it('explains how to get activities when Health Connect is not connected', async () => {

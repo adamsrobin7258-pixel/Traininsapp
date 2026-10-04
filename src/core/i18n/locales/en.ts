@@ -442,6 +442,19 @@ export const en: TranslationSchema = {
       pattern: 'Movement pattern',
       description: 'How to',
       systemHint: 'Library exercise. It cannot be edited; create your own exercise if needed.',
+      performance: {
+        title: 'Your performance',
+        best: 'Best',
+        latest: 'Latest',
+        estimate: '≈ {value} estimated max · {date}',
+        trend: {
+          up: '↑ Stronger than in the workouts before',
+          down: '↓ Weaker than in the workouts before',
+          steady: '→ About the same as in the workouts before',
+          best: '↑ New best',
+        },
+        note: 'Estimated one-rep max (Epley) from completed working sets of 1–12 reps.',
+      },
     },
     muscleFilters: {
       chest: 'Chest',
@@ -551,6 +564,8 @@ export const en: TranslationSchema = {
       noGoalBody:
         'Set your daily goals yourself to see your progress. The app does not choose values for you.',
       noGoalValue: 'No goal',
+      fiberAtLeast: 'at least {value}',
+      fiberIncomplete: 'not known for all foods',
     },
     nutrients: {
       energy: 'Calories',
@@ -1097,6 +1112,8 @@ export const en: TranslationSchema = {
     duration: 'Duration',
     activeKcal: 'Active calories',
     distance: 'Distance',
+    pace: 'Pace',
+    paceValue: '{value} min/km',
     stepsLabel: 'Steps',
     source: 'Source',
     sourceValue: 'Health Connect · {source}',

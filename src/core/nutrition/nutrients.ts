@@ -82,3 +82,52 @@ export function areValidNutrients(values: Nutrients): boolean {
       : Number.isFinite(value) && value >= 0;
   });
 }
+
+/**
+ * PRODUCT – a day's detail value (e.g. fiber) is only shown when the entries that state it make
+ * up at least this share of the day's energy. Below it, a sum would describe only a small part
+ * of what was eaten.
+ */
+export const DETAIL_MIN_COVERAGE = 0.8;
+
+/**
+ * A day's total of one detail value, honest about what is unknown (`null` is never 0):
+ * - `complete`: every entry states it.
+ * - `partial`: most of the day's energy is covered; the total is a lower bound ("at least").
+ * - `insufficient`: some entries state it, but too few to say anything about the day.
+ * - `unknown`: no entry states it (or nothing was logged).
+ */
+export type DetailDayTotal =
+  | { status: 'complete'; grams: number }
+  | { status: 'partial'; grams: number }
+  | { status: 'insufficient' }
+  | { status: 'unknown' };
+
+/** The day total of one detail value from the stored entry snapshots. Pure. */
+export function detailDayTotal(parts: readonly Nutrients[], key: DetailNutrient): DetailDayTotal {
+  const known = parts.filter((part) => part[key] !== null);
+  if (known.length === 0) return { status: 'unknown' };
+  const grams = roundNutrient(known.reduce((sum, part) => sum + (part[key] ?? 0), 0));
+  if (known.length === parts.length) return { status: 'complete', grams };
+  const energy = (list: readonly Nutrients[]) =>
+    list.reduce((sum, part) => sum + part.energyKcal, 0);
+  const total = energy(parts);
+  // Without energy (e.g. only zero-calorie entries) the share of entries decides.
+  const coverage = total > 0 ? energy(known) / total : known.length / parts.length;
+  return coverage >= DETAIL_MIN_COVERAGE
+    ? { status: 'partial', grams }
+    : { status: 'insufficient' };
+}
+
+/**
+ * Detail values unknown for a part (`incomplete` of `sumNutrients`) become unknown for the whole:
+ * a saved snapshot must not present a partial sum as the full value.
+ */
+export function withoutIncompleteDetails(
+  values: Nutrients,
+  incomplete: readonly DetailNutrient[],
+): Nutrients {
+  const result = { ...values };
+  for (const key of incomplete) result[key] = null;
+  return result;
+}

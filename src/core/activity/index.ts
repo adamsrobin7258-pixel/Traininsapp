@@ -2,6 +2,7 @@ export * from './catalog';
 export * from './calories';
 export * from './combined';
 export * from './manualActivity';
+export * from './pace';
 export * from './sportSearch';
 export { ManualActivityRepository } from './manualActivityRepository';
 export {

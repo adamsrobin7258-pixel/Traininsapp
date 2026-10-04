@@ -5,7 +5,7 @@ import { summarizeDay, type DaySummary, type FoodEntry } from './diary';
 import { NutritionError } from './errors';
 import { isValidAmount, nutrientsForQuantity } from './food';
 import type { MealSlot } from './meals';
-import { scaleNutrients } from './nutrients';
+import { scaleNutrients, withoutIncompleteDetails } from './nutrients';
 import type { NutritionRepositories, NutritionStore } from './nutritionStore';
 import { recipeNutrition } from './recipe';
 import type { FoodQuantity } from './savedMeal';
@@ -101,7 +101,11 @@ export class DiaryService {
     });
   }
 
-  /** Logs servings of a recipe with the recipe's current values per serving. */
+  /**
+   * Logs servings of a recipe with the recipe's current values per serving. A detail value
+   * (fiber, sugar, saturated fat) missing for any ingredient is stored as unknown, not as the
+   * sum of the ingredients that state it.
+   */
   async addRecipe(
     profileId: string,
     input: { recipeId: string; servings: number; localDate: string; mealId: string },
@@ -130,7 +134,10 @@ export class DiaryService {
         amount: input.servings,
         unit: 'serving',
         eatenAt: null,
-        nutrients: scaleNutrients(perServing.totals, input.servings),
+        nutrients: withoutIncompleteDetails(
+          scaleNutrients(perServing.totals, input.servings),
+          perServing.incomplete,
+        ),
         createdAt: now,
         updatedAt: now,
       };

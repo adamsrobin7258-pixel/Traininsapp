@@ -5,6 +5,7 @@ import { TrainingError } from './errors';
 import { EXERCISE_TYPES, isOneOf, type Exercise } from './exercise';
 import type { ProgressionMode } from '@/core/settings/types';
 import type { WeightUnit } from '@/shared/lib/units';
+import { exerciseProgress, type ExerciseProgress } from './metrics';
 import { moveItem } from './plan';
 import {
   PROGRESSION_MAX_SESSIONS,
@@ -201,6 +202,14 @@ export class WorkoutService {
       }
     }
     return records;
+  }
+
+  /**
+   * Best, latest and direction of a weighted exercise over all completed workouts (estimated
+   * maximum, see `exerciseProgress`). Read-only; nothing is stored.
+   */
+  async exerciseProgress(profileId: string, exerciseId: string): Promise<ExerciseProgress> {
+    return exerciseProgress(await this.store.repos.workouts.weightedHistory(profileId, exerciseId));
   }
 
   // ── Starting ───────────────────────────────────────────────────────────────

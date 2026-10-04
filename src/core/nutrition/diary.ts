@@ -1,5 +1,11 @@
 import type { DefaultMealKey } from './meals';
-import { sumNutrients, type NutrientTotals, type Nutrients } from './nutrients';
+import {
+  detailDayTotal,
+  sumNutrients,
+  type DetailDayTotal,
+  type NutrientTotals,
+  type Nutrients,
+} from './nutrients';
 import type { QuantityUnit } from './units';
 
 /**
@@ -43,6 +49,8 @@ export interface DaySummary {
   /** Per meal, in the order of first appearance of the entries passed in. */
   meals: MealTotals[];
   entryCount: number;
+  /** Fiber of the day – a detail value, shown only when enough entries state it. */
+  fiber: DetailDayTotal;
 }
 
 /** Adds up a day's entries overall and per meal. Pure; the service loads the entries. */
@@ -61,5 +69,9 @@ export function summarizeDay(localDate: string, entries: readonly FoodEntry[]): 
       entryCount: list.length,
     })),
     entryCount: own.length,
+    fiber: detailDayTotal(
+      own.map((entry) => entry.nutrients),
+      'fiberG',
+    ),
   };
 }

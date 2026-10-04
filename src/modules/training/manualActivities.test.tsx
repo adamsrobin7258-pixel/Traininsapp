@@ -137,6 +137,8 @@ describe('Aktivität erfassen', () => {
     expect(sheet.queryByText('Spielform')).not.toBeInTheDocument();
     await userEvent.type(sheet.getByLabelText('Dauer (Minuten)'), '48');
     await userEvent.type(sheet.getByLabelText('Distanz in km (optional)'), '7,2');
+    // Derived from the entered values, not stored: 48 min ÷ 7,2 km = 6:40 min/km.
+    expect(sheet.getByText('Pace 6:40 min/km')).toBeInTheDocument();
 
     // 9,0 km/h → 9.8 MET: (9.8 − 1) × 3.5 × 84.6 ÷ 200 × 48 = 625 kcal.
     const estimate = within(sheet.getByRole('region', { name: 'Geschätzter Energieverbrauch' }));
@@ -190,6 +192,7 @@ describe('Aktivität erfassen', () => {
     await userEvent.click(picker.getByRole('button', { name: /^Tennis$/ }));
     const sheet = within(await screen.findByRole('dialog', { name: 'Aktivität erfassen' }));
     expect(sheet.queryByLabelText('Distanz in km (optional)')).not.toBeInTheDocument();
+    expect(sheet.queryByText(/Pace/)).not.toBeInTheDocument();
     expect(sheet.getByRole('radio', { name: 'Einzel' })).toBeChecked();
     await userEvent.type(sheet.getByLabelText('Dauer (Minuten)'), '60');
     const estimate = within(sheet.getByRole('region', { name: 'Geschätzter Energieverbrauch' }));

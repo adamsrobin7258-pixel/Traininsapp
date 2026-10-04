@@ -515,6 +515,19 @@ CREATE UNIQUE INDEX goal_targets_version ON goal_targets (profile_id, kind, effe
   bleiben, erneuter Lauf, `CHECK`/`UNIQUE`, Löschen mit dem Profil, Ziel vergangener Tage
   identisch.
 
+## Selten genutzte Spalten (Audit Phase 17.1)
+
+Vier Spalten werden heute nicht in der Oberfläche erfasst. Sie bleiben **bewusst** bestehen –
+keine Migration, keine Löschung. Entfernen hieße in SQLite die Tabelle neu aufzubauen, ohne dass
+dadurch etwas besser würde; bei `rpe` gingen zudem echte Nutzerdaten verloren.
+
+| Spalte                    | Geschrieben                                                                                 | Gelesen                                                                   | Entscheidung                                                                                                                                                                                 |
+| ------------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `workout_sets.rpe`        | bis Version 0.2.0 von der App; seitdem nur unverändert weitergeschrieben (`updateSet`)      | Repository; `deleteEmptySets` behandelt einen Satz mit RPE nicht als leer | **Behalten.** Enthält ggf. echte Altdaten. Neue Eingabe gibt es nicht (keine neuen Pflichteingaben); ein späteres Anstrengungsmaß wäre ein eigener Produktentscheid.                         |
+| `food_entries.eaten_at`   | `DiaryService.addFood` (optionaler Parameter, von der Oberfläche nie gesetzt); sonst `NULL` | Repository-Mapping, nirgends ausgewertet                                  | **Behalten.** Optionaler Zeitpunkt, Teil des Snapshot-Modells; kostet nichts. Ohne konkreten Nutzen keine neue Eingabe.                                                                      |
+| `water_entries.drank_at`  | `DiaryService.addWater` (optional, von der Oberfläche nie gesetzt); sonst `NULL`            | Repository-Mapping, nirgends ausgewertet                                  | **Behalten**, wie `eaten_at`.                                                                                                                                                                |
+| `external_workouts.steps` | immer `NULL` (`importableWorkouts`): das Plugin liefert zu Einheiten keine Schritte         | `ActivityDetailSheet` zeigt den Wert, falls je vorhanden                  | **Behalten.** Schritte pro Einheit wären ohne neue Berechtigung lesbar (`READ_STEPS` ist erteilt), bräuchten aber eine Änderung am Sync; Nutzen gering. Kein toter Code: Anzeige ist fertig. |
+
 ## Konventionen für Nutzerdaten-Tabellen
 
 Gelten für jede Tabelle, deren Inhalte synchronisiert werden sollen:

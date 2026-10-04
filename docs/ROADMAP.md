@@ -333,6 +333,28 @@ Keine neuen Funktionen. Gefunden und behoben:
 - Sync, Berechtigungen, Trennen/Verbinden, Gewichtsregeln, Regeneration geprüft – unverändert
 - Keine Migration; Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md)
 
+## Phase 17.1 – Vorhandene Daten besser nutzen ✅ (Version 0.22.0)
+
+Auf dem vollständigen Stand 0.21.0 (Phasen 14–16) aufgebaut. Eine erste Fassung war versehentlich
+auf dem Stand von Phase 13 entstanden (dort als 0.19.0 gebaut, nie Release-Stand); sie ist
+inhaltlich hierher übertragen und ersetzt.
+
+- Übungsdetail (Trainingsbibliothek): **Deine Leistung** für Übungen mit Gewicht – Bestwert
+  (stärkster Satz nach geschätztem Maximum, Epley, nur abgeschlossene Arbeitssätze mit 1–12
+  Wiederholungen), letzte Leistung und Richtung gegenüber den drei Trainings davor
+  (`core/training/metrics.ts` → `exerciseProgress`, eine Abfrage); bestehende Bestwert- und
+  Progressionslogik unverändert
+- **Pace** (min/km) für Aktivitäten zu Fuß, abgeleitet und nicht gespeichert – im
+  Aktivitätsdetail und beim Erfassen ([ACTIVITIES.md](ACTIVITIES.md#pace-phase-171))
+- **Ballaststoffe** des Tages als ruhige Zeile unter den Makros im Tagebuch: ohne Ziel, Score,
+  Balken oder Warnung; „mind. …“, wenn nicht alle Einträge sie kennen, keine Zahl, wenn zu wenige
+  (< 80 % der kcal)
+- Korrektur: Ein Rezept, bei dem eine Zutat einen Detailwert nicht kennt, speichert diesen Wert
+  als unbekannt statt als Teilsumme (bestehende Einträge unverändert)
+- Audit ohne Umbau: Fortschritt auf Stand 0.21.0 ([PROGRESS.md](PROGRESS.md#produkt-audit-phase-171-stand-0210)),
+  selten genutzte Spalten ([DATABASE.md](DATABASE.md#selten-genutzte-spalten-audit-phase-171))
+- Keine Migration, keine neue Berechtigung, keine neue Eingabe
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

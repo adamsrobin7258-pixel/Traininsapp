@@ -15,7 +15,15 @@ import {
   type NutritionGoal,
 } from './goals';
 import { mealDisplayName, orderedMeals } from './meals';
-import { scaleNutrients, sumNutrients, ZERO_NUTRIENTS, type Nutrients } from './nutrients';
+import {
+  DETAIL_MIN_COVERAGE,
+  detailDayTotal,
+  scaleNutrients,
+  sumNutrients,
+  withoutIncompleteDetails,
+  ZERO_NUTRIENTS,
+  type Nutrients,
+} from './nutrients';
 import { recipeNutrition } from './recipe';
 import { convertQuantity } from './units';
 import { isValidWaterAmount, waterTotalMl } from './water';
@@ -122,6 +130,70 @@ describe('sums', () => {
 
   it('scales without float noise', () => {
     expect(scaleNutrients(nutrients({ proteinG: 0.1 }), 3).proteinG).toBe(0.3);
+  });
+});
+
+describe('fiber of a day', () => {
+  it('is complete when every entry states it – a known 0 g counts, unknown never does', () => {
+    expect(
+      detailDayTotal(
+        [nutrients({ energyKcal: 300, fiberG: 6.2 }), nutrients({ energyKcal: 150, fiberG: 0 })],
+        'fiberG',
+      ),
+    ).toEqual({ status: 'complete', grams: 6.2 });
+    expect(detailDayTotal([nutrients({ energyKcal: 150, fiberG: 0 })], 'fiberG')).toEqual({
+      status: 'complete',
+      grams: 0,
+    });
+  });
+
+  it('is unknown without entries or when no entry states it (never 0 g)', () => {
+    expect(detailDayTotal([], 'fiberG')).toEqual({ status: 'unknown' });
+    expect(detailDayTotal([nutrients({ energyKcal: 500 })], 'fiberG')).toEqual({
+      status: 'unknown',
+    });
+  });
+
+  it('is a lower bound when most of the energy is covered, else not enough to say', () => {
+    expect(DETAIL_MIN_COVERAGE).toBe(0.8);
+    // 800 of 1000 kcal state fiber: 80 % → "at least 12 g".
+    expect(
+      detailDayTotal(
+        [nutrients({ energyKcal: 800, fiberG: 12 }), nutrients({ energyKcal: 200 })],
+        'fiberG',
+      ),
+    ).toEqual({ status: 'partial', grams: 12 });
+    // 700 of 1000 kcal: too little.
+    expect(
+      detailDayTotal(
+        [nutrients({ energyKcal: 700, fiberG: 12 }), nutrients({ energyKcal: 300 })],
+        'fiberG',
+      ),
+    ).toEqual({ status: 'insufficient' });
+    // Without energy the share of entries decides.
+    expect(
+      detailDayTotal([nutrients({ fiberG: 1 }), nutrients({}), nutrients({})], 'fiberG'),
+    ).toEqual({ status: 'insufficient' });
+  });
+
+  it('is part of the day summary', () => {
+    const entry = (fiberG: number | null) =>
+      ({
+        localDate: '2026-10-03',
+        mealId: 'm',
+        nutrients: nutrients({ energyKcal: 100, fiberG }),
+      }) as FoodEntry;
+    expect(summarizeDay('2026-10-03', [entry(2), entry(3.5)]).fiber).toEqual({
+      status: 'complete',
+      grams: 5.5,
+    });
+    expect(summarizeDay('2026-10-03', []).fiber).toEqual({ status: 'unknown' });
+  });
+
+  it('turns details unknown for any part into unknown for the whole', () => {
+    expect(
+      withoutIncompleteDetails(nutrients({ energyKcal: 300, fiberG: 4, sugarG: 2 }), ['fiberG']),
+    ).toMatchObject({ energyKcal: 300, fiberG: null, sugarG: 2 });
   });
 });
 

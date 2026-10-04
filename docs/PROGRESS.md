@@ -163,6 +163,35 @@ Die Wortwahl der Kalorienzeile richtet sich nach dem Hauptziel am letzten Tag de
 - Direkter Sprung von „Kein …ziel festgelegt“ zu Einstellungen → Ziele (die Karte führt bewusst
   weiter in ihren Bereich).
 
+## Produkt-Audit (Phase 17.1, Stand 0.21.0)
+
+Erneut geprüft auf dem Stand mit Zielerreichung (Phase 14), Ernährungswertung (Phase 15) und
+konsolidierten Gesundheitsdaten (Phase 16). Ergebnis: **keine Änderung an der Seite in dieser
+Phase.** Ein ursprünglich auf dem Stand von Phase 13 erstelltes Audit ist dadurch weitgehend
+überholt:
+
+| Früherer Punkt (Stand Phase 13)                         | Stand 0.21.0                                                                                                                                                                                       |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ernährung als Zielerreichung statt Ø kcal + Ø Ziel      | **Gelöst** durch Phase 14/15: „Ø 2.140 von 2.200 kcal“, Kalorienstatus je Hauptziel, Protein/KH/Fett gegen Ziel – gleiche Regeln wie der Score.                                                    |
+| Aktive Minuten nicht als zweiter Balken neben dem Score | **Anders gelöst:** Die Karte zeigt die Minuten gegen das Wochenziel mit derselben Funktion wie der Score (`countableActivityMinutes`, `weeklyExpectation`) – keine zweite Rechnung, also sinnvoll. |
+| Schritte nur in Gesundheit                              | **Überholt:** Phase 14 hat die Schrittkarte bewusst eingeführt (Ist gegen Schrittziel); das ist eine Produktentscheidung und bleibt.                                                               |
+| Training: „Volumen (kg)“ ist die schwächste Zahl        | **Gilt weiter, aber geringeres Gewicht:** Die Karte führt jetzt mit „3 von 4 Einheiten“; das Volumen ist nur noch eine Nebenzeile. Nicht ersetzt (siehe unten).                                    |
+| Score, Gewicht, Zeiträume                               | Unverändert sinnvoll.                                                                                                                                                                              |
+
+Für die nächste Produktentscheidung (nicht umgesetzt):
+
+1. **Trainingskarte, Nebenzeile:** Mit Ziel steht die Anzahl zweimal („3 von 4 Einheiten“ und
+   darunter „3 Einheiten · Ø 3 pro Woche“), dazu „12.340 kg Volumen“. Vorschlag: die Nebenzeile auf
+   „Ø 3 pro Woche“ kürzen und das Volumen durch eine Leistungsaussage ersetzen, z. B. „2 neue
+   Bestwerte“ – berechenbar mit `exerciseProgress` (`core/training/metrics.ts`), das seit Phase
+   17.1 das Übungsdetail speist. Dafür bräuchte es eine Abfrage über alle Übungen eines Zeitraums
+   und eine Entscheidung, was „neuer Bestwert im Zeitraum“ genau heißt (gegenüber allem davor).
+2. Sonst kein Änderungsbedarf: Jede Karte beantwortet „was ist passiert und wie steht es zum
+   Ziel“, ohne doppelte Rechnung.
+
+Leistungsentwicklung je Übung (Bestwert, zuletzt, Richtung) steht im Trainingskontext
+(Übungsdetail), nicht auf dieser Seite.
+
 ## Daten und Leistung
 
 Keine eigenen Tabellen, nichts wird doppelt gespeichert. Pro Zeitraum laufen wenige aggregierte

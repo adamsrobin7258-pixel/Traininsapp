@@ -1,7 +1,12 @@
 import { Link } from 'react-router';
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
-import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
+import {
+  goalProgress,
+  type DetailDayTotal,
+  type GoalForDay,
+  type Nutrients,
+} from '@/core/nutrition';
 import { Icon, Meter } from '@/ui';
 import { formatGrams, formatKcal } from '../domain/format';
 import { ActivityBudget } from './ActivityBudget';
@@ -16,9 +21,18 @@ const MACROS: { key: 'proteinG' | 'carbsG' | 'fatG'; label: TranslationKey }[] =
 /**
  * Energy and macros of the day against the goal that applied on that day. The eaten calories
  * are the one big number; goal and remaining follow quietly. Without a goal the eaten values
- * are shown alone and the user is invited to set goals – none are invented.
+ * are shown alone and the user is invited to set goals – none are invented. Fiber follows the
+ * macros as a quiet detail without goal or meter, and only when enough entries state it.
  */
-export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalForDay | null }) {
+export function DayOverview({
+  totals,
+  fiber,
+  goal,
+}: {
+  totals: Nutrients;
+  fiber: DetailDayTotal;
+  goal: GoalForDay | null;
+}) {
   const { t, locale } = useI18n();
   const energyGoal = goal?.effective.energyKcal.value ?? null;
   const hasAnyGoal =
@@ -96,6 +110,22 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
             </div>
           );
         })}
+        {fiber.status !== 'unknown' ? (
+          <div className={styles.macro}>
+            <div className={styles.macroHead}>
+              <span>{t('nutrition.nutrients.fiber')}</span>
+              <span className={styles.macroValue}>
+                {fiber.status === 'complete'
+                  ? formatGrams(fiber.grams, locale)
+                  : fiber.status === 'partial'
+                    ? t('nutrition.overview.fiberAtLeast', {
+                        value: formatGrams(fiber.grams, locale),
+                      })
+                    : t('nutrition.overview.fiberIncomplete')}
+              </span>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {hasAnyGoal ? (

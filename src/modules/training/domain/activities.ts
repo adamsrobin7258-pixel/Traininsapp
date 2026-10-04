@@ -34,6 +34,14 @@ export function formatDistance(meters: number, locale: string, t: TranslateFn): 
   return t('activities.km', { value });
 }
 
+/** "6:09 min/km" from seconds per kilometre (see `paceSecondsPerKm`). */
+export function formatPace(secondsPerKm: number, t: TranslateFn): string {
+  const total = Math.round(secondsPerKm);
+  const minutes = Math.floor(total / 60);
+  const seconds = String(total % 60).padStart(2, '0');
+  return t('activities.paceValue', { value: `${minutes}:${seconds}` });
+}
+
 export function formatActivityKcal(kcal: number, locale: string, t: TranslateFn): string {
   return t('activities.kcal', { value: new Intl.NumberFormat(locale).format(Math.round(kcal)) });
 }

@@ -1,5 +1,6 @@
 import type { SqlExecutor, SqlValue } from '@/core/database';
 import { EXERCISE_TYPES, isOneOf } from './exercise';
+import type { PerformanceSession } from './metrics';
 import { SET_TYPES, type SetValues, type WorkoutSet } from './sets';
 import type {
   Workout,
@@ -547,6 +548,47 @@ export class WorkoutRepository {
       [exerciseId, profileId, excludeWorkoutId, startedAt],
     );
     return rows[0]?.heaviest ?? null;
+  }
+
+  /**
+   * Completed working sets of a weighted exercise in completed workouts, one entry per workout,
+   * oldest first (one query). Workouts that logged the exercise as another type are left out.
+   */
+  async weightedHistory(profileId: string, exerciseId: string): Promise<PerformanceSession[]> {
+    const rows = await this.db.query<{
+      workout_id: string;
+      local_date: string;
+      weight_kg: number | null;
+      reps: number | null;
+    }>(
+      `SELECT w.id AS workout_id, w.local_date, s.weight_kg, s.reps FROM workout_sets s
+       JOIN workout_exercises we ON we.id = s.workout_exercise_id
+       JOIN workouts w ON w.id = we.workout_id
+       WHERE we.exercise_id = ? AND w.profile_id = ? AND w.status = 'completed'
+         AND we.exercise_type = 'weighted' AND s.completed = 1 AND s.set_type = 'working'
+       ORDER BY w.started_at, w.id, we.position, s.position`,
+      [exerciseId, profileId],
+    );
+    const byWorkout = new Map<
+      string,
+      PerformanceSession & { sets: PerformanceSession['sets'][number][] }
+    >();
+    for (const row of rows) {
+      const session = byWorkout.get(row.workout_id) ?? {
+        workoutId: row.workout_id,
+        localDate: row.local_date,
+        sets: [],
+      };
+      session.sets.push({
+        weightKg: row.weight_kg,
+        reps: row.reps,
+        completed: true,
+        setType: 'working',
+      });
+      byWorkout.set(row.workout_id, session);
+    }
+    // A Map keeps insertion order: the order of the query, oldest workout first.
+    return [...byWorkout.values()];
   }
 
   /** Plan and day of every completed workout from a plan, newest first. */

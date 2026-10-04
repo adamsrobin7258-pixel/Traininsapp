@@ -2,9 +2,13 @@ import { useState } from 'react';
 import { useI18n } from '@/core/i18n';
 import { exerciseDisplayName, useTraining, type Exercise } from '@/core/training';
 import { Icon, Sheet } from '@/ui';
+import { ExercisePerformance } from './ExercisePerformance';
 import styles from './ExercisePicker.module.css';
 
-/** Read-only details of an exercise with a favourite toggle. No images or videos. */
+/**
+ * Read-only details of an exercise with a favourite toggle and, for weighted exercises, the
+ * user's best and latest performance. No images or videos.
+ */
 export function ExerciseDetailSheet({
   exercise,
   favorite: initialFavorite,
@@ -65,6 +69,9 @@ export function ExerciseDetailSheet({
         <dt>{t('training.exercises.tracking')}</dt>
         <dd>{t(`training.exerciseTypes.${exercise.exerciseType}`)}</dd>
       </dl>
+      {exercise.exerciseType === 'weighted' ? (
+        <ExercisePerformance exerciseId={exercise.id} />
+      ) : null}
       {description ? (
         <section aria-label={t('training.exercises.description')}>
           <h4 className={styles.listTitle}>{t('training.exercises.description')}</h4>

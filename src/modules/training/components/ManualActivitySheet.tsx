@@ -7,6 +7,7 @@ import {
   sportById,
   sportIntensities,
   sportName,
+  sportPace,
   sportVariants,
   useActivities,
   type ActivityWeight,
@@ -27,6 +28,7 @@ import {
   type ActivityFormError,
   type ActivityFormState,
 } from '../domain/manualActivityForm';
+import { formatPace } from '../domain/activities';
 import styles from './ManualActivitySheet.module.css';
 
 interface ManualActivitySheetProps {
@@ -238,6 +240,14 @@ function ActivityForm({
         bodyWeight?.kg ?? null,
       )
     : null;
+  // Derived from the entered distance and duration, never stored (core/activity/pace.ts).
+  const pace = calculable
+    ? sportPace(
+        sport.id,
+        calculable.distanceKm !== null ? calculable.distanceKm * 1000 : null,
+        calculable.durationMin * 60,
+      )
+    : null;
   const number = new Intl.NumberFormat(locale);
   const kcalText = (value: number) => t('activities.manual.kcal', { value: number.format(value) });
   const intensities = sportIntensities(sport);
@@ -378,6 +388,11 @@ function ActivityForm({
               {...field('distance')}
             />
             {errorText('distance')}
+            {pace !== null ? (
+              <p className={styles.note}>
+                {t('activities.pace')} {formatPace(pace, t)}
+              </p>
+            ) : null}
           </>
         ) : null}
 

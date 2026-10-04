@@ -600,4 +600,49 @@ describe('Day overview progress', () => {
     // Only the goals that are set get a progress line.
     expect(overview.getAllByRole('progressbar')).toHaveLength(2);
   });
+  it("shows the day's fiber quietly below the macros – only when enough foods state it", async () => {
+    await renderApp('/nutrition', {
+      prepare: async (services, profileId) => {
+        const { n, meals } = await prepareBasics(services, profileId);
+        const bread = await n.foods.create(profileId, {
+          ...oats,
+          name: 'Vollkornbrot',
+          brand: null,
+          nutrients: { ...oats.nutrients, energyKcal: 210, fiberG: 10 },
+        });
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-03',
+          mealId: meals.breakfast ?? '',
+          foodId: bread.id,
+          amount: 120,
+          unit: 'g',
+        });
+      },
+    });
+    const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
+    expect(await overview.findByText('Ballaststoffe')).toBeInTheDocument();
+    expect(overview.getByText('12 g')).toBeInTheDocument();
+    // A detail: no goal, no meter.
+    expect(overview.queryByRole('progressbar', { name: 'Ballaststoffe' })).not.toBeInTheDocument();
+  });
+
+  it('shows no fiber when no logged food states it (unknown is not 0 g)', async () => {
+    await renderApp('/nutrition', {
+      prepare: async (s, profileId) => {
+        const { n, food, meals } = await prepareBasics(s, profileId);
+        // Oats without fiber (unknown, not 0 g).
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-03',
+          mealId: meals.breakfast ?? '',
+          foodId: food.id,
+          amount: 100,
+          unit: 'g',
+        });
+      },
+    });
+    const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
+    await overview.findByText('Protein');
+    expect(overview.queryByText('Ballaststoffe')).not.toBeInTheDocument();
+    expect(overview.queryByText('0 g')).not.toBeInTheDocument();
+  });
 });

@@ -539,6 +539,85 @@ describe('recipes', () => {
   });
 });
 
+describe('fiber', () => {
+  const withFiber = (fiberG: number | null): FoodInput => ({
+    ...oatsInput,
+    name: fiberG === null ? 'Ohne Angabe' : `Ballaststoffe ${fiberG}`,
+    barcode: null,
+    nutrients: { ...oatsInput.nutrients, fiberG },
+  });
+
+  it('sums the stored snapshots; a food corrected later never changes a logged day', async () => {
+    const { n, profileId, breakfast } = await setup();
+    const oats = await n.foods.create(profileId, withFiber(10));
+    await n.diary.addFood(profileId, {
+      localDate: '2026-10-03',
+      mealId: breakfast.id,
+      foodId: oats.id,
+      amount: 60,
+      unit: 'g',
+    });
+    expect((await n.diary.getDay(profileId, '2026-10-03')).summary.fiber).toEqual({
+      status: 'complete',
+      grams: 6,
+    });
+
+    await n.foods.update(profileId, oats.id, withFiber(2));
+    expect((await n.diary.getDay(profileId, '2026-10-03')).summary.fiber).toEqual({
+      status: 'complete',
+      grams: 6,
+    });
+  });
+
+  it('keeps an unknown value apart from 0 g', async () => {
+    const { n, profileId, breakfast } = await setup();
+    const unknown = await n.foods.create(profileId, withFiber(null));
+    const entry = await n.diary.addFood(profileId, {
+      localDate: '2026-10-03',
+      mealId: breakfast.id,
+      foodId: unknown.id,
+      amount: 100,
+      unit: 'g',
+    });
+    expect(entry.nutrients.fiberG).toBeNull();
+    expect((await n.diary.getDay(profileId, '2026-10-03')).summary.fiber).toEqual({
+      status: 'unknown',
+    });
+  });
+
+  it('stores a recipe portion as unknown when an ingredient does not state it', async () => {
+    const { n, profileId, lunch } = await setup();
+    const oats = await n.foods.create(profileId, withFiber(10));
+    const unknown = await n.foods.create(profileId, withFiber(null));
+    const complete = await n.recipes.create(profileId, {
+      name: 'Nur Hafer',
+      servings: 1,
+      ingredients: [{ foodId: oats.id, amount: 100, unit: 'g', note: null }],
+    });
+    const partial = await n.recipes.create(profileId, {
+      name: 'Hafer und mehr',
+      servings: 1,
+      ingredients: [
+        { foodId: oats.id, amount: 100, unit: 'g', note: null },
+        { foodId: unknown.id, amount: 100, unit: 'g', note: null },
+      ],
+    });
+    const log = (recipeId: string) =>
+      n.diary.addRecipe(profileId, {
+        recipeId,
+        servings: 1,
+        localDate: '2026-10-03',
+        mealId: lunch.id,
+      });
+
+    expect((await log(complete.id)).nutrients.fiberG).toBe(10);
+    // Not 10 g: the second ingredient's fiber is unknown, so the portion's is too.
+    const entry = await log(partial.id);
+    expect(entry.nutrients.fiberG).toBeNull();
+    expect(entry.nutrients.energyKcal).toBe(400);
+  });
+});
+
 describe('template editing', () => {
   it('changes items and amounts; logged days stay, new entries use the new version', async () => {
     const { n, profileId, breakfast } = await setup();

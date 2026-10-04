@@ -180,6 +180,20 @@ Health-Connect-Einheit dort zusätzlich). Die Ausschlussregeln stehen einmal in
 Lesern genutzt. Sie erscheint, sobald Health Connect verbunden ist oder es
 Aktivitäten im Zeitraum gibt.
 
+## Pace (Phase 17.1)
+
+Für Aktivitäten zu Fuß zeigt Kalethra die **Pace** in min/km – abgeleitet aus Distanz und
+Dauer, **nie gespeichert** (`core/activity/pace.ts`, eine Funktion für beide Quellen):
+
+- **Manuell:** Sportarten der Kategorien Gehen & Wandern und Laufen; als Hinweis unter dem
+  Distanzfeld, sobald Dauer und Distanz eingegeben sind („Pace 6:40 min/km“).
+- **Health Connect:** genau die Typen dieser Sportarten (`running`, `runningTreadmill`,
+  `walking`, `hiking`); als Zeile im Aktivitätsdetail.
+- Keine Pace für Radfahren, Schwimmen, Rudern, Spiel-, Kraft- oder Kampfsport und ohne Distanz.
+- Nur plausible Werte: mindestens 100 m und 2:00–60:00 min/km; sonst entfällt die Angabe (kein
+  Teilen durch 0, kein Unsinn aus Aufzeichnungsfehlern).
+- Keine Pace-Statistik, keine Karte auf Fortschritt.
+
 ## Katalog
 
 60 Sportarten, `src/core/activity/catalog.ts`. `*` = allgemeiner Schätzwert. Zahl in Klammern =

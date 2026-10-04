@@ -89,7 +89,11 @@ export function NutritionScreen() {
       ) : null}
       {ready ? (
         <>
-          <DayOverview totals={ready.day.summary.totals.totals} goal={ready.goal} />
+          <DayOverview
+            totals={ready.day.summary.totals.totals}
+            fiber={ready.day.summary.fiber}
+            goal={ready.goal}
+          />
           {groups.map((group) => (
             <MealSection
               key={group.key}

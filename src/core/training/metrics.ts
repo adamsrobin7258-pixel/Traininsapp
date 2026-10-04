@@ -70,3 +70,110 @@ export function summarizeSets(
     completedSets: done.length,
   };
 }
+
+// ── Performance of one exercise over time ─────────────────────────────────────
+
+/** One set as it counts for performance: loaded, with repetitions, of one completed workout. */
+type PerformanceInputSet = Pick<WorkoutSet, 'weightKg' | 'reps' | 'completed' | 'setType'>;
+
+/** The completed sets of an exercise in one completed workout. */
+export interface PerformanceSession {
+  workoutId: string;
+  localDate: string;
+  sets: readonly PerformanceInputSet[];
+}
+
+/** The strongest set of a workout: the highest estimated maximum. */
+export interface PerformanceSet {
+  workoutId: string;
+  localDate: string;
+  weightKg: number;
+  reps: number;
+  estimatedOneRepMaxKg: number;
+}
+
+export type PerformanceTrend = 'up' | 'down' | 'steady';
+
+export interface ExerciseProgress {
+  /** Strongest set of all workouts (the earliest one when several are equal). */
+  best: PerformanceSet | null;
+  /** Strongest set of the most recent workout with a rateable set. */
+  latest: PerformanceSet | null;
+  /** The most recent workout set the best (and there were earlier ones to beat). */
+  latestIsBest: boolean;
+  /** Latest workout against the ones before it; `null` without an earlier one. */
+  trend: PerformanceTrend | null;
+  /** Workouts with at least one rateable set. */
+  sessions: number;
+}
+
+/**
+ * PRODUCT – the latest workout is compared with the mean of this many workouts before it, so a
+ * single weak or strong day does not flip the trend; changes below the threshold are "steady".
+ */
+export const PERFORMANCE_TREND = { compareSessions: 3, threshold: 0.025 } as const;
+
+/**
+ * The strongest set of one workout: completed working sets with a load and 1–12 repetitions
+ * (the range in which the Epley estimate is meaningful). Warm-ups, drops, unloaded sets and
+ * high-rep sets never count – they would give misleading maxima. Equal estimates: the heavier set.
+ */
+export function strongestSet(session: PerformanceSession): PerformanceSet | null {
+  let strongest: PerformanceSet | null = null;
+  for (const set of session.sets) {
+    if (!set.completed || set.setType !== 'working') continue;
+    if (set.weightKg === null || set.reps === null) continue;
+    const estimate = estimateOneRepMaxKg(set.weightKg, set.reps);
+    if (estimate === null) continue;
+    const better =
+      !strongest ||
+      estimate > strongest.estimatedOneRepMaxKg ||
+      (estimate === strongest.estimatedOneRepMaxKg && set.weightKg > strongest.weightKg);
+    if (better) {
+      strongest = {
+        workoutId: session.workoutId,
+        localDate: session.localDate,
+        weightKg: set.weightKg,
+        reps: set.reps,
+        estimatedOneRepMaxKg: estimate,
+      };
+    }
+  }
+  return strongest;
+}
+
+/**
+ * Best, latest and direction of one weighted exercise. `sessions` oldest first. Pure: the same
+ * history always gives the same result; nothing is stored.
+ */
+export function exerciseProgress(sessions: readonly PerformanceSession[]): ExerciseProgress {
+  const rated = sessions.flatMap((session) => {
+    const set = strongestSet(session);
+    return set ? [set] : [];
+  });
+  let best: PerformanceSet | null = null;
+  for (const set of rated) {
+    if (!best || set.estimatedOneRepMaxKg > best.estimatedOneRepMaxKg) best = set;
+  }
+  const latest = rated.at(-1) ?? null;
+  const earlier = rated.slice(-1 - PERFORMANCE_TREND.compareSessions, -1);
+  let trend: PerformanceTrend | null = null;
+  if (latest && earlier.length > 0) {
+    const reference =
+      earlier.reduce((sum, set) => sum + set.estimatedOneRepMaxKg, 0) / earlier.length;
+    const change = (latest.estimatedOneRepMaxKg - reference) / reference;
+    trend =
+      change > PERFORMANCE_TREND.threshold
+        ? 'up'
+        : change < -PERFORMANCE_TREND.threshold
+          ? 'down'
+          : 'steady';
+  }
+  return {
+    best,
+    latest,
+    latestIsBest: rated.length > 1 && best !== null && best === latest,
+    trend,
+    sessions: rated.length,
+  };
+}
