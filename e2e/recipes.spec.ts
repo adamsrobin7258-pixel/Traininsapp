@@ -135,7 +135,8 @@ test('recipe: create in Meine Inhalte, edit, log a serving, change and delete �
   await expect(main.getByText('Noch keine Rezepte')).toBeVisible();
   await nav(page).getByRole('link', { name: 'Ernährung' }).click();
   await expect(breakfast).toBeVisible();
-  await expect(main.getByText('Beerenquark')).toBeVisible();
+  await breakfast.click();
+  await expect(sheet.getByText('Beerenquark')).toBeVisible();
 });
 
 test('template: save from the diary, edit in Meine Inhalte, apply – the older entry stays', async ({

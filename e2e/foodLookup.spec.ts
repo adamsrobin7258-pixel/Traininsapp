@@ -105,7 +105,7 @@ test('the food search is offline and never asks Open Food Facts', async ({ page 
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(
-    page.locator('main').getByRole('heading', { name: /^Snacks · \d+ kcal$/ }),
+    page.locator('main').getByRole('button', { name: /^Snacks · \d+ kcal$/ }),
   ).toBeVisible();
   expect(requests).toEqual([]);
 });

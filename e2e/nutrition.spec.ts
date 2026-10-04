@@ -155,7 +155,7 @@ test('manage meals and system back closes sheets first', async ({ page }) => {
     .click();
   await expect(page).toHaveURL(/\/nutrition$/);
   await expect(
-    page.locator('main').getByRole('heading', { name: 'Spätmahlzeit · 0 kcal' }),
+    page.locator('main').getByRole('button', { name: 'Spätmahlzeit · 0 kcal' }),
   ).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 });
