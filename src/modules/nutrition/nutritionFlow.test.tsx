@@ -73,7 +73,9 @@ describe('nutrition diary', () => {
         screen.getByRole('heading', { level: 2, name: `${meal} · 0 kcal` }),
       ).toBeInTheDocument();
     }
-    expect(screen.getAllByText('Noch nichts eingetragen.')).toHaveLength(4);
+    // An empty meal shows only its one action – no extra "nothing logged" text (Phase 17.4).
+    expect(screen.getAllByRole('button', { name: /^.+: hinzufügen$/ })).toHaveLength(4);
+    expect(screen.queryByText('Noch nichts eingetragen.')).not.toBeInTheDocument();
     expect(screen.getByText('Noch keine Ziele festgelegt')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Ernährungsprofil einrichten' })).toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
@@ -294,7 +296,9 @@ describe('nutrition diary', () => {
     // Fat and carbohydrates follow automatically from the manual calories and protein.
     expect(overview.getAllByRole('progressbar')).toHaveLength(4);
     expect(overview.getByText('35 g von 42 g')).toBeInTheDocument();
-    expect(screen.getByText('0 ml von 2,5 l')).toBeInTheDocument();
+    // The amount large, the goal quietly next to it.
+    expect(section(/^Wasser$/).getByText('0 ml')).toBeInTheDocument();
+    expect(section(/^Wasser$/).getByText('von 2,5 l')).toBeInTheDocument();
     expect(
       await db.query('SELECT goal_type, effective_from, energy_kcal_manual FROM nutrition_goals'),
     ).toEqual([{ goal_type: 'gain', effective_from: '2026-10-03', energy_kcal_manual: 1500 }]);
@@ -337,6 +341,12 @@ describe('water', () => {
     await closed();
     expect(await water().findByText('1,08 l')).toBeInTheDocument();
 
+    // The single entries are details: folded away behind their count.
+    const toggle = water().getByRole('button', { name: '3 Einträge' });
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(water().queryByRole('button', { name: /^Wasser\s*250 ml/ })).not.toBeInTheDocument();
+    await userEvent.click(toggle);
+    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     await userEvent.click(water().getByRole('button', { name: /^Wasser\s*250 ml/ }));
     await userEvent.clear(dialog().getByLabelText('Menge in ml'));
     await userEvent.type(dialog().getByLabelText('Menge in ml'), '6000');
@@ -460,7 +470,11 @@ describe('meals, templates and foods', () => {
         });
       },
     });
-    await userEvent.click(await screen.findByRole('button', { name: 'Als Vorlage speichern' }));
+    // A rarer action: behind the meal's "more" button.
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Frühstück: weitere Aktionen' }),
+    );
+    await userEvent.click(dialog().getByRole('button', { name: 'Als Vorlage speichern' }));
     await userEvent.clear(dialog().getByLabelText('Name der Vorlage'));
     await userEvent.type(dialog().getByLabelText('Name der Vorlage'), 'Porridge');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
@@ -644,5 +658,40 @@ describe('Day overview progress', () => {
     await overview.findByText('Protein');
     expect(overview.queryByText('Ballaststoffe')).not.toBeInTheDocument();
     expect(overview.queryByText('0 g')).not.toBeInTheDocument();
+  });
+  it('add sheet: the search comes first, barcode is secondary, each food appears once', async () => {
+    await renderApp('/nutrition', {
+      prepare: async (services, profileId) => {
+        const { n, food, meals } = await prepareBasics(services, profileId);
+        await n.foods.create(profileId, { ...oats, name: 'Skyr', brand: null });
+        // Oats were eaten: they are "recently used"; Skyr is only saved.
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-02',
+          mealId: meals.breakfast ?? '',
+          foodId: food.id,
+          amount: 50,
+          unit: 'g',
+        });
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück: hinzufügen' }));
+    const sheet = dialog();
+    const search = sheet.getByRole('searchbox', { name: 'Lebensmittel suchen' });
+    // The search field comes before every list; scanning sits right in it.
+    const recent = await sheet.findByRole('region', { name: 'Zuletzt verwendet' });
+    expect(search.compareDocumentPosition(recent) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sheet.getByRole('button', { name: 'Barcode scannen' })).toBeInTheDocument();
+    expect(sheet.getByRole('button', { name: 'Barcode eingeben' })).toBeInTheDocument();
+
+    // Each food once: oats under "recently used", the rest under "Weitere Lebensmittel".
+    expect(sheet.getAllByRole('button', { name: /^Haferflocken/ })).toHaveLength(1);
+    const others = within(sheet.getByRole('region', { name: 'Gespeicherte Lebensmittel' }));
+    expect(others.getByRole('heading', { name: 'Weitere Lebensmittel' })).toBeInTheDocument();
+    expect(others.getByRole('button', { name: /^Skyr/ })).toBeInTheDocument();
+    expect(others.queryByRole('button', { name: /^Haferflocken/ })).not.toBeInTheDocument();
+
+    // Typing a barcode still works.
+    await userEvent.click(sheet.getByRole('button', { name: 'Barcode eingeben' }));
+    expect(await screen.findByLabelText('Barcode (EAN oder UPC)')).toBeInTheDocument();
   });
 });

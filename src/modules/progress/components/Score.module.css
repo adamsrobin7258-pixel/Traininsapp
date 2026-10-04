@@ -81,15 +81,16 @@
   color: var(--color-text-secondary);
 }
 
-/* "Vorläufig": a text label with an outline – never only a colour. */
-.badge {
-  align-self: center;
-  padding: 0.125rem var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text);
+/* Few data: the number steps back (smaller, quieter) – still readable, never hidden. */
+.number[data-preliminary] {
+  font-size: var(--font-size-large-title);
+  color: var(--color-text-secondary);
+}
+
+.preliminary {
+  font-size: var(--font-size-subhead);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
 }
 
 .band {

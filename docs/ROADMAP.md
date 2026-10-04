@@ -370,6 +370,24 @@ Gezielte Punkte aus dem UX-Audit 17.2 – nur Darstellung, keine Berechnung, kei
   Training)
 - Details: [PROGRESS.md](PROGRESS.md#tagesansicht-und-redundanzen-phase-173)
 
+## Phase 17.4 – Kernabläufe und visuelle Hierarchie ✅ (Version 0.24.0)
+
+Punkte aus dem UX-Audit von 0.23.0 – nur Darstellung und Bedienung, keine Berechnung, kein
+Datenmodell, keine neue Berechtigung:
+
+- Laufendes Training als eigener Modus: „Training beenden“ oben rechts, „Titel und Notizen“ und
+  „Training verwerfen“ (weiter mit Bestätigung) im Menü „Mehr“, keine Tab-Leiste; zurück zu
+  Training bleibt möglich, das Training läuft weiter
+- Pausentimer einzeilig: Zeit, Anhalten/Weiter, Überspringen (Logik, Autostart, Haptik unverändert)
+- Zweiter Startknopf neben dem nächsten Training heißt „Anderes Training“
+- Hinzufügen: Suche zuerst, Barcode-Scan als Symbol im Suchfeld, „Barcode eingeben“ als ruhige
+  Zeile; jedes Lebensmittel nur einmal (Zuletzt verwendet → Favoriten → Weitere Lebensmittel)
+- Tagebuch: Mahlzeiten als Gruppen mit kcal im Kopf, ruhiges „+ Hinzufügen“, kein Leertext,
+  „Als Vorlage speichern“ im Mahlzeitenmenü
+- Wasser: Summe und Ziel vorn, Einträge einklappbar („n Einträge“)
+- Vorläufiger Score: Zahl zurückgenommen, eine Metazeile, keine Einstufung (Formel unverändert)
+- Fortschrittskarten: eine Hauptaussage je Karte, Kohlenhydrate/Fett als ruhige Zeile
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

@@ -77,7 +77,8 @@ export function TrainingScreen() {
               setStarting(true);
             }}
           >
-            {t('training.start')}
+            {/* Next to the next workout this opens the choice of another one (free or a plan). */}
+            {data.next ? t('training.startOther') : t('training.start')}
           </Button>
           {error && !starting ? (
             <p className={styles.error} role="alert">

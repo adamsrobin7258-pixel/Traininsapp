@@ -49,7 +49,8 @@ async function createPlan(page: Page, name: string, day: string) {
 async function startPlanDay(page: Page, day: RegExp) {
   await expect(page.getByRole('button', { name: 'Starten' })).toHaveCount(0);
   await tab(page, 'Training').click();
-  await page.getByRole('button', { name: 'Training starten' }).click();
+  // With a plan the next workout has its own button; this one is "Anderes Training".
+  await page.getByRole('button', { name: 'Anderes Training' }).click();
   await sheet(page)
     .getByRole('button', { name: /^Aus Plan starten/ })
     .click();
@@ -110,7 +111,8 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
 
   // Next start from the plan pre-fills "last time".
   await tab(page, 'Training').click();
-  await page.getByRole('button', { name: 'Training starten' }).click();
+  // With a plan the next workout has its own button; this one is "Anderes Training".
+  await page.getByRole('button', { name: 'Anderes Training' }).click();
   await sheet(page)
     .getByRole('button', { name: /^Aus Plan starten/ })
     .click();

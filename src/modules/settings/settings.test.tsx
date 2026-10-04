@@ -199,9 +199,15 @@ describe('Einstellungen → Meine Inhalte', () => {
     expect(main().queryByRole('heading', { name: 'Verwalten' })).not.toBeInTheDocument();
     expect(main().queryByRole('link', { name: /verwalten|Lebensmittel|Vorlagen/ })).toBeNull();
     // Quick accesses: save a meal as template, apply templates and create a food while adding.
-    expect(
-      await main().findByRole('button', { name: 'Als Vorlage speichern' }),
-    ).toBeInTheDocument();
+    // Saving a meal as a template sits behind the meal's "more" button (Phase 17.4).
+    await userEvent.click(
+      await main().findByRole('button', { name: 'Frühstück: weitere Aktionen' }),
+    );
+    expect(dialog().getByRole('button', { name: 'Als Vorlage speichern' })).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
     await userEvent.click(screen.getByRole('button', { name: 'Frühstück: hinzufügen' }));
     expect(
       dialog().getByRole('button', { name: 'Neues Lebensmittel anlegen' }),

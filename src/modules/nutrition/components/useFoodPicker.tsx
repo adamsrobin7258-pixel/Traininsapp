@@ -44,8 +44,9 @@ export interface FoodPicker {
 
 /**
  * The one food selection of the nutrition area – used when logging (add sheet) and when
- * putting together recipes and templates. Quick access first (recently used, favourites),
- * then the saved foods and the barcode (scan or type). The search is offline: own foods, saved
+ * putting together recipes and templates. The search comes first (scanning sits in the field),
+ * then quick access (recently used, favourites) and the remaining saved foods – each food once.
+ * Typing a barcode is a quiet action next to "new food". The search is offline: own foods, saved
  * products and the BLS, in that order; Open Food Facts is only asked for an unknown barcode.
  * A BLS food is stored on first use; a new food is created with the shared `FoodFormSheet`.
  * Every picked food reaches `onPicked` as a stored food.
@@ -115,7 +116,13 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
   const searching = query.trim() !== '';
   const matches: FoodSearchResult[] = searching && results.status === 'ready' ? results.data : [];
   const referenceVersion = matches.find((r) => r.kind === 'reference')?.reference.version;
-  const favorites = ready ? ready.foods.filter((food) => food.favorite) : [];
+  // Each food once: recent first, then favourites not among them, then all the others.
+  const recentIds = new Set(ready?.recent.map((food) => food.id) ?? []);
+  const favorites = ready
+    ? ready.foods.filter((food) => food.favorite && !recentIds.has(food.id))
+    : [];
+  const shownAbove = new Set([...recentIds, ...favorites.map((food) => food.id)]);
+  const otherFoods = ready ? ready.foods.filter((food) => !shownAbove.has(food.id)) : [];
 
   const foodRow = (food: Food, key: string) => (
     <ListRow
@@ -163,35 +170,47 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
     />
   );
 
+  const enterBarcodeRow = (
+    <ListRow
+      title={t('nutrition.lookup.enterBarcode')}
+      icon="barcode"
+      action
+      onPress={barcode.enter}
+    />
+  );
+
   const panel = (
     <>
-      <div className={`${styles.quick} ${styles.quickWide}`}>
-        <button type="button" className={styles.chip} onClick={() => void barcode.scan()}>
-          <Icon name="barcode" size={18} /> {t('nutrition.lookup.scan')}
-        </button>
-        <button type="button" className={styles.chip} onClick={barcode.enter}>
-          {t('nutrition.lookup.enterBarcode')}
-        </button>
-      </div>
       <label htmlFor={searchId} className="visually-hidden">
         {t('nutrition.add.search')}
       </label>
-      <input
-        id={searchId}
-        className={styles.search}
-        type="search"
-        value={query}
-        placeholder={t('nutrition.add.searchPlaceholder')}
-        autoComplete="off"
-        enterKeyHint="search"
-        onChange={(event) => {
-          setQuery(event.target.value);
-          setFailure(null);
-        }}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') dismissKeyboard();
-        }}
-      />
+      <div className={styles.searchField}>
+        <Icon name="search" size={20} className={styles.searchIcon} />
+        <input
+          id={searchId}
+          className={styles.search}
+          type="search"
+          value={query}
+          placeholder={t('nutrition.add.searchPlaceholder')}
+          autoComplete="off"
+          enterKeyHint="search"
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setFailure(null);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') dismissKeyboard();
+          }}
+        />
+        <button
+          type="button"
+          className={styles.scanButton}
+          aria-label={t('nutrition.lookup.scan')}
+          onClick={() => void barcode.scan()}
+        >
+          <Icon name="barcode" size={22} />
+        </button>
+      </div>
       <div className={styles.scroll} data-testid="food-search-list">
         {!searching && ready && ready.recent.length > 0 ? (
           <section aria-label={t('nutrition.lookup.recent')}>
@@ -241,10 +260,15 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
           </section>
         ) : (
           <section aria-label={t('nutrition.lookup.allFoods')}>
-            <h3 className={styles.listTitle}>{t('nutrition.lookup.allFoods')}</h3>
+            <h3 className={styles.listTitle}>
+              {shownAbove.size > 0
+                ? t('nutrition.lookup.otherFoods')
+                : t('nutrition.lookup.allFoods')}
+            </h3>
             <List label={t('nutrition.add.foodsTab')}>
               {createRow}
-              {ready ? ready.foods.map((food) => foodRow(food, food.id)) : null}
+              {enterBarcodeRow}
+              {otherFoods.map((food) => foodRow(food, food.id))}
             </List>
             {ready && ready.foods.length === 0 ? (
               <EmptyState

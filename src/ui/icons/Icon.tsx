@@ -50,6 +50,12 @@ const paths = {
   /** A stopwatch – the rest timer. */
   timer: <path d="M12 20.75a7 7 0 1 0 0-14 7 7 0 0 0 0 14ZM12 10.25v3.5l2.25 1.5M9.75 3.25h4.5" />,
   close: <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />,
+  /** Three dots – more actions of a screen or a group. */
+  more: <path d="M5.75 12h.01M12 12h.01M18.25 12h.01" strokeWidth={3} />,
+  pause: <path d="M9 6.25v11.5M15 6.25v11.5" />,
+  play: <path d="M8 5.75v12.5L18.25 12Z" />,
+  /** Skip to the end – skipping the rest. */
+  skip: <path d="M6.25 6.25v11.5L14.75 12ZM17.75 6.25v11.5" />,
   plan: <path d="M9 6.75h10.25M9 12h10.25M9 17.25h10.25M4.75 6.75h.5M4.75 12h.5M4.75 17.25h.5" />,
   chevronLeft: <path d="M14.5 5.75 8.25 12l6.25 6.25" />,
   star: (

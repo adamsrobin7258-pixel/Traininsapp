@@ -150,7 +150,8 @@ test('template: save from the diary, edit in Meine Inhalte, apply – the older 
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   const breakfast = main.getByRole('heading', { level: 2, name: 'Frühstück · 222 kcal' });
   await expect(breakfast).toBeVisible();
-  await main.getByRole('button', { name: 'Als Vorlage speichern' }).click();
+  await main.getByRole('button', { name: 'Frühstück: weitere Aktionen' }).click();
+  await sheet.getByRole('button', { name: 'Als Vorlage speichern' }).click();
   await sheet.getByRole('button', { name: 'Speichern' }).click();
   await expect(main.getByRole('status')).toContainText('Vorlage „Frühstück“ gespeichert.');
 

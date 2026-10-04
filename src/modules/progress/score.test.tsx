@@ -187,11 +187,14 @@ describe('Kalethra-Score on Fortschritt', () => {
     await showProgressPeriod('7 Tage');
     await expectScore(100);
     const card = await scoreCard();
-    expect(card.getByText('Vorläufig')).toBeInTheDocument();
+    // One quiet meta line instead of a badge plus a separate hint; no band for a preliminary score.
     expect(
-      card.getByText('Noch nicht alle Daten für diesen Zeitraum sind vorhanden.'),
+      card.getByText('Vorläufig · weitere Einträge machen ihn aussagekräftiger'),
     ).toBeVisible();
-    expect(await scoreButton()).toHaveAccessibleName(/Vorläufig: Noch nicht alle Daten/);
+    expect(card.queryByText('Sehr gut unterwegs')).not.toBeInTheDocument();
+    expect(await scoreButton()).toHaveAccessibleName(
+      /vorläufig: weitere Einträge machen ihn aussagekräftiger/,
+    );
   });
 
   it('says so when there are no data at all', async () => {
@@ -483,7 +486,9 @@ describe('Regeneration eintragen (Gesundheit)', () => {
     await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
     await expectScore(20);
     const card = await scoreCard();
-    expect(card.getByText('Vorläufig')).toBeInTheDocument();
+    expect(
+      card.getByText('Vorläufig · weitere Einträge machen ihn aussagekräftiger'),
+    ).toBeInTheDocument();
   });
 });
 

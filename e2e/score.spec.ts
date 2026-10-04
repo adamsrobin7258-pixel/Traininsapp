@@ -88,8 +88,7 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
   await tab('Fortschritt').click();
   await expect(main.getByRole('radio', { name: 'Heute' })).toHaveAttribute('aria-checked', 'true');
   await main.getByRole('radio', { name: '7 Tage' }).click();
-  await expect(score).toContainText('Vorläufig');
-  await expect(score).toContainText('Noch nicht alle Daten für diesen Zeitraum sind vorhanden.');
+  await expect(score).toContainText('Vorläufig · weitere Einträge machen ihn aussagekräftiger');
   await expect(score).toHaveAccessibleName(/^Kalethra-Score \d+ von 100, /);
 
   // Today: nutrition on target, recovery good, a rest day – no workout is no minus.

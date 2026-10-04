@@ -69,7 +69,7 @@ async function trained(
 }
 
 async function startDay(day: RegExp) {
-  await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Anderes Training' }));
   await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
   await userEvent.click(await screen.findByRole('button', { name: day }));
   await screen.findByLabelText('Satz 1: Gewicht');
@@ -97,7 +97,7 @@ describe('training experience', () => {
     });
     // The training page suggests the plan trained last.
     expect(await screen.findByText('Pull · Plan Eins')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Training starten' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Anderes Training' }));
     await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
     const one = within(await screen.findByRole('list', { name: 'Plan Eins' }));
     const two = within(screen.getByRole('list', { name: 'Plan Zwei' }));
@@ -185,15 +185,23 @@ describe('training experience', () => {
     await userEvent.type(screen.getByLabelText('Satz 1: Gewicht'), '60');
     await userEvent.type(screen.getByLabelText('Satz 1: Wdh.'), '8');
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
-    const timer = within(await screen.findByRole('timer', { name: 'Pause' }));
-    expect(timer.getByText('Pause · noch 0:30')).toBeInTheDocument();
+    const bar = await screen.findByRole('timer', { name: 'Pause' });
+    const timer = within(bar);
+    // One compact line (Phase 17.4): label, the remaining time, two icon buttons.
+    expect(timer.getByText('Pause')).toBeInTheDocument();
+    expect(timer.getByText('0:30')).toBeInTheDocument();
+    expect(bar).toHaveTextContent(/^Pause0:30$/);
+    expect(timer.getAllByRole('button').map((button) => button.getAttribute('aria-label'))).toEqual(
+      ['Anhalten', 'Überspringen'],
+    );
     // The next set stays usable while the timer runs.
     expect(screen.getByLabelText('Satz 2: Gewicht')).toBeEnabled();
     vi.setSystemTime(new Date(NOW.getTime() + 10_000));
-    await timer.findByText('Pause · noch 0:20');
+    await timer.findByText('0:20');
     await userEvent.click(timer.getByRole('button', { name: 'Anhalten' }));
     vi.setSystemTime(new Date(NOW.getTime() + 60_000));
-    expect(await timer.findByText('Pause angehalten · noch 0:20')).toBeInTheDocument();
+    expect(await timer.findByText('Angehalten')).toBeInTheDocument();
+    expect(timer.getByText('0:20')).toBeInTheDocument();
     await userEvent.click(timer.getByRole('button', { name: 'Weiter' }));
     vi.setSystemTime(new Date(NOW.getTime() + 90_000));
     expect(await screen.findByText('Pause vorbei')).toBeInTheDocument();

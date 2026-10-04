@@ -110,7 +110,7 @@ test('Meine Inhalte: overview, content pages, old addresses and back', async ({ 
   await nav.getByRole('link', { name: 'Training' }).click();
   await expect(main.getByRole('heading', { level: 1, name: 'Training' })).toBeVisible();
   await expect(main.getByRole('link', { name: /Pläne|Übungen/ })).toHaveCount(0);
-  await main.getByRole('button', { name: 'Training starten' }).click();
+  await main.getByRole('button', { name: 'Anderes Training' }).click();
   await page
     .getByRole('dialog')
     .getByRole('button', { name: /^Aus Plan starten/ })

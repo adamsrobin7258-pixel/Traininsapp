@@ -16,8 +16,8 @@ import { RestTimerContext } from '../hooks/useRestTimer';
 import styles from './RestTimer.module.css';
 
 /**
- * Provides the rest timer to the sets of the workout in progress and shows it as a small bar
- * above the tab bar. It never blocks input: every set stays reachable, the timer can be paused,
+ * Provides the rest timer to the sets of the workout in progress and shows it as one slim line
+ * at the bottom (the workout has no tab bar): label, remaining time, pause/resume and skip. It never blocks input: every set stays reachable, the timer can be paused,
  * resumed or skipped, and system back closes it first. With 0 seconds nothing is shown.
  * When the rest is over, a quiet notice and – on the device – a short vibration follow.
  */
@@ -83,7 +83,9 @@ function RestTimerBar({
     return (
       <div className={styles.bar} data-status="done" role="status">
         <Icon name="timer" size={20} />
-        <span className={styles.text}>{t('training.workout.rest.done')}</span>
+        <span className={styles.label} data-done="true">
+          {t('training.workout.rest.done')}
+        </span>
         <button
           type="button"
           className={styles.action}
@@ -106,30 +108,31 @@ function RestTimerBar({
       aria-label={t('training.workout.rest.label')}
     >
       <Icon name="timer" size={20} />
-      <span className={styles.text}>
-        {paused
-          ? t('training.workout.rest.paused', { time })
-          : t('training.workout.rest.remaining', { time })}
+      <span className={styles.label}>
+        {paused ? t('training.workout.rest.pausedLabel') : t('training.workout.rest.label')}
       </span>
+      <span className={styles.time}>{time}</span>
       <button
         type="button"
         className={styles.action}
+        aria-label={paused ? t('training.workout.rest.resume') : t('training.workout.rest.pause')}
         onClick={() => {
           const at = Date.now();
           setNow(at);
           onChange(paused ? resumeRest(state, at) : pauseRest(state, at));
         }}
       >
-        {paused ? t('training.workout.rest.resume') : t('training.workout.rest.pause')}
+        <Icon name={paused ? 'play' : 'pause'} size={20} />
       </button>
       <button
         type="button"
         className={styles.action}
+        aria-label={t('training.workout.rest.skip')}
         onClick={() => {
           onChange(IDLE);
         }}
       >
-        {t('training.workout.rest.skip')}
+        <Icon name="skip" size={20} />
       </button>
     </div>
   );

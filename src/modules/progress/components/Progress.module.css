@@ -84,6 +84,22 @@
   line-height: var(--line-height-snug);
 }
 
+/* Phase 17.4: one main statement per card, the rest steps back. */
+.lead {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+  letter-spacing: var(--letter-spacing-title);
+}
+
+/* Information only (carbohydrates, fat): one quiet line, no bar. */
+.minor {
+  font-size: var(--font-size-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
 .secondary {
   font-size: var(--font-size-subhead);
   font-variant-numeric: tabular-nums;

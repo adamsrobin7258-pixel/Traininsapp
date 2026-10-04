@@ -77,7 +77,12 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
 
   // Water.
   await main.getByRole('button', { name: '500 ml Wasser hinzufügen' }).click();
-  await expect(main.getByText('500 ml von 2 l')).toBeVisible();
+  const water = main.getByRole('region', { name: 'Wasser' });
+  await expect(water.getByText('von 2 l', { exact: true })).toBeVisible();
+  await expect(water.getByRole('progressbar', { name: 'Wasser' })).toHaveAttribute(
+    'aria-valuetext',
+    '500 ml von 2 l',
+  );
   await expect(overview.getByText('370', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 

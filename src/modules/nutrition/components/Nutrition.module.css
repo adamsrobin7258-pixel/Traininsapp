@@ -311,6 +311,148 @@
   color: var(--color-text-secondary);
 }
 
+/* ── Meals ───────────────────────────────────────────────────── */
+
+/* A meal is a group: name and kcal on top, the foods as its content, one quiet add action.
+   Structure comes from spacing and type, not from separator lines. */
+.meal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.mealHead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-tap-target);
+}
+
+.mealIcon {
+  flex: none;
+  color: var(--color-accent-text);
+}
+
+.mealTitle {
+  display: flex;
+  flex: 1;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.mealKcal {
+  flex: none;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+.mealMore {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  margin-right: calc(var(--space-2) * -1);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.mealMore:active {
+  background: var(--color-surface-pressed);
+}
+
+.mealBody {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.mealEntries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mealEntry {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--size-tap-target);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mealEntry:active {
+  background: var(--color-surface-pressed);
+}
+
+.mealEntryText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.mealEntryName {
+  font-size: var(--font-size-body);
+  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
+}
+
+.mealEntryDetail {
+  margin-top: 0.125rem;
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+.mealEntryKcal {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* The one action of a meal: calm, clearly an action – not another row of data. */
+.mealAdd {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-2);
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-accent-text);
+  background: transparent;
+  font: inherit;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+
+.mealAdd:active {
+  background: var(--color-accent-subtle);
+}
+
 /* ── Water ───────────────────────────────────────────────────── */
 
 /* Water has its own calm blue world; the level grows softly (see Meter). */
@@ -339,6 +481,62 @@
 .waterIcon {
   flex: none;
   color: var(--color-water);
+}
+
+/* The day's water first: the amount large, the goal quietly next to it. */
+.waterTotal {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-tight);
+}
+
+.waterGoal {
+  font-size: var(--font-size-subhead);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* The single entries are details: folded away behind "n Einträge". */
+.waterDetails {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.waterToggle {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: var(--space-1);
+  min-height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  color: var(--color-text-secondary);
+  background: transparent;
+  font: inherit;
+  font-size: var(--font-size-subhead);
+  cursor: pointer;
+}
+
+.waterToggleIcon {
+  transition: transform var(--duration-fast) var(--ease-standard);
+}
+
+.waterToggle[aria-expanded='true'] .waterToggleIcon {
+  transform: rotate(90deg);
+}
+
+/* A setting reachable from where it matters, without looking like part of the day. */
+.quietLink {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-1);
+  font-size: var(--font-size-footnote);
+  color: var(--color-accent-text);
+  text-decoration: none;
 }
 
 .waterCard .chip {
@@ -405,6 +603,47 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+}
+
+/* The search is the first step: a full-width field with the scanner at its end. */
+.searchField {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.searchField .search {
+  flex: 1;
+  min-width: 0;
+  padding-left: calc(var(--space-4) + 1.25rem + var(--space-2));
+  padding-right: calc(var(--size-tap-target) + var(--space-2));
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-4);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.scanButton {
+  position: absolute;
+  right: var(--space-1);
+  display: grid;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-md);
+  color: var(--color-accent-text);
+  background: transparent;
+  cursor: pointer;
+}
+
+.scanButton:active {
+  background: var(--color-surface-pressed);
 }
 
 /* The clear button in Kalethra's line style instead of the browser's default. */

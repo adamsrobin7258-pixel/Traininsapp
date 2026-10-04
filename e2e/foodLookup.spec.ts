@@ -73,7 +73,8 @@ test('scan, review, save, log – and find the product again offline', async ({ 
   requests.length = 0;
   await main.getByRole('button', { name: 'Abendessen: hinzufügen' }).click();
   await expect(sheet.getByRole('list', { name: 'Zuletzt verwendet' })).toContainText('Skyr Natur');
-  await expect(sheet.getByRole('list', { name: 'Favoriten' })).toContainText('Skyr Natur');
+  // Each food is listed once: a favourite that was just used stays under "Zuletzt verwendet".
+  await expect(sheet.getByRole('list', { name: 'Favoriten' })).toHaveCount(0);
   await sheet.getByLabel('Lebensmittel suchen').fill('skyr');
   await expect(sheet.getByRole('list', { name: 'Suchergebnisse' })).toContainText('Skyr Natur');
   await sheet.getByRole('button', { name: 'Barcode scannen' }).click();

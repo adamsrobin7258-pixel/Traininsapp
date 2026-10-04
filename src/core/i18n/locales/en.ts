@@ -56,7 +56,8 @@ export const en: TranslationSchema = {
         low: 'Room to grow',
       },
       preliminary: 'Preliminary',
-      preliminaryHint: 'Not all data for this period is in yet.',
+      preliminaryHint: 'more entries make it more meaningful',
+      preliminaryLine: '{label} · {hint}',
       trend: {
         up: 'Increased',
         down: 'Decreased',
@@ -79,6 +80,7 @@ export const en: TranslationSchema = {
       areaLabel: '{area}: {value}',
       openDetails: 'Kalethra score details',
       a11y: 'Kalethra score {score} of 100, {band}.',
+      a11yPreliminary: 'Kalethra score {score} of 100, preliminary: {hint}.',
       a11yEmpty: 'Kalethra score: no data yet.',
       detail: {
         intro:
@@ -219,6 +221,7 @@ export const en: TranslationSchema = {
   training: {
     title: 'Training',
     start: 'Start workout',
+    startOther: 'Other workout',
     startFree: 'Start free workout',
     freeWorkout: 'Free workout',
     resume: 'Resume',
@@ -334,10 +337,10 @@ export const en: TranslationSchema = {
       },
       setTypeHint: 'A drop set continues the set before it. The values are kept.',
       deleteSet: 'Delete set',
+      more: 'More',
       rest: {
         label: 'Rest',
-        remaining: 'Rest · {time} left',
-        paused: 'Rest paused · {time} left',
+        pausedLabel: 'Paused',
         pause: 'Pause',
         resume: 'Resume',
         skip: 'Skip',
@@ -592,9 +595,9 @@ export const en: TranslationSchema = {
       unassigned: 'No meal',
     },
     mealSection: {
-      empty: 'Nothing logged yet.',
       add: 'Add',
       addTo: '{meal}: add',
+      more: '{meal}: more actions',
       saveAsTemplate: 'Save as template',
       templateTitle: 'Save as template',
       templateName: 'Template name',
@@ -762,6 +765,9 @@ export const en: TranslationSchema = {
     water: {
       title: 'Water',
       ofGoal: '{value} of {goal}',
+      ofGoalShort: 'of {goal}',
+      entriesOne: '1 entry',
+      entriesCount: '{count} entries',
       noGoal: 'No water goal set yet.',
       setGoal: 'Set water goal',
       quickAdd: '+ {amount}',
@@ -932,6 +938,7 @@ export const en: TranslationSchema = {
       recent: 'Recently used',
       favorites: 'Favourites',
       allFoods: 'Saved foods',
+      otherFoods: 'More foods',
       results: 'Search results',
       scan: 'Scan barcode',
       enterBarcode: 'Enter barcode',

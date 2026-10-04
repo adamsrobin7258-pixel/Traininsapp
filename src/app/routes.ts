@@ -28,6 +28,12 @@ export const TRAINING_LINKS = {
   workout: (id: string) => `${ROUTES.training}/workouts/${id}`,
 } as const;
 
+/**
+ * Screens that are a mode of their own: the tab bar is hidden there, so a stray tap cannot leave
+ * them (the workout in progress). Back and system back still work; nothing is lost.
+ */
+export const FOCUS_ROUTES: readonly string[] = [TRAINING_LINKS.activeWorkout];
+
 /** Sub pages of the nutrition area; `day` opens the diary on a local day (YYYY-MM-DD). */
 export const NUTRITION_LINKS = {
   day: (localDate: string) => `${ROUTES.nutrition}?day=${localDate}`,

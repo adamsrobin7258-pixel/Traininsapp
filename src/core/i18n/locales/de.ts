@@ -58,7 +58,8 @@ export const de = {
         low: 'Noch Luft nach oben',
       },
       preliminary: 'Vorläufig',
-      preliminaryHint: 'Noch nicht alle Daten für diesen Zeitraum sind vorhanden.',
+      preliminaryHint: 'weitere Einträge machen ihn aussagekräftiger',
+      preliminaryLine: '{label} · {hint}',
       trend: {
         up: 'Gestiegen',
         down: 'Gesunken',
@@ -81,6 +82,7 @@ export const de = {
       areaLabel: '{area}: {value}',
       openDetails: 'Details zum Kalethra-Score',
       a11y: 'Kalethra-Score {score} von 100, {band}.',
+      a11yPreliminary: 'Kalethra-Score {score} von 100, vorläufig: {hint}.',
       a11yEmpty: 'Kalethra-Score: noch keine Daten.',
       detail: {
         intro:
@@ -224,6 +226,7 @@ export const de = {
   training: {
     title: 'Training',
     start: 'Training starten',
+    startOther: 'Anderes Training',
     startFree: 'Freies Training starten',
     freeWorkout: 'Freies Training',
     resume: 'Fortsetzen',
@@ -340,10 +343,10 @@ export const de = {
       },
       setTypeHint: 'Ein Drop-Satz setzt den Satz davor fort. Die Werte bleiben erhalten.',
       deleteSet: 'Satz löschen',
+      more: 'Mehr',
       rest: {
         label: 'Pause',
-        remaining: 'Pause · noch {time}',
-        paused: 'Pause angehalten · noch {time}',
+        pausedLabel: 'Angehalten',
         pause: 'Anhalten',
         resume: 'Weiter',
         skip: 'Überspringen',
@@ -601,9 +604,9 @@ export const de = {
       unassigned: 'Ohne Mahlzeit',
     },
     mealSection: {
-      empty: 'Noch nichts eingetragen.',
       add: 'Hinzufügen',
       addTo: '{meal}: hinzufügen',
+      more: '{meal}: weitere Aktionen',
       saveAsTemplate: 'Als Vorlage speichern',
       templateTitle: 'Als Vorlage speichern',
       templateName: 'Name der Vorlage',
@@ -776,6 +779,9 @@ export const de = {
     water: {
       title: 'Wasser',
       ofGoal: '{value} von {goal}',
+      ofGoalShort: 'von {goal}',
+      entriesOne: '1 Eintrag',
+      entriesCount: '{count} Einträge',
       noGoal: 'Noch kein Wasserziel festgelegt.',
       setGoal: 'Wasserziel festlegen',
       quickAdd: '+ {amount}',
@@ -948,6 +954,7 @@ export const de = {
       recent: 'Zuletzt verwendet',
       favorites: 'Favoriten',
       allFoods: 'Gespeicherte Lebensmittel',
+      otherFoods: 'Weitere Lebensmittel',
       results: 'Suchergebnisse',
       scan: 'Barcode scannen',
       enterBarcode: 'Barcode eingeben',

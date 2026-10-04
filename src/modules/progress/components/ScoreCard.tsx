@@ -62,23 +62,32 @@ export function ScoreCard({
         {current.score !== null && current.band !== null ? (
           <>
             <span className={styles.figure}>
-              <span className={styles.number}>{current.score}</span>
-              <span className={styles.outOf}>{t('progress.score.outOf')}</span>
-              {current.preliminary ? (
-                <span className={styles.badge}>{t('progress.score.preliminary')}</span>
-              ) : null}
-            </span>
-            <span className={styles.band}>{t(`progress.score.bands.${current.band}`)}</span>
-            {current.preliminary ? (
-              <span className={styles.note}>{t('progress.score.preliminaryHint')}</span>
-            ) : null}
-            <span className={styles.trend} data-trend={trend}>
-              {trendIcon ? <Icon name={trendIcon} size={16} /> : null}
-              <span>
-                {trendText}
-                {deltaText ? ` · ${deltaText}` : ''}
+              <span className={styles.number} data-preliminary={current.preliminary || undefined}>
+                {current.score}
               </span>
+              <span className={styles.outOf}>{t('progress.score.outOf')}</span>
             </span>
+            {current.preliminary ? (
+              // Few data: the number steps back, no wording ("Sehr gut unterwegs") and one short
+              // line says why. A real trend stays; "no comparison yet" would only repeat it.
+              <span className={styles.preliminary}>
+                {t('progress.score.preliminaryLine', {
+                  label: t('progress.score.preliminary'),
+                  hint: t('progress.score.preliminaryHint'),
+                })}
+              </span>
+            ) : (
+              <span className={styles.band}>{t(`progress.score.bands.${current.band}`)}</span>
+            )}
+            {!current.preliminary || trend !== 'none' ? (
+              <span className={styles.trend} data-trend={trend}>
+                {trendIcon ? <Icon name={trendIcon} size={16} /> : null}
+                <span>
+                  {trendText}
+                  {deltaText ? ` · ${deltaText}` : ''}
+                </span>
+              </span>
+            ) : null}
           </>
         ) : (
           <>
@@ -129,16 +138,24 @@ function summary(
   t: ReturnType<typeof useI18n>['t'],
 ): string {
   const parts: string[] = [];
-  if (result.score !== null && result.band !== null) {
+  if (result.score !== null && result.band !== null && result.preliminary) {
+    parts.push(
+      t('progress.score.a11yPreliminary', {
+        score: result.score,
+        hint: t('progress.score.preliminaryHint'),
+      }),
+    );
+    // A real comparison stays; "no comparison yet" would only repeat "preliminary".
+    if (trendText !== t('progress.score.trend.none')) {
+      parts.push(deltaText ? `${trendText}, ${deltaText}.` : `${trendText}.`);
+    }
+  } else if (result.score !== null && result.band !== null) {
     parts.push(
       t('progress.score.a11y', {
         score: result.score,
         band: t(`progress.score.bands.${result.band}`),
       }),
     );
-    if (result.preliminary) {
-      parts.push(`${t('progress.score.preliminary')}: ${t('progress.score.preliminaryHint')}`);
-    }
     parts.push(deltaText ? `${trendText}, ${deltaText}.` : `${trendText}.`);
   } else {
     parts.push(t('progress.score.a11yEmpty'));

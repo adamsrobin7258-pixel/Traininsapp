@@ -208,7 +208,7 @@ describe('training', () => {
     await userEvent.click(tab('Training'));
     expect(await screen.findByText('Push A · Push/Pull/Legs')).toBeInTheDocument();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Anderes Training' }));
     await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
     const pushA = await dialog().findByRole('button', { name: /^Push A/ });
     expect(pushA).toHaveTextContent('Als Nächstes');
@@ -296,7 +296,7 @@ describe('training', () => {
           }
         },
       });
-      await userEvent.click(await screen.findByRole('button', { name: 'Training starten' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'Anderes Training' }));
       await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
       for (const day of ['Push', 'Pull', 'Beine A', 'Beine B']) {
         expect(await dialog().findByRole('button', { name: new RegExp(`^${day}`) })).toBeEnabled();
@@ -321,7 +321,7 @@ describe('training', () => {
       });
       expect(await screen.findByRole('link', { name: /Tag A.*Heute/ })).toBeInTheDocument();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Training starten' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Anderes Training' }));
       await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
       expect(await dialog().findByRole('button', { name: /^Tag A/ })).toBeEnabled();
       await userEvent.keyboard('{Escape}');

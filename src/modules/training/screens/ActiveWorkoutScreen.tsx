@@ -4,7 +4,7 @@ import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
-import { Button, ConfirmSheet, List, ListRow, Screen } from '@/ui';
+import { Button, ConfirmSheet, Icon, Screen, Sheet } from '@/ui';
 import { RestTimerProvider } from '../components/RestTimer';
 import { WorkoutDetailsSheet } from '../components/WorkoutDetailsSheet';
 import { WorkoutEditor } from '../components/WorkoutEditor';
@@ -12,11 +12,15 @@ import { formatDuration, trainingTypeLabel } from '../domain/format';
 import { useElapsedSeconds } from '../hooks/useElapsedSeconds';
 import styles from './WorkoutScreens.module.css';
 
-type Dialog = 'finish' | 'discard' | 'details' | null;
+type Dialog = 'finish' | 'more' | 'discard' | 'details' | null;
 
 /**
  * The workout in progress. Every change is written to the encrypted database immediately,
  * so closing the app or a restart never loses it; this screen simply reloads it.
+ *
+ * Its own mode: no tab bar (AppLayout), "Training beenden" as the one primary action in the
+ * header, and the rare actions – title and notes, discarding – behind "Mehr", discarding only
+ * after a confirmation.
  */
 export function ActiveWorkoutScreen() {
   const { t } = useI18n();
@@ -56,40 +60,33 @@ export function ActiveWorkoutScreen() {
       title={workoutDisplayTitle(workout) ?? trainingTypeLabel(workout.trainingType, t)}
       eyebrow={t('training.activeTitle')}
       back={{ to: ROUTES.training, label: t('training.back') }}
+      action={
+        <div className={styles.headerActions}>
+          <Button
+            className={styles.finish}
+            onClick={() => {
+              setDialog('finish');
+            }}
+          >
+            {t('training.workout.finish')}
+          </Button>
+          <button
+            type="button"
+            className={styles.more}
+            aria-label={t('training.workout.more')}
+            onClick={() => {
+              setDialog('more');
+            }}
+          >
+            <Icon name="more" size={22} />
+          </button>
+        </div>
+      }
     >
       <Elapsed startedAt={workout.startedAt} />
       <RestTimerProvider seconds={restTimerSeconds}>
         <WorkoutEditor workout={workout} />
       </RestTimerProvider>
-      <List>
-        <ListRow
-          title={t('training.workout.details')}
-          subtitle={workout.notes ?? undefined}
-          onPress={() => {
-            setDialog('details');
-          }}
-        />
-      </List>
-      <div className={styles.actions}>
-        <Button
-          fullWidth
-          onClick={() => {
-            setDialog('finish');
-          }}
-        >
-          {t('training.workout.finish')}
-        </Button>
-        <Button
-          fullWidth
-          variant="destructive"
-          onClick={() => {
-            setDialog('discard');
-          }}
-        >
-          {t('training.workout.discard')}
-        </Button>
-      </div>
-
       {dialog === 'finish' ? (
         <ConfirmSheet
           title={t('training.workout.confirmFinishTitle')}
@@ -116,6 +113,36 @@ export function ActiveWorkoutScreen() {
             setDialog(null);
           }}
         />
+      ) : null}
+      {dialog === 'more' ? (
+        <Sheet
+          title={t('training.workout.more')}
+          onClose={() => {
+            setDialog(null);
+          }}
+          closeLabel={t('common.close')}
+        >
+          <div className={styles.sheetActions}>
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={() => {
+                setDialog('details');
+              }}
+            >
+              {t('training.workout.details')}
+            </Button>
+            <Button
+              variant="destructive"
+              fullWidth
+              onClick={() => {
+                setDialog('discard');
+              }}
+            >
+              {t('training.workout.discard')}
+            </Button>
+          </div>
+        </Sheet>
       ) : null}
       {dialog === 'discard' ? (
         <ConfirmSheet

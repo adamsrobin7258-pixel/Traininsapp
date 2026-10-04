@@ -117,8 +117,14 @@ function ProgressRow({
 function GoalMeter({
   value,
   attainment,
+  level = 'main',
 }: {
   value: string;
+  /**
+   * Visual weight (Phase 17.4): `lead` is the card's one main statement, `main` a further key
+   * value (protein), `minor` information only (carbohydrates, fat) – one quiet line, no bar.
+   */
+  level?: 'lead' | 'main' | 'minor';
   /** Workouts, minutes, steps keep their real percent (125 %); nutrients stop at 100 %. */
   attainment: Attainment | NutrientAttainment | null;
 }) {
@@ -128,17 +134,24 @@ function GoalMeter({
       ? attainment.shownRatio
       : attainment.ratio
     : 0;
+  const percent = attainment
+    ? t('progress.goal.percent', {
+        value: new Intl.NumberFormat(locale).format(attainment.percent),
+      })
+    : null;
+  if (level === 'minor') {
+    return (
+      <span className={styles.figures}>
+        <span className={styles.minor}>{value}</span>
+        {percent ? <span className={styles.minor}>{percent}</span> : null}
+      </span>
+    );
+  }
   return (
     <span className={styles.goal}>
       <span className={styles.figures}>
-        <span className={styles.main}>{value}</span>
-        {attainment ? (
-          <span className={styles.secondary}>
-            {t('progress.goal.percent', {
-              value: new Intl.NumberFormat(locale).format(attainment.percent),
-            })}
-          </span>
-        ) : null}
+        <span className={level === 'lead' ? styles.lead : styles.main}>{value}</span>
+        {percent ? <span className={styles.secondary}>{percent}</span> : null}
       </span>
       {attainment ? (
         <span className={styles.meter} aria-hidden="true">
@@ -162,6 +175,7 @@ function TrainingProgress({ data, range, period, day }: CardProps) {
     <ProgressRow to={ROUTES.training} icon="training" title={t('progress.training.title')}>
       {goal?.mode === 'full' ? (
         <GoalMeter
+          level="lead"
           value={t('progress.training.goalProgress', {
             done: number.format(goal.done),
             expected: number.format(goal.expected),
@@ -170,7 +184,7 @@ function TrainingProgress({ data, range, period, day }: CardProps) {
         />
       ) : summary && summary.workouts > 0 ? (
         <span className={styles.figures}>
-          <span className={styles.main}>{count(summary.workouts)}</span>
+          <span className={styles.lead}>{count(summary.workouts)}</span>
         </span>
       ) : summary ? (
         <span className={styles.note}>{t('progress.training.empty')}</span>
@@ -200,7 +214,7 @@ function TrainingProgress({ data, range, period, day }: CardProps) {
                 </span>
               ) : null}
               {summary.volumeKg !== null ? (
-                <span className={styles.secondary}>
+                <span className={styles.note}>
                   {t('progress.training.volume', {
                     value: new Intl.NumberFormat(locale).format(summary.volumeKg),
                   })}
@@ -277,6 +291,7 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
         <>
           {calories ? (
             <GoalMeter
+              level="lead"
               value={t(
                 today ? 'progress.nutrition.kcalProgress' : 'progress.nutrition.avgKcalProgress',
                 {
@@ -288,7 +303,7 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
             />
           ) : (
             <span className={styles.figures}>
-              <span className={styles.main}>
+              <span className={styles.lead}>
                 {t('progress.nutrition.avgKcal', { value: number.format(summary.avgKcal) })}
               </span>
             </span>
@@ -320,6 +335,7 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
             macro ? (
               <GoalMeter
                 key={key}
+                level="minor"
                 value={t(
                   today
                     ? `progress.nutrition.${key}Progress`
@@ -371,7 +387,7 @@ function WeightProgress({ data, range, period, day }: CardProps) {
       {summary?.latest ? (
         <>
           <span className={styles.figures}>
-            <span className={styles.main}>{weight(summary.latest.kg)}</span>
+            <span className={styles.lead}>{weight(summary.latest.kg)}</span>
             {/* Today: the latest value with its day – one day has nothing to compare. */}
             <span className={styles.secondary}>
               {period === 'today'
@@ -434,6 +450,7 @@ function ActivityProgress({ data, range, day }: CardProps) {
     <ProgressRow to={TRAINING_LINKS.activities} icon="flame" title={t('progress.activities.title')}>
       {goal.mode === 'full' ? (
         <GoalMeter
+          level="lead"
           value={t('progress.activities.goalProgress', {
             minutes: number.format(goal.minutes),
             expected: number.format(goal.expectedMinutes),
@@ -444,7 +461,7 @@ function ActivityProgress({ data, range, day }: CardProps) {
       {summary.count > 0 ? (
         <>
           <span className={styles.figures}>
-            <span className={goal.mode === 'full' ? styles.secondary : styles.main}>
+            <span className={goal.mode === 'full' ? styles.secondary : styles.lead}>
               {summary.count === 1
                 ? t('progress.activities.countOne')
                 : t('progress.activities.count', { count: summary.count })}
@@ -511,6 +528,7 @@ function StepsProgress({ data, range, period }: Omit<CardProps, 'day'>) {
         </span>
       ) : attainment ? (
         <GoalMeter
+          level="lead"
           value={t(today ? 'progress.steps.progress' : 'progress.steps.avgProgress', {
             steps: number.format(attainment.actual),
             goal: number.format(attainment.target),
@@ -519,7 +537,7 @@ function StepsProgress({ data, range, period }: Omit<CardProps, 'day'>) {
         />
       ) : (
         <span className={styles.figures}>
-          <span className={styles.main}>
+          <span className={styles.lead}>
             {t(today ? 'progress.steps.value' : 'progress.steps.avgValue', {
               steps: number.format(summary.avgSteps),
             })}

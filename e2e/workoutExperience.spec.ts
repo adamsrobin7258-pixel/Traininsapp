@@ -56,7 +56,8 @@ async function createPlan(page: Page) {
 
 async function startDay(page: Page, day: RegExp) {
   await tab(page, 'Training').click();
-  await page.getByRole('button', { name: 'Training starten' }).click();
+  // With a plan the next workout has its own button; this one is "Anderes Training".
+  await page.getByRole('button', { name: 'Anderes Training' }).click();
   await sheet(page)
     .getByRole('button', { name: /^Aus Plan starten/ })
     .click();
@@ -101,7 +102,7 @@ test('1 – next workout, last values, rest timer, finish and summary', async ({
 
   // Next: Pull is suggested, any day can still be chosen.
   await expect(page.getByText('Pull · Push Pull')).toBeVisible();
-  await page.getByRole('button', { name: 'Training starten' }).click();
+  await page.getByRole('button', { name: 'Anderes Training' }).click();
   await sheet(page)
     .getByRole('button', { name: /^Aus Plan starten/ })
     .click();
@@ -116,7 +117,7 @@ test('1 – next workout, last values, rest timer, finish and summary', async ({
   // Rest timer after a set: visible, skip possible, the next set stays usable.
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
   const timer = page.getByRole('timer', { name: 'Pause' });
-  await expect(timer).toContainText(/Pause · noch 0:(30|29|28)/);
+  await expect(timer).toContainText(/^Pause\s*0:(30|29|28)/);
   await expect(page.getByLabel('Satz 2: Gewicht')).toBeEditable();
   for (const button of await timer.getByRole('button').all()) {
     expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
