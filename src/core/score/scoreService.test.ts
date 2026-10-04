@@ -61,6 +61,7 @@ async function targetSince(
 
 const options = (patch: Partial<ScoreOptions> = {}): ScoreOptions => ({
   today: TODAY,
+  todayProgress: 0.5,
   ...patch,
 });
 

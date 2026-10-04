@@ -42,6 +42,9 @@ export function areaExplanation(
           }),
         );
       }
+      if (detail.runningDay && score !== null) {
+        lines.push(t('progress.score.detail.nutrition.running'));
+      }
       lines.push(
         t('progress.score.detail.nutrition.logged', {
           count: detail.loggedDays,

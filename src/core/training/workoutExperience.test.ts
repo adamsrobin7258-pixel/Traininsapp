@@ -441,10 +441,16 @@ describe('editing a finished workout', () => {
     expect(span).toMatchObject({ endedAt: edited.endedAt });
 
     // Score: the workout counts once; after deleting it, it is gone everywhere.
-    const before = await services.score.calculate(profileId, WEEK, { today: TODAY });
+    const before = await services.score.calculate(profileId, WEEK, {
+      today: TODAY,
+      todayProgress: 0.5,
+    });
     expect(before.areas.training.detail.done).toBe(1);
     await t.workouts.delete(profileId, id);
-    const after = await services.score.calculate(profileId, WEEK, { today: TODAY });
+    const after = await services.score.calculate(profileId, WEEK, {
+      today: TODAY,
+      todayProgress: 0.5,
+    });
     expect(after.areas.training.detail.done).toBe(0);
     expect(await volume()).toBeUndefined();
     expect(await t.workouts.lastPerformance(profileId, 'sys.bench-press', null)).toBeNull();

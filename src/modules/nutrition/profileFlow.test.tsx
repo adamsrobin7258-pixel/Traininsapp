@@ -241,6 +241,6 @@ describe('nutrition profile', () => {
   it('shows the setup hint in the diary without a profile', async () => {
     await renderApp('/nutrition');
     expect(await screen.findByText('Noch keine Ziele festgelegt')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ernährungsprofil einrichten' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ziele festlegen' })).toBeInTheDocument();
   });
 });

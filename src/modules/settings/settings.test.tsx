@@ -199,10 +199,8 @@ describe('Einstellungen → Meine Inhalte', () => {
     expect(main().queryByRole('heading', { name: 'Verwalten' })).not.toBeInTheDocument();
     expect(main().queryByRole('link', { name: /verwalten|Lebensmittel|Vorlagen/ })).toBeNull();
     // Quick accesses: save a meal as template, apply templates and create a food while adding.
-    // Saving a meal as a template sits behind the meal's "more" button (Phase 17.4).
-    await userEvent.click(
-      await main().findByRole('button', { name: 'Frühstück: weitere Aktionen' }),
-    );
+    // Saving a meal as a template sits in the meal's details (Phase 17.5).
+    await userEvent.click(await main().findByRole('button', { name: /^Frühstück · / }));
     expect(dialog().getByRole('button', { name: 'Als Vorlage speichern' })).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     await waitFor(() => {
@@ -510,10 +508,13 @@ describe('Gesundheit: steps against the step goal', () => {
         await s.healthSync.connect(profileId);
       },
     });
-    const row = await screen.findByText('Schrittziel heute');
-    const item = within(row.closest('li') ?? document.body);
-    expect(item.getByText('6.200 von 8.000')).toBeInTheDocument();
-    expect(item.getByText('Ziel an 1 von 3 Tagen mit Daten erreicht (7 Tage)')).toBeInTheDocument();
+    // Phase 17.5: steps and goal are one statement with one bar – no second goal row.
+    const steps = await screen.findByRole('group', { name: 'Schritte heute: 6.200 von 8.000' });
+    expect(within(steps).getByText('6.200')).toBeVisible();
+    expect(within(steps).getByText('/ 8.000 Schritte')).toBeVisible();
+    expect(within(steps).getByRole('progressbar')).toHaveAttribute('aria-valuenow', '78');
+    expect(screen.queryByText('Schrittziel heute')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ziel an .* Tagen/)).not.toBeInTheDocument();
   });
 
   it('stays neutral without step data and offers to set a goal without one', async () => {
@@ -537,9 +538,9 @@ describe('Gesundheit: steps against the step goal', () => {
         await s.healthSync.connect(profileId);
       },
     });
-    const row = await screen.findByText('Schrittziel heute');
-    const item = within(row.closest('li') ?? document.body);
-    expect(item.getByText('Ziel 8.000 · noch keine Schritte')).toBeInTheDocument();
-    expect(item.queryByText(/Ziel an/)).not.toBeInTheDocument();
+    const steps = await screen.findByRole('group', { name: 'Schritte heute: – von 8.000' });
+    expect(within(steps).getByText('/ 8.000 Schritte')).toBeVisible();
+    expect(within(steps).queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ziel an/)).not.toBeInTheDocument();
   });
 });

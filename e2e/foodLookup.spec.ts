@@ -64,7 +64,7 @@ test('scan, review, save, log – and find the product again offline', async ({ 
   await sheet.getByRole('button', { name: 'Als Favorit markieren' }).click();
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(main.getByRole('heading', { name: 'Mittagessen · 98 kcal' })).toBeVisible();
+  await expect(main.getByRole('button', { name: 'Mittagessen · 98 kcal' })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
   expect(requests.every((url) => url.includes('4001234567890'))).toBe(true);
 

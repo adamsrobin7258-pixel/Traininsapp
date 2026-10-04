@@ -98,12 +98,13 @@ export const en: TranslationSchema = {
         areasTitle: 'The four areas',
         nutrition: {
           none: 'No food logged in this period.',
-          notRated: 'Not rateable yet – no nutrition goal, or the day is still running.',
+          notRated: 'Not rateable – no nutrition goal.',
           near: 'On average you are close to your calorie goal.',
           over: 'On average {value} % above your calorie goal.',
           under: 'On average {value} % below your calorie goal.',
           protein: 'Protein goal reached on {reached} of {total} rated days.',
           logged: 'Logged on {count} of {total} days.',
+          running: 'Today counts what you have logged so far against the time of day.',
         },
         training: {
           noTarget: 'No weekly training target set. Kalethra workouts in this period: {done}.',
@@ -570,8 +571,7 @@ export const en: TranslationSchema = {
       noGoalBody:
         'Set your daily goals yourself to see your progress. The app does not choose values for you.',
       noGoalValue: 'No goal',
-      fiberAtLeast: 'at least {value}',
-      fiberIncomplete: 'not known for all foods',
+      setGoals: 'Set goals',
     },
     nutrients: {
       energy: 'Calories',
@@ -597,7 +597,7 @@ export const en: TranslationSchema = {
     mealSection: {
       add: 'Add',
       addTo: '{meal}: add',
-      more: '{meal}: more actions',
+      listLabel: 'Meals',
       saveAsTemplate: 'Save as template',
       templateTitle: 'Save as template',
       templateName: 'Template name',
@@ -785,12 +785,9 @@ export const en: TranslationSchema = {
       quickTitle: 'Quick amounts',
       quickLabel: 'Quick amount {index} in ml',
       quickHint: 'One to four amounts between 10 and 5000 ml. Empty fields are ignored.',
-      notCounted: 'Water does not count towards calories or macronutrients.',
     },
     profile: {
       title: 'Nutrition profile',
-      open: 'Nutrition profile',
-      setup: 'Set up nutrition profile',
       intro:
         'Set it up once – Kalethra calculates your daily goals from it and adjusts them to your weight trend.',
       save: 'Save',
@@ -1364,24 +1361,16 @@ export const en: TranslationSchema = {
     disconnectFailed: 'Disconnecting did not work. Please try again.',
     activityTitle: 'Steps & activity',
     activityFooter: 'From Health Connect.',
-    stepGoalToday: 'Step goal today',
-    stepGoalProgress: '{steps} of {goal}',
-    stepGoalReached: 'Reached · {steps} of {goal}',
-    stepGoalNoData: 'Goal {goal} · no steps yet',
-    stepGoalWeek: 'Goal reached on {reached} of {total} days with data (7 days)',
+    activityFooterSynced: 'From Health Connect, last updated {date}.',
     stepGoalSet: 'Set a step goal',
     stepsToday: 'Steps today',
+    stepsOfGoal: '/ {goal} steps',
+    stepsUnit: 'steps',
+    stepsTodayOfGoal: 'Steps today: {steps} of {goal}',
     activeEnergyToday: 'Active calories today',
     stepsAverage: 'Steps, 7-day average',
-    importedWeight: 'Weight',
-    importedWeightValue: '{weight} · {date}',
-    ownWins: 'Your own entry for this day takes precedence',
     steps: '{count} steps',
     kcal: '{count} kcal',
-    overviewFooter:
-      'For display only. These values change neither your weight entries nor your nutrition goals.',
-    overviewFooterSynced:
-      'For display only, last updated {date}. These values change neither your weight entries nor your nutrition goals.',
   },
   settings: {
     title: 'Settings',
@@ -1577,9 +1566,6 @@ export const en: TranslationSchema = {
     },
     chartLabel: 'Weight trend from {from} to {to}, from {first} to {last}',
     chartTooFew: 'The trend appears here once the period has two entries.',
-    privacyNote: 'Weight data is encrypted and stored only on this device.',
-    privacyNoteDevelopment:
-      'Browser development mode: weight data is stored unencrypted in the browser.',
     errors: {
       empty: 'Please enter a weight.',
       invalid: 'Please enter a valid number, for example 82.4.',

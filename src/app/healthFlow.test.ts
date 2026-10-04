@@ -110,7 +110,10 @@ describe('Health Connect → core → Gesundheit / Fortschritt / Score', () => {
 
     // Fortschritt and score: the same 66 %.
     const progress = await s.services.progress.calculate(s.profileId, WEEK, { today: TODAY });
-    const score = await s.services.score.calculate(s.profileId, WEEK, { today: TODAY });
+    const score = await s.services.score.calculate(s.profileId, WEEK, {
+      today: TODAY,
+      todayProgress: 0.5,
+    });
     expect(progress.steps.attainment?.percent).toBe(66);
     expect(score.areas.activity.detail.steps.score).toBe(66);
     expect(score.areas.activity.score).toBe(66); // steps only – still inside "Aktivitäten"
@@ -133,7 +136,10 @@ describe('Health Connect → core → Gesundheit / Fortschritt / Score', () => {
         manual({ localDate: TODAY, durationMin: minutes }),
       );
       const progress = await s.services.progress.calculate(s.profileId, [TODAY], { today: TODAY });
-      const score = await s.services.score.calculate(s.profileId, [TODAY], { today: TODAY });
+      const score = await s.services.score.calculate(s.profileId, [TODAY], {
+        today: TODAY,
+        todayProgress: 0.5,
+      });
       expect(progress.activity.goal).toMatchObject({ expectedMinutes: 26, minutes });
       expect(score.areas.activity.detail.expectedMinutes).toBe(26);
       expect(score.areas.activity.detail.minutesScore).toBe(expected);
@@ -176,7 +182,10 @@ describe('Health Connect → core → Gesundheit / Fortschritt / Score', () => {
     await s.services.activities.create(s.profileId, manual({ durationMin: 30, kcalOverride: 90 }));
 
     const progress = await s.services.progress.calculate(s.profileId, WEEK, { today: TODAY });
-    const score = await s.services.score.calculate(s.profileId, WEEK, { today: TODAY });
+    const score = await s.services.score.calculate(s.profileId, WEEK, {
+      today: TODAY,
+      todayProgress: 0.5,
+    });
     const budget = await s.services.nutrition.goals.dayGoalsBetween(s.profileId, ['2026-10-02']);
     // Walk 45 + yoga 30 = 75 minutes, 200 + 90 = 290 kcal – everywhere the same.
     expect(progress.activity.summary).toMatchObject({
@@ -256,7 +265,8 @@ describe('Health Connect → core → Gesundheit / Fortschritt / Score', () => {
   it('recovery: good / moderate / poor and a rest day through the one score rule; none is neutral', async () => {
     const s = await setup();
     const score = async () =>
-      (await s.services.score.calculate(s.profileId, WEEK, { today: TODAY })).areas.recovery;
+      (await s.services.score.calculate(s.profileId, WEEK, { today: TODAY, todayProgress: 0.5 }))
+        .areas.recovery;
     expect((await score()).score).toBeNull();
     await at(new Date(2026, 9, 1, 9), () =>
       s.services.recovery.save(s.profileId, '2026-10-01', { state: 'good', restDay: false }),

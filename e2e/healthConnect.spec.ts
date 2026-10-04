@@ -85,14 +85,13 @@ test('connects Health Connect after an explanation, shows the data and disconnec
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Gesundheit' })
     .click();
-  // Steps and activity are named by content (source in the footer); the imported weight sits
-  // under Health Connect (Phase 17.3).
+  // Steps and activity are named by content (source in the footer); the imported weight is
+  // not repeated on Gesundheit (Phase 17.5).
   const imported = page.getByRole('region', { name: 'Schritte & Aktivität' });
-  await expect(imported.getByText('6.543 Schritte')).toBeVisible();
+  await expect(imported.getByRole('group', { name: '6.543 Schritte' })).toBeVisible();
   await expect(imported.getByText('321 kcal')).toBeVisible();
-  await expect(
-    page.getByRole('region', { name: 'Health Connect', exact: true }).getByText(/92,4 kg/),
-  ).toBeVisible();
+  await expect(page.getByRole('region', { name: 'Health Connect', exact: true })).toHaveCount(0);
+  await expect(page.locator('main').getByText(/92,4 kg/)).toHaveCount(0);
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Step goal: set under Einstellungen → Ziele, the steps themselves stay Health Connect's.
@@ -105,7 +104,21 @@ test('connects Health Connect after an explanation, shows the data and disconnec
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Gesundheit' })
     .click();
-  await expect(imported.getByText('6.543 von 8.000')).toBeVisible();
+  // One statement: steps against the goal, with one bar – no wrapping text below it.
+  const steps = imported.getByRole('group', { name: 'Schritte heute: 6.543 von 8.000' });
+  await expect(steps).toBeVisible();
+  const goal = steps.getByText('/ 8.000 Schritte');
+  await expect(goal).toBeVisible();
+  await expect(steps.getByRole('progressbar')).toBeVisible();
+  // Value and goal sit on one line, also at 320 px – nothing wraps.
+  const valueBox = await steps.getByText('6.543', { exact: true }).boundingBox();
+  const goalBox = await goal.boundingBox();
+  expect(
+    Math.abs(
+      (valueBox?.y ?? 0) + (valueBox?.height ?? 0) - (goalBox?.y ?? 0) - (goalBox?.height ?? 0),
+    ),
+  ).toBeLessThan(6);
+  expect(goalBox?.height ?? 99).toBeLessThan(30);
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Disconnect: deleting the imported data is pre-selected.

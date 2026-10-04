@@ -34,7 +34,7 @@ async function setup() {
   const progress = (dates: readonly string[] = WEEK) =>
     services.progress.calculate(profileId, dates, { today: TODAY });
   const score = (dates: readonly string[] = WEEK) =>
-    services.score.calculate(profileId, dates, { today: TODAY });
+    services.score.calculate(profileId, dates, { today: TODAY, todayProgress: 0.5 });
   return { platform, services, profileId, progress, score };
 }
 

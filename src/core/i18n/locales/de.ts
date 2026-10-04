@@ -101,12 +101,13 @@ export const de = {
         areasTitle: 'Die vier Bereiche',
         nutrition: {
           none: 'Keine Ernährungseinträge in diesem Zeitraum.',
-          notRated: 'Noch nicht bewertbar – ohne Ernährungsziel oder weil der Tag noch läuft.',
+          notRated: 'Nicht bewertbar – ohne Ernährungsziel.',
           near: 'Du liegst im Schnitt nah an deinem Kalorienziel.',
           over: 'Im Schnitt {value} % über deinem Kalorienziel.',
           under: 'Im Schnitt {value} % unter deinem Kalorienziel.',
           protein: 'Proteinziel an {reached} von {total} bewerteten Tagen erreicht.',
           logged: 'An {count} von {total} Tagen erfasst.',
+          running: 'Heute zählt der bisherige Stand im Verhältnis zur Uhrzeit.',
         },
         training: {
           noTarget:
@@ -579,8 +580,7 @@ export const de = {
       noGoalBody:
         'Lege deine Tagesziele selbst fest, um den Fortschritt zu sehen. Die App setzt keine Werte für dich.',
       noGoalValue: 'Kein Ziel',
-      fiberAtLeast: 'mind. {value}',
-      fiberIncomplete: 'nicht für alle Lebensmittel bekannt',
+      setGoals: 'Ziele festlegen',
     },
     nutrients: {
       energy: 'Kalorien',
@@ -606,7 +606,7 @@ export const de = {
     mealSection: {
       add: 'Hinzufügen',
       addTo: '{meal}: hinzufügen',
-      more: '{meal}: weitere Aktionen',
+      listLabel: 'Mahlzeiten',
       saveAsTemplate: 'Als Vorlage speichern',
       templateTitle: 'Als Vorlage speichern',
       templateName: 'Name der Vorlage',
@@ -799,12 +799,9 @@ export const de = {
       quickTitle: 'Schnellmengen',
       quickLabel: 'Schnellmenge {index} in ml',
       quickHint: 'Eine bis vier Mengen zwischen 10 und 5000 ml. Leere Felder werden ignoriert.',
-      notCounted: 'Wasser zählt nicht zu Kalorien oder Makronährstoffen.',
     },
     profile: {
       title: 'Ernährungsprofil',
-      open: 'Ernährungsprofil',
-      setup: 'Ernährungsprofil einrichten',
       intro:
         'Einmal einrichten – Kalethra berechnet daraus deine Tagesziele und passt sie an deinen Gewichtstrend an.',
       save: 'Speichern',
@@ -1385,24 +1382,16 @@ export const de = {
     disconnectFailed: 'Das Trennen hat nicht geklappt. Bitte versuche es erneut.',
     activityTitle: 'Schritte & Aktivität',
     activityFooter: 'Aus Health Connect.',
-    stepGoalToday: 'Schrittziel heute',
-    stepGoalProgress: '{steps} von {goal}',
-    stepGoalReached: 'Erreicht · {steps} von {goal}',
-    stepGoalNoData: 'Ziel {goal} · noch keine Schritte',
-    stepGoalWeek: 'Ziel an {reached} von {total} Tagen mit Daten erreicht (7 Tage)',
+    activityFooterSynced: 'Aus Health Connect, zuletzt aktualisiert {date}.',
     stepGoalSet: 'Schrittziel festlegen',
     stepsToday: 'Schritte heute',
+    stepsOfGoal: '/ {goal} Schritte',
+    stepsUnit: 'Schritte',
+    stepsTodayOfGoal: 'Schritte heute: {steps} von {goal}',
     activeEnergyToday: 'Aktive Kalorien heute',
     stepsAverage: 'Schritte, Ø 7 Tage',
-    importedWeight: 'Gewicht',
-    importedWeightValue: '{weight} · {date}',
-    ownWins: 'Dein eigener Eintrag für diesen Tag hat Vorrang',
     steps: '{count} Schritte',
     kcal: '{count} kcal',
-    overviewFooter:
-      'Nur zur Ansicht. Diese Werte verändern weder deine Gewichtseinträge noch deine Ernährungsziele.',
-    overviewFooterSynced:
-      'Nur zur Ansicht, zuletzt aktualisiert {date}. Diese Werte verändern weder deine Gewichtseinträge noch deine Ernährungsziele.',
   },
   settings: {
     title: 'Einstellungen',
@@ -1601,9 +1590,6 @@ export const de = {
     },
     chartLabel: 'Gewichtsverlauf vom {from} bis {to}, von {first} auf {last}',
     chartTooFew: 'Ab zwei Einträgen im Zeitraum erscheint hier der Verlauf.',
-    privacyNote: 'Gewichtsdaten werden verschlüsselt und nur auf diesem Gerät gespeichert.',
-    privacyNoteDevelopment:
-      'Browser-Entwicklungsmodus: Gewichtsdaten liegen unverschlüsselt im Browser.',
     errors: {
       empty: 'Bitte gib ein Gewicht ein.',
       invalid: 'Bitte gib eine gültige Zahl ein, zum Beispiel 82,4.',

@@ -39,6 +39,14 @@ export const NUTRITION = {
   proteinReached: PROTEIN_GOAL_REACHED,
   /** … below it, 2 points per missing percent (80 % → 80, 70 % → 60, 50 % → 20). */
   proteinPointsPerPercent: 2,
+  /**
+   * The running day (Phase 17.5): what is expected so far is the day goal × the share of the
+   * day already past, widened by about one meal in both directions (this many shares of the
+   * goal), because food comes in meals, not evenly. Inside this corridor the day is on track
+   * (100); outside it the usual rule of the main goal applies against the crossed edge. The
+   * corridor also keeps the value stable right after midnight (a snack at 00:30 is no excess).
+   */
+  runningDayAllowance: 0.25,
 } as const;
 
 /** Self-reported recovery of a day → points. Subjective, never a medical judgement. */

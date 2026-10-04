@@ -388,6 +388,24 @@ Datenmodell, keine neue Berechtigung:
 - Vorläufiger Score: Zahl zurückgenommen, eine Metazeile, keine Einstufung (Formel unverändert)
 - Fortschrittskarten: eine Hauptaussage je Karte, Kohlenhydrate/Fett als ruhige Zeile
 
+## Phase 17.5 – Gesundheit, Ernährung und laufender Score ✅ (Version 0.25.0)
+
+Oberfläche vereinfacht, laufender Ernährungstag im Score nach Uhrzeit bewertet:
+
+- Gesundheit: Schritte und Schrittziel als eine Aussage („6.200 / 8.000 Schritte“ mit Balken),
+  ohne eigene Zielzeile und ohne Wochenzeile; letzte Aktualisierung im Fußtext; das importierte
+  Gewicht wird nicht mehr angezeigt (Import, Speicherung und Berechtigungen unverändert); kein
+  Hinweis unter „Gewicht eintragen“
+- Ernährung: Tagesseite zeigt die Mahlzeiten nur mit Namen und kcal (je ein „+“); Antippen
+  öffnet die Details mit Lebensmitteln, Mengen, Nährwerten, Bearbeiten/Löschen, Hinzufügen und
+  „Als Vorlage speichern“ – Hinzufügen und Bearbeiten kehren dorthin zurück
+- Ernährung: kein Wasser-Hinweis, kein Link „Ernährungsprofil“ (Ziele in Einstellungen → Ziele;
+  ohne jedes Ziel bleibt ein Hinweis „Ziele festlegen“), keine Ballaststoffe in der Tagesansicht
+  (Daten unverändert)
+- Score: der laufende Ernährungstag wird gegen den Tagesanteil ± eine Mahlzeit bewertet
+  ([SCORE.md](SCORE.md#ernährung)); abgeschlossene Tage, Gewichte, Komponenten und Trend
+  unverändert
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

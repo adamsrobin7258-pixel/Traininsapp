@@ -17,7 +17,7 @@ import { AddSheet } from '../components/AddSheet';
 import { DayNavigator } from '../components/DayNavigator';
 import { DayOverview } from '../components/DayOverview';
 import { EntrySheet } from '../components/EntrySheet';
-import { MealSection } from '../components/MealSection';
+import { MealDetailsSheet, MealList } from '../components/MealSection';
 import { WaterSection } from '../components/WaterSection';
 import { groupDay, resolveDay, type MealGroup } from '../domain/day';
 import { describeNutritionError, mealName } from '../domain/format';
@@ -25,15 +25,17 @@ import styles from '../components/Nutrition.module.css';
 
 const DAY_PARAM = 'day';
 
+/** `from`: the meal whose details were open – closing returns there instead of to the day. */
 type Open =
-  | { kind: 'add'; meal: MealSlot }
-  | { kind: 'entry'; entry: FoodEntry }
+  | { kind: 'meal'; key: string }
+  | { kind: 'add'; meal: MealSlot; from?: string }
+  | { kind: 'entry'; entry: FoodEntry; from?: string }
   | { kind: 'template'; group: MealGroup }
   | null;
 
 /**
  * The food diary of one day (today by default): energy and macros against the day's goal,
- * the configured meals with their entries, and water. Past days can be viewed and corrected;
+ * the configured meals as an overview (their foods one tap away), and water. Past days can be viewed and corrected;
  * future days cannot be opened.
  */
 export function NutritionScreen() {
@@ -68,11 +70,17 @@ export function NutritionScreen() {
   }
 
   const close = () => {
-    setOpen(null);
+    setOpen(open && 'from' in open && open.from ? { kind: 'meal', key: open.from } : null);
   };
   const ready = data.status === 'ready' ? data.data : null;
   const activeMeals = ready ? ready.meals.filter((meal) => meal.active) : [];
   const groups = ready ? groupDay(ready.meals, ready.day.entries) : [];
+  // Resolved from the current data, so the details follow every edit; once the last food of
+  // the meal was moved or deleted there is nothing left to show and the day is visible again.
+  const openGroup =
+    open?.kind === 'meal'
+      ? (groups.find((group) => group.key === open.key && group.entries.length > 0) ?? null)
+      : null;
 
   return (
     <Screen title={t('nutrition.title')}>
@@ -89,26 +97,16 @@ export function NutritionScreen() {
       ) : null}
       {ready ? (
         <>
-          <DayOverview
-            totals={ready.day.summary.totals.totals}
-            fiber={ready.day.summary.fiber}
-            goal={ready.goal}
+          <DayOverview totals={ready.day.summary.totals.totals} goal={ready.goal} />
+          <MealList
+            groups={groups}
+            onOpen={(group) => {
+              setOpen({ kind: 'meal', key: group.key });
+            }}
+            onAdd={(group) => {
+              if (group.meal) setOpen({ kind: 'add', meal: group.meal });
+            }}
           />
-          {groups.map((group) => (
-            <MealSection
-              key={group.key}
-              group={group}
-              onAdd={() => {
-                if (group.meal) setOpen({ kind: 'add', meal: group.meal });
-              }}
-              onEdit={(entry) => {
-                setOpen({ kind: 'entry', entry });
-              }}
-              onSaveTemplate={() => {
-                setOpen({ kind: 'template', group });
-              }}
-            />
-          ))}
           <WaterSection
             day={day}
             entries={ready.day.water}
@@ -118,6 +116,23 @@ export function NutritionScreen() {
         </>
       ) : null}
 
+      {openGroup ? (
+        <MealDetailsSheet
+          group={openGroup}
+          onAdd={() => {
+            if (openGroup.meal) {
+              setOpen({ kind: 'add', meal: openGroup.meal, from: openGroup.key });
+            }
+          }}
+          onEdit={(entry) => {
+            setOpen({ kind: 'entry', entry, from: openGroup.key });
+          }}
+          onSaveTemplate={() => {
+            setOpen({ kind: 'template', group: openGroup });
+          }}
+          onClose={close}
+        />
+      ) : null}
       {open?.kind === 'add' ? (
         <AddSheet day={day} meal={open.meal} meals={activeMeals} onClose={close} />
       ) : null}

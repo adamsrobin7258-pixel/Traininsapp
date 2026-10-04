@@ -50,7 +50,7 @@ export function WaterSection({
 
   const total = formatWater(totalMl, locale);
   return (
-    <Section title={t('nutrition.water.title')} footer={t('nutrition.water.notCounted')}>
+    <Section title={t('nutrition.water.title')}>
       <div className={styles.waterCard}>
         <div className={styles.waterHead}>
           <Icon name="drop" size={22} className={styles.waterIcon} />

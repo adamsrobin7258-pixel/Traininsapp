@@ -57,7 +57,7 @@ async function workout(s: Setup, start: Date) {
   now = new Date(2026, 9, 3, 10);
 }
 
-const scoreOptions = { today: '2026-10-03' };
+const scoreOptions = { today: '2026-10-03', todayProgress: 0.5 };
 
 describe('targetOn', () => {
   const versions = [

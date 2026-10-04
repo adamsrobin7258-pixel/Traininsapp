@@ -281,12 +281,6 @@
   color: var(--color-text-secondary);
 }
 
-.cardActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 /* A suggestion with its action (e.g. no goals yet): a soft sage surface, not a warning. */
 .callout {
   display: flex;
@@ -299,12 +293,6 @@
 
 /* ── Meal sections ────────────────────────────────────────────── */
 
-.mealTotal {
-  font-size: var(--font-size-footnote);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
-}
-
 .empty {
   padding: var(--space-3) var(--space-4) 0;
   font-size: var(--font-size-footnote);
@@ -313,19 +301,46 @@
 
 /* ── Meals ───────────────────────────────────────────────────── */
 
-/* A meal is a group: name and kcal on top, the foods as its content, one quiet add action.
-   Structure comes from spacing and type, not from separator lines. */
-.meal {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+/* The day's meals as one overview card: name and kcal per row, one quick add each. The foods
+   are a detail behind a tap (MealDetailsSheet). */
+.meals {
+  margin-bottom: var(--space-3);
+  padding: var(--space-1);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
 }
 
-.mealHead {
+.mealRows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mealRow {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
-  min-height: var(--size-tap-target);
+}
+
+.mealOpen {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: calc(var(--size-tap-target) + var(--space-2));
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mealOpen:active,
+.mealQuickAdd:active {
+  background: var(--color-surface-pressed);
 }
 
 .mealIcon {
@@ -333,51 +348,51 @@
   color: var(--color-accent-text);
 }
 
-.mealTitle {
-  display: flex;
+.mealName {
   flex: 1;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-3);
   min-width: 0;
-  font-size: var(--font-size-headline);
+  font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
-  line-height: var(--line-height-snug);
+  overflow-wrap: anywhere;
 }
 
 .mealKcal {
   flex: none;
   font-size: var(--font-size-subhead);
-  font-weight: var(--font-weight-medium);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
 }
 
-.mealMore {
+.mealQuickAdd {
   display: grid;
   flex: none;
   place-items: center;
   width: var(--size-tap-target);
   height: var(--size-tap-target);
-  margin-right: calc(var(--space-2) * -1);
   padding: 0;
   border: 0;
   border-radius: var(--radius-md);
-  color: var(--color-text-secondary);
+  color: var(--color-accent-text);
   background: transparent;
   cursor: pointer;
 }
 
-.mealMore:active {
-  background: var(--color-surface-pressed);
+/* Details of one meal (sheet). */
+.mealSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: var(--space-3);
+  margin: 0;
+  font-size: var(--font-size-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
 }
 
-.mealBody {
-  display: flex;
-  flex-direction: column;
-  padding: var(--space-1);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+.mealSummaryKcal {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text);
 }
 
 .mealEntries {
@@ -392,7 +407,7 @@
   gap: var(--space-3);
   width: 100%;
   min-height: var(--size-tap-target);
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-2) 0;
   border: 0;
   border-radius: var(--radius-md);
   color: inherit;
@@ -432,14 +447,14 @@
   color: var(--color-text-secondary);
 }
 
-/* The one action of a meal: calm, clearly an action – not another row of data. */
+/* Adding to a meal: calm, clearly an action – not another row of data. */
 .mealAdd {
   display: inline-flex;
   align-items: center;
   align-self: flex-start;
   gap: var(--space-2);
   min-height: var(--size-tap-target);
-  padding: 0 var(--space-3);
+  padding: 0;
   border: 0;
   border-radius: var(--radius-md);
   color: var(--color-accent-text);
@@ -447,10 +462,6 @@
   font: inherit;
   font-weight: var(--font-weight-medium);
   cursor: pointer;
-}
-
-.mealAdd:active {
-  background: var(--color-accent-subtle);
 }
 
 /* ── Water ───────────────────────────────────────────────────── */

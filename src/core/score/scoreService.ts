@@ -51,6 +51,8 @@ export interface ScoreSources {
 export interface ScoreOptions {
   /** Today's local day. */
   today: string;
+  /** Share of today already past (`dayProgress` of the device's clock). */
+  todayProgress: number;
 }
 
 export interface ScoreWithTrend {
@@ -87,6 +89,7 @@ export class ScoreService {
       goal,
       dates,
       today: options.today,
+      todayProgress: options.todayProgress,
       nutrition: { totals, goals },
       training: { workoutsPerDay: workouts },
       activity: { minutesPerDay: minutes, stepsPerDay: steps },

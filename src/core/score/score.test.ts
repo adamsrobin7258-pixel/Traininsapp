@@ -2,11 +2,13 @@ import { PRELIMINARY, SCORE_AREAS, SCORE_WEIGHTS, TREND_THRESHOLD, type ScoreGoa
 import {
   activityScore,
   calculateScore,
+  dayProgress,
   kcalDayScore,
   minDocumentedDays,
   nutritionScore,
   proteinDayScore,
   recoveryScore,
+  runningDayCorridor,
   scoreBand,
   scoreTrend,
   trainingScore,
@@ -30,6 +32,7 @@ function input(patch: Partial<ScoreInput> = {}): ScoreInput {
     goal: 'maintain',
     dates: WEEK,
     today: TODAY,
+    todayProgress: 0.5,
     nutrition: { totals: [], goals: [] },
     training: { workoutsPerDay: [] },
     activity: { minutesPerDay: [] },
@@ -91,7 +94,7 @@ describe('nutrition', () => {
   // Phase 15: calories by main goal – the shared rule of score and progress card
   // (core/nutrition/goalAttainment.ts). Replaces the former ±5 % / 2 points per % for every goal.
   it('Abnehmen: the goal is an upper limit, 0 at +25 %', () => {
-    const lose = (kcal: number) => kcalDayScore(kcal, 2200, false, 'lose');
+    const lose = (kcal: number) => kcalDayScore(kcal, 2200, null, 'lose');
     expect(lose(1700)).toBe(100); // below: no bonus, no penalty
     expect(lose(2200)).toBe(100);
     expect(lose(2310)).toBeCloseTo(80, 5); // +5 %
@@ -102,7 +105,7 @@ describe('nutrition', () => {
   });
 
   it('Muskelaufbau: reached from 95 %, 0 at 70 %, linear in between', () => {
-    const gain = (kcal: number) => kcalDayScore(kcal, 3000, false, 'gain');
+    const gain = (kcal: number) => kcalDayScore(kcal, 3000, null, 'gain');
     expect(gain(2100)).toBe(0); // 70 %
     expect(gain(2250)).toBeCloseTo(20, 5); // 75 %
     expect(gain(2550)).toBeCloseTo(60, 5); // 85 %
@@ -115,7 +118,7 @@ describe('nutrition', () => {
   it.each(['maintain', 'fitness'] as const)(
     '%s: 95–105 %% full points, outside continuous to 0 at ±25 %%',
     (goal) => {
-      const keep = (kcal: number) => kcalDayScore(kcal, 2500, false, goal);
+      const keep = (kcal: number) => kcalDayScore(kcal, 2500, null, goal);
       expect(keep(1500)).toBe(0); // below 75 %
       expect(keep(1875)).toBeCloseTo(0, 5); // 75 %
       expect(keep(2000)).toBeCloseTo(25, 5); // 80 %
@@ -140,37 +143,24 @@ describe('nutrition', () => {
       ['fitness', 2500],
     ] as const) {
       for (let kcal = 1500; kcal <= 3800; kcal += 10) {
-        const a = kcalDayScore(kcal, target, false, goal) ?? 0;
-        const b = kcalDayScore(kcal + 10, target, false, goal) ?? 0;
+        const a = kcalDayScore(kcal, target, null, goal) ?? 0;
+        const b = kcalDayScore(kcal + 10, target, null, goal) ?? 0;
         // Steepest: maintain, 10 kcal of 2.500 = 0.4 % → 2 points (plus float noise).
         expect(Math.abs(a - b)).toBeLessThanOrEqual(2 + 1e-9);
       }
     }
   });
 
-  it('does not judge today below the goal – the day is not over', () => {
-    // Muskelaufbau, 18:00 with 2.400 of 3.000 kcal: no final day value yet.
-    expect(kcalDayScore(2400, 3000, true, 'gain')).toBeNull();
-    expect(kcalDayScore(900, 2300, true, 'maintain')).toBeNull();
-    expect(kcalDayScore(1700, 2200, true, 'lose')).toBeNull();
-    // Over the goal is judged today too.
-    expect(kcalDayScore(2750, 2500, true, 'maintain')).toBeCloseTo(75, 5);
-    expect(kcalDayScore(2640, 2200, true, 'lose')).toBeCloseTo(20, 5);
-    expect(kcalDayScore(3300, 3000, true, 'gain')).toBe(100);
-    expect(proteinDayScore(40, 160, true)).toBeNull();
-    expect(proteinDayScore(150, 160, true)).toBe(100);
-  });
-
   it('a day without a main goal is read like maintain', () => {
-    expect(kcalDayScore(2750, 2500, false)).toBeCloseTo(75, 5);
+    expect(kcalDayScore(2750, 2500, null)).toBeCloseTo(75, 5);
   });
 
   it('rewards reaching the protein goal and judges a shortfall moderately', () => {
-    expect(proteinDayScore(160, 160, false)).toBe(100);
-    expect(proteinDayScore(144, 160, false)).toBe(100); // 90 %
-    expect(proteinDayScore(250, 160, false)).toBe(100); // more is never a penalty
-    expect(proteinDayScore(128, 160, false)).toBeCloseTo(80, 5); // 80 %
-    expect(proteinDayScore(80, 160, false)).toBeCloseTo(20, 5); // 50 %
+    expect(proteinDayScore(160, 160, null)).toBe(100);
+    expect(proteinDayScore(144, 160, null)).toBe(100); // 90 %
+    expect(proteinDayScore(250, 160, null)).toBe(100); // more is never a penalty
+    expect(proteinDayScore(128, 160, null)).toBeCloseTo(80, 5); // 80 %
+    expect(proteinDayScore(80, 160, null)).toBeCloseTo(20, 5); // 50 %
   });
 
   it('weighs calories 70 % and protein 30 % per day and averages the logged days', () => {
@@ -245,6 +235,193 @@ describe('nutrition', () => {
     );
     expect(result.score).toBe(100);
     expect(result.detail.proteinRatedDays).toBe(0);
+  });
+});
+
+/**
+ * Phase 17.5: the running day is judged against the time of day – the goal × the share of the
+ * day past, ± one meal (25 % of the goal). Closed days keep the rules above unchanged.
+ */
+describe('nutrition of the running day', () => {
+  it('reads the share of the day from the local clock, 0 at midnight and never above 1', () => {
+    expect(dayProgress(new Date(2026, 9, 3, 0, 0))).toBe(0);
+    expect(dayProgress(new Date(2026, 9, 3, 2, 24))).toBeCloseTo(0.1, 10);
+    expect(dayProgress(new Date(2026, 9, 3, 6))).toBe(0.25);
+    expect(dayProgress(new Date(2026, 9, 3, 12))).toBe(0.5);
+    expect(dayProgress(new Date(2026, 9, 3, 18))).toBe(0.75);
+    expect(dayProgress(new Date(2026, 9, 3, 23, 59, 59))).toBeLessThan(1);
+    expect(dayProgress(new Date(2026, 9, 3, 23, 59, 59))).toBeGreaterThan(0.9999);
+  });
+
+  it('builds the corridor within 0 … goal', () => {
+    expect(runningDayCorridor(2000, 0)).toEqual({ lower: 0, upper: 500 });
+    expect(runningDayCorridor(2000, 0.1)).toEqual({ lower: 0, upper: 700 });
+    expect(runningDayCorridor(2000, 0.5)).toEqual({ lower: 500, upper: 1500 });
+    expect(runningDayCorridor(2000, 1)).toEqual({ lower: 1500, upper: 2000 });
+    // Out-of-range input is clamped, never a negative or excess corridor.
+    expect(runningDayCorridor(2000, -1)).toEqual({ lower: 0, upper: 500 });
+    expect(runningDayCorridor(2000, 2)).toEqual({ lower: 1500, upper: 2000 });
+  });
+
+  it('Abnehmen: a normal interim value is 100, too much shows during the day', () => {
+    const lose = (kcal: number, progress: number) => kcalDayScore(kcal, 2200, progress, 'lose');
+    // 10 % (02:24): corridor up to 770 kcal.
+    expect(lose(300, 0.1)).toBe(100);
+    expect(lose(900, 0.1)).toBeCloseTo(32.47, 1); // +16.9 % over 770
+    // 25 % (06:00): up to 1.100 kcal.
+    expect(lose(600, 0.25)).toBe(100);
+    expect(lose(1500, 0.25)).toBe(0); // +36 %
+    // 50 % (12:00): breakfast and lunch are fine, the whole goal by noon is not.
+    expect(lose(1300, 0.5)).toBe(100);
+    expect(lose(1980, 0.5)).toBeCloseTo(20, 5); // +20 % over 1.650
+    expect(lose(2600, 0.5)).toBe(0);
+    // 75 % (18:00): the whole goal is already allowed – a perfect day is never punished.
+    expect(lose(2200, 0.75)).toBe(100);
+    expect(lose(2420, 0.75)).toBeCloseTo(60, 5);
+    // 100 %: like a closed day above the goal; below it no minus.
+    expect(lose(2310, 1)).toBeCloseTo(80, 5);
+    expect(lose(1000, 1)).toBe(100);
+    for (const progress of [0.1, 0.25, 0.5, 0.75, 1]) {
+      expect(lose(0, progress)).toBe(100); // eating little is never a minus for lose
+    }
+  });
+
+  it('Muskelaufbau: below the expected value is no minus at once, far below is', () => {
+    const gain = (kcal: number, progress: number) => kcalDayScore(kcal, 3000, progress, 'gain');
+    // Morning: nothing is expected yet.
+    expect(gain(0, 0.1)).toBe(100);
+    expect(gain(200, 0.25)).toBe(100);
+    expect(gain(500, 0.375)).toBe(100); // breakfast at 09:00
+    // Noon: lower edge 750 kcal, reached from 95 % (712.5 kcal).
+    expect(gain(800, 0.5)).toBe(100);
+    expect(gain(600, 0.5)).toBeCloseTo(40, 5); // 80 % of 750
+    // 18:00: lower edge 1.500 kcal.
+    expect(gain(2000, 0.75)).toBe(100);
+    expect(gain(1200, 0.75)).toBeCloseTo(40, 5);
+    expect(gain(900, 0.75)).toBe(0); // 30 % of the day goal at 18:00
+    // 100 %: lower edge 2.250 kcal; more is never a minus.
+    expect(gain(2400, 1)).toBe(100);
+    expect(gain(2100, 1)).toBeCloseTo(93.33, 1);
+    expect(gain(4000, 0.5)).toBe(100);
+  });
+
+  it.each(['maintain', 'fitness'] as const)(
+    '%s: inside the corridor 100, outside the ±5 %% rule against the crossed edge',
+    (goal) => {
+      const keep = (kcal: number, progress: number) => kcalDayScore(kcal, 2500, progress, goal);
+      expect(keep(300, 0.1)).toBe(100);
+      expect(keep(1200, 0.5)).toBe(100); // corridor 625–1.875
+      expect(keep(2200, 0.5)).toBeCloseTo(38.33, 1); // +17.3 % over 1.875
+      expect(keep(500, 0.5)).toBeCloseTo(25, 5); // −20 % under 625
+      expect(keep(2400, 1)).toBe(100);
+      expect(keep(2750, 1)).toBeCloseTo(75, 5); // like a closed day
+    },
+  );
+
+  it('stays stable right after midnight – a small meal never gives an extreme value', () => {
+    const halfPastMidnight = dayProgress(new Date(2026, 9, 3, 0, 30));
+    for (const goal of ['lose', 'gain', 'maintain', 'fitness'] as const) {
+      expect(kcalDayScore(300, 2200, halfPastMidnight, goal), goal).toBe(100);
+      expect(kcalDayScore(300, 2200, 0, goal), goal).toBe(100);
+    }
+    // A little more than the snack allowance costs a little, not everything.
+    expect(kcalDayScore(600, 2200, halfPastMidnight, 'lose')).toBeGreaterThan(95);
+    expect(proteinDayScore(10, 160, halfPastMidnight)).toBe(100);
+  });
+
+  it('protein: compared with the expected amount so far, more is never a minus', () => {
+    const protein = (g: number, progress: number) => proteinDayScore(g, 160, progress);
+    expect(protein(0, 0.1)).toBe(100);
+    expect(protein(40, 0.25)).toBe(100);
+    expect(protein(40, 0.375)).toBe(100); // 40 g in the morning is a normal start
+    expect(protein(40, 0.5)).toBe(100); // lower edge 40 g
+    expect(protein(30, 0.5)).toBeCloseTo(70, 5); // 75 % of 40 g
+    expect(protein(72, 0.75)).toBe(100); // 90 % of 80 g
+    expect(protein(40, 0.75)).toBeCloseTo(20, 5); // 50 % of 80 g
+    expect(protein(100, 1)).toBeCloseTo(86.67, 1); // 83 % of 120 g
+    expect(protein(250, 0.5)).toBe(100);
+  });
+
+  it('flows into the period only through the day value of today', () => {
+    // Today at noon: 1.000 kcal / 50 g of 2.300 / 160 – on track, rated 100.
+    const noon = { todayProgress: 0.5, goal: 'maintain' as const };
+    const today = nutritionScore(
+      input({ ...noon, dates: [TODAY], nutrition: eating([[TODAY, 1000, 50]]) }),
+    );
+    expect(today.score).toBe(100);
+    expect(today.detail).toMatchObject({
+      loggedDays: 1,
+      runningDay: true,
+      ratedDays: 1,
+      // The details describe the whole day goal: an interim value is no deviation yet …
+      avgKcalDeviationPct: null,
+      // … and protein counts once it is reached.
+      proteinRatedDays: 0,
+      proteinReachedDays: 0,
+    });
+    // The same day in the week next to a closed day keeps the closed day's value unchanged.
+    const closed = '2026-10-02';
+    const week = nutritionScore(
+      input({
+        ...noon,
+        nutrition: eating([
+          [closed, 2000, 128], // 87 % → 59.78 kcal points (maintain), 80 protein points
+          [TODAY, 1000, 50],
+        ]),
+      }),
+    );
+    expect(week.score).toBe(Math.round((59.78 * 0.7 + 80 * 0.3 + 100) / 2));
+    expect(week.detail).toMatchObject({ ratedDays: 2, runningDay: true, avgKcalDeviationPct: -13 });
+  });
+
+  it('only one meal, a complete day and no meals at all', () => {
+    const at = (progress: number, kcal: number, protein: number) =>
+      nutritionScore(
+        input({
+          todayProgress: progress,
+          dates: [TODAY],
+          nutrition: eating([[TODAY, kcal, protein]]),
+        }),
+      );
+    // One breakfast at 08:00.
+    expect(at(1 / 3, 500, 30).score).toBe(100);
+    // A complete day at 22:00, goal met: 100, and now it counts in the details.
+    const complete = at(22 / 24, 2300, 160);
+    expect(complete.score).toBe(100);
+    expect(complete.detail).toMatchObject({
+      avgKcalDeviationPct: 0,
+      proteinRatedDays: 1,
+      proteinReachedDays: 1,
+    });
+    // No meals today: nothing logged – neutral, never 0.
+    const none = nutritionScore(input({ todayProgress: 0.5, dates: [TODAY] }));
+    expect(none.score).toBeNull();
+    expect(none.detail.runningDay).toBe(false);
+  });
+
+  it('uses the day goal it is given – manual or automatic protein goals alike', () => {
+    // The day goal (manual before automatic) is resolved before the score; the rule is the same.
+    const withGoal = (proteinGoal: number) =>
+      nutritionScore(
+        input({
+          todayProgress: 0.75,
+          dates: [TODAY],
+          nutrition: eating([[TODAY, 1800, 80]], proteinGoal),
+        }),
+      ).score;
+    expect(withGoal(100)).toBe(100); // lower edge 50 g – reached
+    expect(withGoal(160)).toBe(Math.round(100 * 0.7 + 100 * 0.3)); // lower edge 80 g – reached
+    expect(withGoal(240)).toBe(Math.round(100 * 0.7 + 53.33 * 0.3)); // 80 of 120 g = 67 %
+  });
+
+  it('keeps the main goal of the day', () => {
+    const noon = (goal: 'lose' | 'gain' | 'maintain' | 'fitness', kcal: number) =>
+      kcalDayScore(kcal, 2400, 0.5, goal);
+    // 2.100 kcal by noon (corridor 600–1.800): too much for lose, fine for gain.
+    expect(noon('lose', 2100)).toBeCloseTo(33.33, 1);
+    expect(noon('gain', 2100)).toBe(100);
+    expect(noon('maintain', 2100)).toBeCloseTo(41.67, 1);
+    expect(noon('fitness', 2100)).toBeCloseTo(41.67, 1);
   });
 });
 

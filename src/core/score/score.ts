@@ -44,8 +44,13 @@ export interface ScoreInput {
   goal: ScoreGoal | null;
   /** Every local day of the period, oldest first. */
   dates: readonly string[];
-  /** Today's local day – today is still running, so falling short of a goal is not judged yet. */
+  /** Today's local day – today is still running and judged against the time of day. */
   today: string;
+  /**
+   * Share of today already past (0–1, `dayProgress` of the device's local clock). Only the
+   * nutrition of the running day depends on it; closed days never do.
+   */
+  todayProgress: number;
   nutrition: { totals: readonly NutritionDayTotals[]; goals: readonly NutritionDayGoal[] };
   /** Completed Kalethra workouts per day; Health Connect and manual activities never count. */
   training: { workoutsPerDay: readonly { localDate: string; workouts: number }[] };
@@ -73,6 +78,8 @@ export interface ScoreInput {
 
 export interface NutritionDetail {
   loggedDays: number;
+  /** Whether today is among the logged days – it is judged against the time of day. */
+  runningDay: boolean;
   ratedDays: number;
   /** Mean calorie deviation of the rated days in percent (+ over, − under); `null` without. */
   avgKcalDeviationPct: number | null;
@@ -145,27 +152,75 @@ export interface ScoreResult {
 export const clampScore = (value: number) => Math.min(100, Math.max(0, value));
 const round = (value: number) => Math.round(clampScore(value));
 
+const SECONDS_PER_DAY = 24 * 60 * 60;
+
+/**
+ * Share of the local day already past – `elapsed time since local midnight / 24 h`, 0 at
+ * midnight, never above 1. From the device's clock only, no server time. (On the two days a
+ * year with a clock change the day is still read as 24 hours; the corridor absorbs the hour.)
+ */
+export function dayProgress(now: Date): number {
+  const elapsed = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+  return Math.min(1, Math.max(0, elapsed / SECONDS_PER_DAY));
+}
+
+/**
+ * The corridor of the running day: the goal × the share of the day past, ± one meal
+ * (`NUTRITION.runningDayAllowance`), within 0…goal. The allowance is also the guard against
+ * unstable values right after midnight: the upper edge never falls below a quarter of the goal,
+ * so no small snack can turn into an extreme excess, and the lower edge stays 0 until 06:00.
+ */
+export function runningDayCorridor(
+  goal: number,
+  progress: number,
+): { lower: number; upper: number } {
+  const share = Math.min(1, Math.max(0, progress));
+  const allowance = NUTRITION.runningDayAllowance;
+  return {
+    lower: goal * Math.max(0, share - allowance),
+    upper: goal * Math.min(1, share + allowance),
+  };
+}
+
 /**
  * One day's calories against its goal, by the day's main goal – the shared rule of score and
  * progress card (`calorieGoalScore`, core/nutrition/goalAttainment.ts): lose = upper limit,
- * gain = reached from 95 %, maintain/fitness = 95–105 %. Today, being below the goal is not
- * judged (the day is not over): `null`.
+ * gain = reached from 95 %, maintain/fitness = 95–105 %. A closed day (`todayProgress` null) is
+ * judged exactly by that rule. The running day is judged against its corridor
+ * (`runningDayCorridor`): inside → 100; above the upper edge or below the lower edge the same
+ * rule applies with that edge as the goal – so eating too much shows during the day, while a
+ * normal interim value (breakfast in the morning) is no minus, and below the corridor only
+ * gain and maintain/fitness lose points (for lose the goal stays an upper limit).
  */
 export function kcalDayScore(
   eaten: number,
   goal: number,
-  isToday: boolean,
+  todayProgress: number | null,
   goalType: GoalType | null = null,
 ): number | null {
-  return calorieGoalScore(goalType, eaten, goal, isToday);
+  if (todayProgress === null) return calorieGoalScore(goalType, eaten, goal, false);
+  if (goal <= 0) return null;
+  const { lower, upper } = runningDayCorridor(goal, todayProgress);
+  if (eaten > upper) return calorieGoalScore(goalType, eaten, upper, false);
+  if (eaten < lower) return calorieGoalScore(goalType, eaten, lower, false);
+  return 100;
 }
 
-/** One day's protein: from 90 % of the goal 100 points, below 2 points per missing percent. */
-export function proteinDayScore(eaten: number, goal: number, isToday: boolean): number | null {
+/**
+ * One day's protein: from 90 % of the goal 100 points, below 2 points per missing percent. The
+ * running day compares with the lower edge of its corridor instead of the whole goal (more is
+ * never a minus); before anything is expected (lower edge 0) it is on track.
+ */
+export function proteinDayScore(
+  eaten: number,
+  goal: number,
+  todayProgress: number | null,
+): number | null {
   if (goal <= 0) return null;
-  const ratio = eaten / goal;
+  const expected = todayProgress === null ? goal : runningDayCorridor(goal, todayProgress).lower;
+  if (expected <= 0) return 100;
+  const ratio = eaten / expected;
   if (ratio >= NUTRITION.proteinReached) return 100;
-  if (isToday) return null;
   return clampScore(
     100 - (NUTRITION.proteinReached - ratio) * 100 * NUTRITION.proteinPointsPerPercent,
   );
@@ -189,18 +244,27 @@ export function nutritionScore(input: ScoreInput): AreaScores['nutrition'] {
   for (const day of logged) {
     const goal = goals.get(day.localDate);
     const isToday = day.localDate === input.today;
+    const progress = isToday ? input.todayProgress : null;
     const kcal =
       goal?.energyKcal != null
-        ? kcalDayScore(day.energyKcal, goal.energyKcal, isToday, goal.goalType ?? null)
+        ? kcalDayScore(day.energyKcal, goal.energyKcal, progress, goal.goalType ?? null)
         : null;
     const protein =
-      goal?.proteinG != null ? proteinDayScore(day.proteinG, goal.proteinG, isToday) : null;
-    if (kcal !== null && goal?.energyKcal != null) {
+      goal?.proteinG != null ? proteinDayScore(day.proteinG, goal.proteinG, progress) : null;
+    // The figures in the details describe the whole day goal: the running day only adds to
+    // them once it is over its calorie goal or has reached its protein goal.
+    if (
+      kcal !== null &&
+      goal?.energyKcal != null &&
+      (!isToday || day.energyKcal >= goal.energyKcal)
+    ) {
       deviations.push(((day.energyKcal - goal.energyKcal) / goal.energyKcal) * 100);
     }
-    if (protein !== null) {
+    const proteinReached =
+      goal?.proteinG != null && day.proteinG / goal.proteinG >= NUTRITION.proteinReached;
+    if (protein !== null && (!isToday || proteinReached)) {
       proteinRatedDays++;
-      if (protein === 100) proteinReachedDays++;
+      if (isToday || protein === 100) proteinReachedDays++;
     }
     if (kcal !== null && protein !== null) {
       dayScores.push(kcal * NUTRITION.kcalShare + protein * NUTRITION.proteinShare);
@@ -216,6 +280,7 @@ export function nutritionScore(input: ScoreInput): AreaScores['nutrition'] {
     score: score === null ? null : round(score),
     detail: {
       loggedDays: logged.length,
+      runningDay: logged.some((day) => day.localDate === input.today),
       ratedDays: dayScores.length,
       avgKcalDeviationPct: deviation === null ? null : Math.round(deviation),
       proteinRatedDays,

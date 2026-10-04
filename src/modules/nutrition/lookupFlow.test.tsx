@@ -149,9 +149,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     await userEvent.type(amount, '150');
     await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
     await closed();
-    expect(
-      await screen.findByRole('heading', { name: 'Frühstück · 165 kcal' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Frühstück · 165 kcal' })).toBeInTheDocument();
     expect(
       await db.query(
         'SELECT source, profile_id, origin_dataset, origin_code, origin_version, energy_kcal FROM foods',
@@ -258,7 +256,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     await userEvent.type(amount, '150');
     await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
     await closed();
-    expect(await screen.findByRole('heading', { name: 'Frühstück · 98 kcal' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Frühstück · 98 kcal' })).toBeInTheDocument();
     expect(
       await db.query('SELECT source, provider, external_id, energy_kcal, fat_g FROM foods'),
     ).toEqual([

@@ -138,7 +138,7 @@ const manual = (
   kcalOverride,
 });
 
-const options = { today: TODAY };
+const options = { today: TODAY, todayProgress: 0.5 };
 
 describe('A · profile → nutrition goals → progress', () => {
   it('a body data change today starts a new goal version; past days, diary and progress keep theirs', async () => {

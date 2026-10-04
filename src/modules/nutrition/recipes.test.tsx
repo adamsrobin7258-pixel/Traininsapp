@@ -298,10 +298,8 @@ describe('recipes in the diary', () => {
     await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
     await closed();
 
-    expect(
-      await screen.findByRole('heading', { level: 2, name: /^Frühstück · 141 kcal/ }),
-    ).toBeInTheDocument();
-    expect(main().getByText('Porridge')).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole('button', { name: /^Frühstück · 141 kcal/ }));
+    expect(dialog().getByText('Porridge')).toBeInTheDocument();
     expect(
       await db.query('SELECT name, amount, unit, energy_kcal, local_date FROM food_entries'),
     ).toEqual([

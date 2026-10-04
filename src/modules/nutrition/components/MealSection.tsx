@@ -1,4 +1,3 @@
-import { useId, useState } from 'react';
 import { useI18n } from '@/core/i18n';
 import { sumNutrients, type DefaultMealKey, type FoodEntry } from '@/core/nutrition';
 import { Button, Icon, Sheet, type IconName } from '@/ui';
@@ -13,125 +12,146 @@ const MEAL_ICONS: Record<DefaultMealKey, IconName> = {
   snacks: 'apple',
 };
 
+const mealIcon = (group: MealGroup): IconName =>
+  group.defaultKey ? MEAL_ICONS[group.defaultKey] : 'nutrition';
+
 /**
- * One meal of the day as a group: its name and kcal, the logged foods as its content and one
- * quiet "+ Hinzufügen". Saving the foods as a template is a rarer action behind the meal's
- * "more" button. A hidden meal only shows what was logged in it.
+ * The meals of the day as one calm overview: name and kcal per meal, one quick "+" each. The
+ * foods of a meal are a detail – tapping the meal opens them (`MealDetailsSheet`); an empty meal
+ * has nothing to show, so tapping it adds a food right away.
  */
-export function MealSection({
+export function MealList({
+  groups,
+  onOpen,
+  onAdd,
+}: {
+  groups: readonly MealGroup[];
+  onOpen: (group: MealGroup) => void;
+  onAdd: (group: MealGroup) => void;
+}) {
+  const { t, locale } = useI18n();
+  return (
+    <section className={styles.meals} aria-label={t('nutrition.mealSection.listLabel')}>
+      <ul className={styles.mealRows}>
+        {groups.map((group) => {
+          const name = mealName(group, t);
+          const kcal = formatKcal(
+            sumNutrients(group.entries.map((entry) => entry.nutrients)).totals.energyKcal,
+            locale,
+          );
+          const empty = group.entries.length === 0;
+          return (
+            <li key={group.key} className={styles.mealRow}>
+              <button
+                type="button"
+                className={styles.mealOpen}
+                aria-label={`${name} · ${kcal}`}
+                onClick={() => {
+                  if (empty) onAdd(group);
+                  else onOpen(group);
+                }}
+              >
+                <Icon name={mealIcon(group)} size={20} className={styles.mealIcon} />
+                <span className={styles.mealName}>{name}</span>
+                <span className={styles.mealKcal}>{kcal}</span>
+              </button>
+              {group.active ? (
+                <button
+                  type="button"
+                  className={styles.mealQuickAdd}
+                  aria-label={t('nutrition.mealSection.addTo', { meal: name })}
+                  onClick={() => {
+                    onAdd(group);
+                  }}
+                >
+                  <Icon name="plus" size={20} />
+                </button>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+/**
+ * One meal in detail: its foods with amount, macros and kcal (tap to edit or delete), adding
+ * more, and saving the meal as a template. A hidden meal only shows what was logged in it.
+ */
+export function MealDetailsSheet({
   group,
   onAdd,
   onEdit,
   onSaveTemplate,
+  onClose,
 }: {
   group: MealGroup;
   onAdd: () => void;
   onEdit: (entry: FoodEntry) => void;
   onSaveTemplate: () => void;
+  onClose: () => void;
 }) {
   const { t, locale } = useI18n();
-  const titleId = useId();
-  const [menu, setMenu] = useState(false);
   const name = mealName(group, t);
   const totals = sumNutrients(group.entries.map((entry) => entry.nutrients)).totals;
-  const macros = (entry: FoodEntry) =>
+  const macros = (nutrients: { proteinG: number; carbsG: number; fatG: number }) =>
     [
-      `${t('nutrition.short.protein')} ${formatGrams(entry.nutrients.proteinG, locale)}`,
-      `${t('nutrition.short.carbohydrates')} ${formatGrams(entry.nutrients.carbsG, locale)}`,
-      `${t('nutrition.short.fat')} ${formatGrams(entry.nutrients.fatG, locale)}`,
+      `${t('nutrition.short.protein')} ${formatGrams(nutrients.proteinG, locale)}`,
+      `${t('nutrition.short.carbohydrates')} ${formatGrams(nutrients.carbsG, locale)}`,
+      `${t('nutrition.short.fat')} ${formatGrams(nutrients.fatG, locale)}`,
     ].join(' · ');
   const canSaveTemplate = group.active && group.entries.some((entry) => entry.foodId !== null);
 
   return (
-    <section className={styles.meal} aria-labelledby={titleId}>
-      <div className={styles.mealHead}>
-        <Icon
-          name={group.defaultKey ? MEAL_ICONS[group.defaultKey] : 'nutrition'}
-          size={20}
-          className={styles.mealIcon}
-        />
-        {/* Read as one heading ("Frühstück · 454 kcal"); shown as name and quieter kcal. */}
-        <h2
-          id={titleId}
-          className={styles.mealTitle}
-          aria-label={`${name} · ${formatKcal(totals.energyKcal, locale)}`}
-        >
-          <span>{name}</span>
-          <span className={styles.mealKcal}>{formatKcal(totals.energyKcal, locale)}</span>
-        </h2>
-        {canSaveTemplate ? (
-          <button
-            type="button"
-            className={styles.mealMore}
-            aria-label={t('nutrition.mealSection.more', { meal: name })}
-            onClick={() => {
-              setMenu(true);
-            }}
-          >
-            <Icon name="more" size={20} />
-          </button>
-        ) : null}
-      </div>
-      <div className={styles.mealBody}>
-        {group.entries.length > 0 ? (
-          <ul className={styles.mealEntries} aria-label={name}>
-            {group.entries.map((entry) => (
-              <li key={entry.id}>
-                <button
-                  type="button"
-                  className={styles.mealEntry}
-                  onClick={() => {
-                    onEdit(entry);
-                  }}
-                >
-                  <span className={styles.mealEntryText}>
-                    <span className={styles.mealEntryName}>{entry.name}</span>
-                    <span className={styles.mealEntryDetail}>
-                      {`${formatQuantity(entry.amount, entry.unit, t, locale)} · ${macros(entry)}`}
-                    </span>
+    <Sheet title={name} onClose={onClose} closeLabel={t('common.close')}>
+      <p className={styles.mealSummary}>
+        <span className={styles.mealSummaryKcal}>{formatKcal(totals.energyKcal, locale)}</span>
+        {group.entries.length > 0 ? <span>{macros(totals)}</span> : null}
+      </p>
+      {group.entries.length > 0 ? (
+        <ul className={styles.mealEntries} aria-label={name}>
+          {group.entries.map((entry) => (
+            <li key={entry.id}>
+              <button
+                type="button"
+                className={styles.mealEntry}
+                onClick={() => {
+                  onEdit(entry);
+                }}
+              >
+                <span className={styles.mealEntryText}>
+                  <span className={styles.mealEntryName}>{entry.name}</span>
+                  <span className={styles.mealEntryDetail}>
+                    {`${formatQuantity(entry.amount, entry.unit, t, locale)} · ${macros(entry.nutrients)}`}
                   </span>
-                  <span className={styles.mealEntryKcal}>
-                    {formatKcal(entry.nutrients.energyKcal, locale)}
-                  </span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-        {group.active ? (
-          <button
-            type="button"
-            className={styles.mealAdd}
-            aria-label={t('nutrition.mealSection.addTo', { meal: name })}
-            onClick={onAdd}
-          >
-            <Icon name="plus" size={18} />
-            {t('nutrition.mealSection.add')}
-          </button>
-        ) : (
-          <p className={styles.empty}>{t('nutrition.mealSection.hiddenMeal')}</p>
-        )}
-      </div>
-      {menu ? (
-        <Sheet
-          title={name}
-          onClose={() => {
-            setMenu(false);
-          }}
-          closeLabel={t('common.close')}
-        >
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={() => {
-              setMenu(false);
-              onSaveTemplate();
-            }}
-          >
-            {t('nutrition.mealSection.saveAsTemplate')}
-          </Button>
-        </Sheet>
+                </span>
+                <span className={styles.mealEntryKcal}>
+                  {formatKcal(entry.nutrients.energyKcal, locale)}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : null}
-    </section>
+      {group.active ? (
+        <button
+          type="button"
+          className={styles.mealAdd}
+          aria-label={t('nutrition.mealSection.addTo', { meal: name })}
+          onClick={onAdd}
+        >
+          <Icon name="plus" size={18} />
+          {t('nutrition.mealSection.add')}
+        </button>
+      ) : (
+        <p className={styles.empty}>{t('nutrition.mealSection.hiddenMeal')}</p>
+      )}
+      {canSaveTemplate ? (
+        <Button variant="secondary" fullWidth onClick={onSaveTemplate}>
+          {t('nutrition.mealSection.saveAsTemplate')}
+        </Button>
+      ) : null}
+    </Sheet>
   );
 }

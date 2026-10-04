@@ -69,8 +69,31 @@ eingeschalteter Einstellung). Keine eigene Zielberechnung.
 - **Tageswert:** 70 % Kalorien + 30 % Protein (nur was ein Ziel hat).
 - **Zeitraum:** Mittelwert der Ernährungstage. Tage ohne Eintrag sind unbekannt, **nie 0
   Punkte** (4 von 7 Tagen erfasst → Mittel über 4 Tage).
-- **Heute** läuft noch: Unter dem Ziel zu liegen wird heute nicht bewertet (sonst wäre jeder
-  Vormittag „schlecht“); eine Überschreitung schon.
+- **Heute** läuft noch (seit Phase 17.5 nach Uhrzeit, `kcalDayScore`/`proteinDayScore` in
+  `core/score/score.ts`): Erwartet ist das Tagesziel × Tagesanteil
+  (`dayProgress` = vergangene lokale Zeit ÷ 24 h, 0 … 1, nur die Geräteuhr). Weil gegessen wird
+  in Mahlzeiten und nicht gleichmäßig, gilt ein **Korridor von ± einer Mahlzeit**
+  (`NUTRITION.runningDayAllowance` = 25 % des Ziels, `runningDayCorridor`): untere Grenze
+  Ziel × (Anteil − 0,25), obere Grenze Ziel × (Anteil + 0,25), jeweils innerhalb 0 … Ziel.
+  - Im Korridor → 100 (ein normaler Zwischenstand ist kein Minus).
+  - Über der oberen Grenze → die Kalorienregel des Hauptziels mit der oberen Grenze als Ziel
+    (Abnehmen 2.300 kcal, 12:00, 2.100 kcal → 1.725 erlaubt, +22 % → 13 Punkte).
+  - Unter der unteren Grenze → dieselbe Regel mit der unteren Grenze als Ziel; für Abnehmen
+    nie ein Minus, für Muskelaufbau und Halten/Fitness erst, wenn klar zu wenig gegessen wurde
+    (Muskelaufbau 3.000 kcal, 18:00: ab 1.425 kcal 100, 900 kcal → 0).
+  - **Protein** gegen die untere Grenze (90 % davon → 100, darunter 2 Punkte je Prozent); bis
+    06:00 ist noch nichts erwartet.
+  - **Stabilität um Mitternacht:** Die obere Grenze ist nie kleiner als ein Viertel des Ziels –
+    ein Snack um 00:30 ist kein Exzess; die untere Grenze ist bis 06:00 null. Kein zusätzlicher
+    Mindestwert nötig, getestet in `score.test.ts`.
+  - Nur der laufende Tag: Abgeschlossene Tage bewertet unverändert die Regel oben. In 7 und 30
+    Tagen fließt heute nur über seinen Tageswert ein – es gibt keine zweite Logik. Die Details
+    („im Schnitt … % über dem Ziel“, „Proteinziel an … Tagen erreicht“) zählen den laufenden Tag
+    erst, wenn das ganze Tagesziel überschritten bzw. erreicht ist; das Sheet sagt dazu „Heute
+    zählt der bisherige Stand im Verhältnis zur Uhrzeit.“
+  - Berechnet wird mit der Uhrzeit beim Laden des Scores (`ScoreProvider`).
+  - Vorher (bis Phase 17.4): heute unter dem Ziel nicht bewertet, Überschreitung gegen das ganze
+    Tagesziel.
 
 ### Training
 
@@ -108,7 +131,7 @@ kein Ziel; Hinweis auf die WHO-Orientierung 150–300 Minuten). Versioniert wie 
 - Unabhängig von „Aktivitätskalorien anrechnen“ – die Einstellung wirkt nur auf das Tagesziel
   der Ernährung, wie in der App überall. Seit Phase 12 ist sie versioniert: Der Ernährungsteil
   bewertet jeden Tag mit der Einstellung, die an diesem Tag galt; Umschalten ändert keinen
-  vergangenen Score-Tag (`ScoreOptions` enthält nur noch `today`).
+  vergangenen Score-Tag (`ScoreOptions` enthält nur `today` und seit Phase 17.5 `todayProgress`).
 - Heute wird – unverändert seit Phase 9 – mit dem Tagesanteil des Wochenziels verglichen,
   anteilig (20 von 26 → 77). Seit Phase 16 in ganzen Minuten (`weeklyExpectation.expectedWhole`) –
   genau das Ziel, das die Fortschrittskarte zeigt; vorher rechnete der Score mit 25,7 und kam auf

@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router';
 import { ROUTE_PARAMS } from '@/app/routes';
 import { useHealthAutoSync, type WeightEntry } from '@/core/health';
 import { useI18n } from '@/core/i18n';
-import { useStorage } from '@/core/storage';
 import { isLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { Screen, Section } from '@/ui';
 import { WeightChart } from '../components/WeightChart';
@@ -22,7 +21,6 @@ export function HealthScreen() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
   const [editing, setEditing] = useState<WeightEntry | null>(null);
-  const { encrypted } = useStorage().security;
   // Opening Health refreshes imported Health Connect data (throttled, only when connected).
   useHealthAutoSync();
 
@@ -47,10 +45,7 @@ export function HealthScreen() {
 
   return (
     <Screen title={t('health.title')}>
-      <Section
-        title={t('weight.title')}
-        footer={encrypted ? t('weight.privacyNote') : t('weight.privacyNoteDevelopment')}
-      >
+      <Section title={t('weight.title')}>
         <WeightOverview
           onAdd={() => {
             openAdd(today);

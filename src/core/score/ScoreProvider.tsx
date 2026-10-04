@@ -7,6 +7,7 @@ import { useTargets } from '@/core/targets';
 import { useTraining } from '@/core/training';
 import { useProfile } from '@/core/user';
 import { toLocalDateKey } from '@/shared/lib/date';
+import { dayProgress } from './score';
 import type { ScoreService, ScoreWithTrend } from './scoreService';
 
 const ScoreContext = createContext<ScoreService | null>(null);
@@ -47,7 +48,9 @@ export function useScore(dates: readonly string[], previousDates: readonly strin
 
   useEffect(() => {
     let cancelled = false;
-    service.withTrend(profile.id, dates, previousDates, { today }).then(
+    // The running day is judged against the time of day at the moment of calculating.
+    const todayProgress = dayProgress(new Date());
+    service.withTrend(profile.id, dates, previousDates, { today, todayProgress }).then(
       (data) => {
         if (!cancelled) setState({ status: 'ready', data });
       },

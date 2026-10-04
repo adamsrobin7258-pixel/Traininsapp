@@ -232,9 +232,9 @@ describe('imported values on the health screen', () => {
     expect(screen.queryByRole('region', { name: 'Health Connect' })).not.toBeInTheDocument();
   });
 
-  it('shows steps, active calories and the imported weight apart from the own weight', async () => {
+  it('shows steps and active calories; the imported weight is not repeated (Phase 17.5)', async () => {
     const platform = filled();
-    await renderApp('/health', {
+    const { services } = await renderApp('/health', {
       healthPlatform: platform,
       prepare: async (services, profileId) => {
         await services.healthSync.connect(profileId);
@@ -243,17 +243,14 @@ describe('imported values on the health screen', () => {
     });
     // Named by content; the source stays visible in the footer.
     const activity = within(await screen.findByRole('region', { name: 'Schritte & Aktivität' }));
-    expect(await activity.findByText('6.543 Schritte')).toBeInTheDocument();
+    expect(await activity.findByRole('group', { name: '6.543 Schritte' })).toBeInTheDocument();
     expect(activity.getByText('321 kcal')).toBeInTheDocument();
-    expect(activity.getByText('Aus Health Connect.')).toBeVisible();
-    const imported = within(screen.getByRole('region', { name: 'Health Connect' }));
-    expect(imported.getByText('92,4 kg · 02.10.')).toBeInTheDocument();
-    expect(
-      imported.getByText('Dein eigener Eintrag für diesen Tag hat Vorrang'),
-    ).toBeInTheDocument();
-    expect(
-      imported.getByText(/verändern weder deine Gewichtseinträge noch deine Ernährungsziele/),
-    ).toBeVisible();
+    expect(activity.getByText(/^Aus Health Connect/)).toBeVisible();
+    // The imported weight is still imported and kept – only not shown on Gesundheit.
+    expect(screen.queryByRole('region', { name: 'Health Connect' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/92,4 kg/)).not.toBeInTheDocument();
+    const profileId = (await services.profile.ensureLocalProfile()).id;
+    expect((await services.healthSync.latestWeight(profileId))?.kg).toBe(92.4);
     // The own weight history is unchanged: only the manual 91,0 kg.
     expect(screen.getAllByText(/91,0 kg/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/93,1 kg/)).not.toBeInTheDocument();

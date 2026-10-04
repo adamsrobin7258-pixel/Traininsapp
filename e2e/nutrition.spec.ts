@@ -39,18 +39,26 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   );
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(main.getByRole('heading', { name: 'Frühstück · 296 kcal' })).toBeVisible();
+  // The day shows the meal with its kcal; the foods are in its details (Phase 17.5).
+  await expect(main.getByRole('button', { name: 'Frühstück · 296 kcal' })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Edit the entry.
-  await main.getByRole('button', { name: /Haferflocken mit einem sehr langen Namen/ }).click();
+  // Edit the entry from the meal's details; saving returns to them.
+  await main.getByRole('button', { name: 'Frühstück · 296 kcal' }).click();
+  await page
+    .getByRole('dialog')
+    .getByRole('button', { name: /Haferflocken mit einem sehr langen Namen/ })
+    .click();
   await page.getByRole('dialog').getByLabel('Menge', { exact: true }).fill('100');
   await page.getByRole('dialog').getByRole('button', { name: 'Speichern' }).click();
-  await expect(main.getByRole('heading', { name: 'Frühstück · 370 kcal' })).toBeVisible();
+  await expect(page.getByRole('dialog', { name: 'Frühstück' })).toContainText('370 kcal');
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(main.getByRole('button', { name: 'Frühstück · 370 kcal' })).toBeVisible();
 
   // Goals.
   // Goals: own values in the nutrition profile (no personal data entered).
-  await main.getByRole('link', { name: 'Ernährungsprofil einrichten' }).click();
+  await main.getByRole('link', { name: 'Ziele festlegen' }).click();
   for (const [row, value] of [
     [/^Kalorienziel/, '2000'],
     [/^Protein/, '120'],

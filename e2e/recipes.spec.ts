@@ -107,9 +107,12 @@ test('recipe: create in Meine Inhalte, edit, log a serving, change and delete �
   expect(await noHorizontalScroll(page)).toBe(true);
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(sheet).toHaveCount(0);
-  const breakfast = main.getByRole('heading', { level: 2, name: 'Frühstück · 176 kcal' });
+  const breakfast = main.getByRole('button', { name: 'Frühstück · 176 kcal' });
   await expect(breakfast).toBeVisible();
-  await expect(main.getByText('Beerenquark')).toBeVisible();
+  await breakfast.click();
+  await expect(sheet.getByText('Beerenquark')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
 
   // 16–17 Change the recipe again: the logged day keeps its values.
   await nav(page).getByRole('link', { name: 'Einstellungen' }).click();
@@ -148,9 +151,9 @@ test('template: save from the diary, edit in Meine Inhalte, apply – the older 
   await newFood(page, 'Haferflocken', ['370', '13,5', '58,7', '7']);
   await sheet.getByLabel('Menge', { exact: true }).fill('60');
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
-  const breakfast = main.getByRole('heading', { level: 2, name: 'Frühstück · 222 kcal' });
+  const breakfast = main.getByRole('button', { name: 'Frühstück · 222 kcal' });
   await expect(breakfast).toBeVisible();
-  await main.getByRole('button', { name: 'Frühstück: weitere Aktionen' }).click();
+  await breakfast.click();
   await sheet.getByRole('button', { name: 'Als Vorlage speichern' }).click();
   await sheet.getByRole('button', { name: 'Speichern' }).click();
   await expect(main.getByRole('status')).toContainText('Vorlage „Frühstück“ gespeichert.');
@@ -181,7 +184,7 @@ test('template: save from the diary, edit in Meine Inhalte, apply – the older 
   await sheet.getByRole('button', { name: /^Frühstück/ }).click();
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(sheet).toHaveCount(0);
-  const lunch = main.getByRole('heading', { level: 2, name: 'Mittagessen · 148 kcal' });
+  const lunch = main.getByRole('button', { name: 'Mittagessen · 148 kcal' });
   await expect(lunch).toBeVisible();
   await expect(breakfast).toBeVisible();
 

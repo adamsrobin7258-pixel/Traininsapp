@@ -415,6 +415,37 @@ describe('score details', () => {
     expect(sheet.queryByText(/^Schritte \d+ %$/)).not.toBeInTheDocument();
   });
 
+  it('rates the running day against the time of day (Phase 17.5)', async () => {
+    // 10:00 – breakfast with 600 kcal / 40 g of 2.300 kcal / 160 g is a normal interim value.
+    await renderApp('/', {
+      prepare: async (s, profileId) => {
+        await goal(s, profileId, 'lose');
+        await eat(s, profileId, '2026-10-03', 600, 40);
+      },
+    });
+    await showProgressPeriod('Heute');
+    expect(await scoreButton()).toHaveAccessibleName(/Ernährung: 100\./);
+    await userEvent.click(await scoreButton());
+    const sheet = within(await screen.findByRole('dialog', { name: 'Kalethra-Score' }));
+    expect(
+      sheet.getByText('Heute zählt der bisherige Stand im Verhältnis zur Uhrzeit.'),
+    ).toBeInTheDocument();
+  });
+
+  it('shows too much for "Abnehmen" already during the day (Phase 17.5)', async () => {
+    // 10:00 – the whole day goal already eaten: far over what is expected by now.
+    await renderApp('/', {
+      prepare: async (s, profileId) => {
+        await goal(s, profileId, 'lose');
+        await eat(s, profileId, '2026-10-03', 2300, 160);
+      },
+    });
+    await showProgressPeriod('Heute');
+    // Calories 0 points (≥ +25 % over the 1.533 kcal allowed by 10:00), protein reached:
+    // 0 × 70 % + 100 × 30 % = 30.
+    expect(await scoreButton()).toHaveAccessibleName(/Ernährung: 30\./);
+  });
+
   it('links to the place where recovery is entered', async () => {
     const { router } = await renderApp('/', { prepare: goodWeek });
     await userEvent.click(await scoreButton());

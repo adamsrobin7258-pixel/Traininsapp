@@ -69,15 +69,19 @@ describe('nutrition diary', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Ernährung' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Datum wählen: Heute/)).toHaveValue('2026-10-03');
     for (const meal of ['Frühstück', 'Mittagessen', 'Abendessen', 'Snacks']) {
-      expect(
-        screen.getByRole('heading', { level: 2, name: `${meal} · 0 kcal` }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: `${meal} · 0 kcal` })).toBeInTheDocument();
     }
     // An empty meal shows only its one action – no extra "nothing logged" text (Phase 17.4).
     expect(screen.getAllByRole('button', { name: /^.+: hinzufügen$/ })).toHaveLength(4);
     expect(screen.queryByText('Noch nichts eingetragen.')).not.toBeInTheDocument();
+    // Without any goal one hint leads to Einstellungen → Ziele (Phase 17.5: "Ziele festlegen").
     expect(screen.getByText('Noch keine Ziele festgelegt')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ernährungsprofil einrichten' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ziele festlegen' })).toHaveAttribute(
+      'href',
+      '/settings/goals',
+    );
+    // Water is shown without an explanation that it does not count as calories.
+    expect(screen.queryByText(/zählt nicht zu Kalorien/)).not.toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     expect(screen.getByText('Noch kein Wasserziel festgelegt.')).toBeInTheDocument();
   });
@@ -100,12 +104,17 @@ describe('nutrition diary', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Vorheriger Tag' }));
     expect(await screen.findByLabelText(/Datum wählen: Gestern/)).toBeInTheDocument();
-    expect(await screen.findByText('Haferflocken')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Frühstück · 370 kcal' })).toBeInTheDocument();
     expect(router.state.location.search).toBe('?day=2026-10-02');
+    // A past day opens its meals in detail as well.
+    await userEvent.click(screen.getByRole('button', { name: 'Frühstück · 370 kcal' }));
+    expect(dialog().getByText('Haferflocken')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await closed();
 
     await userEvent.click(screen.getByRole('button', { name: 'Zu heute' }));
     expect(await screen.findByLabelText(/Datum wählen: Heute/)).toBeInTheDocument();
-    expect(screen.queryByText('Haferflocken')).not.toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Frühstück · 0 kcal' })).toBeInTheDocument();
 
     // A future day in the address falls back to today.
     await router.navigate('/nutrition?day=2026-10-10');
@@ -137,11 +146,12 @@ describe('nutrition diary', () => {
     await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
     await closed();
 
-    expect(
-      await screen.findByRole('heading', { level: 2, name: 'Frühstück · 158 kcal' }),
-    ).toBeInTheDocument();
-    expect(screen.getByText('Skyr')).toBeInTheDocument();
-    expect(screen.getByText(/^250 g · P 27,5 g/)).toBeInTheDocument();
+    // The day shows the meal with its kcal; the food itself is one tap away (Phase 17.5).
+    const breakfast = await screen.findByRole('button', { name: 'Frühstück · 158 kcal' });
+    expect(screen.queryByText('Skyr')).not.toBeInTheDocument();
+    await userEvent.click(breakfast);
+    expect(dialog().getByText('Skyr')).toBeInTheDocument();
+    expect(dialog().getByText(/^250 g · P 27,5 g/)).toBeInTheDocument();
     const rows = await db.query<{ name: string; energy_kcal: number }>(
       'SELECT name, energy_kcal FROM food_entries',
     );
@@ -228,7 +238,8 @@ describe('nutrition diary', () => {
         });
       },
     });
-    await userEvent.click(await screen.findByRole('button', { name: /Haferflocken/ }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück · 370 kcal' }));
+    await userEvent.click(dialog().getByRole('button', { name: /Haferflocken/ }));
     const select = dialog().getByLabelText('Einheit');
     expect(
       within(select)
@@ -243,18 +254,51 @@ describe('nutrition diary', () => {
     await closed();
 
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'Abendessen · 185 kcal' }),
+      await screen.findByRole('button', { name: 'Abendessen · 185 kcal' }),
     ).toBeInTheDocument();
     expect(await db.query('SELECT local_date, amount FROM food_entries')).toEqual([
       { local_date: '2026-10-01', amount: 50 },
     ]);
 
-    await userEvent.click(screen.getByRole('button', { name: /Haferflocken/ }));
+    // Breakfast is empty now, so its details closed; dinner holds the entry.
+    expect(screen.getByRole('button', { name: 'Frühstück · 0 kcal' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Abendessen · 185 kcal' }));
+    await userEvent.click(dialog().getByRole('button', { name: /Haferflocken/ }));
     await userEvent.click(dialog().getByRole('button', { name: 'Eintrag löschen' }));
     expect(dialog().getByText('„Haferflocken“ wird aus diesem Tag entfernt.')).toBeInTheDocument();
     await userEvent.click(dialog().getByRole('button', { name: 'Löschen' }));
     await closed();
     expect(await db.query('SELECT * FROM food_entries')).toEqual([]);
+  });
+
+  it('meal details: adding from them returns to them, the template action is there', async () => {
+    await renderApp('/nutrition', {
+      prepare: async (services, profileId) => {
+        const { n, food, meals } = await prepareBasics(services, profileId);
+        await n.foods.create(profileId, { ...oats, name: 'Skyr', brand: null });
+        await n.diary.addFood(profileId, {
+          localDate: '2026-10-03',
+          mealId: meals.breakfast ?? '',
+          foodId: food.id,
+          amount: 100,
+          unit: 'g',
+        });
+      },
+    });
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück · 370 kcal' }));
+    expect(screen.getByRole('dialog', { name: 'Frühstück' })).toBeInTheDocument();
+    expect(dialog().getByRole('button', { name: 'Als Vorlage speichern' })).toBeInTheDocument();
+    await userEvent.click(dialog().getByRole('button', { name: 'Frühstück: hinzufügen' }));
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Skyr');
+    await userEvent.click(await dialog().findByRole('button', { name: /^Skyr/ }));
+    await userEvent.click(dialog().getByRole('button', { name: 'Eintragen' }));
+    // Back in the meal's details, now with both foods.
+    const details = within(await screen.findByRole('dialog', { name: 'Frühstück' }));
+    expect(await details.findByText('Skyr')).toBeInTheDocument();
+    expect(details.getByText('Haferflocken')).toBeInTheDocument();
+    await userEvent.keyboard('{Escape}');
+    await closed();
+    expect(screen.getByRole('button', { name: 'Frühstück · 740 kcal' })).toBeInTheDocument();
   });
 
   it('sets goals and shows remaining and exceeded values neutrally', async () => {
@@ -271,7 +315,7 @@ describe('nutrition diary', () => {
       },
     });
     // Goals are set under Einstellungen → Ziele; without personal data they are manual values.
-    await userEvent.click(await screen.findByRole('link', { name: 'Ernährungsprofil einrichten' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Ziele festlegen' }));
     expect(await screen.findByRole('heading', { level: 1, name: 'Ziele' })).toBeInTheDocument();
     await userEvent.click(await screen.findByRole('radio', { name: 'Muskelaufbau' }));
     await setOwnValue(/^Kalorienziel/, '1500');
@@ -470,10 +514,8 @@ describe('meals, templates and foods', () => {
         });
       },
     });
-    // A rarer action: behind the meal's "more" button.
-    await userEvent.click(
-      await screen.findByRole('button', { name: 'Frühstück: weitere Aktionen' }),
-    );
+    // A rarer action: in the meal's details.
+    await userEvent.click(await screen.findByRole('button', { name: 'Frühstück · 296 kcal' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Als Vorlage speichern' }));
     await userEvent.clear(dialog().getByLabelText('Name der Vorlage'));
     await userEvent.type(dialog().getByLabelText('Name der Vorlage'), 'Porridge');
@@ -493,7 +535,7 @@ describe('meals, templates and foods', () => {
     await closed();
 
     expect(
-      await screen.findByRole('heading', { level: 2, name: 'Abendessen · 444 kcal' }),
+      await screen.findByRole('button', { name: 'Abendessen · 444 kcal' }),
     ).toBeInTheDocument();
     const profileId = (await services.profile.ensureLocalProfile()).id;
     const [template] = await services.nutrition.meals.listSavedMeals(profileId);
@@ -614,8 +656,8 @@ describe('Day overview progress', () => {
     // Only the goals that are set get a progress line.
     expect(overview.getAllByRole('progressbar')).toHaveLength(2);
   });
-  it("shows the day's fiber quietly below the macros – only when enough foods state it", async () => {
-    await renderApp('/nutrition', {
+  it('shows no fiber on the day – the values stay in the data (Phase 17.5)', async () => {
+    const { db } = await renderApp('/nutrition', {
       prepare: async (services, profileId) => {
         const { n, meals } = await prepareBasics(services, profileId);
         const bread = await n.foods.create(profileId, {
@@ -634,10 +676,16 @@ describe('Day overview progress', () => {
       },
     });
     const overview = within(await screen.findByRole('region', { name: 'Tagesübersicht' }));
-    expect(await overview.findByText('Ballaststoffe')).toBeInTheDocument();
-    expect(overview.getByText('12 g')).toBeInTheDocument();
-    // A detail: no goal, no meter.
-    expect(overview.queryByRole('progressbar', { name: 'Ballaststoffe' })).not.toBeInTheDocument();
+    await overview.findByText('Protein');
+    // No fiber row, no meter, no "not known for all foods".
+    expect(screen.queryByText('Ballaststoffe')).not.toBeInTheDocument();
+    expect(screen.queryByText(/nicht für alle Lebensmittel bekannt/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar', { name: 'Ballaststoffe' })).not.toBeInTheDocument();
+    // The food and the logged entry keep their fiber.
+    expect(await db.query("SELECT fiber_g FROM foods WHERE name = 'Vollkornbrot'")).toEqual([
+      { fiber_g: 10 },
+    ]);
+    expect(await db.query('SELECT fiber_g FROM food_entries')).toEqual([{ fiber_g: 12 }]);
   });
 
   it('shows no fiber when no logged food states it (unknown is not 0 g)', async () => {

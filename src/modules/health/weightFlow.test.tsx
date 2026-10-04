@@ -160,21 +160,19 @@ describe('weight tracking', () => {
     expect(row?.value).toBeCloseTo(toKg(181.7, 'lb'), 10);
   });
 
-  it('states truthfully whether weight data is encrypted', async () => {
-    await renderApp('/health');
-    expect(
-      await screen.findByText(
-        'Gewichtsdaten werden verschlüsselt und nur auf diesem Gerät gespeichert.',
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('does not claim encryption in the browser development mode', async () => {
-    await renderApp('/health', {
-      security: { encrypted: false, outcome: 'development-unencrypted', cipherVersion: null },
-    });
-    expect(await screen.findByText(/Browser-Entwicklungsmodus/)).toBeInTheDocument();
-    expect(screen.queryByText(/werden verschlüsselt/)).not.toBeInTheDocument();
+  it('shows no note below "Gewicht eintragen" (Phase 17.5) – encrypted or not', async () => {
+    // Where data are stored is explained once, in Einstellungen → Datenschutz.
+    for (const security of [
+      undefined,
+      { encrypted: false, outcome: 'development-unencrypted', cipherVersion: null } as const,
+    ]) {
+      const { unmount } = await renderApp('/health', security ? { security } : {});
+      const weight = within(await screen.findByRole('region', { name: 'Gewicht' }));
+      expect(weight.getByRole('button', { name: 'Gewicht eintragen' })).toBeInTheDocument();
+      expect(screen.queryByText(/Gewichtsdaten/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Browser-Entwicklungsmodus/)).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it('renders in dark mode', async () => {
@@ -217,22 +215,16 @@ describe('weight entry links', () => {
     const main = within(screen.getByRole('main'));
     expect(
       main.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
-    ).toEqual([
-      'Gewicht',
-      'Entwicklung',
-      'Verlauf',
-      'Regeneration',
-      'Schritte & Aktivität',
-      'Health Connect',
-    ]);
+    ).toEqual(['Gewicht', 'Entwicklung', 'Verlauf', 'Regeneration', 'Schritte & Aktivität']);
     // Kalethra does not collect these: no rows that can never be filled.
     for (const placeholder of ['Ruhepuls', 'Schlaf', 'Körperfett', 'Muskelmasse', 'Körper']) {
       expect(main.queryByText(placeholder)).not.toBeInTheDocument();
     }
-    // Everything that was there still is: weight, recovery check-in, steps, Health Connect.
+    // Everything that was there still is: weight, recovery check-in, steps from Health Connect
+    // (Phase 17.5: the imported weight is no longer repeated here).
     expect(main.getAllByText(/91,0 kg/).length).toBeGreaterThan(0);
     expect(main.getByRole('button', { name: /Gut erholt/ })).toBeInTheDocument();
     expect(main.getByText('Schritte heute')).toBeInTheDocument();
-    expect(main.getByText('Aus Health Connect.')).toBeInTheDocument();
+    expect(main.getByText(/^Aus Health Connect/)).toBeInTheDocument();
   });
 });
