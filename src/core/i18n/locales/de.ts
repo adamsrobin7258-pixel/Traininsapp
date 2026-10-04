@@ -188,6 +188,8 @@ export const de = {
       title: 'Gewicht',
       change: { today: '{value} heute', week: '{value} in 7 Tagen', month: '{value} in 30 Tagen' },
       noChange: 'Noch kein Vergleich im Zeitraum',
+      measuredToday: 'heute',
+      measuredOn: 'vom {date}',
       imported: 'Wert aus Health Connect',
       empty: 'Noch keine Gewichtsdaten.',
       chart: 'Gewichtsverlauf von {first} am {from} bis {last} am {to}',
@@ -350,6 +352,7 @@ export const de = {
       },
     },
     detail: {
+      openExercise: '{name} – Details und Leistung',
       duration: 'Dauer',
       exercises: 'Übungen',
       sets: 'Sätze',
@@ -1083,7 +1086,6 @@ export const de = {
   },
   health: {
     title: 'Gesundheit',
-    bodyTitle: 'Körper',
     recoveryTitle: 'Regeneration',
     recovery: {
       question: 'Wie erholt fühlst du dich heute?',
@@ -1094,12 +1096,6 @@ export const de = {
       clearHint: 'Nochmal tippen hebt die Auswahl auf.',
       saved: 'Für heute gespeichert.',
       failed: 'Das Speichern hat nicht geklappt. Bitte versuche es erneut.',
-    },
-    measurements: {
-      bodyFat: 'Körperfett',
-      muscleMass: 'Muskelmasse',
-      restingHeartRate: 'Ruhepuls',
-      sleep: 'Schlaf',
     },
   },
   activities: {
@@ -1380,7 +1376,8 @@ export const de = {
       'Gelöscht werden nur die importierten Werte. Deine eigenen Gewichtseinträge, Trainings und Ernährungsdaten bleiben erhalten.',
     disconnectConfirm: 'Trennen',
     disconnectFailed: 'Das Trennen hat nicht geklappt. Bitte versuche es erneut.',
-    overviewTitle: 'Aus Health Connect',
+    activityTitle: 'Schritte & Aktivität',
+    activityFooter: 'Aus Health Connect.',
     stepGoalToday: 'Schrittziel heute',
     stepGoalProgress: '{steps} von {goal}',
     stepGoalReached: 'Erreicht · {steps} von {goal}',

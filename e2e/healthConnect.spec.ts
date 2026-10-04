@@ -85,10 +85,14 @@ test('connects Health Connect after an explanation, shows the data and disconnec
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Gesundheit' })
     .click();
-  const imported = page.getByRole('region', { name: 'Aus Health Connect' });
+  // Steps and activity are named by content (source in the footer); the imported weight sits
+  // under Health Connect (Phase 17.3).
+  const imported = page.getByRole('region', { name: 'Schritte & Aktivität' });
   await expect(imported.getByText('6.543 Schritte')).toBeVisible();
   await expect(imported.getByText('321 kcal')).toBeVisible();
-  await expect(imported.getByText(/92,4 kg/)).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Health Connect', exact: true }).getByText(/92,4 kg/),
+  ).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Step goal: set under Einstellungen → Ziele, the steps themselves stay Health Connect's.

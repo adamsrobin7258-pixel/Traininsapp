@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AppServices } from '@/app/services';
 import type { HealthWorkout } from '@/core/platform/health';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
+import { showProgressPeriod } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -152,6 +153,7 @@ describe('Kalethra-Score on Fortschritt', () => {
 
   it('shows the big number, its wording and the four areas', async () => {
     await renderApp('/', { prepare: goodWeek });
+    await showProgressPeriod('7 Tage');
     await expectScore(100);
     const card = await scoreCard();
     // Nutrition 100, recovery 100; training and activity without target → not rated.
@@ -165,6 +167,7 @@ describe('Kalethra-Score on Fortschritt', () => {
 
   it('is announced with its number, wording, trend and every area – not by colour', async () => {
     await renderApp('/', { prepare: goodWeek });
+    await showProgressPeriod('7 Tage');
     const button = await scoreButton();
     await waitFor(() => {
       expect(button).toHaveAccessibleName(/^Kalethra-Score 100 von 100, Sehr gut unterwegs\./);
@@ -181,6 +184,7 @@ describe('Kalethra-Score on Fortschritt', () => {
         await eat(s, profileId, '2026-10-01', 2300);
       },
     });
+    await showProgressPeriod('7 Tage');
     await expectScore(100);
     const card = await scoreCard();
     expect(card.getByText('Vorläufig')).toBeInTheDocument();
@@ -210,10 +214,12 @@ describe('Kalethra-Score on Fortschritt', () => {
       },
     });
     const radio = (name: string) => main().getByRole('radio', { name });
-    await expectScore(65); // (30 + 100) / 2
-    await userEvent.click(radio('Heute'));
+    // Fortschritt opens on Heute (Phase 17.3).
     await expectScore(30);
+    expect(radio('Heute')).toHaveAttribute('aria-checked', 'true');
     expect(main().getByText('03.10.')).toBeInTheDocument();
+    await userEvent.click(radio('7 Tage'));
+    await expectScore(65); // (30 + 100) / 2
     await userEvent.click(radio('30 Tage'));
     await expectScore(83); // (30 + 3 × 100) / 4 = 82.5
   });
@@ -227,6 +233,7 @@ describe('Kalethra-Score on Fortschritt', () => {
         for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2300);
       },
     });
+    await showProgressPeriod('7 Tage');
     const card = await scoreCard();
     expect(
       await card.findByText('Gestiegen gegenüber den 7 Tagen davor · +70 Punkte'),
@@ -242,6 +249,7 @@ describe('Kalethra-Score on Fortschritt', () => {
         for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2760);
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(
       await (
         await scoreCard()
@@ -259,6 +267,7 @@ describe('Kalethra-Score on Fortschritt', () => {
         for (const date of WEEK.slice(0, 4)) await eat(s, profileId, date, 2310);
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(
       await (
         await scoreCard()
@@ -275,10 +284,12 @@ describe('Kalethra-Score on Fortschritt', () => {
       await workout(s, profileId, new Date(2026, 8, 30, 18)); // 2 of 4 → 50
     };
     const { unmount } = await renderApp('/', { prepare: prepare('lose') });
+    await showProgressPeriod('7 Tage');
     // (100 × 0.45 + 50 × 0.25) / 0.7 = 82
     await expectScore(82);
     unmount();
     await renderApp('/', { prepare: prepare('gain') });
+    await showProgressPeriod('7 Tage');
     // (100 × 0.3 + 50 × 0.45) / 0.75 = 70
     await expectScore(70);
   });
@@ -306,6 +317,7 @@ describe('Kalethra-Score on Fortschritt', () => {
         });
       },
     });
+    await showProgressPeriod('7 Tage');
     await userEvent.click(await scoreButton());
     const sheet = within(await screen.findByRole('dialog', { name: 'Kalethra-Score' }));
     expect(
@@ -329,6 +341,7 @@ describe('score details', () => {
         await workout(s, profileId, new Date(2026, 9, 1, 18));
       },
     });
+    await showProgressPeriod('7 Tage');
     await userEvent.click(await scoreButton());
     const sheet = within(await screen.findByRole('dialog', { name: 'Kalethra-Score' }));
     // No text field gets focus: the keyboard stays closed.
@@ -381,6 +394,7 @@ describe('score details', () => {
         await targetSince(s, profileId, 'stepsPerDay', 10_000);
       },
     });
+    await showProgressPeriod('7 Tage');
     // Minutes 120 of 150 → 80, steps 6.000 of 10.000 → 60 → activity 70 (the only rated area).
     await expectScore(70);
     await userEvent.click(await scoreButton());
@@ -412,6 +426,7 @@ describe('score details', () => {
   it('works in English', async () => {
     vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
     await renderApp('/', { prepare: goodWeek });
+    await showProgressPeriod('7 days');
     const button = await main().findByRole('button', { name: /Kalethra score/ });
     expect(await within(button).findByText('Doing very well')).toBeInTheDocument();
     expect(within(button).getByText('Recovery')).toBeInTheDocument();
@@ -531,6 +546,7 @@ describe('score: dark mode and reduced motion', () => {
         await goodWeek(s, profileId);
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(document.documentElement.dataset.theme).toBe('dark');
     expect(await (await scoreCard()).findByText('Sehr gut unterwegs')).toBeInTheDocument();
   });

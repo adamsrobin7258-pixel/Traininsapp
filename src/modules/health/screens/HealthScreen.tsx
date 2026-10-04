@@ -5,7 +5,7 @@ import { useHealthAutoSync, type WeightEntry } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useStorage } from '@/core/storage';
 import { isLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
-import { EmptyValue, List, ListRow, Screen, Section } from '@/ui';
+import { Screen, Section } from '@/ui';
 import { WeightChart } from '../components/WeightChart';
 import { WeightEntrySheet, type WeightSheetMode } from '../components/WeightEntrySheet';
 import { ImportedHealthOverview } from '../components/ImportedHealthOverview';
@@ -13,11 +13,11 @@ import { RecoveryCheckIn } from '../components/RecoveryCheckIn';
 import { WeightHistory } from '../components/WeightHistory';
 import { WeightOverview } from '../components/WeightOverview';
 
-const BODY_MEASUREMENTS = ['bodyFat', 'muscleMass'] as const;
-const RECOVERY_MEASUREMENTS = ['restingHeartRate', 'sleep'] as const;
-
-type Measurement = (typeof BODY_MEASUREMENTS)[number] | (typeof RECOVERY_MEASUREMENTS)[number];
-
+/**
+ * Gesundheit: the own weight (current value, course, entries), the daily recovery check-in, then
+ * steps and activity and the remaining values from Health Connect. Only what Kalethra records –
+ * no empty placeholders for data it does not collect.
+ */
 export function HealthScreen() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
@@ -45,15 +45,6 @@ export function HealthScreen() {
     if (params.has(ROUTE_PARAMS.addWeight)) setParams({}, { replace: true });
   }
 
-  const renderPlaceholders = (measurements: readonly Measurement[]) =>
-    measurements.map((measurement) => (
-      <ListRow
-        key={measurement}
-        title={t(`health.measurements.${measurement}`)}
-        value={<EmptyValue label={t('common.noValue')} />}
-      />
-    ));
-
   return (
     <Screen title={t('health.title')}>
       <Section
@@ -67,11 +58,6 @@ export function HealthScreen() {
         />
       </Section>
 
-      <Section title={t('health.recoveryTitle')}>
-        <RecoveryCheckIn />
-        <List>{renderPlaceholders(RECOVERY_MEASUREMENTS)}</List>
-      </Section>
-
       <Section title={t('weight.trend')}>
         <WeightChart />
       </Section>
@@ -80,11 +66,11 @@ export function HealthScreen() {
         <WeightHistory onEdit={setEditing} />
       </Section>
 
-      <ImportedHealthOverview today={new Date()} />
-
-      <Section title={t('health.bodyTitle')}>
-        <List>{renderPlaceholders(BODY_MEASUREMENTS)}</List>
+      <Section title={t('health.recoveryTitle')}>
+        <RecoveryCheckIn />
       </Section>
+
+      <ImportedHealthOverview today={new Date()} />
 
       {sheet ? (
         <WeightEntrySheet

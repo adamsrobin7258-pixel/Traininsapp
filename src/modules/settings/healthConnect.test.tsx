@@ -228,7 +228,8 @@ describe('imported values on the health screen', () => {
   it('is hidden when not connected', async () => {
     await renderApp('/health', { healthPlatform: filled() });
     await screen.findByRole('heading', { level: 1, name: 'Gesundheit' });
-    expect(screen.queryByRole('region', { name: 'Aus Health Connect' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Schritte & Aktivität' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Health Connect' })).not.toBeInTheDocument();
   });
 
   it('shows steps, active calories and the imported weight apart from the own weight', async () => {
@@ -240,13 +241,18 @@ describe('imported values on the health screen', () => {
         await services.weight.save(profileId, '2026-10-02', 91.0);
       },
     });
-    const region = within(await screen.findByRole('region', { name: 'Aus Health Connect' }));
-    expect(await region.findByText('6.543 Schritte')).toBeInTheDocument();
-    expect(region.getByText('321 kcal')).toBeInTheDocument();
-    expect(region.getByText('92,4 kg · 02.10.')).toBeInTheDocument();
-    expect(region.getByText('Dein eigener Eintrag für diesen Tag hat Vorrang')).toBeInTheDocument();
+    // Named by content; the source stays visible in the footer.
+    const activity = within(await screen.findByRole('region', { name: 'Schritte & Aktivität' }));
+    expect(await activity.findByText('6.543 Schritte')).toBeInTheDocument();
+    expect(activity.getByText('321 kcal')).toBeInTheDocument();
+    expect(activity.getByText('Aus Health Connect.')).toBeVisible();
+    const imported = within(screen.getByRole('region', { name: 'Health Connect' }));
+    expect(imported.getByText('92,4 kg · 02.10.')).toBeInTheDocument();
     expect(
-      region.getByText(/verändern weder deine Gewichtseinträge noch deine Ernährungsziele/),
+      imported.getByText('Dein eigener Eintrag für diesen Tag hat Vorrang'),
+    ).toBeInTheDocument();
+    expect(
+      imported.getByText(/verändern weder deine Gewichtseinträge noch deine Ernährungsziele/),
     ).toBeVisible();
     // The own weight history is unchanged: only the manual 91,0 kg.
     expect(screen.getAllByText(/91,0 kg/).length).toBeGreaterThan(0);

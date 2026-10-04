@@ -355,6 +355,21 @@ inhaltlich hierher übertragen und ersetzt.
   selten genutzte Spalten ([DATABASE.md](DATABASE.md#selten-genutzte-spalten-audit-phase-171))
 - Keine Migration, keine neue Berechtigung, keine neue Eingabe
 
+## Phase 17.3 – Fortschritt & Gesundheit bereinigt ✅ (Version 0.23.0)
+
+Gezielte Punkte aus dem UX-Audit 17.2 – nur Darstellung, keine Berechnung, kein Datenmodell:
+
+- Fortschritt öffnet mit **Heute** (7/30 Tage wählbar)
+- Gewicht in „Heute“: aktueller Wert mit Tag („heute“ / „vom 28.09.“), kein Scheinvergleich
+- Ernährung in „Heute“: ohne „An 1 von 1 Tagen erfasst“
+- Training: „Ø pro Woche“ nur über 30 Tage, keine doppelte Anzahl
+- Schritte: Ziel nicht doppelt, wenn der Balken es schon zeigt
+- Gesundheit: leere Platzhalter (Ruhepuls, Schlaf, Körperfett, Muskelmasse) entfernt; Reihenfolge
+  Gewicht → Entwicklung → Verlauf → Regeneration → Schritte & Aktivität → Health Connect
+- Trainingsdetail: Übungsname öffnet das Übungsdetail mit „Deine Leistung“ (nicht im laufenden
+  Training)
+- Details: [PROGRESS.md](PROGRESS.md#tagesansicht-und-redundanzen-phase-173)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

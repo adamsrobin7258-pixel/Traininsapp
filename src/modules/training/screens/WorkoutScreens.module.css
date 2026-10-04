@@ -34,6 +34,26 @@
   font-weight: var(--font-weight-semibold);
 }
 
+/* The exercise name opens its details: looks like the heading, tappable with 44 px height. */
+.exerciseLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.exerciseLinkIcon {
+  flex: none;
+  color: var(--color-text-secondary);
+}
+
 .sets {
   margin: 0;
   padding: 0;

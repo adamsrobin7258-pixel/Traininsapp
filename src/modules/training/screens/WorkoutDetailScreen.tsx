@@ -14,14 +14,18 @@ import {
   type WorkoutSet,
 } from '@/core/training';
 import { formatLongDate } from '@/shared/lib/format';
-import { ConfirmSheet, Button, List, ListRow, Screen, Section, Stat } from '@/ui';
+import { ConfirmSheet, Button, Icon, List, ListRow, Screen, Section, Stat } from '@/ui';
+import { ExerciseDetailById } from '../components/ExerciseDetailById';
 import { WorkoutDetailsSheet } from '../components/WorkoutDetailsSheet';
 import { WorkoutEditor } from '../components/WorkoutEditor';
 import { WorkoutSummarySheet } from '../components/WorkoutSummarySheet';
 import { formatDuration, formatLoad, formatSetShort, trainingTypeLabel } from '../domain/format';
 import styles from './WorkoutScreens.module.css';
 
-/** A completed workout: summary, exercises and sets; editable and deletable. */
+/**
+ * A completed workout: summary, exercises and sets; editable and deletable. An exercise name
+ * opens the exercise details with the user's performance ("Deine Leistung").
+ */
 export function WorkoutDetailScreen() {
   const { workoutId = '' } = useParams();
   const { t, locale } = useI18n();
@@ -30,6 +34,7 @@ export function WorkoutDetailScreen() {
   const navigate = useNavigate();
   const location = useLocation();
   // Right after finishing, the summary opens once (state set by the finish action).
+  const [viewingExercise, setViewingExercise] = useState<string | null>(null);
   const [summary, setSummary] = useState(
     () => (location.state as { summary?: boolean } | null)?.summary === true,
   );
@@ -152,7 +157,25 @@ export function WorkoutDetailScreen() {
                 className={styles.exercise}
                 aria-label={exerciseDisplayName(exercise, locale)}
               >
-                <h3 className={styles.exerciseName}>{exerciseDisplayName(exercise, locale)}</h3>
+                <h3 className={styles.exerciseName}>
+                  {exercise.exerciseId ? (
+                    <button
+                      type="button"
+                      className={styles.exerciseLink}
+                      aria-label={t('training.detail.openExercise', {
+                        name: exerciseDisplayName(exercise, locale),
+                      })}
+                      onClick={() => {
+                        setViewingExercise(exercise.exerciseId);
+                      }}
+                    >
+                      {exerciseDisplayName(exercise, locale)}
+                      <Icon name="chevronRight" size={18} className={styles.exerciseLinkIcon} />
+                    </button>
+                  ) : (
+                    exerciseDisplayName(exercise, locale)
+                  )}
+                </h3>
                 <ol className={styles.sets}>
                   {detailRows(exercise.sets).map(({ set, badge, label }) => (
                     <li
@@ -185,6 +208,15 @@ export function WorkoutDetailScreen() {
       >
         {t('training.detail.delete')}
       </Button>
+
+      {viewingExercise ? (
+        <ExerciseDetailById
+          exerciseId={viewingExercise}
+          onClose={() => {
+            setViewingExercise(null);
+          }}
+        />
+      ) : null}
 
       {dialog === 'delete' ? (
         <ConfirmSheet

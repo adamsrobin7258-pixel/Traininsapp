@@ -24,7 +24,8 @@ import styles from './Progress.module.css';
 const MIN_CHART_DAYS = 2;
 
 /**
- * The Kalethra score first, then the progress figures of today or the last 7 or 30 days –
+ * The Kalethra score first, then the progress figures of today (the default) or the last 7 or 30
+ * days –
  * Kalethra training, nutrition, weight, activities and steps, in this order. Each area is one
  * card that opens its detail screen. Since Phase 14 each card shows the goal from Einstellungen
  * next to the tracked value; all figures come ready-made from `ProgressGoalService` – the cards
@@ -32,7 +33,7 @@ const MIN_CHART_DAYS = 2;
  */
 export function ProgressSection({ now }: { now: Date }) {
   const { t, locale } = useI18n();
-  const [period, setPeriod] = useState<ProgressPeriod>('week');
+  const [period, setPeriod] = useState<ProgressPeriod>('today');
   const todayKey = now.toDateString();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per day, not per minute
   const range = useMemo(() => periodRange(now, period), [todayKey, period]);
@@ -64,7 +65,7 @@ export function ProgressSection({ now }: { now: Date }) {
       <ul className={styles.list} aria-label={t('progress.title')}>
         <TrainingProgress data={data} range={range} period={period} day={day} />
         <NutritionProgress data={data} range={range} period={period} day={day} />
-        <WeightProgress data={data} period={period} day={day} />
+        <WeightProgress data={data} range={range} period={period} day={day} />
         <ActivityProgress data={data} range={range} period={period} day={day} />
         <StepsProgress data={data} range={range} period={period} />
       </ul>
@@ -188,17 +189,14 @@ function TrainingProgress({ data, range, period, day }: CardProps) {
       ) : null}
       {summary && summary.workouts > 0 ? (
         <>
-          {period !== 'today' || summary.volumeKg !== null ? (
+          {/* The weekly mean only adds something over 30 days: over 7 days it is the count itself. */}
+          {period === 'month' || summary.volumeKg !== null ? (
             <span className={styles.figures}>
-              {period !== 'today' ? (
+              {period === 'month' ? (
                 <span className={styles.secondary}>
-                  {goal?.mode === 'full'
-                    ? `${count(summary.workouts)} · ${t('progress.training.perWeek', {
-                        value: number.format(perWeek(summary.workouts, period)),
-                      })}`
-                    : t('progress.training.perWeek', {
-                        value: number.format(perWeek(summary.workouts, period)),
-                      })}
+                  {t('progress.training.perWeek', {
+                    value: number.format(perWeek(summary.workouts, period)),
+                  })}
                 </span>
               ) : null}
               {summary.volumeKg !== null ? (
@@ -332,12 +330,15 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
               />
             ) : null,
           )}
-          <span className={styles.note}>
-            {t('progress.nutrition.logged', {
-              count: summary.loggedDays,
-              total: range.dates.length,
-            })}
-          </span>
+          {/* "1 of 1 days" says nothing about a single day. */}
+          {!today ? (
+            <span className={styles.note}>
+              {t('progress.nutrition.logged', {
+                count: summary.loggedDays,
+                total: range.dates.length,
+              })}
+            </span>
+          ) : null}
           {summary.loggedDays >= MIN_CHART_DAYS ? (
             <DayBars
               values={summary.perDay.map((entry) => entry.kcal)}
@@ -358,7 +359,7 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
   );
 }
 
-function WeightProgress({ data, period, day }: Omit<CardProps, 'range'>) {
+function WeightProgress({ data, range, period, day }: CardProps) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const summary = data?.weight ?? null;
@@ -371,12 +372,17 @@ function WeightProgress({ data, period, day }: Omit<CardProps, 'range'>) {
         <>
           <span className={styles.figures}>
             <span className={styles.main}>{weight(summary.latest.kg)}</span>
+            {/* Today: the latest value with its day – one day has nothing to compare. */}
             <span className={styles.secondary}>
-              {summary.changeKg !== null
-                ? t(`progress.weight.change.${period}`, {
-                    value: formatWeightChange(summary.changeKg, unit, locale),
-                  })
-                : t('progress.weight.noChange')}
+              {period === 'today'
+                ? summary.latest.date === range.to
+                  ? t('progress.weight.measuredToday')
+                  : t('progress.weight.measuredOn', { date: day(summary.latest.date) })
+                : summary.changeKg !== null
+                  ? t(`progress.weight.change.${period}`, {
+                      value: formatWeightChange(summary.changeKg, unit, locale),
+                    })
+                  : t('progress.weight.noChange')}
             </span>
           </span>
           {summary.start && summary.end ? (
@@ -520,7 +526,8 @@ function StepsProgress({ data, range, period }: Omit<CardProps, 'day'>) {
           </span>
         </span>
       )}
-      {summary.latestGoal !== null ? (
+      {/* With a meter the goal is already in "7.842 von 10.000 Schritten". */}
+      {attainment ? null : summary.latestGoal !== null ? (
         <span className={styles.note}>
           {t('progress.steps.goalTarget', { goal: number.format(summary.latestGoal) })}
         </span>

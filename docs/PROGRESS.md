@@ -9,8 +9,8 @@ Zeitraum. Über dem Titel steht klein die Begrüßung (mit dem Namen aus dem Pro
 
 ## Zeitraum
 
-**Heute** = der aktuelle Tag (seit Phase 9), **7 Tage** (Standard) = die letzten 7 Tage
-einschließlich heute, **30 Tage** = die letzten 30 Tage. Ganz oben steht der Kalethra-Score des
+**Heute** (seit Phase 17.3 der Standard beim Öffnen; eingeführt in Phase 9) = der aktuelle Tag,
+**7 Tage** = die letzten 7 Tage einschließlich heute, **30 Tage** = die letzten 30 Tage. Ganz oben steht der Kalethra-Score des
 gewählten Zeitraums ([SCORE.md](SCORE.md)); er ist neben der Zeitraumwahl das einzige
 Bedienelement (öffnet die Erklärung).
 Bewusst gleitend statt Kalenderwoche/-monat, damit Montag oder der Monatserste nicht fast leer
@@ -26,7 +26,7 @@ Reihenfolge bleibt).
 
 | Bereich     | Werte                                                                                          | Diagramm (nur mit genug Daten)                         | Öffnet                 | Quelle                                                              |
 | ----------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------- | ------------------------------------------------------------------- |
-| Training    | abgeschlossene **Kalethra**-Einheiten, Ø pro Woche, Volumen (kg)                               | Trainingstage als Balken                               | Training               | `WorkoutService.dailyStatsBetween` (SQL-Aggregation)                |
+| Training    | abgeschlossene **Kalethra**-Einheiten, Ø pro Woche (nur 30 Tage), Volumen (kg)                 | Trainingstage als Balken                               | Training               | `WorkoutService.dailyStatsBetween` (SQL-Aggregation)                |
 | Ernährung   | Ø kcal und Ø Protein pro erfasstem Tag, Ø Tagesziel derselben Tage, „an x von y Tagen erfasst“ | kcal pro Tag, gestrichelte Linie = Ø Ziel (ab 2 Tagen) | Ernährung              | `DiaryService.dailyTotalsBetween`, `GoalService.dayGoalsBetween`    |
 | Gewicht     | aktueller Wert, Veränderung im Zeitraum                                                        | Linie (ab 2 Werten im Zeitraum)                        | Gesundheit             | eigene Einträge + Health-Connect-Werte, eigener Eintrag hat Vorrang |
 | Aktivitäten | Anzahl, Gesamtdauer, aktive kcal (Health Connect + manuell)                                    | aktive Minuten pro Tag (ab 3 Tagen)                    | Training → Aktivitäten | `workoutsBetween` + `ManualActivityService.listBetween`             |
@@ -162,6 +162,21 @@ Die Wortwahl der Kalorienzeile richtet sich nach dem Hauptziel am letzten Tag de
 - Hinweis auf der Karte, wenn sich das Hauptziel innerhalb des Zeitraums geändert hat.
 - Direkter Sprung von „Kein …ziel festgelegt“ zu Einstellungen → Ziele (die Karte führt bewusst
   weiter in ihren Bereich).
+
+## Tagesansicht und Redundanzen (Phase 17.3)
+
+Seit Phase 17.3 öffnet Fortschritt mit **Heute** (7 und 30 Tage bleiben wählbar; die Wahl gilt,
+bis die Seite neu geöffnet wird). Nur die Darstellung wurde angepasst, keine Berechnung:
+
+- **Gewicht, Heute:** der aktuelle Wert mit seinem Tag – „heute“ oder „vom 28.09.“ –, damit ein
+  älterer Wert nicht wie heute gemessen wirkt. Kein Vergleich und kein „Noch kein Vergleich im
+  Zeitraum“: ein Tag hat nichts zu vergleichen. Gewichtsregel 2 (eigener Eintrag vor Health
+  Connect) gilt unverändert; 7 und 30 Tage zeigen die Entwicklung wie bisher.
+- **Ernährung, Heute:** keine Zeile „An 1 von 1 Tagen erfasst“.
+- **Training:** „Ø pro Woche“ nur über 30 Tage – über genau 7 Tage ist es die Anzahl selbst; die
+  Anzahl wird nicht wiederholt („13 von 17,1 Einheiten“ und darunter „Ø 3 pro Woche“).
+- **Schritte:** Mit Balken steht das Ziel schon in „7.842 von 10.000 Schritten“; der Hinweis
+  „Ziel: 10.000 pro Tag“ erscheint nur ohne Balken (z. B. noch keine Schrittdaten).
 
 ## Produkt-Audit (Phase 17.1, Stand 0.21.0)
 

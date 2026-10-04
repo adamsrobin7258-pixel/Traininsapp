@@ -83,9 +83,11 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
     '150 min',
   );
 
-  // Fortschritt, 7 days: a number, marked preliminary (only one documented day).
+  // Fortschritt opens on Heute (Phase 17.3); 7 days: a number, marked preliminary (only one
+  // documented day).
   await tab('Fortschritt').click();
-  await expect(main.getByRole('radio', { name: '7 Tage' })).toHaveAttribute('aria-checked', 'true');
+  await expect(main.getByRole('radio', { name: 'Heute' })).toHaveAttribute('aria-checked', 'true');
+  await main.getByRole('radio', { name: '7 Tage' }).click();
   await expect(score).toContainText('Vorläufig');
   await expect(score).toContainText('Noch nicht alle Daten für diesen Zeitraum sind vorhanden.');
   await expect(score).toHaveAccessibleName(/^Kalethra-Score \d+ von 100, /);

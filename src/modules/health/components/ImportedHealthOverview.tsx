@@ -15,8 +15,10 @@ import { formatDayMonth } from '@/shared/lib/format';
 import { EmptyValue, List, ListRow, Section } from '@/ui';
 
 /**
- * Values imported from Health Connect, shown apart from Kalethra's own weight. Display only:
- * nothing here feeds the weight history, the chart or the nutrition goals.
+ * Values imported from Health Connect, shown apart from Kalethra's own weight: first steps and
+ * activity (named by content, the source in the footer), then the imported weight under
+ * "Health Connect". Display only: nothing here feeds the weight history, the chart or the
+ * nutrition goals.
  */
 export function ImportedHealthOverview({ today }: { today: Date }) {
   const { t, locale } = useI18n();
@@ -71,88 +73,98 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
       : null;
 
   return (
-    <Section
-      title={t('healthConnect.overviewTitle')}
-      footer={
-        lastSuccessAt
-          ? t('healthConnect.overviewFooterSynced', {
-              date: new Intl.DateTimeFormat(locale, {
-                dateStyle: 'medium',
-                timeStyle: 'short',
-              }).format(new Date(lastSuccessAt)),
-            })
-          : t('healthConnect.overviewFooter')
-      }
-    >
-      <List label={t('healthConnect.overviewTitle')}>
-        <ListRow
-          icon="health"
-          title={t('healthConnect.stepsToday')}
-          value={
-            todayActivity?.steps != null
-              ? t('healthConnect.steps', { count: number.format(todayActivity.steps) })
-              : none
-          }
-        />
-        {stepGoal?.today ? (
+    <>
+      <Section title={t('healthConnect.activityTitle')} footer={t('healthConnect.activityFooter')}>
+        <List label={t('healthConnect.activityTitle')}>
           <ListRow
-            icon="target"
-            title={t('healthConnect.stepGoalToday')}
-            subtitle={
-              stepGoal.ratedDays > 0
-                ? t('healthConnect.stepGoalWeek', {
-                    reached: stepGoal.reachedDays,
-                    total: stepGoal.ratedDays,
-                  })
-                : undefined
-            }
+            icon="health"
+            title={t('healthConnect.stepsToday')}
             value={
-              stepGoal.today.steps !== null
-                ? t(
-                    stepGoal.today.steps >= stepGoal.today.goal
-                      ? 'healthConnect.stepGoalReached'
-                      : 'healthConnect.stepGoalProgress',
-                    {
-                      steps: number.format(stepGoal.today.steps),
-                      goal: number.format(stepGoal.today.goal),
-                    },
-                  )
-                : t('healthConnect.stepGoalNoData', { goal: number.format(stepGoal.today.goal) })
+              todayActivity?.steps != null
+                ? t('healthConnect.steps', { count: number.format(todayActivity.steps) })
+                : none
             }
           />
-        ) : stepGoals.status === 'ready' ? (
-          <ListRow icon="target" title={t('healthConnect.stepGoalSet')} to={SETTINGS_LINKS.goals} />
-        ) : null}
-        <ListRow
-          icon="flame"
-          title={t('healthConnect.activeEnergyToday')}
-          value={
-            todayActivity?.activeKcal != null
-              ? t('healthConnect.kcal', {
-                  count: number.format(Math.round(todayActivity.activeKcal)),
-                })
-              : none
-          }
-        />
-        <ListRow
-          icon="plan"
-          title={t('healthConnect.stepsAverage')}
-          value={average !== null ? number.format(average) : none}
-        />
-        <ListRow
-          icon="scale"
-          title={t('healthConnect.importedWeight')}
-          subtitle={ready?.weight.kind === 'own' ? t('healthConnect.ownWins') : undefined}
-          value={
-            ready?.imported
-              ? t('healthConnect.importedWeightValue', {
-                  weight: formatWeight(ready.imported.kg, weightUnit, locale),
-                  date: formatDayMonth(parseLocalDateKey(ready.imported.date) ?? today, locale),
-                })
-              : none
-          }
-        />
-      </List>
-    </Section>
+          {stepGoal?.today ? (
+            <ListRow
+              icon="target"
+              title={t('healthConnect.stepGoalToday')}
+              subtitle={
+                stepGoal.ratedDays > 0
+                  ? t('healthConnect.stepGoalWeek', {
+                      reached: stepGoal.reachedDays,
+                      total: stepGoal.ratedDays,
+                    })
+                  : undefined
+              }
+              value={
+                stepGoal.today.steps !== null
+                  ? t(
+                      stepGoal.today.steps >= stepGoal.today.goal
+                        ? 'healthConnect.stepGoalReached'
+                        : 'healthConnect.stepGoalProgress',
+                      {
+                        steps: number.format(stepGoal.today.steps),
+                        goal: number.format(stepGoal.today.goal),
+                      },
+                    )
+                  : t('healthConnect.stepGoalNoData', { goal: number.format(stepGoal.today.goal) })
+              }
+            />
+          ) : stepGoals.status === 'ready' ? (
+            <ListRow
+              icon="target"
+              title={t('healthConnect.stepGoalSet')}
+              to={SETTINGS_LINKS.goals}
+            />
+          ) : null}
+          <ListRow
+            icon="flame"
+            title={t('healthConnect.activeEnergyToday')}
+            value={
+              todayActivity?.activeKcal != null
+                ? t('healthConnect.kcal', {
+                    count: number.format(Math.round(todayActivity.activeKcal)),
+                  })
+                : none
+            }
+          />
+          <ListRow
+            icon="plan"
+            title={t('healthConnect.stepsAverage')}
+            value={average !== null ? number.format(average) : none}
+          />
+        </List>
+      </Section>
+      <Section
+        title={t('healthConnect.name')}
+        footer={
+          lastSuccessAt
+            ? t('healthConnect.overviewFooterSynced', {
+                date: new Intl.DateTimeFormat(locale, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                }).format(new Date(lastSuccessAt)),
+              })
+            : t('healthConnect.overviewFooter')
+        }
+      >
+        <List label={t('healthConnect.name')}>
+          <ListRow
+            icon="scale"
+            title={t('healthConnect.importedWeight')}
+            subtitle={ready?.weight.kind === 'own' ? t('healthConnect.ownWins') : undefined}
+            value={
+              ready?.imported
+                ? t('healthConnect.importedWeightValue', {
+                    weight: formatWeight(ready.imported.kg, weightUnit, locale),
+                    date: formatDayMonth(parseLocalDateKey(ready.imported.date) ?? today, locale),
+                  })
+                : none
+            }
+          />
+        </List>
+      </Section>
+    </>
   );
 }

@@ -4,6 +4,7 @@ import type { AppServices } from '@/app/services';
 import type { HealthWorkout } from '@/core/platform/health';
 import { EMPTY_SET_VALUES } from '@/core/training';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
+import { showProgressPeriod } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time
@@ -168,6 +169,7 @@ describe('Fortschritt – the main page', () => {
           await s.settings.update('theme', 'dark');
         },
       });
+      await showProgressPeriod('7 days');
       expect(document.documentElement.dataset.theme).toBe('dark');
       expect(
         await screen.findByRole('heading', { level: 1, name: 'Progress' }),
@@ -181,10 +183,18 @@ describe('Fortschritt – the main page', () => {
   });
 
   describe('period', () => {
-    it('defaults to the last 7 days and switches to 30 days and back', async () => {
+    it('opens on Heute and switches to 7 and 30 days and back', async () => {
       await renderApp('/');
-      const week = await main().findByRole('radio', { name: '7 Tage' });
-      expect(week).toHaveAttribute('aria-checked', 'true');
+      const today = await main().findByRole('radio', { name: 'Heute' });
+      expect(today).toHaveAttribute('aria-checked', 'true');
+      expect(main().getByRole('radio', { name: '7 Tage' })).toHaveAttribute(
+        'aria-checked',
+        'false',
+      );
+      expect(main().getByText('03.10.')).toBeInTheDocument();
+
+      await userEvent.click(main().getByRole('radio', { name: '7 Tage' }));
+      expect(main().getByRole('radio', { name: '7 Tage' })).toHaveAttribute('aria-checked', 'true');
       expect(main().getByText(/27\.09\. – 03\.10\./)).toBeInTheDocument();
 
       await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
@@ -194,8 +204,8 @@ describe('Fortschritt – the main page', () => {
       );
       expect(main().getByText(/04\.09\. – 03\.10\./)).toBeInTheDocument();
 
-      await userEvent.click(main().getByRole('radio', { name: '7 Tage' }));
-      expect(main().getByText(/27\.09\. – 03\.10\./)).toBeInTheDocument();
+      await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
+      expect(main().getByText('03.10.')).toBeInTheDocument();
     });
   });
 
@@ -206,6 +216,7 @@ describe('Fortschritt – the main page', () => {
         await s.healthSync.connect(profileId);
       },
     });
+    await showProgressPeriod('7 Tage');
     const list = await main().findByRole('list', { name: 'Fortschritt' });
     await within(list).findByText('Noch keine Aktivitäten.');
     expect(
@@ -252,7 +263,7 @@ describe('Fortschritt – the main page', () => {
   });
 
   describe('training', () => {
-    it('counts Kalethra workouts, per week and volume – not imported activities', async () => {
+    it('counts Kalethra workouts, per week over 30 days and volume – not imported activities', async () => {
       const platform = new FakeHealthPlatform();
       // A watch-recorded strength session yesterday: an activity, not a Kalethra workout.
       platform.workouts = [session('hc', 2, 7, 50, 400)];
@@ -266,9 +277,11 @@ describe('Fortschritt – the main page', () => {
           await services.healthSync.connect(profileId);
         },
       });
+      await showProgressPeriod('7 Tage');
       const training = await findCard(/^Training/);
       expect(await training.findByText('2 Einheiten')).toBeInTheDocument();
-      expect(training.getByText('Ø 2 pro Woche')).toBeInTheDocument();
+      // Over exactly 7 days the weekly mean is the count itself: not repeated (Phase 17.3).
+      expect(training.queryByText(/pro Woche/)).not.toBeInTheDocument();
       expect(training.getByText('1.280 kg Volumen')).toBeInTheDocument();
       expect(
         training.getByRole('img', { name: 'Trainingstage: an 2 von 7 Tagen trainiert' }),
@@ -307,6 +320,12 @@ describe('Fortschritt – the main page', () => {
           vi.setSystemTime(NOW);
         },
       });
+      // Heute: the day against its goal – no "1 of 1 days logged" (Phase 17.3).
+      const day = await findCard(/^Ernährung/);
+      expect(await day.findByText('1.200 von 2.300 kcal')).toBeInTheDocument();
+      expect(day.queryByText(/Tagen erfasst/)).not.toBeInTheDocument();
+
+      await showProgressPeriod('7 Tage');
       const nutrition = await findCard(/^Ernährung/);
       // (2.000 + 1.200) / 2 – the five days without entries do not count as 0 – against the
       // goal of the same days.
@@ -364,6 +383,7 @@ describe('Fortschritt – the main page', () => {
           await s.weight.save(profileId, '2026-10-03', 91.8);
         },
       });
+      await showProgressPeriod('7 Tage');
       const week = await findCard(/^Gewicht/);
       expect(await week.findByText('91,8 kg')).toBeInTheDocument();
       expect(week.getByText('Noch kein Vergleich im Zeitraum')).toBeInTheDocument();
@@ -381,6 +401,44 @@ describe('Fortschritt – the main page', () => {
       await waitFor(() => {
         expect(router.state.location.pathname).toBe('/health');
       });
+    });
+
+    it('today: the latest weight with its day – measured today', async () => {
+      await renderApp('/', {
+        prepare: async (s, profileId) => {
+          await s.weight.save(profileId, '2026-09-28', 92.4);
+          await s.weight.save(profileId, '2026-10-03', 91.8);
+        },
+      });
+      const today = await findCard(/^Gewicht/);
+      expect(await today.findByText('91,8 kg')).toBeInTheDocument();
+      expect(today.getByText('heute')).toBeInTheDocument();
+      // One day has nothing to compare: no comparison line, no invented change.
+      expect(today.queryByText('Noch kein Vergleich im Zeitraum')).not.toBeInTheDocument();
+      expect(today.queryByText(/kg heute|→/)).not.toBeInTheDocument();
+      expect(today.queryByRole('img')).not.toBeInTheDocument();
+    });
+
+    it('today: an older latest weight shows its day, never as if measured today', async () => {
+      await renderApp('/', {
+        prepare: async (s, profileId) => {
+          await s.weight.save(profileId, '2026-09-20', 93);
+          await s.weight.save(profileId, '2026-09-28', 92.4);
+        },
+      });
+      const today = await findCard(/^Gewicht/);
+      expect(await today.findByText('92,4 kg')).toBeInTheDocument();
+      expect(today.getByText('vom 28.09.')).toBeInTheDocument();
+      expect(today.queryByText('heute')).not.toBeInTheDocument();
+      expect(today.queryByText('Noch kein Vergleich im Zeitraum')).not.toBeInTheDocument();
+
+      // 7 and 30 days keep the development of the period: the last 7 days hold one value only.
+      await showProgressPeriod('7 Tage');
+      expect(
+        await card(/^Gewicht/).findByText('Noch kein Vergleich im Zeitraum'),
+      ).toBeInTheDocument();
+      await showProgressPeriod('30 Tage');
+      expect(await card(/^Gewicht/).findByText(/^[-−]0,6 kg in 30 Tagen$/)).toBeInTheDocument();
     });
 
     it('shows weight in pounds when set', async () => {
@@ -406,6 +464,7 @@ describe('Fortschritt – the main page', () => {
           await s.healthSync.connect(profileId);
         },
       });
+      await showProgressPeriod('7 Tage');
       const weight = await findCard(/^Gewicht/);
       // Today: own 92 kg wins over the imported 95 kg; 30.09. comes from Health Connect.
       expect(await weight.findByText('92,0 kg')).toBeInTheDocument();
@@ -441,6 +500,7 @@ describe('Fortschritt – the main page', () => {
           await s.healthSync.connect(profileId);
         },
       });
+      await showProgressPeriod('7 Tage');
       const activities = await findCard(/^Aktivitäten/);
       expect(await activities.findByText('2 Aktivitäten')).toBeInTheDocument();
       expect(activities.getByText('1 h 12 min')).toBeInTheDocument();
@@ -508,6 +568,7 @@ describe('Fortschritt – the main page', () => {
             await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
         },
       });
+      await showProgressPeriod('7 Tage');
       const training = await findCard(/^Training/);
       expect(await training.findByText('3 von 4 Einheiten')).toBeInTheDocument();
       expect(training.getByText('75 %')).toBeInTheDocument();
@@ -527,6 +588,7 @@ describe('Fortschritt – the main page', () => {
             await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
         },
       });
+      await showProgressPeriod('7 Tage');
       const training = await findCard(/^Training/);
       expect(await training.findByText('5 von 4 Einheiten')).toBeInTheDocument();
       expect(training.getByText('125 %')).toBeInTheDocument();
@@ -568,6 +630,7 @@ describe('Fortschritt – the main page', () => {
           }
         },
       });
+      await showProgressPeriod('7 Tage');
       const activities = await findCard(/^Aktivitäten/);
       expect(await activities.findByText('135 von 180 aktiven Min.')).toBeInTheDocument();
       expect(activities.getByText('75 %')).toBeInTheDocument();
@@ -588,17 +651,20 @@ describe('Fortschritt – the main page', () => {
           await services.healthSync.connect(profileId);
         },
       });
+      await showProgressPeriod('7 Tage');
       const week = await findCard(/^Schritte/);
       // (9.000 + 7.842) / 2 – the five days without data are no 0 steps.
       expect(await week.findByText('Ø 8.421 von 10.000 Schritten')).toBeInTheDocument();
       expect(
         week.getByText('An 2 von 7 Tagen mit Daten · Ziel an 0 von 2 Tagen erreicht'),
       ).toBeInTheDocument();
-      expect(week.getByText('Ziel: 10.000 pro Tag')).toBeInTheDocument();
+      // The goal is already in "von 10.000": no second goal line (Phase 17.3).
+      expect(week.queryByText('Ziel: 10.000 pro Tag')).not.toBeInTheDocument();
 
       await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
       expect(await card(/^Schritte/).findByText('7.842 von 10.000 Schritten')).toBeInTheDocument();
       expect(card(/^Schritte/).getByText('78 %')).toBeInTheDocument();
+      expect(card(/^Schritte/).queryByText('Ziel: 10.000 pro Tag')).not.toBeInTheDocument();
 
       await userEvent.click(main().getByRole('link', { name: /^Schritte/ }));
       await waitFor(() => {
@@ -618,6 +684,8 @@ describe('Fortschritt – the main page', () => {
       const steps = await findCard(/^Schritte/);
       expect(await steps.findByText('Noch keine Schrittdaten für heute.')).toBeInTheDocument();
       expect(steps.queryByText(/^0 von/)).not.toBeInTheDocument();
+      // Without a meter the goal is shown once as a note.
+      expect(steps.getByText('Ziel: 10.000 pro Tag')).toBeInTheDocument();
       expect(steps.queryByText(/%/)).not.toBeInTheDocument();
     });
 
@@ -671,6 +739,7 @@ describe('Fortschritt – the main page', () => {
           ]);
         },
       });
+      await showProgressPeriod('7 Tage');
       const nutrition = await findCard(/^Ernährung/);
       expect(await nutrition.findByText('Ø 180 von 250 g Kohlenhydraten')).toBeInTheDocument();
       expect(nutrition.getByText('72 %')).toBeInTheDocument();
@@ -700,6 +769,7 @@ describe('Fortschritt – the main page', () => {
           ]);
         },
       });
+      await showProgressPeriod('7 Tage');
       const nutrition = await findCard(/^Ernährung/);
       expect(await nutrition.findByText('Ø 2.267 von 2.200 kcal')).toBeInTheDocument();
       expect(nutrition.getByText('Kalorienlimit eingehalten an 2 von 3 Tagen')).toBeInTheDocument();
@@ -728,6 +798,7 @@ describe('Fortschritt – the main page', () => {
           await completedWorkout(services, profileId, new Date(2026, 9, 2, 18));
         },
       });
+      await showProgressPeriod('7 days');
       const training = await within(screen.getByRole('main')).findByRole('link', {
         name: /^Training/,
       });

@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { toKg } from '@/core/health';
+import { FakeHealthPlatform } from '@/test/fakeHealthPlatform';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time
@@ -203,5 +204,35 @@ describe('weight entry links', () => {
     await renderApp('/health?add=2026-10-10');
     expect(await screen.findByRole('button', { name: 'Gewicht eintragen' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+  it('orders Gesundheit by topic and shows no empty placeholders (Phase 17.3)', async () => {
+    await renderApp('/health', {
+      healthPlatform: new FakeHealthPlatform(),
+      prepare: async (services, profileId) => {
+        await services.weight.save(profileId, '2026-10-02', 91);
+        await services.healthSync.connect(profileId);
+      },
+    });
+    await screen.findByRole('region', { name: 'Schritte & Aktivität' });
+    const main = within(screen.getByRole('main'));
+    expect(
+      main.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
+    ).toEqual([
+      'Gewicht',
+      'Entwicklung',
+      'Verlauf',
+      'Regeneration',
+      'Schritte & Aktivität',
+      'Health Connect',
+    ]);
+    // Kalethra does not collect these: no rows that can never be filled.
+    for (const placeholder of ['Ruhepuls', 'Schlaf', 'Körperfett', 'Muskelmasse', 'Körper']) {
+      expect(main.queryByText(placeholder)).not.toBeInTheDocument();
+    }
+    // Everything that was there still is: weight, recovery check-in, steps, Health Connect.
+    expect(main.getAllByText(/91,0 kg/).length).toBeGreaterThan(0);
+    expect(main.getByRole('button', { name: /Gut erholt/ })).toBeInTheDocument();
+    expect(main.getByText('Schritte heute')).toBeInTheDocument();
+    expect(main.getByText('Aus Health Connect.')).toBeInTheDocument();
   });
 });

@@ -106,7 +106,8 @@ core/health/            importedHealth.ts, externalWorkouts.ts (Regeln, rein),
                         HealthSyncProvider.tsx (Hooks)
 app/HealthSyncTrigger.tsx       App-Start und Vordergrund
 modules/settings/       Bereich „Gesundheitsdaten“, Verbinden- und Trennen-Dialog
-modules/health/         „Aus Health Connect“ (Schritte, aktive Kalorien, Gewicht)
+modules/health/         „Schritte & Aktivität“ (Schritte, aktive Kalorien; Quelle im Fußtext) und
+                        „Health Connect“ (importiertes Gewicht, letzte Aktualisierung)
 modules/training/       „Aktivitäten“ (Liste, Details)
 modules/nutrition/      Basisziel + Aktivitätskalorien im Ernährungstagebuch
 modules/progress/       Mainpage „Fortschritt“: Aktivitäten und Gewicht über 7/30 Tage

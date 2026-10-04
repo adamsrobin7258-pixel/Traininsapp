@@ -215,4 +215,58 @@ describe('exercise library', () => {
     expect(await dialog().findByRole('heading', { name: 'Langhantel-Bankdrücken' })).toBeVisible();
     expect(dialog().queryByRole('region', { name: 'Deine Leistung' })).not.toBeInTheDocument();
   });
+  it('opens the exercise details with the performance from a finished workout (Phase 17.3)', async () => {
+    await renderApp('/training', {
+      prepare: async (services, profileId) => {
+        await services.training.exercises.ensureCatalog();
+        await workoutOn(services, profileId, new Date(2026, 8, 20, 18), 'sys.bench-press', [
+          [75, 8],
+        ]);
+        await workoutOn(services, profileId, new Date(2026, 9, 1, 18), 'sys.bench-press', [
+          [80, 8],
+        ]);
+      },
+    });
+    // History → the workout → the exercise name.
+    const history = within(await screen.findByRole('list', { name: 'Letzte Trainings' }));
+    await userEvent.click(history.getAllByRole('link')[0] as HTMLElement);
+    await userEvent.click(
+      await screen.findByRole('button', {
+        name: 'Langhantel-Bankdrücken – Details und Leistung',
+      }),
+    );
+
+    // The existing exercise details: the same performance as in the library.
+    expect(
+      await dialog().findByRole('heading', { name: 'Langhantel-Bankdrücken' }),
+    ).toBeInTheDocument();
+    const performance = within(dialog().getByRole('region', { name: 'Deine Leistung' }));
+    expect(performance.getByText('Bestwert').nextElementSibling).toHaveTextContent(
+      /^80 kg × 8≈ 101 kg geschätztes Maximum/,
+    );
+    expect(performance.getByText('Zuletzt').nextElementSibling).toHaveTextContent(
+      /↑ Neuer Bestwert$/,
+    );
+    await userEvent.keyboard('{Escape}');
+    await closedDialog();
+    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
+  });
+
+  it('adds no performance link or figure to the active workout', async () => {
+    await renderApp('/training', {
+      prepare: async (services, profileId) => {
+        await services.training.exercises.ensureCatalog();
+        await workoutOn(services, profileId, new Date(2026, 9, 1, 18), 'sys.bench-press', [
+          [80, 8],
+        ]);
+      },
+    });
+    await openPicker();
+    await userEvent.type(dialog().getByRole('searchbox'), 'langhantel-bankdrücken');
+    await userEvent.click(dialog().getByRole('button', { name: /^Langhantel-Bankdrücken/ }));
+    await closedDialog();
+    const card = await screen.findByRole('article', { name: 'Langhantel-Bankdrücken' });
+    expect(within(card).queryByRole('button', { name: /Details und Leistung/ })).toBeNull();
+    expect(within(card).queryByText(/geschätztes Maximum|Bestwert/)).toBeNull();
+  });
 });

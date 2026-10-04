@@ -157,12 +157,16 @@ test('progress over a day: food, workout, activity calories and period', async (
   await expect(page.getByRole('dialog')).toHaveCount(0);
   await expect(page.getByText('600 kg')).toBeVisible();
 
-  // Fortschritt: the workout and the logged day, by period (week is the default).
+  // Fortschritt: the workout and the logged day, by period (Heute is the default, Phase 17.3).
   await tab('Fortschritt').click();
   const nutrition = main.getByRole('link', { name: /^Ernährung/ });
-  await expect(main.getByRole('radio', { name: '7 Tage' })).toHaveAttribute('aria-checked', 'true');
+  await expect(main.getByRole('radio', { name: 'Heute' })).toHaveAttribute('aria-checked', 'true');
   await expect(main.getByText('1 Einheit')).toBeVisible();
   await expect(main.getByText('600 kg Volumen')).toBeVisible();
+  await expect(nutrition.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
+  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
+  await expect(nutrition.getByText(/Tagen erfasst/)).toHaveCount(0);
+  await main.getByRole('radio', { name: '7 Tage' }).click();
   await expect(nutrition.getByText('Ø 370 von 2.000 kcal')).toBeVisible();
   await expect(nutrition.getByText('Ø 14 von 120 g Protein')).toBeVisible();
   await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
@@ -193,9 +197,9 @@ test('progress over a day: food, workout, activity calories and period', async (
   const activities = main.getByRole('link', { name: /^Aktivitäten/ });
   await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
   await expect(main.getByText('1 Einheit')).toBeVisible();
-  // Off (default): the daily goal stays the base goal.
-  await expect(nutrition.getByText('Ø 370 von 2.000 kcal')).toBeVisible();
-  await expect(nutrition.getByText('Ø 14 von 120 g Protein')).toBeVisible();
+  // Off (default): the daily goal stays the base goal (Fortschritt opens on Heute again).
+  await expect(nutrition.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
+  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
   await activities.click();
   await expect(page).toHaveURL(/\/training\/activities$/);
   await expect(main.getByText('Laufen')).toBeVisible();
@@ -205,9 +209,9 @@ test('progress over a day: food, workout, activity calories and period', async (
   await main.getByRole('link', { name: /^Ziele/ }).click();
   await page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' }).click();
   await tab('Fortschritt').click();
-  await expect(nutrition.getByText('Ø 370 von 2.500 kcal')).toBeVisible();
+  await expect(nutrition.getByText('370 von 2.500 kcal', { exact: true })).toBeVisible();
   // Protein is never changed by activity calories.
-  await expect(nutrition.getByText('Ø 14 von 120 g Protein')).toBeVisible();
+  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
   await tab('Ernährung').click();
   await expect(main.getByText('Basisziel')).toBeVisible();
   await expect(main.getByText('+500 kcal')).toBeVisible();

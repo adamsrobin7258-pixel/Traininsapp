@@ -4,6 +4,7 @@ import type { AppServices } from '@/app/services';
 import type { ManualActivityInput } from '@/core/activity';
 import type { HealthWorkout } from '@/core/platform/health';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
+import { showProgressPeriod } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -466,6 +467,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
     expect(screen.getByText(/^Ø [\d.]+ von 220 g Protein$/)).toBeInTheDocument();
   });
@@ -479,6 +481,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
     expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
@@ -533,6 +536,7 @@ describe('Fortschritt: Aktivitäten', () => {
         );
       },
     });
+    await showProgressPeriod('7 Tage');
     const card = await findCard();
     expect(await card.findByText('2 Aktivitäten')).toBeInTheDocument();
     expect(card.getByText('1 h 12 min')).toBeInTheDocument();

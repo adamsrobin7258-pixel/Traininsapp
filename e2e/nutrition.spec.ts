@@ -81,14 +81,14 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   await expect(overview.getByText('370', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Fortschritt compares the logged day with its goal.
+  // Fortschritt (opens on Heute) compares the logged day with its goal.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Fortschritt' })
     .click();
   const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText('Ø 370 von 2.000 kcal')).toBeVisible();
-  await expect(card.getByText('Ø 14 von 120 g Protein')).toBeVisible();
+  await expect(card.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
+  await expect(card.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
 });
 
 test('days: back to yesterday, never into the future', async ({ page }) => {

@@ -183,6 +183,8 @@ export const en: TranslationSchema = {
       title: 'Weight',
       change: { today: '{value} today', week: '{value} in 7 days', month: '{value} in 30 days' },
       noChange: 'No comparison in this period yet',
+      measuredToday: 'today',
+      measuredOn: 'from {date}',
       imported: 'Value from Health Connect',
       empty: 'No weight data yet.',
       chart: 'Weight from {first} on {from} to {last} on {to}',
@@ -344,6 +346,7 @@ export const en: TranslationSchema = {
       },
     },
     detail: {
+      openExercise: '{name} – details and performance',
       duration: 'Duration',
       exercises: 'Exercises',
       sets: 'Sets',
@@ -1065,7 +1068,6 @@ export const en: TranslationSchema = {
   },
   health: {
     title: 'Health',
-    bodyTitle: 'Body',
     recoveryTitle: 'Recovery',
     recovery: {
       question: 'How recovered do you feel today?',
@@ -1080,12 +1082,6 @@ export const en: TranslationSchema = {
       clearHint: 'Tap again to clear the choice.',
       saved: 'Saved for today.',
       failed: 'Saving did not work. Please try again.',
-    },
-    measurements: {
-      bodyFat: 'Body fat',
-      muscleMass: 'Muscle mass',
-      restingHeartRate: 'Resting heart rate',
-      sleep: 'Sleep',
     },
   },
   activities: {
@@ -1359,7 +1355,8 @@ export const en: TranslationSchema = {
       'Only the imported values are deleted. Your own weight entries, workouts and nutrition data stay.',
     disconnectConfirm: 'Disconnect',
     disconnectFailed: 'Disconnecting did not work. Please try again.',
-    overviewTitle: 'From Health Connect',
+    activityTitle: 'Steps & activity',
+    activityFooter: 'From Health Connect.',
     stepGoalToday: 'Step goal today',
     stepGoalProgress: '{steps} of {goal}',
     stepGoalReached: 'Reached · {steps} of {goal}',

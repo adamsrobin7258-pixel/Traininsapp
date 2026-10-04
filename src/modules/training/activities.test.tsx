@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AppServices } from '@/app/services';
 import type { HealthWorkout } from '@/core/platform/health';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
+import { showProgressPeriod } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -332,6 +333,7 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
     expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
@@ -345,6 +347,7 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
+    await showProgressPeriod('7 Tage');
     expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
     expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
   });
