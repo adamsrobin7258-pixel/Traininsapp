@@ -98,7 +98,7 @@ export function WaterSection({
           ))}
           <button
             type="button"
-            className={styles.chip}
+            className={`${styles.chip} ${styles.chipRow}`}
             onClick={() => {
               setOpen({ kind: 'add' });
             }}

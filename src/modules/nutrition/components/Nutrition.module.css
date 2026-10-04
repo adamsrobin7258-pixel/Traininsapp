@@ -565,6 +565,11 @@
   gap: var(--space-2);
 }
 
+/* "Andere Menge" is longer than the amounts: its own row, so it never overflows its pill. */
+.chipRow {
+  grid-column: 1 / -1;
+}
+
 /* Longer labels (barcode actions): side by side when they fit, else stacked. */
 .quickWide {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
