@@ -132,3 +132,34 @@ und Tests erzwingen Vollständigkeit. Fest codierte Texte in JSX werden von ESLi
   (siehe [docs/DATABASE.md](docs/DATABASE.md), [docs/PRIVACY.md](docs/PRIVACY.md)).
 - Keine SDKs mit Netzwerkzugriff, Analytics, Werbung oder KI ohne dokumentierte Entscheidung.
 - Keine neuen Abhängigkeiten ohne Begründung im Pull Request.
+
+### Branch-Workflow
+
+Der Standard-Branch `claude/fitness-app-phase-1-dqkef9` ist der **stabile, vollständige
+Entwicklungsstand**. Er zeigt immer auf den letzten fertig abgeschlossenen Phasen-Commit.
+
+**Start einer Phase**
+
+1. `git fetch origin`, `git status`, `git branch -a`, `git log --oneline --decorate --graph --all -n 30`.
+2. Commit und Version des Standard-Branches bestimmen und im Bericht nennen
+   („Phase X startet auf `claude/fitness-app-phase-1-dqkef9` bei Commit `abc1234`, Version 0.y.0“).
+3. Den Arbeits-/Feature-Branch auf genau diesem Stand beginnen. Ein anderer Branch mit scheinbar
+   neuerem Stand gilt nicht als stabil – der Standard-Branch ist die Basis.
+
+**Während der Phase** bleibt der Standard-Branch unverändert; gearbeitet wird nur auf dem
+Feature-Branch.
+
+**Abschluss einer Phase** – erst wenn Implementierung, alle Tests, Build und CI grün sind und
+Commit sowie Version feststehen:
+
+1. Feature-Branch pushen.
+2. Standard-Branch per Fast-Forward nachziehen und pushen:
+   `git checkout claude/fitness-app-phase-1-dqkef9 && git merge --ff-only <feature-branch> &&
+git push origin claude/fitness-app-phase-1-dqkef9`
+3. Prüfen: `git rev-parse claude/fitness-app-phase-1-dqkef9`, `git rev-parse <feature-branch>`,
+   `git status` – beide Branches auf demselben Commit, Working Tree sauber.
+
+Nur Fast-Forward: kein Merge-Commit, kein `reset --hard`, kein Force-Push (auch nicht
+`--force-with-lease`). Ist ein Fast-Forward nicht möglich, bleibt der Standard-Branch unverändert;
+die Ursache wird analysiert und gemeldet. Unfertige, ungetestete oder experimentelle Stände kommen
+nie auf den Standard-Branch.
