@@ -1,11 +1,11 @@
 /**
- * The Kalethra figure as a three.js scene graph – built in code from soft shapes, so it is our
- * own asset (no external model, no licence question). Every muscle group is its own named part
- * (`muscle:<group>`); a modelled glTF figure can later replace this file as long as it names its
- * parts the same way (see docs/EXERCISE_VISUALS.md).
+ * FALLBACK BODY – a technical placeholder, not the final Kalethra visual.
  *
- * Neutral-athletic, gender-neutral, no face or hair, fitted shirt and shorts, matte material.
- * Loaded only together with the 3D view (separate chunk).
+ * Built in code from soft shapes (no external asset, no licence question), so the 3D features –
+ * muscle highlight, clips, turning, front/back – work before the modelled bodies exist and on
+ * devices where an asset cannot be loaded. It implements the same `FigureBody` interface and
+ * names its muscle parts by the asset contract (`muscle_<group>`), exactly like a GLB body will.
+ * See docs/EXERCISE_VISUALS.md for the target quality it does not reach.
  */
 import {
   BoxGeometry,
@@ -28,31 +28,19 @@ import {
   type Object3D,
 } from 'three';
 import { FIGURE_MUSCLES, type FigureMuscle, type MuscleHighlight } from '@/core/training';
+import { SECONDARY_MIX, type BodyOptions, type FigureBody } from './body';
+import { muscleNodeName, resolveClip } from './contract';
 import {
   BODY,
-  MOTIONS,
+  FALLBACK_CLIPS,
   normalize,
   scale,
   skeleton,
   sub,
-  type FigurePose,
   type MotionDefinition,
   type Skeleton,
   type Vec3,
 } from './rig';
-
-export interface FigurePalette {
-  body: string;
-  shirt: string;
-  shorts: string;
-  shoe: string;
-  equipment: string;
-  metal: string;
-  /** Primary muscles: the Kalethra accent. */
-  accent: string;
-  /** Contact shadow under the figure. */
-  shadow: string;
-}
 
 type Base = 'body' | 'shirt' | 'shorts';
 
@@ -72,9 +60,6 @@ const MUSCLE_BASE: Record<FigureMuscle, Base> = {
   adductors: 'body',
   calves: 'body',
 };
-
-/** Secondary muscles: halfway between the neutral surface and the accent – calm, not neon. */
-const SECONDARY_MIX = 0.5;
 
 const matte = (color: string) =>
   new MeshStandardMaterial({ color: new Color(color), roughness: 0.88, metalness: 0 });
@@ -113,28 +98,25 @@ function lathe(material: MeshStandardMaterial, profile: [number, number][], dept
   return mesh;
 }
 
-/** A segment group: origin at the parent joint, the bone along local −Y, local +Z = its front. */
-function orient(group: Object3D, from: Vec3, to: Vec3, front: Vec3) {
+/**
+ * Local frame of a bone: origin at the parent joint, the bone along local −Y, local +Z = its
+ * front. `front` comes from the IK's bend direction, which is always at a clear angle to the
+ * bone, so the twist is stable – no flips while a limb moves or the figure turns.
+ */
+export function boneFrame(from: Vec3, to: Vec3, front: Vec3): { position: Vec3; basis: Matrix4 } {
   const y = normalize(sub(from, to));
-  const f = sub(front, scale(y, front[0] * y[0] + front[1] * y[1] + front[2] * y[2]));
-  const z = normalize(f[0] === 0 && f[1] === 0 && f[2] === 0 ? [0, 0, 1] : f);
+  const z = normalize(sub(front, scale(y, front[0] * y[0] + front[1] * y[1] + front[2] * y[2])));
   const yv = new Vector3(...y);
   const zv = new Vector3(...z);
   const xv = new Vector3().crossVectors(yv, zv).normalize();
   zv.crossVectors(xv, yv).normalize();
-  group.position.set(...from);
-  group.quaternion.setFromRotationMatrix(new Matrix4().makeBasis(xv, yv, zv));
+  return { position: from, basis: new Matrix4().makeBasis(xv, yv, zv) };
 }
 
-export interface FigureModel {
-  /** Figure, equipment and shadow, in world coordinates (floor at y = 0). */
-  root: Group;
-  /** Applies a phase of the motion (0…1). */
-  setPhase(phase: number): void;
-  setHighlight(highlight: MuscleHighlight): void;
-  setPalette(palette: FigurePalette): void;
-  motion: MotionDefinition;
-  dispose(): void;
+function orient(group: Object3D, from: Vec3, to: Vec3, front: Vec3) {
+  const frame = boneFrame(from, to, front);
+  group.position.set(...frame.position);
+  group.quaternion.setFromRotationMatrix(frame.basis);
 }
 
 /** Contact shadow: a soft radial fade, made from data (no canvas needed). */
@@ -156,13 +138,15 @@ function shadowTexture(): DataTexture {
   return texture;
 }
 
-/** Builds the figure in the posture of a motion, with its equipment. */
-export function buildFigure(
-  pose: FigurePose,
-  palette: FigurePalette,
-  highlight: MuscleHighlight,
-): FigureModel {
-  const motion = MOTIONS[pose];
+/** The fallback body playing a clip (resolved to the clips it has). */
+export function createFallbackBody({
+  clip: requested,
+  palette,
+  highlight,
+}: BodyOptions): FigureBody {
+  const clip = resolveClip(requested, Object.keys(FALLBACK_CLIPS)) ?? 'rest';
+  const motion: MotionDefinition =
+    FALLBACK_CLIPS[clip] ?? (FALLBACK_CLIPS.rest as MotionDefinition);
   const materials = {
     body: matte(palette.body),
     shirt: matte(palette.shirt),
@@ -179,16 +163,18 @@ export function buildFigure(
     FIGURE_MUSCLES.map((group) => [group, matte(palette[MUSCLE_BASE[group]])]),
   ) as Record<FigureMuscle, MeshStandardMaterial>;
   const named = (mesh: Mesh, group: FigureMuscle) => {
-    mesh.name = `muscle:${group}`;
+    mesh.name = muscleNodeName(group);
     // A soft relief, not a separate pad: flatten the part a little towards the surface.
     if (mesh.geometry === SPHERE) mesh.scale.z *= 0.82;
     return mesh;
   };
 
+  // root: the body's coordinate system (floor y = 0). body: posture and skeleton. Props
+  // (equipment, bar, cable, shadow) are siblings of `body` under `root`.
   const root = new Group();
   root.name = 'figure';
   const body = new Group();
-  body.name = 'body';
+  body.name = 'skeleton';
   root.add(body);
 
   // Torso (shirt) and pelvis (shorts).
@@ -287,7 +273,7 @@ export function buildFigure(
 
   // Equipment in world coordinates.
   const equipment = new Group();
-  equipment.name = 'equipment';
+  equipment.name = 'prop_equipment';
   root.add(equipment);
   const box = (w: number, h: number, d: number, at: Vec3, material = materials.equipment) => {
     const mesh = new Mesh(new BoxGeometry(w, h, d), material);
@@ -313,6 +299,7 @@ export function buildFigure(
 
   // Bar between the hands, cable to the pulley.
   const bar = new Group();
+  bar.name = 'prop_bar';
   if (motion.bar) {
     const width = motion.equipment === 'bench' ? 1.5 : 1.1;
     const rod = new Mesh(new CylinderGeometry(0.014, 0.014, width, 12), materials.metal);
@@ -332,7 +319,10 @@ export function buildFigure(
     motion.equipment === 'pulldown'
       ? new Mesh(new CylinderGeometry(0.005, 0.005, 1, 6), materials.metal)
       : null;
-  if (cable) root.add(cable);
+  if (cable) {
+    cable.name = 'prop_cable';
+    root.add(cable);
+  }
 
   // Posture: lying with the back on the bench, sitting on the seat, or standing.
   if (motion.posture === 'supine') {
@@ -352,32 +342,32 @@ export function buildFigure(
     depthWrite: false,
   });
   const shadow = new Mesh(new CircleGeometry(0.9, 40), shadowMaterial);
+  shadow.name = 'prop_shadow';
   shadow.rotation.x = -Math.PI / 2;
   shadow.position.y = 0.002;
   shadow.scale.set(motion.posture === 'supine' ? 0.8 : 0.7, 1, 1);
   root.add(shadow);
 
-  const world = new Vector3();
-  const toWorld = (point: Vec3): Vector3 => {
-    body.updateMatrixWorld(true);
-    return world
-      .set(...point)
-      .applyMatrix4(body.matrixWorld)
-      .clone();
+  // Skeleton coordinates → root coordinates, through the skeleton's *local* transform only.
+  // (Using world matrices here once let the bar follow the view's turn twice.)
+  const toRoot = (point: Vec3): Vector3 => {
+    body.updateMatrix();
+    return new Vector3(...point).applyMatrix4(body.matrix);
   };
 
   function applySkeleton(s: Skeleton) {
     limbs.forEach((limb, i) => {
       const side = i as 0 | 1;
-      const armFront = scale(s.elbowPole[side], -1);
+      // Biceps on the inner side of the elbow; quadriceps on the side the knee points to.
+      const armFront = scale(s.elbowBend[side], -1);
       orient(limb.upperArm, s.shoulder[side], s.elbow[side], armFront);
       orient(limb.forearm, s.elbow[side], s.hand[side], armFront);
-      orient(limb.thigh, s.hip[side], s.knee[side], s.kneePole[side]);
-      orient(limb.shin, s.knee[side], s.foot[side], s.kneePole[side]);
+      orient(limb.thigh, s.hip[side], s.knee[side], s.kneeBend[side]);
+      orient(limb.shin, s.knee[side], s.foot[side], s.kneeBend[side]);
     });
     if (motion.bar) {
-      const left = toWorld(s.hand[0]);
-      const right = toWorld(s.hand[1]);
+      const left = toRoot(s.hand[0]);
+      const right = toRoot(s.hand[1]);
       bar.position.copy(left).add(right).multiplyScalar(0.5);
       bar.quaternion.setFromUnitVectors(new Vector3(1, 0, 0), left.clone().sub(right).normalize());
       if (cable) {
@@ -413,13 +403,19 @@ export function buildFigure(
 
   let current = palette;
   let lastHighlight = highlight;
+  let phase = motion.stillPhase;
   setHighlight(highlight);
-  applySkeleton(skeleton(motion, motion.stillPhase));
+  applySkeleton(skeleton(motion, phase));
 
   return {
     root,
-    motion,
-    setPhase(phase) {
+    source: 'fallback',
+    clip,
+    animated: motion.durationS > 0,
+    view: motion.view,
+    advance(seconds) {
+      if (motion.durationS <= 0) return;
+      phase = (phase + seconds / motion.durationS) % 1;
       applySkeleton(skeleton(motion, phase));
     },
     setHighlight(next) {

@@ -1,20 +1,23 @@
 import { useEffect, useEffectEvent, useRef, useState, type PointerEvent } from 'react';
 import type { MuscleHighlight } from '@/core/training';
+import { useProfile } from '@/core/user';
+import { figureVariantFor } from './contract';
 import { readFigurePalette } from './environment';
 import type { FigureRenderer } from './figureRenderer';
-import type { FigurePose } from './rig';
 
 /** Pixels of horizontal drag per radian of turn. */
 const DRAG_PER_RADIAN = 90;
 
 /**
- * Canvas with one Kalethra figure (or front and back side by side). three.js is loaded only
- * here, on first use, as a separate chunk; the renderer is freed when the canvas goes away.
+ * Canvas with one Kalethra body (or front and back side by side). three.js is loaded only here,
+ * on first use, as a separate chunk; the renderer is freed when the canvas goes away.
  * Declarative: `side`, `playing` and the highlight drive the figure; `interactive` lets a
- * horizontal drag turn it. If 3D cannot start, `onFailed` is called and nothing breaks.
+ * horizontal drag turn it. The body variant follows the profile's sex. If 3D cannot start,
+ * `onFailed` is called and nothing breaks. A lost WebGL context (e.g. the app went to the
+ * background) is answered with a fresh canvas.
  */
 export function FigureCanvas({
-  pose,
+  clip,
   highlight,
   side = 'front',
   pair = false,
@@ -25,7 +28,7 @@ export function FigureCanvas({
   onFailed,
   className,
 }: {
-  pose: FigurePose;
+  clip: string;
   highlight: MuscleHighlight;
   side?: 'front' | 'back';
   pair?: boolean;
@@ -37,10 +40,14 @@ export function FigureCanvas({
   onFailed?: () => void;
   className?: string;
 }) {
+  const variant = figureVariantFor(useProfile().profile.sex);
   const canvas = useRef<HTMLCanvasElement>(null);
   const renderer = useRef<FigureRenderer | null>(null);
   const drag = useRef<number | null>(null);
   const [ready, setReady] = useState(false);
+  const [source, setSource] = useState<'asset' | 'fallback' | null>(null);
+  // Bumped when the WebGL context was lost: a new canvas element gets a new context.
+  const [generation, setGeneration] = useState(0);
   // A new figure shows its side at once; later side changes may turn smoothly.
   const first = useRef(true);
   const failed = useEffectEvent(() => onFailed?.());
@@ -49,30 +56,46 @@ export function FigureCanvas({
   useEffect(() => {
     let cancelled = false;
     let instance: FigureRenderer | null = null;
+    const element = canvas.current;
+    if (!element) return;
     import('./figureRenderer')
-      .then(({ createFigureRenderer }) => {
-        if (cancelled || !canvas.current) return;
-        instance = createFigureRenderer(canvas.current, {
-          pose,
+      .then(({ createFigureRenderer }) =>
+        createFigureRenderer(element, {
+          clip,
           highlight: JSON.parse(highlightKey) as MuscleHighlight,
           pair,
           quality,
+          variant,
           palette: readFigurePalette(),
-        });
-        renderer.current = instance;
+        }),
+      )
+      .then((created) => {
+        if (cancelled) {
+          created.dispose();
+          return;
+        }
+        instance = created;
+        renderer.current = created;
+        setSource(created.source);
         setReady(true);
       })
       .catch(() => {
         if (!cancelled) failed();
       });
+    const lost = (event: Event) => {
+      event.preventDefault();
+      setGeneration((value) => value + 1);
+    };
+    element.addEventListener('webglcontextlost', lost);
     return () => {
       cancelled = true;
+      element.removeEventListener('webglcontextlost', lost);
       instance?.dispose();
       renderer.current = null;
       first.current = true;
       setReady(false);
     };
-  }, [pose, highlightKey, pair, quality]);
+  }, [clip, highlightKey, pair, quality, variant, generation]);
 
   // Turn to the requested side – the nearest way round, even after dragging.
   useEffect(() => {
@@ -135,9 +158,12 @@ export function FigureCanvas({
 
   return (
     <canvas
+      key={generation}
       ref={canvas}
       className={className}
       data-ready={ready}
+      data-figure-source={source ?? undefined}
+      data-figure-variant={variant}
       data-testid="figure-canvas"
       aria-hidden="true"
       {...pointer}

@@ -416,6 +416,20 @@ vorhandenen Übungsdaten – Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md)
 - Trainings-Zusammenfassung: „Beanspruchte Muskeln“ aus den tatsächlich absolvierten Übungen
 - Kein externes Modell, keine Datenbankänderung, keine neue Route
 
+## Phase 18.1 – 3D: Hierarchie, Asset-Vertrag, Varianten ✅ (Version 0.27.0)
+
+Technische Qualitäts- und Architekturphase – **visuell noch nicht final** (Details:
+[EXERCISE_VISUALS.md](EXERCISE_VISUALS.md)):
+
+- Rotationsfehler an der Quelle behoben: nur die Bühne dreht; die Stange wurde über Weltmatrizen
+  doppelt gedreht; Gliedmaßen-Twist aus der IK-Biegeebene statt aus dem rohen Richtungshinweis
+- Asset-Vertrag als Code: Varianten male/female nach Profil (sonst Standard), Muskel-Knoten
+  `muscle_<gruppe>[_<teil>]`, Pflicht-Bones, Movement-Types → Clips, Validator, Budgets
+- GLB-Importpfad (eigener Chunk) mit Fallback bei fehlendem oder fehlerhaftem Asset; die
+  Code-Figur ist als Fallback gekapselt und gekennzeichnet
+- Neuer Kontext nach WebGL-Kontextverlust (App verlassen/zurückkehren)
+- Workout-Zusammenfassung: zusätzlich abgesichert (0, 1, mehrere Übungen; Zurück-Geste)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

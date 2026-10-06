@@ -1,119 +1,193 @@
-# 3D-Übungsdarstellung (Prototyp, Version 0.26.0)
+# 3D-Übungsdarstellung
 
-Eine gemeinsame, stilisierte Kalethra-Figur zeigt, welche Muskelgruppen eine Übung beansprucht,
-und spielt die Bewegung als ruhige Schleife ab. Prototyp für zwei Übungen; die Architektur ist
-auf die ganze Bibliothek ausgelegt.
+Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
+dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 
-## Technik
+> **Stand (Version 0.27.0): technisch fertig, visuell nicht.** Gezeigt wird ein im Code gebauter
+> **Fallback-Körper** (Gliederpuppe). Er ist ein Platzhalter und **nicht** die angestrebte
+> visuelle Qualität. Die modellierten Körper (männlich, weiblich) fehlen noch; die App ist so
+> vorbereitet, dass sie ohne Änderung an Übungsdetails oder Trainings-Zusammenfassung eingesetzt
+> werden können.
 
-- **three.js 0.186** (WebGL, MIT-Lizenz). Geprüft und verworfen:
-  - eigener WebGL-Code: kleiner, aber viel eigener Render-Code, schwer wartbar
-  - `@google/model-viewer`: baut selbst auf three.js auf, größer, weniger Kontrolle über Licht,
-    Farben und Animation pro Muskelgruppe
-  - Babylon.js: deutlich größer
-  - react-three-fiber: zusätzlicher Reconciler ohne Nutzen bei einer einzelnen Szene
-- **Eigener Chunk** (`figureRenderer-*.js`, 543 KB, 135 KB gzip): wird erst geladen, wenn eine
-  Figur sichtbar wird. App-Start und Haupt-Chunk bleiben praktisch unverändert (+9 KB für die
-  React-Bausteine).
-- **Offline**, keine Remote-Assets, kein CDN, keine Cloud. Läuft im Capacitor-WebView auf Android
-  und iOS (WebGL ist dort Standard).
-- **Ohne WebGL** (oder wenn der Chunk nicht lädt) erscheint keine Figur; die Details bleiben
-  vollständig, die Muskeln stehen als Text daneben.
+## Datenfluss (Quelle der Wahrheit)
 
-## Asset und Lizenz
+```
+Exercise (Bibliothek)
+  ├─ primaryMuscles / secondaryMuscles ──► muscleMap ──► Hervorhebung pro Muskelgruppe
+  └─ movementPattern (+ Eintrag in EXERCISE_VISUALS) ──► Movement-Type ──► Animation-Clip
+Profil.sex ──► Körpervariante (male | female, sonst Standard) ──► Asset oder Fallback
+```
 
-| Teil                      | Quelle                                                                      | Lizenz                | Attribution                             | Kommerziell | Bearbeitung |
-| ------------------------- | --------------------------------------------------------------------------- | --------------------- | --------------------------------------- | ----------- | ----------- |
-| Figur, Geräte, Bewegungen | eigen: im Code erzeugt (`modules/training/figure/figureModel.ts`, `rig.ts`) | Eigentum des Projekts | keine                                   | ja          | ja          |
-| three.js                  | npm `three` 0.186.1                                                         | MIT                   | Lizenztext beibehalten (liegt im Paket) | ja          | ja          |
+- Muskeln kommen ausschließlich aus der Übung (`core/training/muscleMap.ts`). Der Körper
+  visualisiert sie nur; die Übungsdaten sind für alle Varianten identisch.
+- `fullBody` steht für alle 13 Regionen; primär gewinnt vor sekundär.
+- Workout-Zusammenfassung: Vereinigung der Muskeln aller Übungen mit mindestens einem
+  abgeschlossenen Satz – keine Gewichtung, kein Score, keine Statistik.
 
-**Kein externes 3D-Modell.** Für ein Menschmodell mit getrennten Muskelgruppen, Rig und
-Animationen gab es keine Quelle mit eindeutig kommerziell nutzbarer Lizenz, die ohne
-Modellier-Arbeit brauchbar wäre. Die Figur wird deshalb aus weichen Grundformen gebaut
-(Lathe-Torso, Kapseln, Ellipsoide). Optisch: hochwertig-reduziert, matt, Gliederpuppen-Anmutung –
-kein modellierter Premium-Charakter.
+## Architektur (`src/modules/training/figure/`)
 
-## Gestaltung
+| Datei               | Aufgabe                                                                                         |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `contract.ts`       | Asset-Vertrag als Code: Varianten, Asset-Registry, Knoten-/Bone-/Clip-Namen, Validator, Budgets |
+| `body.ts`           | Schnittstelle `FigureBody`, die jeder Körper erfüllt                                            |
+| `gltfBody.ts`       | Modellierter Körper aus einem gebündelten GLB (eigener Lazy-Chunk)                              |
+| `fallbackBody.ts`   | **Fallback**: im Code gebauter Platzhalter-Körper, gleiche Schnittstelle                        |
+| `rig.ts`            | Skelett, Zwei-Knochen-IK und Bewegungen des Fallback-Körpers                                    |
+| `figureRenderer.ts` | Szene, Kamera, Licht, Render-Schleife; wählt Asset oder Fallback (`createBody`)                 |
+| `FigureCanvas.tsx`  | React-Hülle: lädt three.js erst bei Bedarf, Profil-Variante, Theme, Kontextverlust              |
+| `MuscleFigure.tsx`  | Kleine Figur (Details, Zusammenfassung) und große Ansicht (Sheet)                               |
 
-- Neutral-athletische Proportionen (ca. 1,75 m), geschlechtsneutral, Kopf ohne Gesicht/Haare.
-- Eng anliegendes Shirt mit kurzen Ärmeln, kurze Hose, Schuhe – ohne Logos oder Muster.
-- Matte Materialien (`MeshStandardMaterial`, Rauheit 0,88), weiches Licht, Kontaktschatten statt
-  Echtzeit-Schatten.
-- Muskelgruppen als dezentes Relief in der Farbe ihrer Oberfläche (Shirt, Haut, Hose).
-  **Primär** = Kalethra-Akzent (`--color-accent`), **sekundär** = halb zwischen Oberfläche und
-  Akzent, alles andere neutral. Hell und dunkel aus den Theme-Tokens, folgt dem Theme-Wechsel.
+`ExerciseDetailSheet` und `WorkoutSummarySheet` kennen nur `MuscleFigurePreview` /
+`MuscleFigureSheet` mit einem Clip-Namen und der Hervorhebung – nie einen konkreten Körper.
 
-## Daten (Source of Truth)
+### Transform-Hierarchie (Rotationsfehler behoben)
 
-- Muskeln kommen ausschließlich aus `primaryMuscles` / `secondaryMuscles` der Übung
-  (`core/training/muscleMap.ts`: `muscleHighlight`). Keine zweite Muskelliste.
-  `fullBody` steht für alle 13 Regionen. Ist eine Gruppe primär und sekundär, gilt primär.
-- `EXERCISE_VISUALS` ordnet nur **Übungs-ID → Bewegung + zuerst gezeigte Seite** zu:
-  - `sys.bench-press` → `benchPress`, Vorderseite
-  - `sys.lat-pulldown` → `latPulldown`, Rückseite
-- Keine Datenbankänderung.
+```
+scene
+├─ Lichter, Kamera (fest)
+└─ stage            ← der einzige Knoten, den die Ansicht dreht (Ziehen, Vorder-/Rückseite)
+   └─ slot(s)       ← feste Platzierung (Paar: links/rechts, die zweite Figur einmal um 180°)
+      └─ body.root  ← Koordinatensystem des Körpers; nur der Körper schreibt darunter
+         ├─ skeleton / Mesh-Hierarchie (Haltung, Animation)
+         └─ prop_*  (Gerät, Stange, Kabel, Kontaktschatten)
+```
 
-### Auswahl der Prototyp-Übungen
+Regeln: Die Ansicht schreibt nur `stage.rotation.y`. Ein Körper schreibt nur lokale
+Transformationen unterhalb seines `root` und liest **nie** Weltmatrizen.
 
-Bankdrücken und Latzug decken die Prüffragen mit zwei Übungen ab: Vorderseite (Brust) gegen
-Rückseite (Latissimus), Drücken gegen Ziehen, Liegen gegen Sitzen, Langhantel gegen Kabelzug.
-Beide sind sehr häufig und haben eindeutige Primär-/Sekundärmuskeln im Katalog.
+Ursache des Fehlers in 0.26.0: Die Stange (und das Kabel) wurden über `matrixWorld` des Körpers
+positioniert – also inklusive der Ansichtsdrehung –, hingen aber selbst unter `root`. Bei
+gedrehter Figur und laufender Bewegung wirkte die Drehung doppelt; die Stange verließ die Hände.
+Zusätzlich hing die Verdrehung der Gliedmaßen am rohen Richtungshinweis der Bewegung, der fast
+parallel zum Knochen liegen konnte. Jetzt kommt sie aus der Biegeebene der IK, die immer in
+deutlichem Winkel zum Knochen steht (getestet über die ganze Schleife).
 
-## Bewegung und Rig (`modules/training/figure/rig.ts`)
+## Asset-Vertrag (GLB / glTF 2.0)
 
-- Ein Skelett für alle Übungen: Schultern, Ellbogen, Hüften, Knie; Hände und Füße folgen
-  Zielpunkten, Ellbogen und Knie per **Zwei-Knochen-IK** mit Richtungshinweis. Knochenlängen
-  bleiben immer gleich (getestet).
-- Eine Bewegung = Haltung (liegend/sitzend/stehend), Gerät, Dauer und eine Funktion
-  `Phase 0…1 → Zielpunkte`. Wiederholung: weicher Kosinus mit kurzem Halten oben/unten,
-  4,4 s je Wiederholung, nahtlose Schleife (`frame(0) = frame(1)`, getestet).
-- Neue Übung = neue Bewegungsdefinition (meist 10–20 Zeilen) + Eintrag in `EXERCISE_VISUALS`.
+Ein Körper pro Variante: `male`, `female`. Beide erfüllen denselben Vertrag. Eintrag in
+`FIGURE_ASSETS` (`contract.ts`), Datei unter `public/figure/` (wird gebündelt, offline).
+Ohne Eintrag oder bei einem Fehler zeigt die App den Fallback – nie einen Fehler.
 
-## Oberfläche
+### Namen
 
-- **Übungsdetails:** kleine, stehende Figur (108 × 128 px) neben den Fakten. Leistung, Bestwert
-  und e1RM bleiben unverändert darunter. Keine Animation in der kleinen Ansicht.
-- **Große Ansicht:** ersetzt das Detail-Sheet (kein zweites Sheet darüber, keine neue Route);
-  Schließen oder System-Zurück führt zurück zu den Details. Figur in der Mitte, Ziehen dreht sie,
-  „Rückseite/Vorderseite zeigen“, Play/Pause, Legende Primär/Sekundär als Text.
-- **Trainings-Zusammenfassung:** „Beanspruchte Muskeln“ – Vereinigung der Muskeln aller
-  Übungen mit mindestens einem abgeschlossenen Satz (`doneExercises`,
-  `aggregateMuscleHighlight`): primär, wenn in einer Übung primär, sonst sekundär. Keine
-  Gewichtung, kein Score. Figur vorne und hinten nebeneinander; antippen öffnet die große
-  Ansicht (ohne Bewegung).
+**Nur Buchstaben, Ziffern und `_`** (`SAFE_NAME`). Der glTF-Loader von three.js entfernt
+`[ ] . : /` aus Knotennamen (`PropertyBinding.sanitizeNodeName`), und Animationsspuren
+adressieren Knoten als `<knoten>.<eigenschaft>` – `muscle:chest` käme als `musclechest` an.
+Nie auf Mesh-Indizes verlassen (`mesh_17`).
 
-## Bewegung reduzieren / Barrierefreiheit
+| Element        | Name                                              | Beispiel                                             |
+| -------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Muskelgruppe   | `muscle_<gruppe>`                                 | `muscle_chest`, `muscle_lats`                        |
+| Muskel-Teil    | `muscle_<gruppe>_<teil>`                          | `muscle_shoulders_front`, `muscle_back_erectors`     |
+| Übriger Körper | frei, ohne `muscle_`-Präfix                       | `body_skin`, `cloth_shirt`, `cloth_shorts`           |
+| Bones          | siehe unten, Seiten `_L` / `_R`                   | `upperArm_L`, `thigh_R`                              |
+| Clips          | `<movementType>` oder `<movementType>_<variante>` | `rest`, `horizontalPush_bench`, `verticalPull_cable` |
 
-- `prefers-reduced-motion`: keine automatische Schleife, Drehen ohne Übergang; Abspielen bleibt
-  auf Wunsch möglich.
-- Die Figur ist nie die einzige Informationsquelle: Muskeln stehen als Text daneben, die große
-  Ansicht hat eine Beschreibung (`role="img"`) und eine Legende.
+Muskelgruppen = Gruppen der Übungsbibliothek (13): `chest`, `back`, `lats`, `shoulders`,
+`biceps`, `triceps`, `forearms`, `core`, `glutes`, `quadriceps`, `hamstrings`, `adductors`,
+`calves`. Teile (optional, empfohlen): `chest_upper/lower`, `shoulders_front/middle/rear`,
+`back_trapezius/rhomboids/erectors`, `core_rectus/obliques`, `forearms_flexors/extensors`,
+`glutes_maximus/medius`, `calves_gastrocnemius/soleus`. Hervorgehoben wird immer die ganze
+Gruppe; die Teile machen die Anatomie lesbar.
+
+### Skelett
+
+Pflicht-Bones: `pelvis`, `spine`, `chest`, `neck`, `head` und je Seite `shoulder`, `upperArm`,
+`forearm`, `hand`, `thigh`, `shin`, `foot` (`_L`, `_R`). Ruhepose: stehend, Arme leicht vom
+Körper. Gleiche Bone-Namen in beiden Varianten, damit dieselben Clips auf beiden laufen.
+
+### Koordinaten, Maßstab, Ausrichtung
+
+- Meter, **+Y oben, +Z = Vorderseite des Körpers** (glTF-Konvention), rechtshändig.
+- Ursprung auf dem Boden mittig unter dem Körper; Boden bei y = 0.
+- Körpergröße ca. 1,75 m (männlich) bzw. 1,68 m (weiblich), neutral-athletisch.
+- Die App dreht nur die `stage`; der Körper darf keine eigene Wurzel-Rotation in Clips haben,
+  außer sie gehört zur Bewegung (z. B. Liegen auf der Bank).
+
+### Animation
+
+Ein gemeinsamer Körper, viele Clips – nicht ein Modell pro Übung. Movement-Types:
+`rest`, `horizontalPush`, `verticalPush`, `horizontalPull`, `verticalPull`, `squat`, `hinge`,
+`lunge`, `curl`, `extension`, `raise`, `carry`, `core`. Die Zuordnung Übung → Movement-Type
+kommt aus `movementPattern` der Bibliothek; nur `isolation`/`other` nennen ihn in
+`EXERCISE_VISUALS` ausdrücklich (z. B. `curl`). Varianten für Geräte: `horizontalPush_bench`.
+Auflösung: exakter Clip → Movement-Type → `rest`.
+
+- Pflicht: `rest`. Clips nahtlos loopend, ruhig (3,5–5 s je Wiederholung), kein Root-Motion.
+- Geräte (Bank, Kabelturm, Stange …) als eigene Knoten `prop_<name>` im selben GLB oder als
+  separate kleine GLBs; sie bewegen sich über eigene Spuren mit.
+
+### Material und Faserstruktur (Variante A)
+
+Anatomie → Muskelstruktur → Kalethra-Hervorhebung:
+
+- Form: Muskeln modelliert (Volumen, Übergänge), nicht als farbige Flächen.
+- Struktur: Faserverlauf dezent über eine **Normal-Map** (und Rauheit), aus normaler Distanz
+  elegant, aus der Nähe erkennbar; keine Linienzeichnung, keine Lehrbuch-Optik.
+- Hervorhebung: Die App kopiert pro Muskel-Knoten das Material und färbt nur die Grundfarbe
+  Richtung Kalethra-Akzent (primär voll, sekundär halb). Normal-Map, Rauheit und Struktur
+  bleiben darunter sichtbar. Muskel-Materialien: `MeshStandardMaterial`-kompatibel (glTF PBR
+  Metallic-Roughness), Metallic 0, Rauheit 0,6–0,9, matte Optik.
+- Kleidung: eng anliegendes Shirt bzw. minimalistisches Oberteil, kurze Hose, matt, ohne Logos
+  und Muster; darf Muskelgruppen nicht verdecken (Shirt dünn modelliert, Muskeln darunter
+  sichtbar, oder ärmellos).
+
+### Gestaltung
+
+Neutral-athletisch, harmonische klassische Proportionen, leicht skulptural – dezent an der
+griechischen Darstellung eines athletischen Körpers orientiert. **Nicht**: Statue 1:1, Toga,
+Rüstung, Marmor- oder Rissoptik, Bodybuilder-Proportionen, Sexualisierung. Kein ausgearbeitetes
+Gesicht, keine Frisur, keine individuellen Merkmale.
+
+### Budgets (Android/iOS, Mittelklasse und Xiaomi 15 Ultra)
+
+| Größe           | Grenze pro Variante                                               |
+| --------------- | ----------------------------------------------------------------- |
+| GLB komprimiert | ≤ 4 MB (Geometrie + Texturen + Clips)                             |
+| Dreiecke        | ≤ 60 000                                                          |
+| Texturen        | ≤ 2048², empfohlen: 1 Normal-Map 2048², 1 ORM 1024², KTX2 (Basis) |
+| Materialien     | ≤ 8                                                               |
+| Kompression     | Meshopt oder Draco; Decoder **lokal** gebündelt (kein CDN)        |
+
+Grundfarben brauchen keine Textur (Faktoren reichen); die Faserstruktur steckt in der
+Normal-Map. Zwei Varianten = höchstens ca. 8 MB im APK.
+
+### Prüfung
+
+`validateFigureAsset()` prüft Muskelgruppen, unbekannte `muscle_`-Knoten (Tippfehler),
+Pflicht-Bones, Clip-Namen und den `rest`-Clip. `gltfBody` verwendet ein Asset nur, wenn es den
+Vertrag erfüllt; sonst Fallback. Tests decken Vertrag, Namen nach dem Loader, Auswahl
+male/female, Fallback bei fehlendem oder fehlerhaftem Asset und die Clip-Auflösung ab.
+
+## Fallback-Körper
+
+Klar gekapselt in `fallbackBody.ts`, erfüllt dieselbe Schnittstelle und dieselben Namen. Er
+bleibt als technischer Fallback (kein WebGL-Asset vorhanden, Asset defekt) und für Tests. Er hat
+nur die Clips `rest`, `horizontalPush_bench`, `verticalPull_cable`.
 
 ## Performance
 
-- Gerendert wird nur bei Bedarf: Die kleine Figur einmal, die große nur, solange die Bewegung
-  läuft oder die Figur sich dreht.
-- Immer höchstens ein WebGL-Kontext (die große Ansicht ersetzt die kleine); beim Schließen werden
-  Geometrien, Materialien und Kontext freigegeben (`forceContextLoss`).
-- Pixelverhältnis höchstens 2, keine Echtzeit-Schatten, etwa 60 Meshes.
+- three.js als eigener Chunk (lazy), GLB-Loader als weiterer Chunk nur bei registriertem Asset.
+- Höchstens ein aktiver WebGL-Kontext (große Ansicht ersetzt das Sheet), Freigabe beim
+  Schließen (`forceContextLoss`); bei Kontextverlust (App im Hintergrund) neue Leinwand.
+- Rendern nur bei Bedarf, keine Echtzeit-Schatten, Pixelverhältnis ≤ 2.
+- Reduced Motion: keine automatische Schleife, Drehen ohne Übergang.
 
-## Für eine modellierte Figur (Asset-Vertrag)
+## Lizenz
 
-Ein späteres Artist-Modell (glTF/GLB, lokal im Bundle) ersetzt nur `figureModel.ts`, wenn es:
+| Teil                          | Quelle                   | Lizenz                                                | Kommerziell | Bearbeitung |
+| ----------------------------- | ------------------------ | ----------------------------------------------------- | ----------- | ----------- |
+| Fallback-Körper, Bewegungen   | eigener Code             | Eigentum des Projekts                                 | ja          | ja          |
+| three.js 0.186 (+ GLTFLoader) | npm `three`              | MIT                                                   | ja          | ja          |
+| Modellierte Körper            | **noch nicht vorhanden** | eigenes oder eindeutig kommerziell lizenziertes Asset | –           | –           |
 
-1. je Muskelgruppe ein eigenes Mesh mit Namen `muscle:<gruppe>` hat (13 Gruppen aus
-   `FIGURE_MUSCLES`, z. B. `muscle:chest`, `muscle:lats`); Teile dürfen mehrfach vorkommen;
-2. ein Skelett mit Schulter-, Ellbogen-, Hüft- und Kniegelenken hat (oder eigene Clips je Übung
-   mitbringt, benannt nach der Bewegung, z. B. `benchPress`);
-3. matte Materialien ohne eingebrannte Farben auf den Muskel-Meshes verwendet (die Farbe setzt
-   die App);
-4. unter etwa 1–2 MB (Draco/Meshopt komprimiert) bleibt.
+Keine Modelle mit unklarer Lizenz.
 
-## Skalierung auf die Bibliothek
+## Was für die finalen Körper noch fehlt
 
-- Bewegungen gruppieren statt einzeln bauen: viele Übungen teilen ein Muster
-  (`movementPattern`: horizontalPush, verticalPull, squat, hinge …) und ein Gerät.
-- Geräte als kleine, wiederverwendbare Bausteine (Bank, Kabelturm, Stange, Kurzhanteln …).
-- Übungen ohne Bewegung können sofort die stehende Figur mit Highlighting zeigen – nur die
-  Muskeldaten sind nötig.
-- Gerätetest auf dem Xiaomi 15 Ultra (Bildrate, Speicher, Akku) vor dem Ausrollen.
+1. Zwei modellierte Körper (male, female) nach diesem Vertrag: Topologie mit getrennten
+   Muskel-Knoten, Normal-Map für die Faserstruktur, Kleidung, Rig mit den Pflicht-Bones.
+2. Clips mindestens `rest`, `horizontalPush_bench`, `verticalPull_cable`; danach weitere
+   Movement-Types.
+3. Optional Meshopt/KTX2-Kompression und die lokalen Decoder.
+4. Eintrag in `FIGURE_ASSETS`, Gerätetest auf dem Xiaomi 15 Ultra.

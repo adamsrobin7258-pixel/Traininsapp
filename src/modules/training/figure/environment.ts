@@ -2,7 +2,7 @@
  * What the 3D figure needs from its surroundings – without loading three.js: WebGL support,
  * reduced motion and the colours of the current theme.
  */
-import type { FigurePalette } from './figureModel';
+import type { FigurePalette } from './body';
 
 let webgl: boolean | null = null;
 

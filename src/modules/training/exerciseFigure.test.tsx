@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AppServices } from '@/app/services';
 import { TRAINING_LINKS } from '@/app/routes';
 import { EMPTY_SET_VALUES, type MuscleHighlight } from '@/core/training';
+import { closeTopOverlay } from '@/ui';
 import { renderApp } from '@/test/renderApp';
 
 /**
@@ -11,8 +12,16 @@ import { renderApp } from '@/test/renderApp';
  */
 const fake = vi.hoisted(() => {
   interface FakeRenderer {
-    options: { pose: string; highlight: MuscleHighlight; pair: boolean; quality: string };
+    options: {
+      clip: string;
+      highlight: MuscleHighlight;
+      pair: boolean;
+      quality: string;
+      variant: string;
+    };
+    canvas: HTMLCanvasElement;
     playing: boolean[];
+    palettes: number;
     yaws: { yaw: number; smooth: boolean }[];
     rotations: number[];
     disposed: boolean;
@@ -42,19 +51,23 @@ vi.mock('./figure/environment', () => ({
 vi.mock('./figure/figureRenderer', () => {
   return {
     createFigureRenderer: (
-      _canvas: HTMLCanvasElement,
+      canvas: HTMLCanvasElement,
       options: (typeof fake.renderers)[0]['options'],
     ) => {
       let yaw = 0;
       const record = {
         options,
+        canvas,
+        palettes: 0,
         playing: [] as boolean[],
         yaws: [] as { yaw: number; smooth: boolean }[],
         rotations: [] as number[],
         disposed: false,
       };
       fake.renderers.push(record);
-      return {
+      return Promise.resolve({
+        source: 'fallback',
+        animated: options.clip !== 'rest',
         setPlaying: (playing: boolean) => record.playing.push(playing),
         setYaw: (next: number, smooth: boolean) => {
           yaw = next;
@@ -65,12 +78,14 @@ vi.mock('./figure/figureRenderer', () => {
           record.rotations.push(delta);
         },
         yaw: () => yaw,
-        setPalette: () => undefined,
+        setPalette: () => {
+          record.palettes++;
+        },
         resize: () => undefined,
         dispose: () => {
           record.disposed = true;
         },
-      };
+      });
     },
   };
 });
@@ -112,7 +127,9 @@ describe('3D exercise visuals', () => {
       expect(fake.renderers).toHaveLength(1);
     });
     expect(latest().options).toMatchObject({
-      pose: 'benchPress',
+      // Exercise → movement type → clip; the body variant from the profile (default without).
+      clip: 'horizontalPush_bench',
+      variant: 'male',
       quality: 'small',
       pair: false,
       // From the catalog: chest primary; triceps and shoulders secondary.
@@ -222,6 +239,101 @@ describe('3D exercise visuals', () => {
     await userEvent.click(large.getByRole('button', { name: 'Animation abspielen' }));
     expect(latest().playing.at(-1)).toBe(true);
   });
+
+  it('shows the body variant of the profile', async () => {
+    await renderApp('/settings/content/exercises', {
+      prepare: async (services) => {
+        const profile = await services.profile.ensureLocalProfile();
+        await services.profile.updateBodyData(profile, {
+          sex: 'female',
+          birthDate: null,
+          heightCm: null,
+        });
+      },
+    });
+    await openDetails('langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+    await waitFor(() => {
+      expect(latest().options.variant).toBe('female');
+    });
+    expect(screen.getByTestId('figure-canvas')).toHaveAttribute('data-figure-variant', 'female');
+  });
+
+  it('reopens the large view with a fresh figure and frees the old one every time', async () => {
+    await renderApp('/settings/content/exercises');
+    await openDetails('langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+    for (let round = 0; round < 3; round++) {
+      await userEvent.click(await dialog().findByRole('button', { name: '3D-Ansicht öffnen' }));
+      await screen.findByRole('dialog', { name: 'Langhantel-Bankdrücken' });
+      await waitFor(() => {
+        expect(latest().options.quality).toBe('large');
+      });
+      fireEvent.pointerDown(screen.getByTestId('figure-canvas'), { clientX: 0, pointerId: 1 });
+      fireEvent.pointerMove(screen.getByTestId('figure-canvas'), { clientX: 45, pointerId: 1 });
+      fireEvent.pointerUp(screen.getByTestId('figure-canvas'), { pointerId: 1 });
+      // System back (Android) closes the large view first and returns to the details.
+      expect(closeTopOverlay()).toBe(true);
+      expect(await screen.findByRole('dialog', { name: 'Details' })).toBeInTheDocument();
+    }
+    // Only the current small figure is alive; every earlier figure was freed.
+    await waitFor(() => {
+      expect(fake.renderers.filter((r) => !r.disposed)).toHaveLength(1);
+    });
+    // A reopened view starts at its side again, not at an angle left over from dragging.
+    const large = fake.renderers.filter((r) => r.options.quality === 'large');
+    expect(large).toHaveLength(3);
+    for (const renderer of large) expect(renderer.yaws[0]).toEqual({ yaw: 0, smooth: false });
+  });
+
+  it('switching exercises builds the new figure with its own clip and frees the old one', async () => {
+    await renderApp('/settings/content/exercises');
+    await openDetails('langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+    await waitFor(() => {
+      expect(latest().options.clip).toBe('horizontalPush_bench');
+    });
+    const bench = latest();
+    await userEvent.keyboard('{Escape}');
+    await userEvent.clear(screen.getByRole('searchbox'));
+    await openDetails('latzug', /^LatzugKabelzug/);
+    await waitFor(() => {
+      expect(latest().options.clip).toBe('verticalPull_cable');
+    });
+    expect(bench.disposed).toBe(true);
+    expect(latest().options.highlight).toEqual({
+      lats: 'primary',
+      biceps: 'secondary',
+      back: 'secondary',
+    });
+  });
+
+  it('follows a theme change without rebuilding the figure', async () => {
+    await renderApp('/settings/content/exercises');
+    await openDetails('langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+    await waitFor(() => {
+      expect(fake.renderers).toHaveLength(1);
+    });
+    document.documentElement.dataset.theme = 'dark';
+    await waitFor(() => {
+      expect(latest().palettes).toBeGreaterThan(0);
+    });
+    delete document.documentElement.dataset.theme;
+    expect(fake.renderers).toHaveLength(1);
+  });
+
+  it('builds a fresh figure on a new canvas when the WebGL context was lost', async () => {
+    await renderApp('/settings/content/exercises');
+    await openDetails('langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+    await waitFor(() => {
+      expect(fake.renderers).toHaveLength(1);
+    });
+    const before = latest();
+    fireEvent(before.canvas, new Event('webglcontextlost', { cancelable: true }));
+    await waitFor(() => {
+      expect(fake.renderers).toHaveLength(2);
+    });
+    expect(before.disposed).toBe(true);
+    expect(latest().canvas).not.toBe(before.canvas);
+    expect(latest().canvas.isConnected).toBe(true);
+  });
 });
 
 /** A finished workout: bench press and squat done, lat pulldown added but never done. */
@@ -266,11 +378,13 @@ describe('workout summary: muscles worked', () => {
     vi.restoreAllMocks();
   });
 
-  async function openSummary() {
+  async function openSummary(
+    build: (services: AppServices, profileId: string) => Promise<string> = workoutWithExercises,
+  ) {
     let id = '';
     const { router } = await renderApp('/training', {
       prepare: async (services, profileId) => {
-        id = await workoutWithExercises(services, profileId);
+        id = await build(services, profileId);
       },
     });
     await router.navigate(TRAINING_LINKS.workout(id), { state: { summary: true } });
@@ -287,23 +401,75 @@ describe('workout summary: muscles worked', () => {
     expect(primary).not.toHaveTextContent('Latissimus');
     expect(muscles.getByText('Sekundär').nextElementSibling).toHaveTextContent(/Trizeps/);
     await waitFor(() => {
-      expect(latest().options).toMatchObject({ pose: 'stand', pair: true, quality: 'small' });
+      expect(latest().options).toMatchObject({ clip: 'rest', pair: true, quality: 'small' });
     });
     expect(latest().options.highlight).toMatchObject({ chest: 'primary', quadriceps: 'primary' });
     expect(latest().options.highlight.lats).toBeUndefined();
   });
 
-  it('opens the figure large and returns to the summary', async () => {
+  it('opens the figure large and returns to the summary – by close and by system back', async () => {
     const summary = await openSummary();
     await userEvent.click(await summary.findByRole('button', { name: '3D-Ansicht öffnen' }));
     const large = within(await screen.findByRole('dialog', { name: 'Beanspruchte Muskeln' }));
     // A picture of several exercises: no motion to play, but it turns.
     expect(large.queryByRole('button', { name: /Animation/ })).not.toBeInTheDocument();
-    expect(large.getByRole('button', { name: 'Rückseite zeigen' })).toBeInTheDocument();
+    await userEvent.click(large.getByRole('button', { name: 'Rückseite zeigen' }));
+    await waitFor(() => {
+      expect(latest().options).toMatchObject({ clip: 'rest', pair: false, quality: 'large' });
+    });
+    expect(latest().yaws.at(-1)).toMatchObject({ yaw: Math.PI });
     await userEvent.keyboard('{Escape}');
+    const again = within(await screen.findByRole('dialog', { name: 'Training abgeschlossen' }));
+    // Again, closed by the system back action (Android) this time.
+    await userEvent.click(await again.findByRole('button', { name: '3D-Ansicht öffnen' }));
+    await screen.findByRole('dialog', { name: 'Beanspruchte Muskeln' });
+    expect(closeTopOverlay()).toBe(true);
     expect(
       await screen.findByRole('dialog', { name: 'Training abgeschlossen' }),
     ).toBeInTheDocument();
+  });
+
+  it('shows no muscles when no set was completed', async () => {
+    const summary = await openSummary(async (services, profileId) => {
+      const workouts = services.training.workouts;
+      await services.training.exercises.ensureCatalog();
+      const workout = await workouts.startFree(profileId);
+      await workouts.addExercise(profileId, workout.id, 'sys.bench-press');
+      await workouts.finish(profileId, workout.id);
+      return workout.id;
+    });
+    await summary.findByText('Langhantel-Bankdrücken');
+    expect(summary.queryByRole('region', { name: 'Beanspruchte Muskeln' })).not.toBeInTheDocument();
+    expect(fake.renderers).toHaveLength(0);
+  });
+
+  it('shows the muscles of a single done exercise', async () => {
+    const summary = await openSummary(async (services, profileId) => {
+      const workouts = services.training.workouts;
+      await services.training.exercises.ensureCatalog();
+      const workout = await workouts.startFree(profileId);
+      await workouts.addExercise(profileId, workout.id, 'sys.lat-pulldown');
+      const set = (await workouts.getDetail(profileId, workout.id)).exercises[0]?.sets[0];
+      if (!set) throw new Error('set expected');
+      await workouts.updateSet(
+        profileId,
+        set.id,
+        { ...EMPTY_SET_VALUES, weightKg: 50, reps: 10 },
+        true,
+      );
+      await workouts.finish(profileId, workout.id);
+      return workout.id;
+    });
+    const muscles = within(await summary.findByRole('region', { name: 'Beanspruchte Muskeln' }));
+    expect(await muscles.findByText('Latissimus')).toBeInTheDocument();
+    expect(muscles.getByText('Sekundär').nextElementSibling).toHaveTextContent('Rücken, Bizeps');
+    await waitFor(() => {
+      expect(latest().options.highlight).toEqual({
+        lats: 'primary',
+        biceps: 'secondary',
+        back: 'secondary',
+      });
+    });
   });
 
   it('lists the muscles as text even without WebGL', async () => {

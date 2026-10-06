@@ -3,6 +3,7 @@ import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
   aggregateMuscleHighlight,
+  REST_VISUAL,
   doneExercises,
   exerciseDisplayName,
   highlightGroups,
@@ -87,7 +88,7 @@ export function WorkoutSummarySheet({
     return (
       <MuscleFigureSheet
         title={t('training.figure.summaryTitle')}
-        pose="stand"
+        clip={REST_VISUAL.clip}
         highlight={highlight}
         onClose={() => {
           setFigureOpen(false);
@@ -130,7 +131,7 @@ export function WorkoutSummarySheet({
             <h4 className={styles.heading}>{t('training.figure.summaryTitle')}</h4>
             <div className={styles.muscles}>
               <MuscleFigurePreview
-                pose="stand"
+                clip={REST_VISUAL.clip}
                 highlight={highlight}
                 pair
                 onOpen={() => {

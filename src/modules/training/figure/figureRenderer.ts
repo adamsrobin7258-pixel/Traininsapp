@@ -1,7 +1,14 @@
 /**
- * Draws one or two Kalethra figures into a canvas. Separate chunk: loaded only when a figure is
- * shown. Renders on demand – a still figure is drawn once; the loop runs only while the motion
- * plays or the figure turns – and frees its WebGL context when closed.
+ * Draws one body (or front and back side by side) into a canvas. Separate chunk: loaded only
+ * when a figure is shown. Renders on demand – a still figure is drawn once; the loop runs only
+ * while a clip plays or the figure turns – and frees its WebGL context when closed.
+ *
+ * Scene hierarchy (the source of every transform):
+ *   scene
+ *   ├─ lights, camera (fixed)
+ *   └─ stage            ← the only node the view turns (drag, front/back)
+ *      └─ slot(s)       ← fixed placement (pair: left/right, the second one turned once)
+ *         └─ body.root  ← the body's own coordinate system; only the body writes below it
  */
 import {
   ACESFilmicToneMapping,
@@ -14,22 +21,30 @@ import {
   WebGLRenderer,
 } from 'three';
 import type { MuscleHighlight } from '@/core/training';
-import { buildFigure, type FigureModel, type FigurePalette } from './figureModel';
-import type { FigurePose } from './rig';
+import type { BodyOptions, FigureBody, FigurePalette } from './body';
+import { figureAssetFor, type FigureVariant } from './contract';
+import { createFallbackBody } from './fallbackBody';
 
 export interface FigureRendererOptions {
-  pose: FigurePose;
+  /** Requested clip ("horizontalPush_bench", "rest" …). */
+  clip: string;
   highlight: MuscleHighlight;
   /** Front and back side by side (workout summary). */
   pair: boolean;
   palette: FigurePalette;
   /** Higher detail for the large view; the small view stays light. */
   quality: 'small' | 'large';
+  /** Body variant from the profile; decides which asset is loaded. */
+  variant: FigureVariant;
 }
 
 export interface FigureRenderer {
+  /** "asset" or "fallback" – which body is shown. */
+  source: 'asset' | 'fallback';
+  /** Whether the shown clip moves. */
+  animated: boolean;
   setPlaying(playing: boolean): void;
-  /** Turns the figure to an angle (radians around the vertical axis). */
+  /** Turns the stage to an angle (radians around the vertical axis). */
   setYaw(yaw: number, smooth: boolean): void;
   rotateBy(delta: number): void;
   yaw(): number;
@@ -38,25 +53,44 @@ export interface FigureRenderer {
   dispose(): void;
 }
 
-/**
- * Camera per posture: where it looks from (degrees), at which height, and the radius around
- * that point that must stay in view – the distance follows from it and the canvas shape, so the
- * figure fits a tall phone view as well as a small tile, whichever way it is turned.
- */
-const CAMERA: Record<
-  FigurePose,
-  { azimuth: number; elevation: number; radius: number; y: number }
-> = {
-  benchPress: { azimuth: 74, elevation: 30, radius: 0.98, y: 0.55 },
-  latPulldown: { azimuth: 0, elevation: 10, radius: 1.02, y: 1.1 },
-  stand: { azimuth: 0, elevation: 6, radius: 0.98, y: 0.92 },
-};
 const PAIR_RADIUS = 1.3;
 
-export function createFigureRenderer(
+/**
+ * The body for a variant: its modelled asset if one is bundled, otherwise – or if the asset
+ * cannot be loaded or breaks the contract – the fallback body. Never fails.
+ */
+export async function createBody(
+  variant: FigureVariant,
+  options: BodyOptions,
+): Promise<FigureBody> {
+  const asset = figureAssetFor(variant);
+  if (asset) {
+    try {
+      const { loadGltfBody } = await import('./gltfBody');
+      return await loadGltfBody(asset, options);
+    } catch (error) {
+      console.warn('Kalethra body asset unavailable, using the fallback body', error);
+    }
+  }
+  return createFallbackBody(options);
+}
+
+export async function createFigureRenderer(
   canvas: HTMLCanvasElement,
   options: FigureRendererOptions,
-): FigureRenderer {
+): Promise<FigureRenderer> {
+  const bodyOptions: BodyOptions = {
+    clip: options.clip,
+    highlight: options.highlight,
+    palette: options.palette,
+  };
+  const bodies = await Promise.all(
+    (options.pair ? [0, 1] : [0]).map(() => createBody(options.variant, bodyOptions)),
+  );
+  const lead = bodies[0];
+  if (!lead) throw new Error('no body');
+  const first: FigureBody = lead;
+
   const renderer = new WebGLRenderer({
     canvas,
     antialias: true,
@@ -77,21 +111,21 @@ export function createFigureRenderer(
   scene.add(key, rim);
 
   const stage = new Group();
+  stage.name = 'stage';
   scene.add(stage);
-  const figures: { model: FigureModel; pivot: Group; offset: number }[] = [];
-  // One figure (turned by `setYaw`), or front and back side by side.
-  const sides = options.pair ? [0, Math.PI] : [0];
-  sides.forEach((offset, index) => {
-    const model = buildFigure(options.pose, options.palette, options.highlight);
-    const pivot = new Group();
-    pivot.add(model.root);
-    if (options.pair) pivot.position.x = index === 0 ? -0.55 : 0.55;
-    stage.add(pivot);
-    figures.push({ model, pivot, offset });
+  bodies.forEach((body, index) => {
+    const slot = new Group();
+    slot.name = `slot${String(index)}`;
+    if (options.pair) {
+      slot.position.x = index === 0 ? -0.55 : 0.55;
+      // The second figure shows its back – a fixed placement, not part of the view's turn.
+      if (index === 1) slot.rotation.y = Math.PI;
+    }
+    slot.add(body.root);
+    stage.add(slot);
   });
-  const motion = figures[0]?.model.motion;
 
-  const view = CAMERA[options.pose];
+  const view = first.view;
   const camera = new PerspectiveCamera(30, 1, 0.1, 30);
   const az = (view.azimuth * Math.PI) / 180;
   const el = (view.elevation * Math.PI) / 180;
@@ -111,15 +145,10 @@ export function createFigureRenderer(
 
   let yaw = 0;
   let targetYaw = 0;
-  let phase = motion?.stillPhase ?? 0;
   let playing = false;
   let frame = 0;
   let last = 0;
   let disposed = false;
-
-  function applyYaw() {
-    for (const figure of figures) figure.pivot.rotation.y = figure.offset + yaw;
-  }
 
   function draw() {
     renderer.render(scene, camera);
@@ -130,17 +159,15 @@ export function createFigureRenderer(
     if (disposed) return;
     const dt = last ? Math.min(0.1, (now - last) / 1000) : 0;
     last = now;
-    if (playing && motion && motion.durationS > 0) {
-      phase = (phase + dt / motion.durationS) % 1;
-      for (const figure of figures) figure.model.setPhase(phase);
+    if (playing && first.animated) {
+      for (const body of bodies) body.advance(dt);
     }
     const turning = Math.abs(targetYaw - yaw) > 0.001;
-    if (turning) {
-      yaw += (targetYaw - yaw) * Math.min(1, dt * 7);
-      applyYaw();
-    }
+    if (turning) yaw += (targetYaw - yaw) * Math.min(1, dt * 7);
+    else yaw = targetYaw;
+    stage.rotation.y = yaw;
     draw();
-    if (playing || turning) frame = requestAnimationFrame(tick);
+    if ((playing && first.animated) || turning) frame = requestAnimationFrame(tick);
     else last = 0;
   }
 
@@ -159,10 +186,11 @@ export function createFigureRenderer(
   }
 
   resize();
-  applyYaw();
   draw();
 
   return {
+    source: first.source,
+    animated: first.animated,
     setPlaying(next) {
       playing = next;
       if (next) request();
@@ -171,26 +199,26 @@ export function createFigureRenderer(
       targetYaw = next;
       if (!smooth) {
         yaw = next;
-        applyYaw();
+        stage.rotation.y = yaw;
       }
       request();
     },
     rotateBy(delta) {
       targetYaw += delta;
       yaw = targetYaw;
-      applyYaw();
+      stage.rotation.y = yaw;
       request();
     },
     yaw: () => targetYaw,
     setPalette(palette) {
-      for (const figure of figures) figure.model.setPalette(palette);
+      for (const body of bodies) body.setPalette(palette);
       request();
     },
     resize,
     dispose() {
       disposed = true;
       if (frame) cancelAnimationFrame(frame);
-      for (const figure of figures) figure.model.dispose();
+      for (const body of bodies) body.dispose();
       renderer.dispose();
       renderer.forceContextLoss();
     },

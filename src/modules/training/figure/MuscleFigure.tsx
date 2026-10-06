@@ -5,7 +5,6 @@ import { Button, Icon, Sheet } from '@/ui';
 import { prefersReducedMotion, supportsWebGL } from './environment';
 import { FigureCanvas } from './FigureCanvas';
 import { useMuscleText } from './useMuscleText';
-import type { FigurePose } from './rig';
 import styles from './Figure.module.css';
 
 /**
@@ -14,13 +13,13 @@ import styles from './Figure.module.css';
  * text next to it, so no information depends on the figure.
  */
 export function MuscleFigurePreview({
-  pose,
+  clip,
   highlight,
   side = 'front',
   pair = false,
   onOpen,
 }: {
-  pose: FigurePose;
+  clip: string;
   highlight: MuscleHighlight;
   side?: 'front' | 'back';
   pair?: boolean;
@@ -38,7 +37,7 @@ export function MuscleFigurePreview({
     >
       <FigureCanvas
         className={styles.canvas}
-        pose={pose}
+        clip={clip}
         highlight={highlight}
         side={side}
         pair={pair}
@@ -61,20 +60,21 @@ export function MuscleFigurePreview({
  */
 export function MuscleFigureSheet({
   title,
-  pose,
+  clip,
   highlight,
   side: initialSide = 'front',
   onClose,
 }: {
   title: string;
-  pose: FigurePose;
+  /** "rest" for a picture of several exercises – nothing to play. */
+  clip: string;
   highlight: MuscleHighlight;
   side?: 'front' | 'back';
   onClose: () => void;
 }) {
   const { t } = useI18n();
   const [reducedMotion] = useState(prefersReducedMotion);
-  const animated = pose !== 'stand';
+  const animated = clip !== 'rest';
   const [playing, setPlaying] = useState(animated && !reducedMotion);
   const [side, setSide] = useState(initialSide);
   const text = useMuscleText(highlight);
@@ -84,7 +84,7 @@ export function MuscleFigureSheet({
       <div className={styles.stage} role="img" aria-label={text.description}>
         <FigureCanvas
           className={styles.canvas}
-          pose={pose}
+          clip={clip}
           highlight={highlight}
           side={side}
           quality="large"

@@ -6,7 +6,6 @@
  * figure's left, +Z out of its front. A motion moves the hands and feet; elbows and knees follow
  * by two-bone IK with a hint where they should point.
  */
-import type { FigureMotion } from '@/core/training';
 
 export type Vec3 = readonly [number, number, number];
 
@@ -47,7 +46,7 @@ export function solveTwoBone(
   a: number,
   b: number,
   pole: Vec3,
-): { joint: Vec3; end: Vec3 } {
+): { joint: Vec3; end: Vec3; bend: Vec3 } {
   const toTarget = sub(target, root);
   const direction = normalize(toTarget);
   const distance = Math.min(a + b - 1e-4, Math.max(Math.abs(a - b) + 1e-4, length(toTarget)));
@@ -56,8 +55,11 @@ export function solveTwoBone(
   const height = a * Math.sqrt(Math.max(0, 1 - cos * cos));
   let bend = sub(pole, scale(direction, dot(pole, direction)));
   if (length(bend) < 1e-6) bend = [0, 0, 1];
-  const joint = add(add(root, scale(direction, along)), scale(normalize(bend), height));
-  return { joint, end: add(root, scale(direction, distance)) };
+  bend = normalize(bend);
+  const joint = add(add(root, scale(direction, along)), scale(bend, height));
+  // `bend`: unit direction the joint points to, at right angles to root → end. Both bones lie
+  // in the plane of root → end and `bend`, so it also fixes how the limbs are twisted.
+  return { joint, end: add(root, scale(direction, distance)), bend };
 }
 
 export type Posture = 'standing' | 'supine' | 'seated';
@@ -71,8 +73,17 @@ export interface Frame {
   kneePole: Vec3;
 }
 
+/** Where the camera looks from for a clip (degrees), its height and the radius to keep in view. */
+export interface ClipView {
+  azimuth: number;
+  elevation: number;
+  radius: number;
+  y: number;
+}
+
 export interface MotionDefinition {
   posture: Posture;
+  view: ClipView;
   equipment: Equipment;
   /** Whether a bar is held between the hands. */
   bar: boolean;
@@ -105,6 +116,7 @@ const SHOULDER: Vec3 = [BODY.shoulderX, BODY.shoulderY, 0];
  */
 const benchPress: MotionDefinition = {
   posture: 'supine',
+  view: { azimuth: 74, elevation: 30, radius: 0.98, y: 0.55 },
   equipment: 'bench',
   bar: true,
   durationS: 4.4,
@@ -126,6 +138,7 @@ const benchPress: MotionDefinition = {
  */
 const latPulldown: MotionDefinition = {
   posture: 'seated',
+  view: { azimuth: 0, elevation: 10, radius: 1.02, y: 1.1 },
   equipment: 'pulldown',
   bar: true,
   durationS: 4.4,
@@ -144,6 +157,7 @@ const latPulldown: MotionDefinition = {
 /** Standing, arms relaxed – for a picture of several exercises (workout summary). */
 const stand: MotionDefinition = {
   posture: 'standing',
+  view: { azimuth: 0, elevation: 6, radius: 0.98, y: 0.92 },
   equipment: 'none',
   bar: false,
   durationS: 0,
@@ -156,8 +170,15 @@ const stand: MotionDefinition = {
   }),
 };
 
-export type FigurePose = FigureMotion | 'stand';
-export const MOTIONS: Record<FigurePose, MotionDefinition> = { benchPress, latPulldown, stand };
+/**
+ * The fallback body's clips, named by the asset contract (movement type + equipment variant).
+ * A modelled body brings its own clips under the same names.
+ */
+export const FALLBACK_CLIPS: Readonly<Record<string, MotionDefinition>> = {
+  rest: stand,
+  horizontalPush_bench: benchPress,
+  verticalPull_cable: latPulldown,
+};
 
 /** Joint positions of one frame, both sides (body coordinates). */
 export interface Skeleton {
@@ -167,8 +188,9 @@ export interface Skeleton {
   hip: [Vec3, Vec3];
   knee: [Vec3, Vec3];
   foot: [Vec3, Vec3];
-  elbowPole: [Vec3, Vec3];
-  kneePole: [Vec3, Vec3];
+  /** Direction each elbow / knee points to (from the IK) – also fixes the limb twist. */
+  elbowBend: [Vec3, Vec3];
+  kneeBend: [Vec3, Vec3];
 }
 
 export function skeleton(motion: MotionDefinition, phase: number): Skeleton {
@@ -192,8 +214,8 @@ export function skeleton(motion: MotionDefinition, phase: number): Skeleton {
       hip,
       knee: leg.joint,
       foot: leg.end,
-      elbowPole: side(frame.elbowPole),
-      kneePole: side(frame.kneePole),
+      elbowBend: arm.bend,
+      kneeBend: leg.bend,
     };
   });
   const [left, right] = result as [(typeof result)[number], (typeof result)[number]];
@@ -208,7 +230,7 @@ export function skeleton(motion: MotionDefinition, phase: number): Skeleton {
     hip: pair('hip'),
     knee: pair('knee'),
     foot: pair('foot'),
-    elbowPole: pair('elbowPole'),
-    kneePole: pair('kneePole'),
+    elbowBend: pair('elbowBend'),
+    kneeBend: pair('kneeBend'),
   };
 }

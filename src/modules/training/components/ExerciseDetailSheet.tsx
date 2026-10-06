@@ -34,14 +34,14 @@ export function ExerciseDetailSheet({
   const description = locale === 'de' ? exercise.instructionsDe : exercise.instructionsEn;
   const muscles = (list: Exercise['primaryMuscles']) =>
     list.map((muscle) => t(`training.muscles.${muscle}`)).join(', ');
-  const visual = exerciseVisual(exercise.id);
+  const visual = exerciseVisual(exercise);
   const [figureOpen, setFigureOpen] = useState(false);
 
   if (visual && figureOpen) {
     return (
       <MuscleFigureSheet
         title={exerciseDisplayName(exercise, locale)}
-        pose={visual.motion}
+        clip={visual.clip}
         highlight={muscleHighlight(exercise)}
         side={visual.side}
         onClose={() => {
@@ -97,7 +97,7 @@ export function ExerciseDetailSheet({
             <dd>{t(`training.exerciseTypes.${exercise.exerciseType}`)}</dd>
           </dl>
           <MuscleFigurePreview
-            pose={visual.motion}
+            clip={visual.clip}
             highlight={muscleHighlight(exercise)}
             side={visual.side}
             onOpen={() => {

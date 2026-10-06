@@ -70,3 +70,69 @@ test('exercises without a 3D visual keep their details unchanged', async ({ page
   await expect(sheet(page).getByRole('button', { name: '3D-Ansicht öffnen' })).toHaveCount(0);
   await expect(page.locator('canvas')).toHaveCount(0);
 });
+
+test('3D figure: animation and turning together, front/back, theme – no errors', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  await openBenchPress(page);
+  // Today the code-built fallback body is shown – clearly marked as such.
+  await expect(page.locator('canvas[data-ready="true"]')).toHaveAttribute(
+    'data-figure-source',
+    'fallback',
+  );
+  await sheet(page).getByRole('button', { name: '3D-Ansicht öffnen' }).click();
+  const large = page.getByRole('dialog', { name: 'Langhantel-Bankdrücken' });
+  const canvas = page.locator('canvas[data-ready="true"]');
+  await expect(canvas).toHaveCount(1);
+  const box = await canvas.boundingBox();
+  // Turn while the motion plays, then switch sides several times.
+  if (box) {
+    for (const dx of [140, -260, 90]) {
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 + dx, box.y + box.height / 2, { steps: 8 });
+      await page.mouse.up();
+    }
+  }
+  for (const label of ['Rückseite zeigen', 'Vorderseite zeigen', 'Rückseite zeigen']) {
+    await large.getByRole('button', { name: label }).click();
+  }
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.keyboard.press('Escape');
+  await expect(sheet(page).getByRole('heading', { name: 'Langhantel-Bankdrücken' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+test('workout summary: muscles worked open large and return to the summary', async ({ page }) => {
+  await page.goto('/training');
+  await page.getByRole('button', { name: 'Training starten' }).click();
+  await sheet(page)
+    .getByRole('button', { name: /^Freies Training/ })
+    .click();
+  await page.getByRole('button', { name: 'Übung hinzufügen' }).click();
+  await sheet(page).getByRole('searchbox').fill('latzug');
+  await sheet(page)
+    .getByRole('button', { name: /^Latzug/ })
+    .first()
+    .click();
+  await expect(sheet(page)).toHaveCount(0);
+  await page.getByLabel('Satz 1: Gewicht').fill('50');
+  await page.getByLabel('Satz 1: Wdh.').fill('10');
+  await page.getByRole('button', { name: 'Satz 1 abschließen' }).click();
+  await page.getByRole('button', { name: 'Training beenden' }).click();
+  await sheet(page).getByRole('button', { name: 'Training beenden' }).click();
+
+  const summary = page.getByRole('dialog', { name: 'Training abgeschlossen' });
+  const muscles = summary.getByRole('region', { name: 'Beanspruchte Muskeln' });
+  await expect(muscles).toContainText('Latissimus');
+  await muscles.getByRole('button', { name: '3D-Ansicht öffnen' }).click();
+  const large = page.getByRole('dialog', { name: 'Beanspruchte Muskeln' });
+  await expect(large.getByRole('img')).toHaveAccessibleName(/Primär: Latissimus/);
+  await large.getByRole('button', { name: 'Rückseite zeigen' }).click();
+  await page.keyboard.press('Escape');
+  await expect(summary).toBeVisible();
+  await expect(summary.getByRole('region', { name: 'Beanspruchte Muskeln' })).toBeVisible();
+});

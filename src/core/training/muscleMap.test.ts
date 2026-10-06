@@ -1,7 +1,10 @@
 import { EXERCISE_CATALOG } from './exerciseCatalog';
 import {
   EXERCISE_VISUALS,
+  FIGURE_MOVEMENTS,
   FIGURE_MUSCLES,
+  REST_VISUAL,
+  movementForPattern,
   aggregateMuscleHighlight,
   doneExercises,
   exerciseVisual,
@@ -84,22 +87,49 @@ describe('muscle highlight from the exercise data', () => {
   });
 });
 
-describe('exercise visuals', () => {
-  it('maps permanent catalog IDs to a motion – muscles are not stored twice', () => {
-    for (const [id, visual] of Object.entries(EXERCISE_VISUALS)) {
-      expect(
-        EXERCISE_CATALOG.some((exercise) => exercise.id === id),
-        id,
-      ).toBe(true);
-      expect(Object.keys(visual).sort()).toEqual(['motion', 'side']);
+describe('exercise visuals: exercise → movement type → clip', () => {
+  const exercise = (id: string) => {
+    const entry = EXERCISE_CATALOG.find((e) => e.id === id);
+    if (!entry) throw new Error(id);
+    return { id, movementPattern: entry.movementPattern };
+  };
+
+  it('takes the movement type from the library pattern – muscles are not stored here', () => {
+    for (const [id, entry] of Object.entries(EXERCISE_VISUALS)) {
+      const catalog = EXERCISE_CATALOG.find((e) => e.id === id);
+      expect(catalog, id).toBeDefined();
+      expect(Object.keys(entry)).not.toContain('muscles');
+      // An explicit movement only where the pattern cannot decide (isolation, other).
+      if (entry.movement) expect(['isolation', 'other']).toContain(catalog?.movementPattern);
     }
-    expect(exerciseVisual('sys.bench-press')).toEqual({ motion: 'benchPress', side: 'front' });
-    expect(exerciseVisual('sys.lat-pulldown')).toEqual({ motion: 'latPulldown', side: 'back' });
+    expect(exerciseVisual(exercise('sys.bench-press'))).toEqual({
+      movement: 'horizontalPush',
+      clip: 'horizontalPush_bench',
+      side: 'front',
+    });
+    expect(exerciseVisual(exercise('sys.lat-pulldown'))).toEqual({
+      movement: 'verticalPull',
+      clip: 'verticalPull_cable',
+      side: 'back',
+    });
+  });
+
+  it('maps every library pattern to a movement type, isolation needs the exercise', () => {
+    expect(movementForPattern('horizontalPush')).toBe('horizontalPush');
+    expect(movementForPattern('verticalPull')).toBe('verticalPull');
+    expect(movementForPattern('squat')).toBe('squat');
+    expect(movementForPattern('hinge')).toBe('hinge');
+    expect(movementForPattern('carry')).toBe('carry');
+    expect(movementForPattern('isolation')).toBeNull();
+    expect(movementForPattern('other')).toBeNull();
+    for (const movement of ['curl', 'extension', 'raise', 'rest'] as const) {
+      expect(FIGURE_MOVEMENTS).toContain(movement);
+    }
   });
 
   it('has no visual for other exercises or unknown IDs', () => {
-    expect(exerciseVisual('sys.back-squat')).toBeNull();
-    expect(exerciseVisual('nope')).toBeNull();
-    expect(exerciseVisual(null)).toBeNull();
+    expect(exerciseVisual(exercise('sys.back-squat'))).toBeNull();
+    expect(exerciseVisual({ id: 'nope', movementPattern: 'squat' })).toBeNull();
+    expect(REST_VISUAL).toEqual({ movement: 'rest', clip: 'rest', side: 'front' });
   });
 });
