@@ -406,6 +406,16 @@ Oberfläche vereinfacht, laufender Ernährungstag im Score nach Uhrzeit bewertet
   ([SCORE.md](SCORE.md#ernährung)); abgeschlossene Tage, Gewichte, Komponenten und Trend
   unverändert
 
+## 3D-Übungsdarstellung – Prototyp ✅ (Version 0.26.0)
+
+Eigene, stilisierte 3D-Figur (three.js, lazy geladen) mit Muskel-Hervorhebung aus den
+vorhandenen Übungsdaten – Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md):
+
+- Bankdrücken und Latzug: kleine Figur in den Übungsdetails, große Ansicht mit Drehen,
+  Vorder-/Rückseite und ruhiger Bewegungsschleife (Play/Pause)
+- Trainings-Zusammenfassung: „Beanspruchte Muskeln“ aus den tatsächlich absolvierten Übungen
+- Kein externes Modell, keine Datenbankänderung, keine neue Route
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

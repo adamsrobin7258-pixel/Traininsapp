@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
+  aggregateMuscleHighlight,
+  doneExercises,
   exerciseDisplayName,
+  highlightGroups,
   totalVolumeKg,
   useTrainingData,
   workoutDisplayTitle,
@@ -9,6 +13,8 @@ import {
   type WorkoutSet,
 } from '@/core/training';
 import { Button, Sheet, Stat } from '@/ui';
+import { MuscleFigurePreview, MuscleFigureSheet } from '../figure/MuscleFigure';
+import { useMuscleText } from '../figure/useMuscleText';
 import { formatDuration, formatLoad, formatSetShort, trainingTypeLabel } from '../domain/format';
 import styles from './WorkoutSummarySheet.module.css';
 
@@ -32,6 +38,8 @@ function bestSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
  * Shown once right after finishing: name, duration, exercises, completed sets, volume, a short
  * line per exercise and new heaviest weights (only against earlier workouts with data – the
  * first time is no record). Close leads to Training, "Training ansehen" to the full workout.
+ * "Beanspruchte Muskeln" pictures the muscle groups of the exercises actually done (at least one
+ * completed set) – a union of their catalog muscles, no score.
  */
 export function WorkoutSummarySheet({
   workout,
@@ -53,6 +61,40 @@ export function WorkoutSummarySheet({
   const volume = totalVolumeKg(completed);
   const name = workoutDisplayTitle(workout) ?? trainingTypeLabel(workout.trainingType, t);
   const recordList = records.status === 'ready' ? records.data : [];
+  const doneIds = [
+    ...new Set(
+      workout.exercises.flatMap((e) =>
+        e.exerciseId !== null && e.sets.some((set) => set.completed) ? [e.exerciseId] : [],
+      ),
+    ),
+  ];
+  const catalog = useTrainingData(
+    async (s) =>
+      (await Promise.all(doneIds.map((id) => s.exercises.get(id)))).flatMap((e) => (e ? [e] : [])),
+    [doneIds.join(',')],
+  );
+  const highlight =
+    catalog.status === 'ready'
+      ? aggregateMuscleHighlight(
+          doneExercises(workout, (id) => catalog.data.find((exercise) => exercise.id === id)),
+        )
+      : {};
+  const worked = highlightGroups(highlight);
+  const muscleText = useMuscleText(highlight);
+  const [figureOpen, setFigureOpen] = useState(false);
+
+  if (figureOpen) {
+    return (
+      <MuscleFigureSheet
+        title={t('training.figure.summaryTitle')}
+        pose="stand"
+        highlight={highlight}
+        onClose={() => {
+          setFigureOpen(false);
+        }}
+      />
+    );
+  }
   const sets = (count: number) =>
     count === 1 ? t('training.summary.setsOne') : t('training.summary.sets', { count });
 
@@ -82,6 +124,32 @@ export function WorkoutSummarySheet({
             emptyLabel={t('common.noValue')}
           />
         </div>
+
+        {worked.primary.length + worked.secondary.length > 0 ? (
+          <section aria-label={t('training.figure.summaryTitle')}>
+            <h4 className={styles.heading}>{t('training.figure.summaryTitle')}</h4>
+            <div className={styles.muscles}>
+              <MuscleFigurePreview
+                pose="stand"
+                highlight={highlight}
+                pair
+                onOpen={() => {
+                  setFigureOpen(true);
+                }}
+              />
+              <dl className={styles.muscleList}>
+                <dt>{t('training.figure.primary')}</dt>
+                <dd>{muscleText.primary || '–'}</dd>
+                {muscleText.secondary !== '' ? (
+                  <>
+                    <dt>{t('training.figure.secondary')}</dt>
+                    <dd>{muscleText.secondary}</dd>
+                  </>
+                ) : null}
+              </dl>
+            </div>
+          </section>
+        ) : null}
 
         {recordList.length > 0 ? (
           <section aria-label={t('training.summary.recordsTitle')}>

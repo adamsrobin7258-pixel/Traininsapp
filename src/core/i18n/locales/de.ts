@@ -371,6 +371,21 @@ export const de = {
       durationLabel: 'Dauer (Minuten)',
       durationInvalid: 'Bitte eine Dauer von 1 bis 1440 Minuten eingeben.',
     },
+    figure: {
+      open: '3D-Ansicht öffnen',
+      badge: '3D',
+      play: 'Animation abspielen',
+      pause: 'Animation anhalten',
+      showBack: 'Rückseite zeigen',
+      showFront: 'Vorderseite zeigen',
+      dragHint: 'Zum Drehen ziehen',
+      primary: 'Primär',
+      secondary: 'Sekundär',
+      description: 'Figur mit hervorgehobenen Muskelgruppen. Primär: {primary}.',
+      descriptionSecondary:
+        'Figur mit hervorgehobenen Muskelgruppen. Primär: {primary}. Sekundär: {secondary}.',
+      summaryTitle: 'Beanspruchte Muskeln',
+    },
     summary: {
       title: 'Training abgeschlossen',
       exercisesTitle: 'Übungen',

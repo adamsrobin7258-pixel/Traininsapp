@@ -4,6 +4,10 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
+  // A fixed evening: the running day is rated against the time of day (Phase 17.5), and this
+  // test logs the whole day goal – a complete day, not an excess at noon.
+  const now = new Date();
+  await page.clock.setFixedTime(new Date(now.getFullYear(), now.getMonth(), now.getDate(), 21));
   const main = page.locator('main');
   const sheet = page.getByRole('dialog');
   const tab = (name: string) =>

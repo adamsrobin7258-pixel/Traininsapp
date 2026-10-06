@@ -1,0 +1,139 @@
+/* The small figure in the exercise details: a quiet tile beside the facts, clearly tappable. */
+.preview {
+  position: relative;
+  display: block;
+  flex: none;
+  width: 6.75rem;
+  height: 8rem;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  cursor: pointer;
+}
+
+.preview:active {
+  background: var(--color-surface-pressed);
+}
+
+.previewPair {
+  width: 9.5rem;
+}
+
+.canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.badge {
+  position: absolute;
+  right: var(--space-2);
+  bottom: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1.5;
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+/* Facts and figure side by side; the facts keep their full width on narrow screens. */
+.withFigure {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.withFigure > :first-child {
+  flex: 1;
+  min-width: 0;
+  margin-top: 0;
+}
+
+/* Large view. */
+.stage {
+  position: relative;
+  height: min(58vh, 30rem);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  touch-action: pan-y;
+}
+
+.stage .canvas {
+  cursor: grab;
+}
+
+.hint {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-2);
+  transform: translateX(-50%);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-tertiary);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.legend {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--font-size-subhead);
+}
+
+.legendRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.legendRow dt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.legendRow dd {
+  margin: 0;
+}
+
+.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+}
+
+.dot[data-level='secondary'] {
+  background: color-mix(in srgb, var(--color-accent) 50%, var(--color-surface-muted));
+}
+
+.controls {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.controls > :last-child {
+  flex: 1;
+}
+
+/* Play/pause: one quiet round icon button beside the side toggle. */
+.play {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+  cursor: pointer;
+}

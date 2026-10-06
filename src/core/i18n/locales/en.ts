@@ -365,6 +365,21 @@ export const en: TranslationSchema = {
       durationLabel: 'Duration (minutes)',
       durationInvalid: 'Please enter a duration of 1 to 1440 minutes.',
     },
+    figure: {
+      open: 'Open 3D view',
+      badge: '3D',
+      play: 'Play animation',
+      pause: 'Pause animation',
+      showBack: 'Show back',
+      showFront: 'Show front',
+      dragHint: 'Drag to turn',
+      primary: 'Primary',
+      secondary: 'Secondary',
+      description: 'Figure with highlighted muscle groups. Primary: {primary}.',
+      descriptionSecondary:
+        'Figure with highlighted muscle groups. Primary: {primary}. Secondary: {secondary}.',
+      summaryTitle: 'Muscles worked',
+    },
     summary: {
       title: 'Workout finished',
       exercisesTitle: 'Exercises',

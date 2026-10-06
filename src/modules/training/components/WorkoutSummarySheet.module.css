@@ -64,3 +64,36 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+/* Muscles worked: the figure (front and back) beside the groups as words. */
+.muscles {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.muscleList {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+  font-size: var(--font-size-subhead);
+}
+
+.muscleList dt {
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.muscleList dt:not(:first-child) {
+  margin-top: var(--space-2);
+}
+
+.muscleList dd {
+  margin: 0;
+  overflow-wrap: break-word;
+}
