@@ -77,11 +77,11 @@ test('3D figure: animation and turning together, front/back, theme – no errors
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await openBenchPress(page);
-  // Today the code-built fallback body is shown – clearly marked as such.
-  await expect(page.locator('canvas[data-ready="true"]')).toHaveAttribute(
-    'data-figure-source',
-    'fallback',
-  );
+  // The modelled Kalethra body (bundled GLB) is shown, not the technical fallback; without a
+  // stated sex the fixed default variant.
+  const ready = page.locator('canvas[data-ready="true"]');
+  await expect(ready).toHaveAttribute('data-figure-source', 'asset');
+  await expect(ready).toHaveAttribute('data-figure-variant', 'male');
   await sheet(page).getByRole('button', { name: '3D-Ansicht öffnen' }).click();
   const large = page.getByRole('dialog', { name: 'Langhantel-Bankdrücken' });
   const canvas = page.locator('canvas[data-ready="true"]');

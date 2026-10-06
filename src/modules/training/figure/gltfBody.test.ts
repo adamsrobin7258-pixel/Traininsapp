@@ -13,7 +13,7 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FIGURE_MUSCLES } from '@/core/training';
 import type { FigurePalette } from './body';
 import { REQUIRED_BONES, muscleNodeName } from './contract';
-import { FigureAssetError, gltfBodyFrom } from './gltfBody';
+import { FigureAssetError, STILL_PHASE, gltfBodyFrom } from './gltfBody';
 
 const PALETTE = { accent: '#557a5b' } as FigurePalette;
 const SKIN = '#c9b8a8';
@@ -113,7 +113,8 @@ describe('modelled body (GLB import path)', () => {
     expect(body.clip).toBe('horizontalPush_bench');
     expect(body.animated).toBe(true);
     const hand = body.root.getObjectByName('hand_L') as Object3D;
-    body.advance(2);
+    // A still figure stands at the clip's explaining moment, not at its first frame.
+    body.advance(2 - 4 * STILL_PHASE);
     expect(hand.position.y).toBeCloseTo(0.4, 5);
     body.advance(2);
     expect(hand.position.y).toBeCloseTo(0, 5);

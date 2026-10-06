@@ -1,4 +1,5 @@
 import { PropertyBinding } from 'three';
+import { projectFileExists } from '@/test/projectFiles';
 import { EXERCISE_VISUALS, FIGURE_MOVEMENTS, FIGURE_MUSCLES } from '@/core/training';
 import {
   ASSET_BUDGET,
@@ -8,11 +9,13 @@ import {
   MUSCLE_PARTS,
   REQUIRED_BONES,
   SAFE_NAME,
+  clipVariant,
   figureAssetFor,
   figureVariantFor,
   isClipName,
   muscleGroupOfNode,
   muscleNodeName,
+  propVariantOfNode,
   resolveClip,
   validateFigureAsset,
 } from './contract';
@@ -33,10 +36,25 @@ describe('figure asset contract', () => {
     expect(figureVariantFor(null)).toBe(DEFAULT_FIGURE_VARIANT);
   });
 
-  it('has no modelled body yet – both variants use the fallback until an asset is bundled', () => {
-    expect(FIGURE_ASSETS).toEqual({ male: null, female: null });
-    expect(figureAssetFor('male')).toBeNull();
-    expect(figureAssetFor('female')).toBeNull();
+  it('bundles a modelled body for each variant – local files, no remote URL', () => {
+    expect(FIGURE_ASSETS).toEqual({
+      male: 'figure/male/kalethra-male.glb',
+      female: 'figure/female/kalethra-female.glb',
+    });
+    for (const variant of FIGURE_VARIANTS) {
+      const path = figureAssetFor(variant);
+      expect(path).not.toMatch(/^[a-z]+:|^\/\//i);
+      expect(projectFileExists(`public/${path ?? ''}`)).toBe(true);
+    }
+  });
+
+  it('names equipment props by clip variant and shows them only with that variant', () => {
+    expect(propVariantOfNode('prop_bench_bar')).toBe('bench');
+    expect(propVariantOfNode('prop_cable_wire')).toBe('cable');
+    expect(propVariantOfNode('prop_bar')).toBeNull();
+    expect(propVariantOfNode('muscle_chest')).toBeNull();
+    expect(clipVariant('horizontalPush_bench')).toBe('bench');
+    expect(clipVariant('rest')).toBeNull();
   });
 
   it('names muscle nodes semantically by the muscle groups of the exercise library', () => {
@@ -45,6 +63,9 @@ describe('figure asset contract', () => {
     expect(muscleGroupOfNode('muscle_chest')).toBe('chest');
     expect(muscleGroupOfNode('muscle_shoulders_front')).toBe('shoulders');
     expect(muscleGroupOfNode('muscle_back_erectors')).toBe('back');
+    // Primitives split by the glTF loader keep their group.
+    expect(muscleGroupOfNode('muscle_chest_upper_2')).toBe('chest');
+    expect(muscleGroupOfNode('muscle_lats_1')).toBe('lats');
     // Not a muscle node, an unknown group, or no index-style names.
     expect(muscleGroupOfNode('body:skin')).toBeNull();
     expect(muscleGroupOfNode('muscle_neck')).toBeNull();
@@ -101,7 +122,15 @@ describe('figure asset contract', () => {
   });
 
   it('requires a skeleton for both sides and keeps budgets for phones', () => {
-    for (const bone of ['upperArm_L', 'upperArm_R', 'thigh_L', 'thigh_R', 'pelvis', 'head']) {
+    for (const bone of [
+      'root',
+      'upperArm_L',
+      'upperArm_R',
+      'thigh_L',
+      'thigh_R',
+      'pelvis',
+      'head',
+    ]) {
       expect(REQUIRED_BONES).toContain(bone);
     }
     expect(ASSET_BUDGET.maxBytes).toBeLessThanOrEqual(4 * 1024 * 1024);

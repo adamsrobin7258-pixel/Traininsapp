@@ -1,0 +1,65 @@
+{
+  "ok": true,
+  "errors": [],
+  "stats": {
+    "bytes": 3706500,
+    "triangles": 52014,
+    "materials": 4,
+    "textures": [
+      {
+        "width": 2048,
+        "height": 2048
+      }
+    ],
+    "bounds": {
+      "min": [
+        -0.2540358901023865,
+        0,
+        -0.10019169002771378
+      ],
+      "max": [
+        0.25403571128845215,
+        1.5930355787277222,
+        0.17349791526794434
+      ]
+    },
+    "variant": "female",
+    "bones": [
+      "root",
+      "pelvis",
+      "spine",
+      "chest",
+      "neck",
+      "head",
+      "shoulder_L",
+      "upperArm_L",
+      "forearm_L",
+      "forearmTwist_L",
+      "hand_L",
+      "thigh_L",
+      "shin_L",
+      "foot_L",
+      "shoulder_R",
+      "upperArm_R",
+      "forearm_R",
+      "forearmTwist_R",
+      "hand_R",
+      "thigh_R",
+      "shin_R",
+      "foot_R"
+    ],
+    "clips": [
+      "rest",
+      "horizontalPush_bench",
+      "verticalPull_cable"
+    ]
+  },
+  "contract": {
+    "ok": true,
+    "missingMuscles": [],
+    "missingBones": [],
+    "unknownMuscleNodes": [],
+    "invalidClips": [],
+    "hasRestClip": true
+  }
+}

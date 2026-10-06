@@ -95,6 +95,104 @@ export function movementForPattern(pattern: MovementPattern): FigureMovement | n
 }
 
 /**
+ * Movement type (and its variant) of every library exercise whose pattern does not decide it
+ * ("isolation", "other"): Exercise → movement type → clip. A clip "<movement>_<variant>" that a
+ * body does not have falls back to "<movement>", then to the rest pose (`resolveClip`).
+ */
+export const ISOLATION_CLIPS: Readonly<Record<string, string>> = {
+  'sys.barbell-curl': 'curl',
+  'sys.ez-bar-curl': 'curl',
+  'sys.biceps-curl': 'curl',
+  'sys.hammer-curl': 'curl',
+  'sys.cable-hammer-curl': 'curl',
+  'sys.incline-dumbbell-curl': 'curl',
+  'sys.concentration-curl': 'curl',
+  'sys.preacher-curl': 'curl',
+  'sys.dumbbell-preacher-curl': 'curl',
+  'sys.machine-preacher-curl': 'curl',
+  'sys.cable-curl': 'curl',
+  'sys.bayesian-cable-curl': 'curl',
+  'sys.spider-curl': 'curl',
+  'sys.drag-curl': 'curl',
+  'sys.band-curl': 'curl',
+  'sys.zottman-curl': 'curl',
+  'sys.suspension-biceps-curl': 'curl',
+  'sys.reverse-curl': 'curl',
+  'sys.wrist-curl': 'curl_wrist',
+  'sys.reverse-wrist-curl': 'curl_wrist',
+  'sys.wrist-roller': 'curl_wrist',
+  'sys.leg-curl': 'curl_leg',
+  'sys.seated-leg-curl': 'curl_leg',
+  'sys.nordic-curl': 'curl_leg',
+  'sys.triceps-pushdown': 'extension_triceps',
+  'sys.rope-pushdown': 'extension_triceps',
+  'sys.reverse-grip-pushdown': 'extension_triceps',
+  'sys.overhead-cable-extension': 'extension_triceps',
+  'sys.overhead-dumbbell-extension': 'extension_triceps',
+  'sys.seated-ez-overhead-extension': 'extension_triceps',
+  'sys.skull-crusher': 'extension_triceps',
+  'sys.dumbbell-lying-extension': 'extension_triceps',
+  'sys.dumbbell-kickback': 'extension_triceps',
+  'sys.cable-kickback': 'extension_triceps',
+  'sys.machine-triceps-extension': 'extension_triceps',
+  'sys.suspension-triceps-extension': 'extension_triceps',
+  'sys.band-pushdown': 'extension_triceps',
+  'sys.leg-extension': 'extension_leg',
+  'sys.cable-glute-kickback': 'extension_glute',
+  'sys.machine-glute-kickback': 'extension_glute',
+  'sys.quadruped-kickback': 'extension_glute',
+  'sys.dead-hang': 'carry_hang',
+  'sys.sled-push': 'carry_sled',
+  'sys.straight-arm-pulldown': 'verticalPull_straightArm',
+  'sys.dumbbell-pullover': 'verticalPull_pullover',
+  'sys.barbell-shrug': 'raise_shrug',
+  'sys.dumbbell-shrug': 'raise_shrug',
+  'sys.cable-fly': 'horizontalPush_fly',
+  'sys.low-cable-fly': 'horizontalPush_fly',
+  'sys.high-cable-fly': 'horizontalPush_fly',
+  'sys.dumbbell-fly': 'horizontalPush_fly',
+  'sys.incline-dumbbell-fly': 'horizontalPush_fly',
+  'sys.pec-deck': 'horizontalPush_fly',
+  'sys.power-clean': 'hinge_clean',
+  'sys.hang-clean': 'hinge_clean',
+  'sys.clean-and-press': 'verticalPush_clean',
+  'sys.turkish-get-up': 'core_getUp',
+  'sys.dumbbell-snatch': 'hinge_snatch',
+  'sys.adductor-machine': 'raise_adductor',
+  'sys.abductor-machine': 'raise_abductor',
+  'sys.band-lateral-walk': 'raise_abductor',
+  'sys.calf-raise': 'raise_calf',
+  'sys.seated-calf-raise': 'raise_calf',
+  'sys.leg-press-calf-raise': 'raise_calf',
+  'sys.single-leg-calf-raise': 'raise_calf',
+  'sys.smith-calf-raise': 'raise_calf',
+  'sys.lateral-raise': 'raise_lateral',
+  'sys.cable-lateral-raise': 'raise_lateral',
+  'sys.machine-lateral-raise': 'raise_lateral',
+  'sys.front-raise': 'raise_front',
+  'sys.cable-front-raise': 'raise_front',
+  'sys.plate-front-raise': 'raise_front',
+  'sys.reverse-fly': 'raise_rearDelt',
+  'sys.reverse-pec-deck': 'raise_rearDelt',
+  'sys.cable-reverse-fly': 'raise_rearDelt',
+  'sys.suspension-y-raise': 'raise_rearDelt',
+  'sys.cable-external-rotation': 'raise_externalRotation',
+};
+
+/** The clip of any library exercise: from its pattern, or from `ISOLATION_CLIPS`. */
+export function exerciseClip(
+  exercise: Pick<Exercise, 'id' | 'movementPattern'>,
+): { movement: FigureMovement; clip: string } | null {
+  const listed = ISOLATION_CLIPS[exercise.id];
+  if (listed) {
+    const movement = listed.split('_')[0] as FigureMovement;
+    return { movement, clip: listed };
+  }
+  const movement = movementForPattern(exercise.movementPattern);
+  return movement ? { movement, clip: movement } : null;
+}
+
+/**
  * Which exercises show the figure, and how. Muscles are never stored here – they come from the
  * exercise. `movement` is only given where the pattern does not decide it; `variant` names the
  * equipment set-up of the clip (clip "horizontalPush_bench"), so one movement type can have a

@@ -3,44 +3,71 @@
 Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
 dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 
-> **Stand (Version 0.27.0): technisch fertig, visuell nicht.** Gezeigt wird ein im Code gebauter
-> **Fallback-Körper** (Gliederpuppe). Er ist ein Platzhalter und **nicht** die angestrebte
-> visuelle Qualität. Die modellierten Körper (männlich, weiblich) fehlen noch; die App ist so
-> vorbereitet, dass sie ohne Änderung an Übungsdetails oder Trainings-Zusammenfassung eingesetzt
-> werden können.
+> **Stand (Version 0.28.0):** Zwei modellierte Kalethra-Körper (männlich, weiblich) sind
+> gebündelt und werden in Übungsdetails, großer Ansicht und Trainings-Zusammenfassung gezeigt.
+> Sie entstehen reproduzierbar aus MakeHuman-Daten (CC0) mit der Pipeline in `tools/figures/`
+> – sie sind **nicht** von Hand in einem 3D-Programm modelliert. Gestaltung, Herkunft und
+> bekannte Grenzen: [`assets/figure/docs/README.md`](../assets/figure/docs/README.md).
+>
+> **Die aktuelle Fallback-Figur ist ausschließlich technischer Fallback und nicht die finale
+> visuelle Kalethra-Figur.** Sie erscheint nur, wenn ein Asset fehlt oder nicht geladen werden
+> kann, und in Tests.
 
 ## Datenfluss (Quelle der Wahrheit)
 
 ```
 Exercise (Bibliothek)
   ├─ primaryMuscles / secondaryMuscles ──► muscleMap ──► Hervorhebung pro Muskelgruppe
-  └─ movementPattern (+ Eintrag in EXERCISE_VISUALS) ──► Movement-Type ──► Animation-Clip
-Profil.sex ──► Körpervariante (male | female, sonst Standard) ──► Asset oder Fallback
+  └─ movementPattern / ISOLATION_CLIPS ──► Movement-Type ──► Clip (<movement>[_<variante>])
+Profil.sex ──► Körpervariante (male | female, sonst Standard male) ──► loadBody(variant)
 ```
 
 - Muskeln kommen ausschließlich aus der Übung (`core/training/muscleMap.ts`). Der Körper
-  visualisiert sie nur; die Übungsdaten sind für alle Varianten identisch.
-- `fullBody` steht für alle 13 Regionen; primär gewinnt vor sekundär.
+  visualisiert sie nur; die Übungsdaten sind für beide Varianten identisch.
+- Jede Übung der Bibliothek hat einen Movement-Type und einen Clip-Namen (`exerciseClip`):
+  aus dem `movementPattern`, für `isolation`/`other` aus `ISOLATION_CLIPS` – z. B.
+  Trizepsdrücken `extension_triceps`, Seitheben `raise_lateral`, Wadenheben `raise_calf`;
+  Schulterdrücken `verticalPush`, Rudern `horizontalPull`. Ein Clip, den ein Körper (noch) nicht
+  hat, fällt auf den Movement-Type und dann auf `rest` zurück.
+- Gezeigt wird die Figur bisher bei Langhantel-Bankdrücken und Latzug (`EXERCISE_VISUALS`) und
+  in der Trainings-Zusammenfassung (Ruhepose). Weitere Übungen kommen dazu, sobald ihr Clip
+  modelliert ist – vorher würden sie nur die Ruhepose zeigen.
 - Workout-Zusammenfassung: Vereinigung der Muskeln aller Übungen mit mindestens einem
   abgeschlossenen Satz – keine Gewichtung, kein Score, keine Statistik.
 
 ## Architektur (`src/modules/training/figure/`)
 
-| Datei               | Aufgabe                                                                                         |
-| ------------------- | ----------------------------------------------------------------------------------------------- |
-| `contract.ts`       | Asset-Vertrag als Code: Varianten, Asset-Registry, Knoten-/Bone-/Clip-Namen, Validator, Budgets |
-| `body.ts`           | Schnittstelle `FigureBody`, die jeder Körper erfüllt                                            |
-| `gltfBody.ts`       | Modellierter Körper aus einem gebündelten GLB (eigener Lazy-Chunk)                              |
-| `fallbackBody.ts`   | **Fallback**: im Code gebauter Platzhalter-Körper, gleiche Schnittstelle                        |
-| `rig.ts`            | Skelett, Zwei-Knochen-IK und Bewegungen des Fallback-Körpers                                    |
-| `figureRenderer.ts` | Szene, Kamera, Licht, Render-Schleife; wählt Asset oder Fallback (`createBody`)                 |
-| `FigureCanvas.tsx`  | React-Hülle: lädt three.js erst bei Bedarf, Profil-Variante, Theme, Kontextverlust              |
-| `MuscleFigure.tsx`  | Kleine Figur (Details, Zusammenfassung) und große Ansicht (Sheet)                               |
+| Datei               | Aufgabe                                                                                     |
+| ------------------- | ------------------------------------------------------------------------------------------- |
+| `contract.ts`       | Asset-Vertrag als Code: Varianten, Asset-Registry, Knoten-/Bone-/Prop-/Clip-Namen, Budgets  |
+| `assetValidator.ts` | Datei-Validator für GLB-Assets (Container, Referenzen, Vertrag, Budgets, Koordinatensystem) |
+| `body.ts`           | Schnittstelle `FigureBody`, die jeder Körper erfüllt                                        |
+| `gltfBody.ts`       | Modellierter Körper aus dem gebündelten GLB (eigener Lazy-Chunk), Cache mit Referenzzählung |
+| `figureRenderer.ts` | `loadBody(variant)`, Szene, Kamera, Licht, Render-Schleife                                  |
+| `fallbackBody.ts`   | **Technischer Fallback**: im Code gebaute Gliederpuppe, gleiche Schnittstelle               |
+| `rig.ts`            | Skelett, Zwei-Knochen-IK und Bewegungen des Fallback-Körpers                                |
+| `FigureCanvas.tsx`  | React-Hülle: lädt three.js erst bei Bedarf, Profil-Variante, Theme, Kontextverlust          |
+| `MuscleFigure.tsx`  | Kleine Figur (Details, Zusammenfassung) und große Ansicht (Sheet)                           |
 
 `ExerciseDetailSheet` und `WorkoutSummarySheet` kennen nur `MuscleFigurePreview` /
 `MuscleFigureSheet` mit einem Clip-Namen und der Hervorhebung – nie einen konkreten Körper.
 
-### Transform-Hierarchie (Rotationsfehler behoben)
+### Laden (`loadBody`)
+
+- `loadBody("male" | "female", options)` lädt das Asset der Variante aus den App-Dateien
+  (`<BASE_URL>figure/<variant>/kalethra-<variant>.glb`, auch von tiefen Routen aus richtig) –
+  **offline**, kein CDN, kein Netz.
+- Lazy: three.js und der GLB-Loader sind eigene Chunks, geladen erst, wenn eine Figur sichtbar
+  wird. Das GLB selbst wird erst dann geholt.
+- Eine Datei, mehrere Körper (Zusammenfassung: Vorder- und Rückseite): einmal geladen, jeder
+  Körper ist ein Klon mit eigenem Skelett (`SkeletonUtils.clone`); Geometrie und Textur werden
+  geteilt und mit dem letzten Körper freigegeben (`dispose`: Mixer, Materialkopien, dann
+  Geometrie, Materialien, Texturen).
+- Fallback nur, wenn kein Asset registriert ist oder Laden bzw. Vertrag scheitern – mit
+  `console.warn`, nie mit einem Fehler für die Nutzerin oder den Nutzer.
+- Höchstens ein WebGL-Kontext (die große Ansicht ersetzt das Sheet), Freigabe beim Schließen.
+
+### Transform-Hierarchie
 
 ```
 scene
@@ -48,146 +75,120 @@ scene
 └─ stage            ← der einzige Knoten, den die Ansicht dreht (Ziehen, Vorder-/Rückseite)
    └─ slot(s)       ← feste Platzierung (Paar: links/rechts, die zweite Figur einmal um 180°)
       └─ body.root  ← Koordinatensystem des Körpers; nur der Körper schreibt darunter
-         ├─ skeleton / Mesh-Hierarchie (Haltung, Animation)
-         └─ prop_*  (Gerät, Stange, Kabel, Kontaktschatten)
+         ├─ root (Bone) … Skelett, Haut- und Muskel-Meshes (Skinning)
+         └─ prop_*  (Bank, Stange, Kabelturm, Kabel – über eigene Clip-Spuren bewegt)
 ```
 
-Regeln: Die Ansicht schreibt nur `stage.rotation.y`. Ein Körper schreibt nur lokale
-Transformationen unterhalb seines `root` und liest **nie** Weltmatrizen.
-
-Ursache des Fehlers in 0.26.0: Die Stange (und das Kabel) wurden über `matrixWorld` des Körpers
-positioniert – also inklusive der Ansichtsdrehung –, hingen aber selbst unter `root`. Bei
-gedrehter Figur und laufender Bewegung wirkte die Drehung doppelt; die Stange verließ die Hände.
-Zusätzlich hing die Verdrehung der Gliedmaßen am rohen Richtungshinweis der Bewegung, der fast
-parallel zum Knochen liegen konnte. Jetzt kommt sie aus der Biegeebene der IK, die immer in
-deutlichem Winkel zum Knochen steht (getestet über die ganze Schleife).
+Die Ansicht schreibt nur `stage.rotation.y`; ein Körper schreibt nur lokale Transformationen
+unterhalb seines `root` und liest nie Weltmatrizen. Damit gibt es keine doppelte Drehung, und
+Stange und Hände bleiben bei jeder Drehung beieinander (getestet mit den echten Assets).
+Unterarmdrehungen verteilen sich auf Unterarm, Twist-Bone und Hand – kein Umklappen im Ellbogen.
 
 ## Asset-Vertrag (GLB / glTF 2.0)
 
-Ein Körper pro Variante: `male`, `female`. Beide erfüllen denselben Vertrag. Eintrag in
-`FIGURE_ASSETS` (`contract.ts`), Datei unter `public/figure/` (wird gebündelt, offline).
-Ohne Eintrag oder bei einem Fehler zeigt die App den Fallback – nie einen Fehler.
+Ein Körper pro Variante: `male`, `female`; gleicher Vertrag, gleiche Bones, gleiche Clips.
+Registriert in `FIGURE_ASSETS` (`contract.ts`), Dateien unter `public/figure/<variant>/`.
 
 ### Namen
 
-**Nur Buchstaben, Ziffern und `_`** (`SAFE_NAME`). Der glTF-Loader von three.js entfernt
-`[ ] . : /` aus Knotennamen (`PropertyBinding.sanitizeNodeName`), und Animationsspuren
-adressieren Knoten als `<knoten>.<eigenschaft>` – `muscle:chest` käme als `musclechest` an.
-Nie auf Mesh-Indizes verlassen (`mesh_17`).
+**Nur Buchstaben, Ziffern und `_`** (`SAFE_NAME`): Der glTF-Loader von three.js entfernt
+`[ ] . : /` aus Knotennamen, und Animationsspuren adressieren Knoten als
+`<knoten>.<eigenschaft>`. Nie auf Mesh-Indizes verlassen.
 
-| Element        | Name                                              | Beispiel                                             |
-| -------------- | ------------------------------------------------- | ---------------------------------------------------- |
-| Muskelgruppe   | `muscle_<gruppe>`                                 | `muscle_chest`, `muscle_lats`                        |
-| Muskel-Teil    | `muscle_<gruppe>_<teil>`                          | `muscle_shoulders_front`, `muscle_back_erectors`     |
-| Übriger Körper | frei, ohne `muscle_`-Präfix                       | `body_skin`, `cloth_shirt`, `cloth_shorts`           |
-| Bones          | siehe unten, Seiten `_L` / `_R`                   | `upperArm_L`, `thigh_R`                              |
-| Clips          | `<movementType>` oder `<movementType>_<variante>` | `rest`, `horizontalPush_bench`, `verticalPull_cable` |
+| Element       | Name                                              | Beispiel                                             |
+| ------------- | ------------------------------------------------- | ---------------------------------------------------- |
+| Muskelgruppe  | `muscle_<gruppe>`                                 | `muscle_lats`, `muscle_biceps`                       |
+| Muskel-Teil   | `muscle_<gruppe>_<teil>`                          | `muscle_shoulders_front`, `muscle_back_erectors`     |
+| Neutrale Haut | `body_<teil>`                                     | `body_head`, `body_hands`, `body_feet`               |
+| Geräte        | `prop_<variante>_<teil>`                          | `prop_bench_bar`, `prop_cable_wire`                  |
+| Bones         | siehe unten, Seiten `_L` / `_R`                   | `upperArm_L`, `thigh_R`                              |
+| Clips         | `<movementType>` oder `<movementType>_<variante>` | `rest`, `horizontalPush_bench`, `verticalPull_cable` |
 
-Muskelgruppen = Gruppen der Übungsbibliothek (13): `chest`, `back`, `lats`, `shoulders`,
-`biceps`, `triceps`, `forearms`, `core`, `glutes`, `quadriceps`, `hamstrings`, `adductors`,
-`calves`. Teile (optional, empfohlen): `chest_upper/lower`, `shoulders_front/middle/rear`,
-`back_trapezius/rhomboids/erectors`, `core_rectus/obliques`, `forearms_flexors/extensors`,
-`glutes_maximus/medius`, `calves_gastrocnemius/soleus`. Hervorgehoben wird immer die ganze
-Gruppe; die Teile machen die Anatomie lesbar.
+Muskelgruppen = Gruppen der Bibliothek (13): `chest`, `back`, `lats`, `shoulders`, `biceps`,
+`triceps`, `forearms`, `core`, `glutes`, `quadriceps`, `hamstrings`, `adductors`, `calves`.
+Teile: `chest_upper/lower`, `shoulders_front/middle/rear`, `back_trapezius/rhomboids/erectors`,
+`core_rectus/obliques`, `forearms_flexors/extensors`, `glutes_maximus/medius`,
+`calves_gastrocnemius/soleus`. Es gibt keine parallelen IDs (`traps`, `abs`, `quads` …): Diese
+Begriffe heißen im Vertrag `back_trapezius`, `core_rectus`, `core_obliques`, `quadriceps`,
+`shoulders_middle`. Hervorgehoben wird immer die ganze Gruppe – auf der Haut und auf der
+Kleidung darüber. Ein Mesh mit Haut- und Stoffteil wird vom Loader zu einer Gruppe mit Kindern
+`<name>_1`, `<name>_2`; die Endung gehört dem Loader und wird toleriert.
+
+Geräte (`prop_<variante>_*`) sind nur sichtbar, solange ein Clip dieser Variante läuft
+(`horizontalPush_bench` → `prop_bench_*`), und nehmen die Theme-Farben für Gerät und Metall an.
 
 ### Skelett
 
-Pflicht-Bones: `pelvis`, `spine`, `chest`, `neck`, `head` und je Seite `shoulder`, `upperArm`,
-`forearm`, `hand`, `thigh`, `shin`, `foot` (`_L`, `_R`). Ruhepose: stehend, Arme leicht vom
-Körper. Gleiche Bone-Namen in beiden Varianten, damit dieselben Clips auf beiden laufen.
+Pflicht-Bones: `root`, `pelvis`, `spine`, `chest`, `neck`, `head` und je Seite `shoulder`
+(Schlüsselbein), `upperArm`, `forearm` (Unterarm), `hand`, `thigh` (Oberschenkel), `shin`
+(Unterschenkel), `foot` (`_L`, `_R`). Zusätzliche Bones sind erlaubt (die Körper haben
+`forearmTwist_L/R`). Ruhe-Rotationen aller Bones sind die Identität; die Ruhepose ist
+aufrecht, Füße etwa schulterbreit, Arme 10–15° vom Körper, Ellbogen locker, Hände neutral.
 
-### Koordinaten, Maßstab, Ausrichtung
+### Koordinaten, Maßstab, Ursprung
 
-- Meter, **+Y oben, +Z = Vorderseite des Körpers** (glTF-Konvention), rechtshändig.
-- Ursprung auf dem Boden mittig unter dem Körper; Boden bei y = 0.
-- Körpergröße ca. 1,75 m (männlich) bzw. 1,68 m (weiblich), neutral-athletisch.
-- Die App dreht nur die `stage`; der Körper darf keine eigene Wurzel-Rotation in Clips haben,
-  außer sie gehört zur Bewegung (z. B. Liegen auf der Bank).
+- Meter, **+Y oben, +Z = Vorderseite des Körpers** (glTF), rechtshändig.
+- Boden bei y = 0, Ursprung auf dem Boden zwischen den Hüftgelenken.
+- Die Szenen-Wurzel und der Bone `root` sind untransformiert; Haltungen (Liegen, Sitzen)
+  kommen aus den Clips (Spuren auf `pelvis`), nie aus der Wurzel.
 
 ### Animation
 
-Ein gemeinsamer Körper, viele Clips – nicht ein Modell pro Übung. Movement-Types:
-`rest`, `horizontalPush`, `verticalPush`, `horizontalPull`, `verticalPull`, `squat`, `hinge`,
-`lunge`, `curl`, `extension`, `raise`, `carry`, `core`. Die Zuordnung Übung → Movement-Type
-kommt aus `movementPattern` der Bibliothek; nur `isolation`/`other` nennen ihn in
-`EXERCISE_VISUALS` ausdrücklich (z. B. `curl`). Varianten für Geräte: `horizontalPush_bench`.
-Auflösung: exakter Clip → Movement-Type → `rest`.
+Ein Körper, viele Clips – nicht ein Modell pro Übung. Movement-Types: `rest`,
+`horizontalPush`, `verticalPush`, `horizontalPull`, `verticalPull`, `squat`, `hinge`, `lunge`,
+`curl`, `extension`, `raise`, `carry`, `core`; Varianten nach Gerät oder Ausführung
+(`horizontalPush_bench`, `extension_triceps`, `raise_lateral`, `raise_calf` …). Auflösung:
+exakter Clip → Movement-Type → `rest`. Clips loopen nahtlos, ruhig (4,4 s je Wiederholung).
+Steht die Figur still (kleine Ansicht, Reduced Motion), zeigt sie den Clip bei 30 % seiner
+Schleife – einen Moment, der die Übung erklärt.
 
-- Pflicht: `rest`. Clips nahtlos loopend, ruhig (3,5–5 s je Wiederholung), kein Root-Motion.
-- Geräte (Bank, Kabelturm, Stange …) als eigene Knoten `prop_<name>` im selben GLB oder als
-  separate kleine GLBs; sie bewegen sich über eigene Spuren mit.
+Vorhanden: `rest`, `horizontalPush_bench` (Langhantel-Bankdrücken auf der Flachbank),
+`verticalPull_cable` (Latzug sitzend). Spezifikation: `assets/figure/animations/clips.json`.
 
-### Material und Faserstruktur (Variante A)
+### Budgets und Validator
 
-Anatomie → Muskelstruktur → Kalethra-Hervorhebung:
+| Größe       | Grenze pro Variante | männlich / weiblich (0.28.0) |
+| ----------- | ------------------- | ---------------------------- |
+| GLB         | ≤ 4 MB              | 3,54 / 3,53 MB               |
+| Dreiecke    | ≤ 60 000            | 51 890 / 52 014              |
+| Texturen    | ≤ 2048²             | 1 Normal-Map 2048² (PNG)     |
+| Materialien | ≤ 8                 | 4                            |
 
-- Form: Muskeln modelliert (Volumen, Übergänge), nicht als farbige Flächen.
-- Struktur: Faserverlauf dezent über eine **Normal-Map** (und Rauheit), aus normaler Distanz
-  elegant, aus der Nähe erkennbar; keine Linienzeichnung, keine Lehrbuch-Optik.
-- Hervorhebung: Die App kopiert pro Muskel-Knoten das Material und färbt nur die Grundfarbe
-  Richtung Kalethra-Akzent (primär voll, sekundär halb). Normal-Map, Rauheit und Struktur
-  bleiben darunter sichtbar. Muskel-Materialien: `MeshStandardMaterial`-kompatibel (glTF PBR
-  Metallic-Roughness), Metallic 0, Rauheit 0,6–0,9, matte Optik.
-- Kleidung: eng anliegendes Shirt bzw. minimalistisches Oberteil, kurze Hose, matt, ohne Logos
-  und Muster; darf Muskelgruppen nicht verdecken (Shirt dünn modelliert, Muskeln darunter
-  sichtbar, oder ärmellos).
+`validateGlb()` (`assetValidator.ts`) prüft eine GLB-Datei ohne three.js: Laden (Magic,
+Version, Chunks, JSON), alle Referenzen (Accessoren, Buffer-Views innerhalb des Binär-Chunks,
+Meshes, Materialien, Texturen, Bilder, Skins, Animationen), keine externen Dateien, sichere
+Namen, Vertrag (`validateFigureAsset`: Muskelgruppen, Pflicht-Bones, Clips, `rest`), Prop-Namen,
+Variante (`asset.extras.kalethra.variant`), Einheit Meter, Materialanzahl, Texturgröße aus dem
+Bild-Header, Dreiecke, Dateigröße sowie Koordinatensystem aus den Bindepose-Grenzen:
+Körpergröße 1,45–2,05 m (fängt cm/mm-Exporte), Boden bei y = 0, zentriert über dem Ursprung,
+Kopf über den Füßen (+Y), Brust vor dem Rücken (+Z), Wurzel ohne Transformation.
 
-### Gestaltung
+Die Tests prüfen beide gebündelten Dateien damit in jeder CI; die Berichte liegen unter
+`assets/figure/validation/` und werden byte-genau verglichen (`vitest -u` nach einem Neubau).
 
-Neutral-athletisch, harmonische klassische Proportionen, leicht skulptural – dezent an der
-griechischen Darstellung eines athletischen Körpers orientiert. **Nicht**: Statue 1:1, Toga,
-Rüstung, Marmor- oder Rissoptik, Bodybuilder-Proportionen, Sexualisierung. Kein ausgearbeitetes
-Gesicht, keine Frisur, keine individuellen Merkmale.
+## Technischer Fallback
 
-### Budgets (Android/iOS, Mittelklasse und Xiaomi 15 Ultra)
-
-| Größe           | Grenze pro Variante                                               |
-| --------------- | ----------------------------------------------------------------- |
-| GLB komprimiert | ≤ 4 MB (Geometrie + Texturen + Clips)                             |
-| Dreiecke        | ≤ 60 000                                                          |
-| Texturen        | ≤ 2048², empfohlen: 1 Normal-Map 2048², 1 ORM 1024², KTX2 (Basis) |
-| Materialien     | ≤ 8                                                               |
-| Kompression     | Meshopt oder Draco; Decoder **lokal** gebündelt (kein CDN)        |
-
-Grundfarben brauchen keine Textur (Faktoren reichen); die Faserstruktur steckt in der
-Normal-Map. Zwei Varianten = höchstens ca. 8 MB im APK.
-
-### Prüfung
-
-`validateFigureAsset()` prüft Muskelgruppen, unbekannte `muscle_`-Knoten (Tippfehler),
-Pflicht-Bones, Clip-Namen und den `rest`-Clip. `gltfBody` verwendet ein Asset nur, wenn es den
-Vertrag erfüllt; sonst Fallback. Tests decken Vertrag, Namen nach dem Loader, Auswahl
-male/female, Fallback bei fehlendem oder fehlerhaftem Asset und die Clip-Auflösung ab.
-
-## Fallback-Körper
-
-Klar gekapselt in `fallbackBody.ts`, erfüllt dieselbe Schnittstelle und dieselben Namen. Er
-bleibt als technischer Fallback (kein WebGL-Asset vorhanden, Asset defekt) und für Tests. Er hat
-nur die Clips `rest`, `horizontalPush_bench`, `verticalPull_cable`.
+**Die aktuelle Fallback-Figur ist ausschließlich technischer Fallback und nicht die finale
+visuelle Kalethra-Figur.** Gekapselt in `fallbackBody.ts`, gleiche Schnittstelle und Namen.
+Einsatz nur: Asset nicht registriert, Datei fehlt oder ist defekt, Vertrag verletzt – sowie in
+Tests und Entwicklung. Sie hat nur die Clips `rest`, `horizontalPush_bench`,
+`verticalPull_cable`. Ein produktiver Build zeigt sie nicht, solange die Assets vorhanden sind;
+die E2E-Tests prüfen `data-figure-source="asset"`.
 
 ## Performance
 
-- three.js als eigener Chunk (lazy), GLB-Loader als weiterer Chunk nur bei registriertem Asset.
-- Höchstens ein aktiver WebGL-Kontext (große Ansicht ersetzt das Sheet), Freigabe beim
-  Schließen (`forceContextLoss`); bei Kontextverlust (App im Hintergrund) neue Leinwand.
+- three.js und GLB-Loader als eigene Lazy-Chunks; GLB erst bei sichtbarer Figur.
 - Rendern nur bei Bedarf, keine Echtzeit-Schatten, Pixelverhältnis ≤ 2.
+- Bei Kontextverlust (App im Hintergrund) eine neue Leinwand.
 - Reduced Motion: keine automatische Schleife, Drehen ohne Übergang.
 
 ## Lizenz
 
-| Teil                          | Quelle                   | Lizenz                                                | Kommerziell | Bearbeitung |
-| ----------------------------- | ------------------------ | ----------------------------------------------------- | ----------- | ----------- |
-| Fallback-Körper, Bewegungen   | eigener Code             | Eigentum des Projekts                                 | ja          | ja          |
-| three.js 0.186 (+ GLTFLoader) | npm `three`              | MIT                                                   | ja          | ja          |
-| Modellierte Körper            | **noch nicht vorhanden** | eigenes oder eindeutig kommerziell lizenziertes Asset | –           | –           |
+| Teil                            | Quelle                                    | Lizenz                | Kommerziell | Bearbeitung |
+| ------------------------------- | ----------------------------------------- | --------------------- | ----------- | ----------- |
+| Kalethra-Körper (GLB)           | erzeugt mit `tools/figures` aus MakeHuman | CC0 1.0 (Basisdaten)  | ja          | ja          |
+| MakeHuman-Basisnetz, Targets, … | makehumancommunity/makehuman, `a8bc2d5…`  | CC0 1.0 (Assets)      | ja          | ja          |
+| Pipeline, Fallback, Bewegungen  | eigener Code                              | Eigentum des Projekts | ja          | ja          |
+| three.js 0.186 (+ GLTFLoader)   | npm `three`                               | MIT                   | ja          | ja          |
 
-Keine Modelle mit unklarer Lizenz.
-
-## Was für die finalen Körper noch fehlt
-
-1. Zwei modellierte Körper (male, female) nach diesem Vertrag: Topologie mit getrennten
-   Muskel-Knoten, Normal-Map für die Faserstruktur, Kleidung, Rig mit den Pflicht-Bones.
-2. Clips mindestens `rest`, `horizontalPush_bench`, `verticalPull_cable`; danach weitere
-   Movement-Types.
-3. Optional Meshopt/KTX2-Kompression und die lokalen Decoder.
-4. Eintrag in `FIGURE_ASSETS`, Gerätetest auf dem Xiaomi 15 Ultra.
+Aus MakeHuman werden nur Daten (Assets, CC0) verwendet, kein MakeHuman-Programmcode (AGPL).

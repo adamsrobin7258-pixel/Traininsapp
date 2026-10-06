@@ -55,21 +55,24 @@ export interface FigureRenderer {
 
 const PAIR_RADIUS = 1.3;
 
+/** URL of a bundled asset: relative to the app's base, never to the current route. */
+export function assetUrl(path: string): string {
+  return `${import.meta.env.BASE_URL}${path}`;
+}
+
 /**
- * The body for a variant: its modelled asset if one is bundled, otherwise – or if the asset
- * cannot be loaded or breaks the contract – the fallback body. Never fails.
+ * The body for a variant ("male" / "female"): its modelled asset. Only if no asset is bundled,
+ * or it cannot be loaded or breaks the contract, the code-built fallback body is used – a
+ * technical fallback, not the Kalethra figure. Never fails.
  */
-export async function createBody(
-  variant: FigureVariant,
-  options: BodyOptions,
-): Promise<FigureBody> {
+export async function loadBody(variant: FigureVariant, options: BodyOptions): Promise<FigureBody> {
   const asset = figureAssetFor(variant);
   if (asset) {
     try {
       const { loadGltfBody } = await import('./gltfBody');
-      return await loadGltfBody(asset, options);
+      return await loadGltfBody(assetUrl(asset), options);
     } catch (error) {
-      console.warn('Kalethra body asset unavailable, using the fallback body', error);
+      console.warn('Kalethra body asset unavailable, using the technical fallback body', error);
     }
   }
   return createFallbackBody(options);
@@ -85,7 +88,7 @@ export async function createFigureRenderer(
     palette: options.palette,
   };
   const bodies = await Promise.all(
-    (options.pair ? [0, 1] : [0]).map(() => createBody(options.variant, bodyOptions)),
+    (options.pair ? [0, 1] : [0]).map(() => loadBody(options.variant, bodyOptions)),
   );
   const lead = bodies[0];
   if (!lead) throw new Error('no body');

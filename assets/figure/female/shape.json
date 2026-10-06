@@ -1,0 +1,161 @@
+{
+  "variant": "female",
+  "file": "public/figure/female/kalethra-female.glb",
+  "makehuman": {
+    "gender": "female",
+    "muscle": 0.65,
+    "lean": 0.4,
+    "proportions": 0.7,
+    "cup": 0.35
+  },
+  "heightMetres": 1.593,
+  "triangles": 52014,
+  "bytes": 3706500,
+  "normalMap": {
+    "size": 2048,
+    "bytes": 1481704
+  },
+  "bodyMeshes": [
+    "muscle_adductors",
+    "muscle_back_erectors",
+    "muscle_back_rhomboids",
+    "muscle_back_trapezius",
+    "muscle_biceps",
+    "muscle_calves_gastrocnemius",
+    "muscle_calves_soleus",
+    "muscle_chest_lower",
+    "muscle_chest_upper",
+    "muscle_core_obliques",
+    "muscle_core_rectus",
+    "muscle_forearms_extensors",
+    "muscle_forearms_flexors",
+    "muscle_glutes_maximus",
+    "muscle_glutes_medius",
+    "muscle_hamstrings",
+    "muscle_lats",
+    "muscle_quadriceps",
+    "muscle_shoulders_front",
+    "muscle_shoulders_middle",
+    "muscle_shoulders_rear",
+    "body_feet",
+    "body_hands",
+    "body_head",
+    "body_knees",
+    "body_neck",
+    "body_pelvis",
+    "body_shins",
+    "muscle_triceps"
+  ],
+  "bones": {
+    "root": [
+      0,
+      0,
+      0
+    ],
+    "pelvis": [
+      0,
+      0.8426,
+      -0.0747
+    ],
+    "spine": [
+      0,
+      0.842,
+      0.0039
+    ],
+    "chest": [
+      0,
+      1.0524,
+      -0.0075
+    ],
+    "neck": [
+      0,
+      1.3479,
+      -0.0176
+    ],
+    "head": [
+      0,
+      1.4563,
+      0.0247
+    ],
+    "shoulder_L": [
+      0.0239,
+      1.2775,
+      0.0046
+    ],
+    "upperArm_L": [
+      0.1557,
+      1.2612,
+      0.0045
+    ],
+    "forearm_L": [
+      0.2042,
+      1.033,
+      0.0092
+    ],
+    "forearmTwist_L": [
+      0.2206,
+      0.9279,
+      0.0239
+    ],
+    "hand_L": [
+      0.2371,
+      0.8228,
+      0.0386
+    ],
+    "thigh_L": [
+      0.0909,
+      0.8292,
+      0
+    ],
+    "shin_L": [
+      0.1321,
+      0.4695,
+      0.0316
+    ],
+    "foot_L": [
+      0.1578,
+      0.066,
+      0.0095
+    ],
+    "shoulder_R": [
+      -0.0239,
+      1.2775,
+      0.0046
+    ],
+    "upperArm_R": [
+      -0.1557,
+      1.2612,
+      0.0045
+    ],
+    "forearm_R": [
+      -0.2042,
+      1.033,
+      0.0092
+    ],
+    "forearmTwist_R": [
+      -0.2206,
+      0.9279,
+      0.0239
+    ],
+    "hand_R": [
+      -0.2371,
+      0.8228,
+      0.0386
+    ],
+    "thigh_R": [
+      -0.0909,
+      0.8292,
+      0
+    ],
+    "shin_R": [
+      -0.1321,
+      0.4695,
+      0.0316
+    ],
+    "foot_R": [
+      -0.1578,
+      0.066,
+      0.0095
+    ]
+  }
+}

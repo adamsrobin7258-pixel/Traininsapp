@@ -25,7 +25,7 @@ vi.mock('./gltfBody', () => ({
   },
 }));
 
-const { createBody } = await import('./figureRenderer');
+const { loadBody } = await import('./figureRenderer');
 
 const options = {
   clip: 'horizontalPush_bench',
@@ -46,7 +46,7 @@ describe('body selection', () => {
   });
 
   it('uses the fallback body while no asset is bundled', async () => {
-    const body = await createBody('female', options);
+    const body = await loadBody('female', options);
     expect(body.source).toBe('fallback');
     expect(body.clip).toBe('horizontalPush_bench');
     expect(assets.requested).toEqual([]);
@@ -54,9 +54,13 @@ describe('body selection', () => {
 
   it('loads the asset of the profile’s variant', async () => {
     assets.registered = { male: 'figure/kalethra-male.glb', female: 'figure/kalethra-female.glb' };
-    expect((await createBody('female', options)).source).toBe('asset');
-    expect((await createBody('male', options)).source).toBe('asset');
-    expect(assets.requested).toEqual(['figure/kalethra-female.glb', 'figure/kalethra-male.glb']);
+    expect((await loadBody('female', options)).source).toBe('asset');
+    expect((await loadBody('male', options)).source).toBe('asset');
+    // Resolved against the app's base, so a deep route (/training/…) still finds the file.
+    expect(assets.requested).toEqual([
+      `${import.meta.env.BASE_URL}figure/kalethra-female.glb`,
+      `${import.meta.env.BASE_URL}figure/kalethra-male.glb`,
+    ]);
   });
 
   it.each(['missing', 'broken'] as const)(
@@ -64,7 +68,7 @@ describe('body selection', () => {
     async (load) => {
       assets.registered = { male: 'figure/kalethra-male.glb' };
       assets.load = load;
-      const body = await createBody('male', options);
+      const body = await loadBody('male', options);
       expect(body.source).toBe('fallback');
       expect(console.warn).toHaveBeenCalled();
     },
@@ -72,7 +76,7 @@ describe('body selection', () => {
 
   it('keeps the variants independent: one variant’s asset is not used for the other', async () => {
     assets.registered = { female: 'figure/kalethra-female.glb' };
-    expect((await createBody('male', options)).source).toBe('fallback');
+    expect((await loadBody('male', options)).source).toBe('fallback');
     expect(assets.requested).toEqual([]);
   });
 });

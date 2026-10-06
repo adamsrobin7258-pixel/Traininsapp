@@ -430,6 +430,21 @@ Technische Qualitäts- und Architekturphase – **visuell noch nicht final** (De
 - Neuer Kontext nach WebGL-Kontextverlust (App verlassen/zurückkehren)
 - Workout-Zusammenfassung: zusätzlich abgesichert (0, 1, mehrere Übungen; Zurück-Geste)
 
+## Phase 18.2 – 3D: finale Figuren männlich/weiblich ✅ (Version 0.28.0)
+
+Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md), Assets:
+[assets/figure/docs/README.md](../assets/figure/docs/README.md):
+
+- Zwei Kalethra-Körper (männlich, weiblich) als gebündelte GLBs, erzeugt mit einer
+  reproduzierbaren Pipeline (`tools/figures`) aus MakeHuman-Daten (CC0): Kopf ohne Gesicht,
+  matte Haut, Muskel-Knoten mit Trennfugen und Faser-Normal-Map, Top und Shorts in Anthrazit,
+  Rig mit Twist-Bones, Clips Bankdrücken und Latzug mit Geräten
+- Vertrag erweitert (`root`, `body_*`, `prop_<variante>_*`), Datei-Validator für GLBs als
+  CI-Gate, `loadBody(variant)` mit geteiltem Laden und Freigabe, Übung → Movement-Type → Clip
+  für die ganze Bibliothek
+- Die Code-Figur bleibt ausschließlich technischer Fallback
+- Offen: weitere Clips, Gerätetest auf echter Hardware, künstlerische Feinarbeit
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

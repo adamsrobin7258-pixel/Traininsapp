@@ -24,13 +24,13 @@ export function figureVariantFor(sex: ProfileSex | null): FigureVariant {
 }
 
 /**
- * Bundled body assets (relative to the app, never a remote URL). `null` = not delivered yet:
- * the code-built fallback body is shown instead. Adding a model = placing the GLB under
- * `public/figure/` and entering its path here.
+ * Bundled body assets (relative to the app's base, never a remote URL – the app works offline).
+ * Built by `tools/figures/build.mjs`; `null` would mean "not delivered", and only then – or if an
+ * asset cannot be loaded – the code-built fallback body is shown.
  */
 export const FIGURE_ASSETS: Readonly<Record<FigureVariant, string | null>> = {
-  male: null,
-  female: null,
+  male: 'figure/male/kalethra-male.glb',
+  female: 'figure/female/kalethra-female.glb',
 };
 
 export function figureAssetFor(variant: FigureVariant): string | null {
@@ -52,6 +52,28 @@ export function figureAssetFor(variant: FigureVariant): string | null {
 export const MUSCLE_NODE_PREFIX = 'muscle_';
 /** Allowed in every name of the contract. */
 export const SAFE_NAME = /^[A-Za-z0-9_]+$/;
+
+/**
+ * Neutral surface without a muscle group (head, hands, feet, knees …): `body_<part>`. Never
+ * highlighted.
+ */
+export const BODY_NODE_PREFIX = 'body_';
+
+/**
+ * Equipment of a clip: `prop_<variant>_<part>` ("prop_bench_bar"). Shown only while a clip of
+ * that equipment variant plays ("horizontalPush_bench" → `prop_bench_*`), hidden otherwise.
+ */
+export const PROP_NODE_PREFIX = 'prop_';
+
+/** The equipment variant a prop node belongs to, or `null` for any other node. */
+export function propVariantOfNode(name: string): string | null {
+  return /^prop_([a-z][a-zA-Z]*)_[a-zA-Z0-9]+$/.exec(name)?.[1] ?? null;
+}
+
+/** The equipment variant of a clip name ("horizontalPush_bench" → "bench"), or `null`. */
+export function clipVariant(clip: string): string | null {
+  return clip.split('_')[1] ?? null;
+}
 
 /** Recommended finer parts per group (names `muscle_<group>_<part>`); all optional. */
 export const MUSCLE_PARTS: Readonly<Record<FigureMuscle, readonly string[]>> = {
@@ -77,7 +99,9 @@ export function muscleNodeName(group: FigureMuscle, part?: string): string {
 /** The muscle group a node belongs to, or `null` for any other node. */
 export function muscleGroupOfNode(name: string): FigureMuscle | null {
   if (!name.startsWith(MUSCLE_NODE_PREFIX)) return null;
-  const match = /^([a-z]+)(?:_([a-z]+))?$/i.exec(name.slice(MUSCLE_NODE_PREFIX.length));
+  // A trailing number is the glTF loader's: a mesh with several primitives (skin and clothing)
+  // becomes a group with children "<name>_1", "<name>_2".
+  const match = /^([a-z]+)(?:_([a-z]+))?(?:_\d+)?$/i.exec(name.slice(MUSCLE_NODE_PREFIX.length));
   const group = match?.[1];
   return group && isOneOf(FIGURE_MUSCLES, group) ? group : null;
 }
@@ -85,8 +109,11 @@ export function muscleGroupOfNode(name: string): FigureMuscle | null {
 /**
  * Skeleton: these joints must exist (`_L` / `_R` for the sides), so every movement clip can
  * drive every body variant. Bone rest pose: standing, arms slightly away from the body.
+ * `shoulder_*` is the clavicle, `forearm_*` the lower arm, `thigh_*` / `shin_*` the upper and
+ * lower leg. More bones are allowed (e.g. a forearm twist bone).
  */
 export const REQUIRED_BONES = [
+  'root',
   'pelvis',
   'spine',
   'chest',

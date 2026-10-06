@@ -3,7 +3,9 @@ import {
   EXERCISE_VISUALS,
   FIGURE_MOVEMENTS,
   FIGURE_MUSCLES,
+  ISOLATION_CLIPS,
   REST_VISUAL,
+  exerciseClip,
   movementForPattern,
   aggregateMuscleHighlight,
   doneExercises,
@@ -131,5 +133,37 @@ describe('exercise visuals: exercise → movement type → clip', () => {
     expect(exerciseVisual(exercise('sys.back-squat'))).toBeNull();
     expect(exerciseVisual({ id: 'nope', movementPattern: 'squat' })).toBeNull();
     expect(REST_VISUAL).toEqual({ movement: 'rest', clip: 'rest', side: 'front' });
+  });
+});
+
+describe('exercise → movement type → clip (whole library)', () => {
+  it('gives every library exercise a movement type and a contract clip name', () => {
+    for (const exercise of EXERCISE_CATALOG) {
+      const visual = exerciseClip({ id: exercise.id, movementPattern: exercise.movementPattern });
+      expect(visual, exercise.id).not.toBeNull();
+      expect(FIGURE_MOVEMENTS).toContain(visual?.movement);
+      expect(visual?.clip, exercise.id).toMatch(/^[a-z][a-zA-Z]*(_[a-z][a-zA-Z]*)?$/);
+      expect(visual?.clip.split('_')[0]).toBe(visual?.movement);
+    }
+  });
+
+  it('lists exactly the exercises whose pattern does not decide the movement', () => {
+    const undecided = EXERCISE_CATALOG.filter(
+      (exercise) => movementForPattern(exercise.movementPattern) === null,
+    ).map((exercise) => exercise.id);
+    expect(Object.keys(ISOLATION_CLIPS).sort()).toEqual([...undecided].sort());
+  });
+
+  it('maps the named examples as variants of a movement type', () => {
+    const clip = (id: string) =>
+      exerciseClip({
+        id,
+        movementPattern: EXERCISE_CATALOG.find((e) => e.id === id)?.movementPattern ?? 'other',
+      })?.clip;
+    expect(clip('sys.triceps-pushdown')).toBe('extension_triceps');
+    expect(clip('sys.lateral-raise')).toBe('raise_lateral');
+    expect(clip('sys.calf-raise')).toBe('raise_calf');
+    expect(clip('sys.overhead-press')).toBe('verticalPush');
+    expect(clip('sys.barbell-row')).toBe('horizontalPull');
   });
 });
