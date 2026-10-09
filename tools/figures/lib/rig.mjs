@@ -26,9 +26,30 @@ export const RIG = [
   ]),
 ];
 
-/** Which contract bone a MakeHuman bone's weights go to. */
-function contractBoneOf(mhBone, mhBones) {
-  for (const [name, , , merged] of RIG) {
+/**
+ * Hand bones of the male body (phase 18.4, beyond the contract): the four fingers' first
+ * phalanges, their middle and end phalanges, and the thumb – so a clip can close the hand around
+ * a bar. A variant without them keeps fingers merged into `hand_*`.
+ */
+const HAND_BONES = ['L', 'R'].flatMap((s) => [
+  [`fingers_${s}`, `hand_${s}`, `finger3-1.${s}`, [2, 3, 4, 5].map((f) => `finger${f}-1.${s}`)],
+  [
+    `fingerTips_${s}`,
+    `fingers_${s}`,
+    `finger3-2.${s}`,
+    [2, 3, 4, 5].flatMap((f) => [`finger${f}-2.${s}`, `finger${f}-3.${s}`]),
+  ],
+  [`thumb_${s}`, `hand_${s}`, `finger1-1.${s}`, [1, 2, 3].map((k) => `finger1-${k}.${s}`)],
+]);
+
+/** The rig of a variant: the contract bones, for the male body with hand bones. */
+export function rigFor(variant) {
+  return variant === 'male' ? [...RIG, ...HAND_BONES] : RIG;
+}
+
+/** Which rig bone a MakeHuman bone's weights go to. */
+function contractBoneOf(mhBone, mhBones, rig = RIG) {
+  for (const [name, , , merged] of rig) {
     if (merged.includes(mhBone)) return name;
   }
   const side = mhBone.endsWith('.L') ? 'L' : mhBone.endsWith('.R') ? 'R' : null;
@@ -37,7 +58,7 @@ function contractBoneOf(mhBone, mhBones) {
   // Walk up to the first bone that is mapped (face bones → head, …).
   let parent = mhBones[mhBone]?.parent;
   while (parent) {
-    for (const [name, , , merged] of RIG) if (merged.includes(parent)) return name;
+    for (const [name, , , merged] of rig) if (merged.includes(parent)) return name;
     parent = mhBones[parent]?.parent;
   }
   return 'head';
@@ -56,9 +77,9 @@ const mean = (positions, verts) => {
 };
 
 /** Joint positions (metres, already shaped) of the contract bones. */
-export function rigJoints(skeleton, positions) {
+export function rigJoints(skeleton, positions, rig = RIG) {
   const joints = new Map();
-  for (const [name, , mhBone] of RIG) {
+  for (const [name, , mhBone] of rig) {
     if (!mhBone) continue;
     const verts = skeleton.joints[skeleton.bones[mhBone].head];
     joints.set(name, mean(positions, verts));
@@ -70,11 +91,11 @@ export function rigJoints(skeleton, positions) {
 }
 
 /** Per-vertex top-4 weights of the contract bones (indices into RIG order). */
-export function rigWeights(skeleton, mhWeights, vertexCount) {
-  const names = RIG.map(([name]) => name);
+export function rigWeights(skeleton, mhWeights, vertexCount, rig = RIG) {
+  const names = rig.map(([name]) => name);
   const per = Array.from({ length: vertexCount }, () => new Map());
   for (const [mhBone, list] of Object.entries(mhWeights)) {
-    const bone = names.indexOf(contractBoneOf(mhBone, skeleton.bones));
+    const bone = names.indexOf(contractBoneOf(mhBone, skeleton.bones, rig));
     for (const [v, w] of list) {
       if (v >= vertexCount) continue;
       per[v].set(bone, (per[v].get(bone) ?? 0) + w);

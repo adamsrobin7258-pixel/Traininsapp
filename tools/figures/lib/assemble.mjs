@@ -1,7 +1,7 @@
 /** The shaped, posed body of a variant: positions, faces, rig, ready for segmentation. */
 import { readBaseMesh, readSkeleton, readWeights } from './makehuman.mjs';
 import { neighbours, poseMatrices, restPose, skin, smoothHead, twistForearms } from './pose.mjs';
-import { rigJoints, rigWeights } from './rig.mjs';
+import { rigFor, rigJoints, rigWeights } from './rig.mjs';
 import { buildShape } from './shape.mjs';
 import { relaxHands } from './hands.mjs';
 import { subdivideBody } from './subdivide.mjs';
@@ -20,9 +20,10 @@ export function assembleBody(sources, variant) {
   const faces = mesh.faces.filter((f) => f.group === 'body');
   const used = [...new Set(faces.flatMap((f) => f.v))];
   const shaped = relaxHands(buildShape(dataDir, mesh, variant), skeleton, mhWeights);
-  const { joints, tail } = rigJoints(skeleton, shaped);
-  const weights = rigWeights(skeleton, mhWeights, shaped.length / 3);
-  const { world, heads } = poseMatrices(joints, restPose(joints, tail));
+  const rig = rigFor(variant);
+  const { joints, tail } = rigJoints(skeleton, shaped, rig);
+  const weights = rigWeights(skeleton, mhWeights, shaped.length / 3, rig);
+  const { world, heads } = poseMatrices(joints, restPose(joints, tail), rig);
   let positions = skin(shaped, weights, world);
   positions = twistForearms(positions, weights, heads, Number(process.env.TWIST ?? 10));
   positions = smoothHead(positions, weights, neighbours(faces, positions.length / 3), used);
@@ -47,7 +48,11 @@ export function assembleBody(sources, variant) {
   );
   // Trunk and limbs get one subdivision step; head, hands and feet are dense already.
   const dense = new Set(
-    ['head', 'hand_L', 'hand_R', 'foot_L', 'foot_R'].map((n) => weights.names.indexOf(n)),
+    weights.names
+      .map((n, i) =>
+        /^(head|hand_[LR]|foot_[LR]|fingers_[LR]|fingerTips_[LR]|thumb_[LR])$/.test(n) ? i : -1,
+      )
+      .filter((i) => i >= 0),
   );
   return subdivideBody(
     { positions, faces, used, weights, joints: posedJoints, uvs: mesh.uvs },

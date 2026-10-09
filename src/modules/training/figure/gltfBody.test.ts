@@ -11,7 +11,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FIGURE_MUSCLES } from '@/core/training';
-import type { FigurePalette } from './body';
+import { PRIMARY_MIX, type FigurePalette } from './body';
 import { REQUIRED_BONES, muscleNodeName } from './contract';
 import { FigureAssetError, STILL_PHASE, gltfBodyFrom } from './gltfBody';
 
@@ -85,7 +85,8 @@ describe('modelled body (GLB import path)', () => {
     const parts = levels(body.root);
     expect(parts.get('muscle_chest')).toMatchObject({
       level: 'primary',
-      hex: new Color('#557a5b').getHexString(),
+      // Mostly the accent; a little of the modelled surface stays.
+      hex: new Color(SKIN).lerp(new Color('#557a5b'), PRIMARY_MIX).getHexString(),
       roughness: 0.8,
     });
     // Every part of a group lights up together.

@@ -12,7 +12,7 @@ describe('data sources', () => {
     vi.restoreAllMocks();
   });
 
-  it('credits the BLS and Open Food Facts under "About"', async () => {
+  it('credits the BLS, Open Food Facts and the 3D body under "About"', async () => {
     await renderApp('/settings/app');
     await userEvent.click(await screen.findByRole('button', { name: 'Datenquellen' }));
     const sheet = within(await screen.findByRole('dialog', { name: 'Datenquellen' }));
@@ -25,6 +25,13 @@ describe('data sources', () => {
     expect(sheet.getByText('6 Lebensmittel · importiert am 01.10.2026')).toBeInTheDocument();
     expect(sheet.getByText(/Open Database License \(ODbL\)/)).toBeInTheDocument();
     expect(sheet.getByText(/Gesendet wird ausschließlich der Barcode/)).toBeInTheDocument();
+    // CC BY 4.0: author, title, source, licence and the note that the body was modified.
+    expect(
+      sheet.getByText(
+        /„Proxy Human base Mesh“ von sphere_joe \(sketchfab\.com\/mundane_x\), lizenziert unter CC BY 4\.0/,
+      ),
+    ).toBeInTheDocument();
+    expect(sheet.getByText(/Für Kalethra bearbeitet/)).toBeInTheDocument();
   });
 
   it('says so when no BLS data is bundled', async () => {

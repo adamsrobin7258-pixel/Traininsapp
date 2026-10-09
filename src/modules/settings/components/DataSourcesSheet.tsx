@@ -5,7 +5,7 @@ import { parseLocalDateKey } from '@/shared/lib/date';
 import { formatMediumDate } from '@/shared/lib/format';
 import { Section, Sheet } from '@/ui';
 
-/** Attribution of the food data (required by the BLS and Open Food Facts licences). */
+/** Attribution of the food data and the 3D body (required by the BLS, ODbL and CC BY licences). */
 export function DataSourcesSheet({ onClose }: { onClose: () => void }) {
   const { t, locale } = useI18n();
   const { services } = useNutrition();
@@ -53,6 +53,9 @@ export function DataSourcesSheet({ onClose }: { onClose: () => void }) {
       </Section>
       <Section title={t('profile.dataSources.healthTitle')}>
         <p>{t('profile.dataSources.healthBody')}</p>
+      </Section>
+      <Section title={t('profile.dataSources.figureTitle')}>
+        <p>{t('profile.dataSources.figureBody')}</p>
       </Section>
     </Sheet>
   );

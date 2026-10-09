@@ -1575,6 +1575,9 @@ export const de = {
       healthTitle: 'Health Connect',
       healthBody:
         'Optional, erst nachdem du es einschaltest (Profil → Gesundheitsdaten). Nur lesend: Gewicht, Schritte, aktive Kalorien und Aktivitäten (mit Distanz) der letzten 30 Tage, verschlüsselt auf diesem Gerät gespeichert. Nichts wird in Health Connect geschrieben oder an einen Server gesendet.',
+      figureTitle: '3D-Körper',
+      figureBody:
+        'Der männliche Körper basiert auf „Proxy Human base Mesh“ von sphere_joe (sketchfab.com/mundane_x), lizenziert unter CC BY 4.0 (creativecommons.org/licenses/by/4.0). Für Kalethra bearbeitet: Anatomie, Netz, Rig, Bewegungen und Kleidung wurden neu erstellt bzw. angepasst. Die Bearbeitung ist vom Urheber nicht unterstützt oder gebilligt. Topologie, Hände, Füße und der weibliche Körper: MakeHuman-Assets (CC0).',
     },
     aboutTitle: 'Über {appName}',
     version: 'Version',

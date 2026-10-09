@@ -28,7 +28,13 @@ import {
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneWithSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { FigureMuscle } from '@/core/training';
-import { SECONDARY_MIX, type BodyOptions, type FigureBody, type FigurePalette } from './body';
+import {
+  PRIMARY_MIX,
+  SECONDARY_MIX,
+  type BodyOptions,
+  type FigureBody,
+  type FigurePalette,
+} from './body';
 import {
   REQUIRED_BONES,
   clipVariant,
@@ -159,7 +165,7 @@ export function gltfBodyFrom(
       const level = current[group];
       material.color.copy(
         level === 'primary'
-          ? accent
+          ? base.clone().lerp(accent, PRIMARY_MIX)
           : level === 'secondary'
             ? base.clone().lerp(accent, SECONDARY_MIX)
             : base,

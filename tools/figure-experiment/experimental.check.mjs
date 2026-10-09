@@ -10,6 +10,7 @@ import { clone } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { FIGURE_MUSCLES } from '@/core/training';
 import { readProjectFile } from '@/test/projectFiles';
 import { validateGlb } from '@/modules/training/figure/assetValidator';
+import { PRIMARY_MIX } from '@/modules/training/figure/body';
 import { muscleGroupOfNode } from '@/modules/training/figure/contract';
 import { gltfBodyFrom } from '@/modules/training/figure/gltfBody';
 
@@ -66,7 +67,12 @@ describe('experimental body (Sketchfab base mesh)', () => {
       const group = muscleGroupOfNode(node.name);
       if (!group) return;
       groups.add(group);
-      if (group === 'chest') expect(node.material.color.equals(accent)).toBe(true);
+      // Primary: mostly the accent, a little of the surface stays (PRIMARY_MIX).
+      if (group === 'chest') {
+        const c = node.material.color;
+        const off = Math.hypot(c.r - accent.r, c.g - accent.g, c.b - accent.b);
+        expect(off).toBeLessThanOrEqual((1 - PRIMARY_MIX) * Math.sqrt(3));
+      }
     });
     expect([...groups].sort()).toEqual([...FIGURE_MUSCLES].sort());
     body.dispose();

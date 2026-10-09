@@ -445,6 +445,27 @@ Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md), Assets:
 - Die Code-Figur bleibt ausschließlich technischer Fallback
 - Offen: weitere Clips, Gerätetest auf echter Hardware, künstlerische Feinarbeit
 
+## Phase 18.3 – 3D: Experiment modellierte Anatomie ✅ (ohne Versionswechsel)
+
+Isolierter Versuch (`tools/figure-experiment/`, `assets/figure/experimental/sketchfab-base/`):
+Anatomie aus „Proxy Human base Mesh“ (sphere_joe, CC BY 4.0) in Blender neu modelliert, als
+Kandidat geprüft, nicht in der App.
+
+## Phase 18.4 – 3D: männlicher Körper mit modellierter Anatomie ✅ (Version 0.29.0)
+
+Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md), [Gerätetest](FIGURE_DEVICE_TEST.md):
+
+- Produktiver männlicher Körper übernimmt die Anatomie aus 18.3 (Hybrid: Sculpt-Form auf das
+  MakeHuman-Netz übertragen, Detail als Normal-Map); Vertrag, Budgets, Muskelgruppen,
+  Highlight-Logik und Architektur unverändert
+- Rig mit Finger-/Daumen-Bones (nur männlich), geglättete Schultergewichte; Clips neu aus den
+  neuen Gelenken: Finger umschließen die Stange, Schulterrhythmus beim Armheben
+- Kleidung mit geometrischem Armausschnitt und eng anliegenden Stofflagen; neues Figurenlicht,
+  Highlight primär 80 % Akzent (kein „Diagramm“-Ton)
+- CC-BY-4.0-Namensnennung in der App (Datenquellen), in der GLB und in der Doku
+- Weiblicher Körper unverändert (byte-gleich zu 0.28.0)
+- Offen: Gerätetest auf dem Xiaomi 15 Ultra, weiblicher Körper im neuen Stil, weitere Clips
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

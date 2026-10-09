@@ -54,3 +54,8 @@ export interface FigureBody {
 
 /** Secondary muscles: halfway between the neutral surface and the accent – calm, not neon. */
 export const SECONDARY_MIX = 0.5;
+/**
+ * Primary muscles of a modelled body: mostly the accent, but a little of the surface stays – skin
+ * and fabric keep their own tone and the modelled form stays readable (not a colour diagram).
+ */
+export const PRIMARY_MIX = 0.8;

@@ -1551,6 +1551,9 @@ export const en: TranslationSchema = {
       healthTitle: 'Health Connect',
       healthBody:
         'Optional, only after you turn it on (Profile → Health data). Read-only: weight, steps, active calories and activities (with distance) of the last 30 days, stored encrypted on this device. Nothing is written to Health Connect or sent to a server.',
+      figureTitle: '3D body',
+      figureBody:
+        'The male body is based on “Proxy Human base Mesh” by sphere_joe (sketchfab.com/mundane_x), licensed under CC BY 4.0 (creativecommons.org/licenses/by/4.0). Modified for Kalethra: anatomy, mesh, rig, motions and clothing were remade or adapted. The modifications are not endorsed by the author. Topology, hands, feet and the female body: MakeHuman assets (CC0).',
     },
     aboutTitle: 'About {appName}',
     version: 'Version',

@@ -1,7 +1,11 @@
 # Experiment: Kalethra-Körper aus dem Sketchfab-Base-Mesh
 
-**Status: experimenteller Kandidat, nicht in der App.** Die App lädt unverändert
-`public/figure/male/kalethra-male.glb`. Nichts Produktives wurde ersetzt oder überschrieben.
+**Status: experimenteller Kandidat, nicht in der App.** Die GLB und `.blend` hier werden nicht
+geladen. **Seit 0.29.0 (Phase 18.4) ist die modellierte Anatomie dieses Experiments aber die Quelle
+des produktiven männlichen Körpers:** Stufe 6 exportiert die Form nach
+`assets/figure/male/source/`, `tools/figures/` überträgt sie auf das MakeHuman-Netz
+(Attribution: [`assets/figure/male/source/ATTRIBUTION.md`](../../male/source/ATTRIBUTION.md)).
+Der Bericht unten beschreibt den Stand von Phase 18.3.
 
 Ausgangsmodell: „Proxy Human base Mesh“ von sphere_joe, CC BY 4.0 – siehe
 [`ATTRIBUTION.md`](ATTRIBUTION.md). Pipeline und Bedienung:

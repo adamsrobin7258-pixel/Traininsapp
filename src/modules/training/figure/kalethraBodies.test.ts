@@ -5,6 +5,7 @@
  * jsdom decodes no images, so for the scene tests the detail normal map is left out of the
  * parsed copy; the file validation checks it (size, format) on the untouched file.
  */
+import type { Color } from 'three';
 import {
   Group,
   Mesh,
@@ -17,7 +18,7 @@ import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import { FIGURE_MUSCLES, type FigureMuscle } from '@/core/training';
 import { readProjectFile } from '@/test/projectFiles';
 import { validateGlb } from './assetValidator';
-import type { FigurePalette } from './body';
+import { PRIMARY_MIX, type FigurePalette } from './body';
 import {
   ASSET_BUDGET,
   FIGURE_VARIANTS,
@@ -125,10 +126,13 @@ describe.each(FIGURE_VARIANTS)('Kalethra body "%s"', (variant) => {
     const muscles = musclesOf(body.root);
     expect([...muscles.keys()].sort()).toEqual([...FIGURE_MUSCLES].sort());
     const accent = new MeshStandardMaterial({ color: PALETTE.accent }).color;
-    // The chest lights up – on the skin and on the top above it.
+    // The chest lights up – on the skin and on the top above it: mostly the accent, a little of
+    // the surface (skin, fabric) stays.
+    const towardsAccent = (color: Color) =>
+      Math.hypot(color.r - accent.r, color.g - accent.g, color.b - accent.b);
     for (const material of muscles.get('chest') ?? []) {
       expect(material.userData.level).toBe('primary');
-      expect(material.color.equals(accent)).toBe(true);
+      expect(towardsAccent(material.color)).toBeLessThanOrEqual((1 - PRIMARY_MIX) * Math.sqrt(3));
     }
     for (const material of muscles.get('triceps') ?? []) {
       expect(material.userData.level).toBe('secondary');
@@ -207,6 +211,71 @@ describe.each(FIGURE_VARIANTS)('Kalethra body "%s"', (variant) => {
     expect(Math.sign(worldOf(rest.root, 'hand_L').x)).toBe(-Math.sign(frontHand));
     body.dispose();
     rest.dispose();
+  });
+});
+
+/** Distance of a world point to the axis of a bar prop (bars run along their local X). */
+function offBar(root: Object3D, bar: string, point: Vector3) {
+  const local = (root.getObjectByName(bar) as Object3D).worldToLocal(point.clone());
+  return { radial: Math.hypot(local.y, local.z), along: local.x };
+}
+
+describe('Kalethra body "male" – grip and shoulder girdle', () => {
+  it('carries the CC BY 4.0 credit of its modelled source in the file', async () => {
+    const { asset } = (await gltfOf('male')).parser.json as {
+      asset: { copyright?: string; extras: { kalethra: { source: string } } };
+    };
+    expect(asset.copyright).toMatch(/"Proxy Human base Mesh" by sphere_joe/);
+    expect(asset.copyright).toMatch(/CC BY 4\.0/);
+    expect(asset.copyright).toMatch(/Modified for Kalethra/);
+    expect(asset.extras.kalethra.source).toMatch(/modified/);
+  });
+
+  it.each([
+    ['horizontalPush_bench', 'prop_bench_bar'],
+    ['verticalPull_cable', 'prop_cable_bar'],
+  ])('holds the bar in the fingers over the whole repetition (%s)', async (clip, bar) => {
+    const body = await bodyOf('male', clip);
+    const seen: number[] = [];
+    for (let step = 0; step < 12; step++) {
+      body.root.updateMatrixWorld(true);
+      for (const side of ['L', 'R']) {
+        const fingers = offBar(body.root, bar, worldOf(body.root, `fingers_${side}`));
+        const tips = offBar(body.root, bar, worldOf(body.root, `fingerTips_${side}`));
+        seen.push(fingers.radial, tips.radial);
+        // The hands sit left and right of the centre, inside the bar.
+        expect(Math.sign(fingers.along)).toBe(side === 'L' ? 1 : -1);
+        expect(Math.abs(fingers.along)).toBeLessThan(0.55);
+      }
+      body.advance(0.37);
+    }
+    // Bone origins sit inside the fingers: bar radius (1.4 cm) plus half a finger – no gap.
+    expect(Math.max(...seen)).toBeLessThan(0.04);
+    body.dispose();
+  });
+
+  it('closes the fingers around the bar and lifts the shoulder girdle with the arm', async () => {
+    const rest = await bodyOf('male', 'rest');
+    const pulldown = await bodyOf('male', 'verticalPull_cable');
+    for (const body of [rest, pulldown]) body.root.updateMatrixWorld(true);
+    const bend = (root: Object3D, side: string) => {
+      const hand = worldOf(root, `hand_${side}`);
+      const fingers = worldOf(root, `fingers_${side}`);
+      const tips = worldOf(root, `fingerTips_${side}`);
+      return fingers.clone().sub(hand).angleTo(tips.clone().sub(fingers));
+    };
+    for (const side of ['L', 'R']) {
+      // Relaxed at rest, curled around the bar in the clip.
+      expect(bend(pulldown.root, side)).toBeGreaterThan(bend(rest.root, side) + 0.7);
+      expect(rest.root.getObjectByName(`thumb_${side}`)).toBeTruthy();
+      // Arms overhead: the shoulder rises with the arm (scapulohumeral rhythm).
+      const raised =
+        worldOf(pulldown.root, `upperArm_${side}`).y - worldOf(pulldown.root, 'chest').y;
+      const hanging = worldOf(rest.root, `upperArm_${side}`).y - worldOf(rest.root, 'chest').y;
+      expect(raised - hanging).toBeGreaterThan(0.02);
+    }
+    rest.dispose();
+    pulldown.dispose();
   });
 });
 

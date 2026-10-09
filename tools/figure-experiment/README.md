@@ -1,9 +1,14 @@
 # Figuren-Experiment: Kalethra-Körper aus einem Sketchfab-Base-Mesh
 
-Isolierter Versuch, **kein produktiver Bestandteil der App**. Die App lädt weiterhin
-`public/figure/<variant>/kalethra-<variant>.glb` aus `tools/figures/`; hier wird nichts davon
-gelesen oder überschrieben (außer lesend: die Clips und Geräte des männlichen Körpers werden in
-den Kandidaten übernommen).
+Entstanden in Phase 18.3 als isolierter Versuch. Der Kandidat
+`male_kalethra_experimental.glb` selbst ist **kein produktiver Bestandteil der App**.
+
+**Seit Version 0.29.0 (Phase 18.4) liefert das Experiment die Anatomie des produktiven
+männlichen Körpers:** Stufe 6 (`stage6_export_sculpt.py`) exportiert die modellierte Form als
+`assets/figure/male/source/kalethra-male-sculpt.bin.gz`; `tools/figures/build.mjs` überträgt sie
+auf das MakeHuman-Netz und erzeugt daraus `public/figure/male/kalethra-male.glb`
+(Attribution: [`assets/figure/male/source/ATTRIBUTION.md`](../../assets/figure/male/source/ATTRIBUTION.md)).
+Hier wird kein Produktions-Asset geschrieben.
 
 Ergebnis, Renderings und Bewertung: [`assets/figure/experimental/sketchfab-base/`](../../assets/figure/experimental/sketchfab-base/README.md).
 Lizenz des Ausgangsmodells (CC BY 4.0): [`ATTRIBUTION.md`](../../assets/figure/experimental/sketchfab-base/ATTRIBUTION.md).
@@ -31,7 +36,8 @@ BLENDER_PY=/pfad/zu/python tools/figure-experiment/blender/run_all.sh \
 | 3b Proportionen | `stage3b_proportions.py`                         | Schultergürtel +1,2 cm je Seite, Taille −0,6 cm je Seite (weiche globale Verformung)                                                                                           |
 | 4 Anatomie      | `stage4_sculpt.py`, `anatomy.py`, `kx_sculpt.py` | Catmull-Clark (2 Stufen, 618 k Punkte), Muskeln als Faserflächen (Ursprung → Ansatz): Volumen, Übergänge, Fugen, Faserrelief; Kopf, Hände, Knochenpunkte                       |
 | 5 Asset         | `stage5_asset.py`                                | Dezimierung auf 56 k Dreiecke (aus den geglätteten Großformen), UVs, Normal-Map-Bake 2048² vom Sculpt, Muskel-/Körperknoten, Rig, Rest-Action, `.blend`, Roh-GLB               |
-| 6 Vertrag       | `../finalize_glb.py`                             | Ruhe-Rotationen der Bones auf Identität (wie im Produktions-Rig), Inverse-Bind-Matrizen neu, Gewichte 8 Bit, Clips und Geräte aus dem Produktions-GLB, `asset.extras.kalethra` |
+| 6 Sculpt-Export | `stage6_export_sculpt.py`                        | Großform, Form- und Detail-Normalen, Körperteil- und Muskel-Labels der Stufe 4 als Punktwolke (glTF-Achsen) für die Produktions-Pipeline; byte-genau reproduzierbar            |
+| 7 Vertrag       | `../finalize_glb.py`                             | Ruhe-Rotationen der Bones auf Identität (wie im Produktions-Rig), Inverse-Bind-Matrizen neu, Gewichte 8 Bit, Clips und Geräte aus dem Produktions-GLB, `asset.extras.kalethra` |
 | Renderings      | `render_asset.py`, `render_glb.py`               | Studio-Licht (Cycles), gleiche Kamera für alt/neu/Base Mesh                                                                                                                    |
 
 Dann die Ergebnisse nach `assets/figure/experimental/sketchfab-base/` kopieren

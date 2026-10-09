@@ -25,14 +25,26 @@ export const MATERIALS = {
 
 const SAMPLE_STEP = 0.1;
 
-export function exportGlb({ variant, meshes, weights, source, rest, clips, normalPng, extras }) {
+export function exportGlb({
+  variant,
+  meshes,
+  weights,
+  source,
+  rest,
+  clips,
+  normalPng,
+  extras,
+  copyright,
+  rig = RIG,
+}) {
   const g = new GltfBuilder();
+  if (copyright) g.json.asset.copyright = copyright;
   g.json.asset.extras = extras;
-  const names = RIG.map(([name]) => name);
+  const names = rig.map(([name]) => name);
 
   // Skeleton.
   const boneNode = new Map();
-  for (const [name, parent] of RIG) {
+  for (const [name, parent] of rig) {
     const p = rest.get(name);
     const q = parent ? rest.get(parent) : [0, 0, 0];
     const index = g.add('nodes', { name, translation: [p[0] - q[0], p[1] - q[1], p[2] - q[2]] });
@@ -159,8 +171,8 @@ export function exportGlb({ variant, meshes, weights, source, rest, clips, norma
       }
       // The last sample equals the first: a seamless loop.
       const frame = clip.frame((f % (frames - 1)) / (frames - 1));
-      const { world, heads } = poseFrame(rest, frame);
-      const local = localRotations(world);
+      const { world, heads } = poseFrame(rest, frame, rig);
+      const local = localRotations(world, rig);
       for (const name of names) {
         const q = local.get(name);
         rotations.get(name).set([q.x, q.y, q.z, q.w], f * 4);
@@ -174,7 +186,14 @@ export function exportGlb({ variant, meshes, weights, source, rest, clips, norma
           .clone()
           .sub(new Vector3(...rest.get(`forearm_${s}`)))
           .normalize();
-        const offset = along.multiplyScalar(0.075).add(new Vector3(-sx * 0.022, 0, 0));
+        // A hand with finger bones holds the bar where its closed fingers wrap: just in front of
+        // the knuckles, a finger's thickness off the palm.
+        const offset = rest.has(`fingers_${s}`)
+          ? new Vector3(...rest.get(`fingers_${s}`))
+              .sub(w0)
+              .add(new Vector3(-sx * 0.024, 0, 0))
+              .add(along.clone().multiplyScalar(-0.008))
+          : along.multiplyScalar(0.075).add(new Vector3(-sx * 0.022, 0, 0));
         return heads
           .get(`hand_${s}`)
           .clone()

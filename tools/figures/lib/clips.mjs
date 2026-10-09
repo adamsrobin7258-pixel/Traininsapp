@@ -11,8 +11,6 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { RIG } from './rig.mjs';
 
-const ORDER = RIG.map(([name]) => name);
-const PARENT = new Map(RIG.map(([name, parent]) => [name, parent]));
 const v3 = (a) => new Vector3(...a);
 
 /** Rotation taking frame (a0, b0) to frame (a1, b1); a ⟂ b in each. */
@@ -49,6 +47,49 @@ function solveTwoBone(root, target, a, b, pole) {
     .add(bend.multiplyScalar(a * Math.sqrt(Math.max(0, 1 - cos * cos))));
 }
 
+/** Closing angles (degrees) of a full grip around a bar. */
+const GRIP = {
+  knuckles: 62,
+  middle: 78,
+  thumbOpposition: 40,
+  thumbFlex: -30,
+};
+
+/**
+ * The shoulder girdle with the arm (scapulohumeral rhythm): above ~40° of arm elevation the
+ * clavicle lifts with about a third of it, and it comes forward when the hands reach to the
+ * front – the shoulder follows the arm instead of the skin folding in the armpit. Only for
+ * frames that ask for it (`frame.shoulderRhythm`); otherwise the girdle stays with the chest.
+ */
+function shoulderGirdle(frame, s, chest, restOf, heads) {
+  if (!frame.shoulderRhythm) return chest;
+  const i = s === 'L' ? 0 : 1;
+  const sx = s === 'L' ? 1 : -1;
+  // Where the shoulder joint would be with the girdle at rest on the chest.
+  const girdle = restOf(`shoulder_${s}`)
+    .sub(restOf('chest'))
+    .applyQuaternion(chest)
+    .add(heads.get('chest'));
+  const joint = restOf(`upperArm_${s}`)
+    .sub(restOf(`shoulder_${s}`))
+    .applyQuaternion(chest)
+    .add(girdle);
+  const toHand = frame.hands[i]
+    .clone()
+    .sub(joint)
+    .applyQuaternion(chest.clone().invert())
+    .normalize();
+  const elevation = Math.acos(Math.max(-1, Math.min(1, -toHand.y)));
+  const lift = Math.min(20, Math.max(0, ((elevation * 180) / Math.PI - 45) * 0.28));
+  const forward = Math.min(10, Math.max(0, toHand.z) * 12);
+  const local = new Quaternion()
+    .setFromAxisAngle(new Vector3(0, 0, 1), (sx * lift * Math.PI) / 180)
+    .premultiply(
+      new Quaternion().setFromAxisAngle(new Vector3(0, 1, 0), (-sx * forward * Math.PI) / 180),
+    );
+  return chest.clone().multiply(local);
+}
+
 /** 0 → 1 → 0 over a loop with a short calm hold at both turns (as the code-built figure). */
 export function repetition(phase) {
   const p = phase - Math.floor(phase);
@@ -64,7 +105,9 @@ const lerp = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
  *   kneePoles, palms: [L,R] world direction the palm should face (null = keep) }
  * @returns { world: Map bone → Quaternion, heads: Map bone → Vector3 }
  */
-export function poseFrame(rest, frame) {
+export function poseFrame(rest, frame, rig = RIG) {
+  const ORDER = rig.map(([name]) => name);
+  const PARENT = new Map(rig.map(([name, parent]) => [name, parent]));
   const world = new Map();
   const heads = new Map();
   const restOf = (name) => v3(rest.get(name));
@@ -85,7 +128,7 @@ export function poseFrame(rest, frame) {
 
   ['L', 'R'].forEach((s, i) => {
     const sx = s === 'L' ? 1 : -1;
-    place(`shoulder_${s}`, world.get('chest'));
+    place(`shoulder_${s}`, shoulderGirdle(frame, s, world.get('chest'), restOf, heads));
     // Arm.
     const S0 = restOf(`upperArm_${s}`);
     const E0 = restOf(`forearm_${s}`);
@@ -120,6 +163,28 @@ export function poseFrame(rest, frame) {
     place(`forearm_${s}`, twist(0.25));
     place(`forearmTwist_${s}`, twist(0.7));
     place(`hand_${s}`, twist(1));
+    if (PARENT.has(`fingers_${s}`)) {
+      // Grip: the fingers close at the knuckles and the middle joints, the thumb comes in.
+      const g = frame.grip ?? 0;
+      const handQ = world.get(`hand_${s}`);
+      const along0 = restOf(`fingers_${s}`)
+        .sub(restOf(`hand_${s}`))
+        .normalize();
+      const palm0 = perp(new Vector3(-sx, 0, 0), along0);
+      const axis = new Vector3().crossVectors(along0, palm0).normalize().applyQuaternion(handQ);
+      const curl = (deg) =>
+        new Quaternion().setFromAxisAngle(axis, (deg * Math.PI * g) / 180).multiply(handQ);
+      place(`fingers_${s}`, curl(GRIP.knuckles));
+      place(`fingerTips_${s}`, curl(GRIP.knuckles + GRIP.middle));
+      // Thumb from its saddle joint: turned in front of the palm (opposition), then flexed.
+      const along = along0.clone().applyQuaternion(handQ);
+      const opposition = new Quaternion().setFromAxisAngle(
+        along,
+        (-sx * GRIP.thumbOpposition * Math.PI * g) / 180,
+      );
+      const flex = new Quaternion().setFromAxisAngle(axis, (GRIP.thumbFlex * Math.PI * g) / 180);
+      place(`thumb_${s}`, flex.multiply(opposition).multiply(handQ));
+    }
 
     // Leg.
     const H0 = restOf(`thigh_${s}`);
@@ -160,7 +225,9 @@ export function poseFrame(rest, frame) {
 }
 
 /** Local rotations (parent space) of a posed frame, for the glTF animation channels. */
-export function localRotations(world) {
+export function localRotations(world, rig = RIG) {
+  const ORDER = rig.map(([name]) => name);
+  const PARENT = new Map(rig.map(([name, parent]) => [name, parent]));
   const local = new Map();
   for (const name of ORDER) {
     const parent = PARENT.get(name);
@@ -176,7 +243,8 @@ export function localRotations(world) {
  * @param body { backDepth: distance pelvis joint → back surface, chestFront: chest surface z in
  *   front of the shoulder joint, seatDrop: pelvis joint above the seat when sitting }
  */
-export function clipDefinitions(rest, body) {
+export function clipDefinitions(rest, body, { grip = false, shoulderRhythm = false } = {}) {
+  const motion = { ...(grip ? { grip: 1 } : {}), ...(shoulderRhythm ? { shoulderRhythm } : {}) };
   const R = (name) => v3(rest.get(name));
   const pelvis0 = R('pelvis');
   const shoulder0 = R('upperArm_L');
@@ -213,6 +281,7 @@ export function clipDefinitions(rest, body) {
         hands: [hand(1), hand(-1)],
         elbowPoles: [pole(1), pole(-1)],
         palms: [toFeet, toFeet],
+        ...motion,
         feet: [new Vector3(0.24, ankle, 0.66), new Vector3(-0.24, ankle, 0.66)],
         kneePoles: [new Vector3(0.3, 1, 0.2), new Vector3(-0.3, 1, 0.2)],
       };
@@ -251,6 +320,7 @@ export function clipDefinitions(rest, body) {
         hands: [hand(1), hand(-1)],
         elbowPoles: [pole(1), pole(-1)],
         palms: [new Vector3(0, 0, 1), new Vector3(0, 0, 1)],
+        ...motion,
         feet: [new Vector3(0.17, ankle, 0.46), new Vector3(-0.17, ankle, 0.46)],
         kneePoles: [new Vector3(0.15, 0.3, 1), new Vector3(-0.15, 0.3, 1)],
         _fromSeated: fromSeated,

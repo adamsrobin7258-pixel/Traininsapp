@@ -55,6 +55,22 @@ export interface FigureRenderer {
 
 const PAIR_RADIUS = 1.3;
 
+/**
+ * Studio light, fixed to the camera (the stage turns under it): a soft sky/ground fill, a key
+ * from the upper side that models the muscle forms, a weak fill from the other side and a rim
+ * from behind. Calmer fill than key, so the modelled anatomy reads without harsh shadows.
+ */
+export function addFigureLights(scene: Scene) {
+  scene.add(new HemisphereLight(0xffffff, 0x8a8678, 1.15));
+  const key = new DirectionalLight(0xfff6ec, 2.5);
+  key.position.set(3.2, 3.2, 2.2);
+  const fill = new DirectionalLight(0xeef2ff, 0.55);
+  fill.position.set(-3, 1.2, 2.4);
+  const rim = new DirectionalLight(0xffffff, 0.9);
+  rim.position.set(-2.5, 2.2, -3);
+  scene.add(key, fill, rim);
+}
+
 /** URL of a bundled asset: relative to the app's base, never to the current route. */
 export function assetUrl(path: string): string {
   return `${import.meta.env.BASE_URL}${path}`;
@@ -106,12 +122,7 @@ export async function createFigureRenderer(
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 
   const scene = new Scene();
-  scene.add(new HemisphereLight(0xffffff, 0x8a8678, 1.9));
-  const key = new DirectionalLight(0xffffff, 1.6);
-  key.position.set(2.2, 3.5, 3);
-  const rim = new DirectionalLight(0xffffff, 0.7);
-  rim.position.set(-2.5, 2.2, -3);
-  scene.add(key, rim);
+  addFigureLights(scene);
 
   const stage = new Group();
   stage.name = 'stage';

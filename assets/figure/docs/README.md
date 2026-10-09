@@ -7,6 +7,7 @@ App-Vertrag steht in [`docs/EXERCISE_VISUALS.md`](../../../docs/EXERCISE_VISUALS
 ```
 assets/figure/
 ├─ male/shape.json        Formparameter, Höhe, Dreiecke, Größe, Bone-Positionen (generiert)
+├─ male/source/           modellierte Anatomie (Sculpt, CC BY 4.0, bearbeitet) + ATTRIBUTION.md
 ├─ female/shape.json      dito
 ├─ animations/clips.json  Clips mit Dauer und Gerätevariante (generiert)
 ├─ materials/materials.json  Materialien (sRGB) und Normal-Map (generiert)
@@ -28,8 +29,11 @@ tools/figures/            die Pipeline, die alles oben erzeugt
 - Ruhepose: aufrecht, Füße etwa schulterbreit, Arme 12° vom Körper, Ellbogen locker
   (9° gebeugt), Hände neutral (Handflächen zum Oberschenkel), keine Anspannung.
 
-**Männlich:** klassisch-athletisch, etwas breitere Schultern, kein übertriebenes V
-(MakeHuman: Muskel 0,75, schlank 0,45, ideale Proportionen 0,7; Größe 1,73 m).
+**Männlich (seit 0.29.0):** klassisch-athletisch, etwas breitere Schultern, kein übertriebenes V.
+Die Anatomie ist **modelliert** (Phase 18.3, `tools/figure-experiment/`, aus „Proxy Human base
+Mesh“, CC BY 4.0, bearbeitet – [Attribution](../male/source/ATTRIBUTION.md)) und wird im Build
+auf das MakeHuman-Netz übertragen (Hybrid, siehe _Erzeugen_); Größe 1,75 m. Kopf mit
+reduziertem, weichem Gesicht (keine Augen/Mund-Details), Hände und Füße in MakeHuman-Form.
 **Weiblich:** eigenes anatomisches Modell (eigene MakeHuman-Geschlechts-Targets, keine skalierte
 männliche Figur), natürliches Verhältnis von Schulter und Hüfte, natürliche, nicht betonte
 Brust (kleine Cup-Stufe, Brustwarzen-Targets reduziert, Stoff glättet), Muskeln lesbar
@@ -44,15 +48,22 @@ Brust (kleine Cup-Stufe, Brustwarzen-Targets reduziert, Stoff glättet), Muskeln
   Faserverlauf (Brust fächert zum Oberarm, Deltamuskel zum Ansatz, Latissimus zur Achsel,
   Rectus senkrecht mit Linea alba und Sehnenquerstreifen …), auf der Kleidung feine Rippen,
   sonst glatt. Aus normaler Distanz ruhig, aus der Nähe erkennbar.
+- **Männlich:** Volumen, Übergänge und Fugen kommen aus der modellierten Form; die Normal-Map
+  trägt die Differenz zwischen Sculpt- und Formnormale (Faserrelief, feine Fugen) statt der
+  analytischen Fasern (nicht auf Kopf, Händen, Füßen). Muskelgrenzen an Rumpf, Schulter und
+  Oberarm folgen den modellierten Muskeln (Sculpt-Labels), sonst den Regeln unten.
 - Hervorhebung färbt nur die Grundfarbe (primär > sekundär > neutral); Form, Fugen und Fasern
-  bleiben sichtbar.
+  bleiben sichtbar. Primär ist zu 80 % Akzent (`PRIMARY_MIX`), damit Haut/Stoff und Schattierung
+  durchscheinen – kein flächiger „Diagramm“-Ton.
 - 22 Muskel-Knoten + 7 neutrale Haut-Knoten (`body_head`, `body_neck`, `body_hands`,
   `body_feet`, `body_knees`, `body_shins`, `body_pelvis`); Liste in `*/shape.json`.
 
 ## Rig
 
 Pflicht-Bones des Vertrags, alle mit Ruhe-Rotation Identität (nur Translation), dazu
-`forearmTwist_L/R`. Gewichte aus MakeHumans Standard-Skelett (163 Bones) zusammengeführt,
+`forearmTwist_L/R`; **nur männlich** zusätzlich `fingers_*`, `fingerTips_*`, `thumb_*` für den
+Griff (siehe Tabelle). Die Schultergewichte (Brust/Schulter/Oberarm) sind geglättet, damit
+Achsel und hintere Achselfalte beim Heben der Arme nicht einknicken. Gewichte aus MakeHumans Standard-Skelett (163 Bones) zusammengeführt,
 höchstens 4 Einflüsse pro Punkt, in 8 Bit quantisiert (Summe exakt 1).
 
 | Kalethra-Bone    | Elternteil       | MakeHuman-Bones (zusammengeführt)  |
@@ -67,18 +78,28 @@ höchstens 4 Einflüsse pro Punkt, in 8 Bit quantisiert (Summe exakt 1).
 | `upperArm_*`     | `shoulder_*`     | `upperarm01`, `upperarm02`         |
 | `forearm_*`      | `upperArm_*`     | `lowerarm01`                       |
 | `forearmTwist_*` | `forearm_*`      | `lowerarm02`                       |
-| `hand_*`         | `forearmTwist_*` | `wrist`, Mittelhand, alle Finger   |
+| `hand_*`         | `forearmTwist_*` | `wrist`, Mittelhand, alle Finger¹  |
+| `fingers_*`¹     | `hand_*`         | `finger2–5-1` (Grundglieder)       |
+| `fingerTips_*`¹  | `fingers_*`      | `finger2–5-2/3` (Mittel-/Endgl.)   |
+| `thumb_*`¹       | `hand_*`         | `finger1-1…3`                      |
 | `thigh_*`        | `pelvis`         | `upperleg01`, `upperleg02`         |
 | `shin_*`         | `thigh_*`        | `lowerleg01`, `lowerleg02`         |
 | `foot_*`         | `shin_*`         | `foot`, alle Zehen                 |
 
-Bone-Positionen aus MakeHumans Gelenk-Hilfspunkten auf der jeweiligen Körperform.
+¹ Nur männlich; weiblich bleiben die Finger in `hand_*`.
+
+Bone-Positionen aus MakeHumans Gelenk-Hilfspunkten auf der jeweiligen Körperform; männlich aus den
+Mittellinien der Gliedmaßen der modellierten Form gemessen.
 
 ## Animationen
 
 Clips per IK erzeugt (Hände und Füße folgen Zielen, Ellbogen und Knie über Pole, Handflächen
 drehen in den Griff, verteilt auf Unterarm, Twist-Bone und Hand), mit 10 Hz abgetastet,
-nahtlos geloopt, 4,4 s je Wiederholung:
+nahtlos geloopt, 4,4 s je Wiederholung. **Männlich** zusätzlich: die Finger schließen sich um
+die Stange (Grund- 62°, Mittelglieder 78°, Daumen in Opposition), die Stange liegt in der
+Fingerbeuge (Abstand Fingergelenke ↔ Stangenachse 1,6–2,8 cm, per Test geprüft) und das
+Schlüsselbein hebt sich und kommt nach vorn, wenn der Arm über 45° gehoben wird
+(skapulohumeraler Rhythmus):
 
 | Clip                   | Haltung und Bewegung                                                  | Geräte (`prop_*`)                    |
 | ---------------------- | --------------------------------------------------------------------- | ------------------------------------ |
@@ -95,6 +116,9 @@ MAKEHUMAN_DATA=$PWD/makehuman/makehuman/data node tools/figures/build.mjs
 npx vitest run -u src/modules/training/figure/kalethraBodies.test.ts   # Validator-Berichte
 ```
 
+`VARIANTS=male` baut nur eine Variante, `OUT=<dir>` schreibt woandershin (ohne die
+Spezifikationen unter `assets/figure/` zu ändern).
+
 Der Build ist deterministisch (gleiche Eingaben → byte-gleiche GLBs). Schritte: Form aus
 Targets → Ruhepose (Linear Blend Skinning) → entspannte Hände, glatter Kopf ohne
 Gesichtszüge → eine Catmull-Clark-Stufe für Rumpf und Gliedmaßen → Muskel- und
@@ -102,7 +126,24 @@ Kleidungs-Segmentierung nach anatomischen Landmarken, geglättete Grenzen → Tr
 Wölbungen, Stofflage mit Saum, gemeinsame Normalen → Normal-Map (analytisch in 3D gebacken)
 → Skin, Clips, Geräte → GLB mit Metadaten (`asset.extras.kalethra`).
 
+**Männlich (Hybrid, `lib/transfer.mjs`):** nach der MakeHuman-Form wird die modellierte Form
+(`male/source/kalethra-male-sculpt.bin.gz`) übertragen: Gelenke aus dem Sculpt messen → Netz
+per Bone-Warp auf die neuen Gelenke → in vier Runden an die nächste Sculpt-Oberfläche gleicher
+Normale und gleichen Körperteils ziehen (geglättet) → Kopf radial über die Profil-Differenz,
+Naht zum Hals geglättet → Hände/Füße behalten die MakeHuman-Form. Danach wie oben, mit
+geometrischem Armausschnitt, eng anliegenden Stofflagen (Top 5 mm, Shorts 3 mm), Muskel-Labels
+aus dem Sculpt und der Detail-Normal-Map. Clips per IK aus den neuen Gelenken – neu erzeugt,
+nicht skaliert. Die Sculpt-Datei erzeugt `tools/figure-experiment/blender/stage6_export_sculpt.py`.
+
+**Prüfen ohne Gerät:** `tools/figures/qa/` rendert eine GLB mit dem App-Code und -Licht in
+headless Chromium (`npx vite --port 5179`, dann `node tools/figures/qa/shoot.mjs <ordner> <liste.json>`);
+Blender eignet sich dafür nicht (ignoriert die GLB-Tangenten).
+
 ## Herkunft und Lizenz
+
+**Männliche Anatomie:** „Proxy Human base Mesh“ von sphere_joe (https://sketchfab.com/mundane_x),
+**CC BY 4.0**, für Kalethra bearbeitet – Namensnennungspflicht. Wortlaut, Änderungen und Orte
+der Nennung (App, GLB `asset.copyright`): [`male/source/ATTRIBUTION.md`](../male/source/ATTRIBUTION.md).
 
 MakeHuman 1.x, Repository `makehumancommunity/makehuman`, Commit
 `a8bc2d54ff0ac92e78ff71431b1023eda42bf482`: Basisnetz (`3dobjs/base.obj`), Targets
@@ -114,14 +155,21 @@ eigener Code.
 ## Ehrlicher Stand und Grenzen
 
 Die Körper erfüllen Vertrag, Budgets und die Gestaltungsregeln in den Grundzügen und laufen in
-der App. Sie sind aber prozedural erzeugt, nicht von einer 3D-Künstlerin oder einem
-3D-Künstler gestaltet. Bekannt:
+der App. Der weibliche ist prozedural erzeugt; der männliche hat eine modellierte Anatomie, die
+aber automatisch auf das MakeHuman-Netz übertragen wird – keiner ist von einer 3D-Künstlerin oder
+einem 3D-Künstler fertig gestaltet. Bekannt:
 
 - Muskeldefinition bewusst dezent; Muskelgrenzen folgen Regeln, nicht einer
   Handmodellierung (an Übergängen teils vereinfacht, z. B. Schulterblatt-Bereich).
-- Linear Blend Skinning: bei starker Beugung (Ellbogen im Bankdrücken unten) etwas
-  Volumenverlust; die Hände umschließen die Stange nur angedeutet.
+- Linear Blend Skinning: bei starker Beugung (Ellbogen im Bankdrücken unten, Knie) etwas
+  Volumenverlust. Weiblich umschließen die Hände die Stange nur angedeutet (keine Finger-Bones).
+- Männlich: Gesicht reduziert und weich, Hände wirken in der Nähe handschuhartig, Stoffkanten
+  an Nacken/Armausschnitt fransen in starker Nahansicht leicht, Highlight-Grenzen teils eckig.
+- Weiblich: das Band am Handgelenk (`forearmTwist`) wird als Rumpfmuskel (`core_obliques`)
+  segmentiert – derselbe Regelfehler war männlich vorhanden und ist dort behoben; weiblich
+  bewusst unverändert (Asset byte-gleich zu 0.28.0).
 - Kleidung ist eine versetzte Lage der Haut, keine Stoffsimulation.
 - Nur drei Clips; die übrigen Movement-Types fallen auf `rest` zurück.
 - Kein Test auf einem realen Gerät (auch nicht auf dem Xiaomi 15 Ultra); geprüft wurde in
-  Chromium mit Software-WebGL.
+  Chromium mit Software-WebGL. Checkliste für den Gerätetest:
+  [`docs/FIGURE_DEVICE_TEST.md`](../../../docs/FIGURE_DEVICE_TEST.md).

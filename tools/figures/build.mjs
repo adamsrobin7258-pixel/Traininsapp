@@ -13,13 +13,15 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assembleBody, loadSources } from './lib/assemble.mjs';
 import { segmentBody, smoothBorders } from './lib/segment.mjs';
-import { sculptBody, LAYER_OFFSET } from './lib/sculpt.mjs';
+import { sculptBody, LAYER_OFFSET, LAYER_OFFSET_MODELLED } from './lib/sculpt.mjs';
 import { splitMeshes } from './lib/meshes.mjs';
 import { bakeNormalMap, surfaceTangents } from './lib/bake.mjs';
 import { encodePng } from './lib/png.mjs';
 import { clipDefinitions } from './lib/clips.mjs';
 import { MATERIALS, exportGlb } from './lib/export.mjs';
 import { SHAPES } from './lib/shape.mjs';
+import { rigFor } from './lib/rig.mjs';
+import { detailNormalField, readSculpt, sculptRegions, transferAnatomy } from './lib/transfer.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = process.env.MAKEHUMAN_DATA;
@@ -28,6 +30,37 @@ if (!DATA) {
   process.exit(1);
 }
 const NORMAL_MAP_SIZE = Number(process.env.NORMAL_MAP_SIZE ?? 2048);
+/**
+ * Modelled anatomy per variant (sculpt data from tools/figure-experiment, CC BY 4.0 source –
+ * see assets/figure/male/source/ATTRIBUTION.md); a variant without one keeps the MakeHuman form.
+ */
+const SCULPTS = { male: 'assets/figure/male/source/kalethra-male-sculpt.bin.gz' };
+/** Credit carried in the file itself (glTF asset.copyright) – required by CC BY 4.0. */
+const CREDITS = {
+  male: {
+    copyright:
+      'Based on "Proxy Human base Mesh" by sphere_joe (https://sketchfab.com/mundane_x), ' +
+      'CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Modified for Kalethra; ' +
+      'not endorsed by the author. Topology, hands and feet: MakeHuman 1.x (CC0 1.0).',
+    source:
+      'Modelled anatomy from "Proxy Human base Mesh" by sphere_joe (CC BY 4.0, modified), ' +
+      'fitted onto the MakeHuman 1.x base mesh, skeleton and weights (CC0 1.0)',
+  },
+};
+/** A fitted top over modelled abdominals: smooth longer than over the calmer MakeHuman form. */
+const FABRIC_PASSES_MODELLED = 14;
+/** Gentler straightening of the clothing edges: the fitted mesh is finer at the neck, and long
+ * straightening there folds edge triangles over. */
+const BORDER_ITERATIONS_MODELLED = 4;
+/** The top's openings of the modelled body (metres; arm hole centre relative to the shoulder joint). */
+const ARMHOLE = {
+  x: 1.0,
+  width: 0.085,
+  drop: 0.035,
+  depth: 0.16,
+  // Back of the neck opening: below the fold of the neck when the head lies or bends.
+  neckBack: 0.07,
+};
 const OUT = process.env.OUT ?? join(ROOT, 'public/figure');
 /** Specs written next to the assets (assets/figure/…), so a change shows up in review. */
 const SPECS = process.env.OUT ? null : join(ROOT, 'assets/figure');
@@ -37,7 +70,7 @@ const writeJson = (path, data) => {
 };
 
 /** Measurements the clips need: how the body lies on a bench and touches a bar. */
-function measure(body) {
+function measure(body, layerOffset = LAYER_OFFSET) {
   const p = body.positions;
   const pelvis = body.joints.get('pelvis');
   const shoulder = body.joints.get('upperArm_L');
@@ -50,36 +83,71 @@ function measure(body) {
       chest = Math.max(chest, z);
   }
   return {
-    backDepth: pelvis[2] - back + LAYER_OFFSET.top,
-    chestFront: chest + LAYER_OFFSET.top,
+    backDepth: pelvis[2] - back + layerOffset.top,
+    chestFront: chest + layerOffset.top,
     seatDrop: 0.1,
   };
 }
 
 const sources = loadSources(DATA);
 const clipSpecs = {};
-for (const variant of ['male', 'female']) {
+// VARIANTS=male builds one variant only (quicker while working on it).
+for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
   const started = Date.now();
-  const body = assembleBody(sources, variant);
-  const { labels, layers } = segmentBody(body);
-  smoothBorders(body, labels, layers);
-  const surface = sculptBody(body, labels, layers);
+  // The male body takes the modelled Kalethra anatomy (phase 18.4, see lib/transfer.mjs).
+  const sculptFile = SCULPTS[variant];
+  const sculpt = sculptFile ? readSculpt(join(ROOT, sculptFile)) : null;
+  const body = sculpt
+    ? transferAnatomy(assembleBody(sources, variant), sculpt)
+    : assembleBody(sources, variant);
+  const { labels, layers } = segmentBody(
+    body,
+    sculpt ? { armhole: ARMHOLE, region: sculptRegions(sculpt) } : {},
+  );
+  smoothBorders(body, labels, layers, sculpt ? BORDER_ITERATIONS_MODELLED : 12);
+  const surface = sculptBody(
+    body,
+    labels,
+    layers,
+    sculpt
+      ? { grooves: 0, fabricPasses: FABRIC_PASSES_MODELLED, layerOffset: LAYER_OFFSET_MODELLED }
+      : {},
+  );
   const tangents = surfaceTangents(surface, body.uvs);
   const meshes = splitMeshes(surface, body.uvs, tangents);
   const normalPng = encodePng(
     NORMAL_MAP_SIZE,
     NORMAL_MAP_SIZE,
-    bakeNormalMap(surface, body.uvs, tangents, body.joints, NORMAL_MAP_SIZE),
+    bakeNormalMap(
+      surface,
+      body.uvs,
+      tangents,
+      body.joints,
+      NORMAL_MAP_SIZE,
+      sculpt
+        ? {
+            detail: detailNormalField(sculpt),
+            detailWeight: Float64Array.from(surface.source, (v) => body.detail[v]),
+          }
+        : {},
+    ),
   );
-  const clips = clipDefinitions(body.joints, measure(body));
+  // The modelled body closes its hands around the bars and moves its shoulder girdle with the arm.
+  const clips = clipDefinitions(
+    body.joints,
+    measure(body, sculpt ? LAYER_OFFSET_MODELLED : LAYER_OFFSET),
+    sculpt ? { grip: true, shoulderRhythm: true } : {},
+  );
   const { glb, triangles } = exportGlb({
     variant,
     meshes,
     weights: body.weights,
     source: surface.source,
     rest: body.joints,
+    rig: rigFor(variant),
     clips,
     normalPng,
+    copyright: CREDITS[variant]?.copyright,
     extras: {
       kalethra: {
         contract: 1,
@@ -89,7 +157,9 @@ for (const variant of ['male', 'female']) {
         front: '+Z',
         origin: 'floor, under the pelvis',
         shape: SHAPES[variant],
-        source: 'MakeHuman 1.x base mesh, targets, skeleton and weights (CC0 1.0)',
+        source:
+          CREDITS[variant]?.source ??
+          'MakeHuman 1.x base mesh, targets, skeleton and weights (CC0 1.0)',
         generator: 'tools/figures/build.mjs',
       },
     },

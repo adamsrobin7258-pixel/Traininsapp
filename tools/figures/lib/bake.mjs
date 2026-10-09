@@ -116,7 +116,19 @@ function fibreField(J, Ys, L) {
  * Bakes the detail normal map (tangent space, RGB, rows top to bottom).
  * @returns {Uint8Array} pixels of size × size × 3
  */
-export function bakeNormalMap(surface, uvs, tangents, joints, size) {
+/**
+ * `detail` (optional): the modelled body's relief – (point, normal) → world-space normal change
+ * or null; `detailWeight` per surface vertex (0…1). Where it applies it replaces the analytic
+ * fibres on bare skin; the clothing keeps its knit.
+ */
+export function bakeNormalMap(
+  surface,
+  uvs,
+  tangents,
+  joints,
+  size,
+  { detail = null, detailWeight = null } = {},
+) {
   const Ys = joints.get('upperArm_L')[1];
   const L = Ys - joints.get('pelvis')[1];
   const fibres = fibreField(joints, Ys, L);
@@ -163,7 +175,17 @@ export function bakeNormalMap(surface, uvs, tangents, joints, size) {
           const bt = cross(n, t);
           // Height gradient on the surface.
           let g = [0, 0, 0];
-          if (field && !cloth) {
+          const dw =
+            detail && !cloth
+              ? b[0] * detailWeight[f.v[idx[0]]] +
+                b[1] * detailWeight[f.v[idx[1]]] +
+                b[2] * detailWeight[f.v[idx[2]]]
+              : 0;
+          const delta = dw > 0 ? detail(p, n) : null;
+          if (delta) {
+            // Modelled relief: tilt by the sculpt's normal change (sign as below: m = n - g).
+            g = mul(sub(mul(delta, dw), mul(n, dot(n, delta) * dw)), -1);
+          } else if (field && !cloth && !detail) {
             const d = field(p);
             const across = norm(cross(n, d));
             const s = dot(p, across);
@@ -176,7 +198,7 @@ export function bakeNormalMap(surface, uvs, tangents, joints, size) {
             });
             g = mul(across, FIBRE_TILT * strength * slope);
           }
-          if (isRectus) {
+          if (isRectus && !detail) {
             // Linea alba and the tendinous intersections: soft, narrow valleys.
             const depth = cloth ? 0.35 : 0.8;
             const w = 0.006;

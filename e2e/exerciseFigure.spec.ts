@@ -74,6 +74,9 @@ test('exercises without a 3D visual keep their details unchanged', async ({ page
 test('3D figure: animation and turning together, front/back, theme – no errors', async ({
   page,
 }) => {
+  // Every drag step and click waits for a frame, and CI renders WebGL in software (SwiftShader,
+  // ~0.3 s per frame of the large view): already 22–28 s of the default 30 s before 0.29.0.
+  test.slow();
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await openBenchPress(page);

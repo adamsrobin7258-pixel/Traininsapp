@@ -3,10 +3,13 @@
 Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
 dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 
-> **Stand (Version 0.28.0):** Zwei modellierte Kalethra-Körper (männlich, weiblich) sind
-> gebündelt und werden in Übungsdetails, großer Ansicht und Trainings-Zusammenfassung gezeigt.
-> Sie entstehen reproduzierbar aus MakeHuman-Daten (CC0) mit der Pipeline in `tools/figures/`
-> – sie sind **nicht** von Hand in einem 3D-Programm modelliert. Gestaltung, Herkunft und
+> **Stand (Version 0.29.0):** Zwei Kalethra-Körper (männlich, weiblich) sind gebündelt und
+> werden in Übungsdetails, großer Ansicht und Trainings-Zusammenfassung gezeigt. Beide entstehen
+> reproduzierbar mit der Pipeline in `tools/figures/` auf MakeHuman-Daten (CC0). **Der männliche
+> Körper trägt seit 0.29.0 eine modellierte Anatomie** (Phase 18.3, aus „Proxy Human base Mesh“
+> von sphere_joe, CC BY 4.0, bearbeitet – Namensnennung in der App unter _Datenquellen_ und in
+> der GLB, siehe [`assets/figure/male/source/ATTRIBUTION.md`](../assets/figure/male/source/ATTRIBUTION.md)),
+> mit Finger-Griff und Schulterrhythmus in den Clips. Der weibliche ist unverändert (0.28.0). Gestaltung, Herkunft und
 > bekannte Grenzen: [`assets/figure/docs/README.md`](../assets/figure/docs/README.md).
 >
 > **Die aktuelle Fallback-Figur ist ausschließlich technischer Fallback und nicht die finale
@@ -122,7 +125,7 @@ Geräte (`prop_<variante>_*`) sind nur sichtbar, solange ein Clip dieser Variant
 Pflicht-Bones: `root`, `pelvis`, `spine`, `chest`, `neck`, `head` und je Seite `shoulder`
 (Schlüsselbein), `upperArm`, `forearm` (Unterarm), `hand`, `thigh` (Oberschenkel), `shin`
 (Unterschenkel), `foot` (`_L`, `_R`). Zusätzliche Bones sind erlaubt (die Körper haben
-`forearmTwist_L/R`). Ruhe-Rotationen aller Bones sind die Identität; die Ruhepose ist
+`forearmTwist_L/R`, der männliche außerdem `fingers_*`, `fingerTips_*`, `thumb_*` für den Griff). Ruhe-Rotationen aller Bones sind die Identität; die Ruhepose ist
 aufrecht, Füße etwa schulterbreit, Arme 10–15° vom Körper, Ellbogen locker, Hände neutral.
 
 ### Koordinaten, Maßstab, Ursprung
@@ -147,10 +150,10 @@ Vorhanden: `rest`, `horizontalPush_bench` (Langhantel-Bankdrücken auf der Flach
 
 ### Budgets und Validator
 
-| Größe       | Grenze pro Variante | männlich / weiblich (0.28.0) |
+| Größe       | Grenze pro Variante | männlich / weiblich (0.29.0) |
 | ----------- | ------------------- | ---------------------------- |
-| GLB         | ≤ 4 MB              | 3,54 / 3,53 MB               |
-| Dreiecke    | ≤ 60 000            | 51 890 / 52 014              |
+| GLB         | ≤ 4 MB              | 3,06 / 3,53 MB               |
+| Dreiecke    | ≤ 60 000            | 52 090 / 52 014              |
 | Texturen    | ≤ 2048²             | 1 Normal-Map 2048² (PNG)     |
 | Materialien | ≤ 8                 | 4                            |
 
@@ -181,14 +184,19 @@ die E2E-Tests prüfen `data-figure-source="asset"`.
 - Rendern nur bei Bedarf, keine Echtzeit-Schatten, Pixelverhältnis ≤ 2.
 - Bei Kontextverlust (App im Hintergrund) eine neue Leinwand.
 - Reduced Motion: keine automatische Schleife, Drehen ohne Übergang.
+- Genau ein WebGL-Kontext je sichtbarer Figur; Schließen, Übungswechsel und Wechsel klein ↔ groß
+  geben Renderer, Geometrien, Materialien und Texturen frei (Tests und E2E prüfen das).
+- Gerätetest (Xiaomi 15 Ultra) noch offen – Checkliste: [`FIGURE_DEVICE_TEST.md`](FIGURE_DEVICE_TEST.md).
 
 ## Lizenz
 
-| Teil                            | Quelle                                    | Lizenz                | Kommerziell | Bearbeitung |
-| ------------------------------- | ----------------------------------------- | --------------------- | ----------- | ----------- |
-| Kalethra-Körper (GLB)           | erzeugt mit `tools/figures` aus MakeHuman | CC0 1.0 (Basisdaten)  | ja          | ja          |
-| MakeHuman-Basisnetz, Targets, … | makehumancommunity/makehuman, `a8bc2d5…`  | CC0 1.0 (Assets)      | ja          | ja          |
-| Pipeline, Fallback, Bewegungen  | eigener Code                              | Eigentum des Projekts | ja          | ja          |
-| three.js 0.186 (+ GLTFLoader)   | npm `three`                               | MIT                   | ja          | ja          |
+| Teil                            | Quelle                                    | Lizenz                                | Kommerziell | Bearbeitung  |
+| ------------------------------- | ----------------------------------------- | ------------------------------------- | ----------- | ------------ |
+| Kalethra-Körper weiblich (GLB)  | erzeugt mit `tools/figures` aus MakeHuman | CC0 1.0 (Basisdaten)                  | ja          | ja           |
+| Kalethra-Körper männlich (GLB)  | `tools/figures` + modellierte Anatomie    | CC BY 4.0 (abgeleitet), Namensnennung | ja          | ja (Hinweis) |
+| „Proxy Human base Mesh“         | Sketchfab, sphere_joe                     | CC BY 4.0                             | ja          | ja (Hinweis) |
+| MakeHuman-Basisnetz, Targets, … | makehumancommunity/makehuman, `a8bc2d5…`  | CC0 1.0 (Assets)                      | ja          | ja           |
+| Pipeline, Fallback, Bewegungen  | eigener Code                              | Eigentum des Projekts                 | ja          | ja           |
+| three.js 0.186 (+ GLTFLoader)   | npm `three`                               | MIT                                   | ja          | ja           |
 
 Aus MakeHuman werden nur Daten (Assets, CC0) verwendet, kein MakeHuman-Programmcode (AGPL).

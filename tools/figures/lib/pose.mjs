@@ -4,14 +4,13 @@
 import { Matrix4, Quaternion, Vector3 } from 'three';
 import { RIG } from './rig.mjs';
 
-const PARENT = new Map(RIG.map(([name, parent]) => [name, parent]));
-const ORDER = RIG.map(([name]) => name);
-
 /**
  * World skinning matrices for local rotations (bone → Quaternion, in world axes at the bone's
  * rest head). Returns per bone the matrix rest → posed and the posed head positions.
  */
-export function poseMatrices(joints, rotations) {
+export function poseMatrices(joints, rotations, rig = RIG) {
+  const PARENT = new Map(rig.map(([name, parent]) => [name, parent]));
+  const ORDER = rig.map(([name]) => name);
   const world = new Map();
   const rotationWorld = new Map();
   const heads = new Map();

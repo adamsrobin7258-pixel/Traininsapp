@@ -17,6 +17,8 @@ function grooveDepth(a, b) {
 
 /** Layer offsets above the skin (metres). */
 export const LAYER_OFFSET = { skin: 0, shorts: 0.0022, top: 0.0036 };
+/** The modelled body moves more under the fabric (deeper forms, shoulder girdle): a little more room. */
+export const LAYER_OFFSET_MODELLED = { skin: 0, shorts: 0.003, top: 0.005 };
 const GROOVE_IN_CLOTH = 0.4;
 
 function vertexNormals(positions, faces, count) {
@@ -101,7 +103,17 @@ function distances(positions, adjacency, seeds, limit) {
  * @returns surface: one entry per (vertex, layer) with its position and normal; faces with
  *   their region, layer and corner references; hems as extra faces of the clothing.
  */
-export function sculptBody(body, labels, layers, { bulge = 0.0015 } = {}) {
+/**
+ * Options: `grooves` scales the rule-based grooves and bellies (0 for a body whose anatomy is
+ * already modelled, see transfer.mjs); `fabricPasses` is how long the clothing smooths small
+ * forms away outside the chest (a fitted top bridges the abdominal grooves).
+ */
+export function sculptBody(
+  body,
+  labels,
+  layers,
+  { bulge = 0.0015, grooves = 1, fabricPasses = 4, layerOffset = LAYER_OFFSET } = {},
+) {
   const { positions: original, faces } = body;
   const count = original.length / 3;
   const adjacency = Array.from({ length: count }, () => new Set());
@@ -148,7 +160,7 @@ export function sculptBody(body, labels, layers, { bulge = 0.0015 } = {}) {
       offset += bulge * (1 - Math.exp(-((dist[v] / 0.02) ** 2)));
     else if (muscle) offset += bulge;
     if (!vertexLayers[v].has('skin')) offset *= GROOVE_IN_CLOTH;
-    field[v] = offset;
+    field[v] = offset * grooves;
   }
   // Soften the field: a border that steps along the mesh grid becomes a calm valley.
   for (let pass = 0; pass < 10; pass++) {
@@ -172,7 +184,7 @@ export function sculptBody(body, labels, layers, { bulge = 0.0015 } = {}) {
   for (let pass = 0; pass < 24; pass++) {
     const next = Float64Array.from(positions);
     for (let v = 0; v < count; v++) {
-      if (!clothOnly(v) || (pass >= 4 && !chest(v))) continue;
+      if (!clothOnly(v) || (pass >= fabricPasses && !chest(v))) continue;
       const c = [0, 0, 0];
       for (const u of adj[v])
         for (let k = 0; k < 3; k++) c[k] += positions[u * 3 + k] / adj[v].length;
@@ -210,7 +222,7 @@ export function sculptBody(body, labels, layers, { bulge = 0.0015 } = {}) {
   const sculpted = vertexNormals(positions, faces, count);
   const surfacePositions = new Float64Array(out.source.length * 3);
   out.source.forEach((v, i) => {
-    const offset = LAYER_OFFSET[out.layer[i]];
+    const offset = layerOffset[out.layer[i]];
     for (let k = 0; k < 3; k++)
       surfacePositions[i * 3 + k] = positions[v * 3 + k] + sculpted[v * 3 + k] * offset;
   });
@@ -234,7 +246,7 @@ export function sculptBody(body, labels, layers, { bulge = 0.0015 } = {}) {
       const other = edgeOwner.get(`${b}_${a}`);
       if (other === undefined) return;
       const lower = surfaceFaces[other].layer;
-      if (LAYER_OFFSET[lower] >= LAYER_OFFSET[f.layer]) return;
+      if (layerOffset[lower] >= layerOffset[f.layer]) return;
       hems.push({
         label: f.label,
         layer: f.layer,

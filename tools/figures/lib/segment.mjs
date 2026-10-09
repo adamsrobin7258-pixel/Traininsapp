@@ -28,7 +28,15 @@ function limb(c, from, to, side) {
   return { t, phi: Math.atan2(dot(radial, front), dot(radial, lateral)) / DEG };
 }
 
-export function segmentBody(body) {
+/**
+ * Options: `armhole` – cut the top's arm holes as a smooth, deeper opening around the shoulder
+ * joint (geometric, not from the dominant bone): the hem stays a calm line when the arm is
+ * raised, and the armpit skin no longer folds over the fabric (male body since phase 18.4).
+ * `region(point, bone)` – the modelled body's own muscle region at a point (or null): it wins
+ * over the rules, so highlighting follows the modelled anatomy; neutral parts (head, hands, feet,
+ * knees …) always come from the rules.
+ */
+export function segmentBody(body, { armhole = null, region = null } = {}) {
   const { positions: p, faces, weights, joints: J } = body;
   const names = weights.names;
   const vertexCount = p.length / 3;
@@ -113,7 +121,10 @@ export function segmentBody(body) {
     const side = c[0] >= 0 ? 1 : -1;
     const S = side > 0 ? 'L' : 'R';
     const ax = Math.abs(c[0]);
-    const base = bone.replace(/_[LR]$/, '');
+    const named = bone.replace(/_[LR]$/, '');
+    // The forearm's twist bone is forearm (the female 18.2 asset still runs it through the
+    // trunk rules – kept unchanged until that body is rebuilt).
+    const base = region && named === 'forearmTwist' ? 'forearm' : named;
     switch (base) {
       case 'head':
         return 'skin_head';
@@ -122,6 +133,9 @@ export function segmentBody(body) {
           ? 'back_trapezius'
           : 'skin_neck';
       case 'hand':
+      case 'fingers':
+      case 'fingerTips':
+      case 'thumb':
         return 'skin_hands';
       case 'foot':
         return 'skin_feet';
@@ -186,7 +200,9 @@ export function segmentBody(body) {
       }
     }
     const bone = [...bones].sort((a, b) => b[1] - a[1])[0][0];
-    return { c, bone, label: classify(c, bone) };
+    const rule = classify(c, bone);
+    const modelled = region && !rule.startsWith('skin_') ? region(c, bone) : null;
+    return { c, bone, label: modelled ?? rule };
   });
 
   // Smooth label borders: majority over edge neighbours.
@@ -213,10 +229,18 @@ export function segmentBody(body) {
         if (base === 'neck' || (ax < 0.42 * xS && y > Ys + 0.03)) return 'skin';
         // Arm hole: an ellipse around the shoulder joint.
         if (((ax - xS) / (0.36 * xS)) ** 2 + ((y - Ys) / (0.24 * L)) ** 2 < 1) return 'skin';
+        if (
+          armhole &&
+          ((ax - xS * armhole.x) / armhole.width) ** 2 +
+            ((y - Ys + armhole.drop) / armhole.depth) ** 2 <
+            1
+        )
+          return 'skin';
         // Neck opening: deeper in front than at the back; between it and the arm hole runs the strap.
         const front = c[2] > section(y).mid;
         const top = Ys + 0.05;
-        if ((ax / (0.19 * xS * 2)) ** 2 + ((y - top) / (front ? 0.11 : 0.055)) ** 2 < 1)
+        const back = armhole?.neckBack ?? 0.055;
+        if ((ax / (0.19 * xS * 2)) ** 2 + ((y - top) / (front ? 0.11 : back)) ** 2 < 1)
           return 'skin';
         return 'top';
       }
