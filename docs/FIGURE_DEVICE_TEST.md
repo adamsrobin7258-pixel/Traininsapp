@@ -1,8 +1,30 @@
 # Gerätetest 3D-Körper (Xiaomi 15 Ultra)
 
-**Status: noch nicht auf dem Gerät durchgeführt.** Geprüft wurde in Unit-Tests (jsdom), E2E
-(Chromium) und mit QA-Renderings (headless Chromium, Software-WebGL/SwiftShader). Diese
-Checkliste ist für den ersten Test auf dem Xiaomi 15 Ultra (Android, HyperOS) gedacht.
+**Status:** 0.29.0 wurde vom Nutzer auf dem Xiaomi 15 Ultra geprüft. Befund: Figur besser als
+zuvor; beim Latzug verformt sich der Rücken sichtbar nach innen; beim Latzug und Bankdrücken
+passen die Hände nicht zur Stange; Finger nicht überzeugend; Highlights aufgesetzt mit kantigen
+Grenzen. **0.29.1 (Phase 18.5) behebt diese Punkte – auf dem Gerät noch nicht geprüft.** Geprüft
+wurde in Unit-Tests (jsdom, u. a. Griffkontakt und Rückendeformation an den gezeichneten
+Vertices), E2E (Chromium) und mit QA-Renderings (headless Chromium, Software-WebGL/SwiftShader);
+Vorher/Nachher-Bögen: [`figure-qa/phase-18.5/`](figure-qa/phase-18.5/).
+
+## Kurz-Checkliste 0.29.1 (Phase 18.5)
+
+Zuerst diese vier Bereiche, jeweils in der großen Ansicht mit angehaltener **und** laufender
+Animation, von vorn, seitlich und von hinten (Drehen per Wischen):
+
+| #   | Prüfung                                                              | Erwartet                                                                                                                                            |
+| --- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1  | **Rücken, Latzug** – Arme oben, halbe Höhe, Stange an der Brust      | Rücken und hintere Achselfalte bleiben eine durchgehende Fläche: keine Einbeulung, kein Einknicken hinter der Achsel, keine Knitterfalten           |
+| A2  | **Rücken, Bankdrücken** – oben und an der Brust (seitlich/schräg)    | Schulter und Achsel ohne Faltenkante; leichter Volumenverlust am gebeugten Ellbogen ist bekannt                                                     |
+| B1  | **Griff, Latzug** – ganze Bewegung, besonders oben und unten         | Stange liegt an der Fingerbasis, Finger umschließen sie, Daumen von der Gegenseite; die Stange geht nirgends durch die Hand, die Hand löst sich nie |
+| B2  | **Griff, Bankdrücken** – ganze Bewegung                              | Stange tief in der Handfläche, Handgelenk über dem Unterarm, Finger um die Stange; keine Fingerspitze sticht durch Hand oder Stange                 |
+| C1  | **Finger, Ruhepose** (Übung ohne Clip, z. B. Kniebeuge; nah heran)   | fünf einzelne, schlanke Finger mit leichter Beugung, kleine Abstände; keine „Fäustling“-Silhouette                                                  |
+| C2  | **Finger im Griff**, nah heran (Ansicht von vorn und von oben)       | Glieder einzeln gebeugt (Grund-, Mittel-, Endglied), Knöchel sichtbar, keine zerrissenen oder ineinanderlaufenden Finger                            |
+| D1  | **Highlights Bankdrücken** (Brust primär, Trizeps/Schulter sekundär) | Grenzen laufen weich aus (etwa 1–2 cm), Brust klar stärker als Schulter/Trizeps, kein flächiger Aufkleber, Haut und Stoff behalten Schattierung     |
+| D2  | **Highlights Latzug** (Latissimus primär), Rückansicht               | weiche Übergänge an Schulter, Rücken und Arm; Zuordnung bleibt klar; keine Flecken am Bauch/Bund                                                    |
+
+Danach die vollständige Liste unten.
 
 ## Vorbereitung
 
@@ -28,7 +50,7 @@ Checkliste ist für den ersten Test auf dem Xiaomi 15 Ultra (Android, HyperOS) g
 
 | #   | Prüfung                                                                                       | Erwartet                                                                                                     |
 | --- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| 1   | App-Start nach Installation, Version unter Einstellungen → App → „Über Kalethra“              | Version 0.29.0, kein Absturz                                                                                 |
+| 1   | App-Start nach Installation, Version unter Einstellungen → App → „Über Kalethra“              | Version 0.29.1, kein Absturz                                                                                 |
 | 2   | Bankdrücken-Details öffnen                                                                    | kleine Figur erscheint in < 2 s (erstes Laden), danach sofort; kein Fallback-Körper (eckig)                  |
 | 3   | Anatomie in der kleinen Ansicht                                                               | ruhiger, athletischer Körper; Brust, Schulter, Arme, Bauch als Formen lesbar, nicht verrauscht               |
 | 4   | Kleidung                                                                                      | anthrazitfarbenes ärmelloses Top und Shorts, eng anliegend, saubere Kanten an Hals/Armausschnitt             |
@@ -58,14 +80,17 @@ Checkliste ist für den ersten Test auf dem Xiaomi 15 Ultra (Android, HyperOS) g
 
 - **GPU/Treiber:** geprüft nur mit Software-WebGL; Unterschiede bei Normal-Map (Tangenten),
   Gamma und Tone-Mapping auf der Adreno-GPU sind möglich (Punkte 3, 5, 20).
-- **Erstes Laden:** 3,1 MB GLB plus Normal-Map-Dekodierung (2048² PNG) – auf dem Gerät schnell
+- **Erstes Laden:** 3,35 MiB GLB plus Normal-Map-Dekodierung (2048² PNG) – auf dem Gerät schnell
   erwartet, aber nicht gemessen (Punkt 2).
+- **Neu in 0.29.1:** 52 statt 28 Bones (Fingerglieder) und ein erweiterter Material-Shader
+  (Highlight-Mischung pro Vertex, ein Programm für alle Muskelmaterialien). Erwartet ohne
+  messbaren Unterschied; bei Ruckeln (Punkt 14) bitte melden.
 - **Kontextverlust im Hintergrund:** HyperOS beendet WebViews aggressiver; der Wiederaufbau ist
   getestet, aber nicht auf HyperOS (Punkt 18).
 - **Hohe Pixeldichte:** Pixelverhältnis ist auf 2 begrenzt; bei 3,2× Displaydichte etwas
   weichere Kanten als nativ (gewollt, Leistung).
-- **Nahansicht:** leichte Ausfransungen an Stoffkanten, weiches Gesicht, handschuhartige Hände
-  (bekannt, siehe `assets/figure/docs/README.md`).
+- **Nahansicht:** leichte Ausfransungen an Stoffkanten, weiches Gesicht (bekannt, siehe
+  `assets/figure/docs/README.md`).
 
 ## Ergebnis eintragen
 

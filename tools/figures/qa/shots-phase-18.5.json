@@ -1,0 +1,266 @@
+[
+  {
+    "name": "pb_90_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&az=90&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_135_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&az=135&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_180_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&az=180&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_90_t0.8",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0.8&az=90&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_135_t0.8",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0.8&az=135&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_180_t0.8",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0.8&az=180&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_90_t1.4",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.4&az=90&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_135_t1.4",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.4&az=135&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_180_t1.4",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.4&az=180&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_90_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&az=90&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_135_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&az=135&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "pb_180_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&az=180&el=5&dist=1.5&y=1.2&w=600&h=700&props=0"
+  },
+  {
+    "name": "bb_200_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&az=200&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "bb_250_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&az=250&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "bb_200_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&az=200&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "bb_250_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&az=250&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "bb_200_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&az=200&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "bb_250_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&az=250&el=-20&dist=1.6&y=0.75&w=700&h=600&props=0"
+  },
+  {
+    "name": "pull_hand_30_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&focus=hand_L&az=30&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "pull_hand_200_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&focus=hand_L&az=200&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "pull_hand_30_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&focus=hand_L&az=30&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "pull_hand_200_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&focus=hand_L&az=200&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "pull_hand_30_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&focus=hand_L&az=30&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "pull_hand_200_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&focus=hand_L&az=200&el=10&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_60_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&focus=hand_L&az=60&el=30&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_240_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&focus=hand_L&az=240&el=-40&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_60_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&focus=hand_L&az=60&el=30&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_240_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&focus=hand_L&az=240&el=-40&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_60_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&focus=hand_L&az=60&el=30&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "bench_hand_240_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&focus=hand_L&az=240&el=-40&dist=0.5&w=500&h=500"
+  },
+  {
+    "name": "rest_hand_60",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&focus=hand_L&az=60&el=0&dist=0.45&w=500&h=500"
+  },
+  {
+    "name": "rest_hand_-60",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&focus=hand_L&az=-60&el=0&dist=0.45&w=500&h=500"
+  },
+  {
+    "name": "rest_hand_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&focus=hand_L&az=0&el=0&dist=0.45&w=500&h=500"
+  },
+  {
+    "name": "rest_hand_180",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&focus=hand_L&az=180&el=0&dist=0.45&w=500&h=500"
+  },
+  {
+    "name": "hl_chest",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=0&el=8&dist=2.0&y=1.2&w=600&h=800&hl=chest:primary,shoulders:secondary,triceps:secondary"
+  },
+  {
+    "name": "hl_chest45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=45&el=8&dist=2.0&y=1.2&w=600&h=800&hl=chest:primary,shoulders:secondary,triceps:secondary"
+  },
+  {
+    "name": "hl_back",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=180&el=8&dist=2.0&y=1.2&w=600&h=800&hl=lats:primary,back:secondary,biceps:secondary,shoulders:secondary"
+  },
+  {
+    "name": "hl_back135",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=135&el=8&dist=2.0&y=1.2&w=600&h=800&hl=lats:primary,back:secondary,biceps:secondary,shoulders:secondary"
+  },
+  {
+    "name": "hl_core",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=20&el=8&dist=1.8&y=1.0&w=600&h=800&hl=core:primary,glutes:secondary"
+  },
+  {
+    "name": "hl_legs",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=30&el=8&dist=2.0&y=0.6&w=600&h=800&hl=quadriceps:primary,hamstrings:secondary,glutes:secondary"
+  },
+  {
+    "name": "hl_arms",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=60&el=8&dist=1.6&y=1.2&w=600&h=800&hl=biceps:primary,forearms:secondary,shoulders:secondary"
+  },
+  {
+    "name": "hl_pull",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.4&az=160&el=10&dist=2.2&y=1.2&w=600&h=800&hl=lats:primary,back:secondary,biceps:secondary"
+  },
+  {
+    "name": "hl_bench",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.4&az=60&el=35&dist=2.2&y=0.8&w=800&h=600&hl=chest:primary,triceps:secondary,shoulders:secondary"
+  },
+  {
+    "name": "grip_pull_t0_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t0_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t0_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t1.1_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t1.1_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t1.1_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t2.2_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t2.2_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_pull_t2.2_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t0_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t0_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t0_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t1.1_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t1.1_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t1.1_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t2.2_0_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&focus=hand_L&az=0&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t2.2_180_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&focus=hand_L&az=180&el=0&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "grip_bench_t2.2_45_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&focus=hand_L&az=45&el=45&dist=0.4&w=500&h=500"
+  },
+  {
+    "name": "view_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=0&el=6&dist=4.6&y=0.9&w=500&h=900"
+  },
+  {
+    "name": "view_45",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=45&el=6&dist=4.6&y=0.9&w=500&h=900"
+  },
+  {
+    "name": "view_90",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=90&el=6&dist=4.6&y=0.9&w=500&h=900"
+  },
+  {
+    "name": "view_135",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=135&el=6&dist=4.6&y=0.9&w=500&h=900"
+  },
+  {
+    "name": "view_180",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=180&el=6&dist=4.6&y=0.9&w=500&h=900"
+  }
+]

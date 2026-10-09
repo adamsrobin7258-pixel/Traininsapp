@@ -8,9 +8,11 @@
 import type { Color } from 'three';
 import {
   Group,
+  Matrix3,
   Mesh,
   type BufferGeometry,
   MeshStandardMaterial,
+  SkinnedMesh,
   Vector3,
   type Object3D,
 } from 'three';
@@ -38,20 +40,23 @@ function fileOf(variant: FigureVariant): ArrayBuffer {
   return readProjectFile(`public/${figureAssetFor(variant) ?? ''}`);
 }
 
-/** The GLB with images and textures removed (jsdom cannot decode them). */
-function withoutImages(file: ArrayBuffer): ArrayBuffer {
+interface GltfJson {
+  images?: unknown;
+  textures?: unknown;
+  samplers?: unknown;
+  materials?: { normalTexture?: unknown }[];
+  nodes?: { extras?: { muscleGroups?: unknown } }[];
+  meshes?: { primitives: { attributes: Record<string, number> }[] }[];
+}
+
+/** A copy of a GLB with its JSON changed by `edit` (binary chunk unchanged). */
+function editedGlb(file: ArrayBuffer, edit: (json: GltfJson) => void): ArrayBuffer {
   const view = new DataView(file);
   const jsonLength = view.getUint32(12, true);
-  const json = JSON.parse(new TextDecoder().decode(new Uint8Array(file, 20, jsonLength))) as {
-    images?: unknown;
-    textures?: unknown;
-    samplers?: unknown;
-    materials?: { normalTexture?: unknown }[];
-  };
-  delete json.images;
-  delete json.textures;
-  delete json.samplers;
-  for (const material of json.materials ?? []) delete material.normalTexture;
+  const json = JSON.parse(
+    new TextDecoder().decode(new Uint8Array(file, 20, jsonLength)),
+  ) as GltfJson;
+  edit(json);
   let text = JSON.stringify(json);
   while (text.length % 4) text += ' ';
   const jsonBytes = new TextEncoder().encode(text);
@@ -66,6 +71,16 @@ function withoutImages(file: ArrayBuffer): ArrayBuffer {
   out.set(jsonBytes, 20);
   out.set(bin, 20 + jsonBytes.length);
   return out.buffer;
+}
+
+/** The GLB with images and textures removed (jsdom cannot decode them). */
+function withoutImages(file: ArrayBuffer): ArrayBuffer {
+  return editedGlb(file, (json) => {
+    delete json.images;
+    delete json.textures;
+    delete json.samplers;
+    for (const material of json.materials ?? []) delete material.normalTexture;
+  });
 }
 
 const parsed = new Map<FigureVariant, Promise<GLTF>>();
@@ -220,6 +235,40 @@ function offBar(root: Object3D, bar: string, point: Vector3) {
   return { radial: Math.hypot(local.y, local.z), along: local.x };
 }
 
+/** The skinned meshes below a node. */
+function skinnedMeshes(root: Object3D): SkinnedMesh[] {
+  const out: SkinnedMesh[] = [];
+  root.traverse((node) => {
+    if (node instanceof SkinnedMesh) out.push(node as SkinnedMesh);
+  });
+  return out;
+}
+
+/** Radius of the bars (tools/figures/lib/props.mjs). */
+const BAR_RADIUS = 0.014;
+const FINGERS = ['index', 'middle', 'ring', 'pinky'] as const;
+
+/**
+ * The skinned hand vertices (world, current pose) with the finger bone that moves each most –
+ * what is actually drawn, not bone origins.
+ */
+function handVertices(root: Object3D) {
+  root.updateMatrixWorld(true);
+  const out: { point: Vector3; bone: string }[] = [];
+  for (const mesh of skinnedMeshes(root)) {
+    if (![mesh.name, mesh.parent?.name].some((n) => n?.startsWith('body_hands'))) continue;
+    mesh.skeleton.update();
+    const geometry = mesh.geometry;
+    const index = geometry.getAttribute('skinIndex');
+    const position = geometry.getAttribute('position');
+    for (let i = 0; i < position.count; i++) {
+      const point = mesh.getVertexPosition(i, new Vector3()).applyMatrix4(mesh.matrixWorld);
+      out.push({ point, bone: mesh.skeleton.bones[index.getComponent(i, 0)]?.name ?? '' });
+    }
+  }
+  return out;
+}
+
 describe('Kalethra body "male" – grip and shoulder girdle', () => {
   it('carries the CC BY 4.0 credit of its modelled source in the file', async () => {
     const { asset } = (await gltfOf('male')).parser.json as {
@@ -234,40 +283,55 @@ describe('Kalethra body "male" – grip and shoulder girdle', () => {
   it.each([
     ['horizontalPush_bench', 'prop_bench_bar'],
     ['verticalPull_cable', 'prop_cable_bar'],
-  ])('holds the bar in the fingers over the whole repetition (%s)', async (clip, bar) => {
-    const body = await bodyOf('male', clip);
-    const seen: number[] = [];
-    for (let step = 0; step < 12; step++) {
-      body.root.updateMatrixWorld(true);
-      for (const side of ['L', 'R']) {
-        const fingers = offBar(body.root, bar, worldOf(body.root, `fingers_${side}`));
-        const tips = offBar(body.root, bar, worldOf(body.root, `fingerTips_${side}`));
-        seen.push(fingers.radial, tips.radial);
-        // The hands sit left and right of the centre, inside the bar.
-        expect(Math.sign(fingers.along)).toBe(side === 'L' ? 1 : -1);
-        expect(Math.abs(fingers.along)).toBeLessThan(0.55);
+  ])(
+    'holds the bar with every finger over the whole repetition, never through it (%s)',
+    async (clip, bar) => {
+      const body = await bodyOf('male', clip);
+      for (let step = 0; step < 8; step++) {
+        const hands = handVertices(body.root).map(({ point, bone }) => ({
+          bone,
+          ...offBar(body.root, bar, point),
+        }));
+        // Nothing of the hand inside the bar (1 mm tolerance for the quantised weights).
+        const deepest = Math.min(...hands.map((h) => h.radial - BAR_RADIUS));
+        expect(deepest).toBeGreaterThan(-0.001);
+        for (const side of ['L', 'R']) {
+          const own = hands.filter((h) => h.bone.endsWith(`_${side}`));
+          // Left and right of the centre, inside the bar's length.
+          for (const h of own) expect(Math.abs(h.along)).toBeLessThan(0.55);
+          expect(Math.sign(own[0]?.along ?? 0)).toBe(side === 'L' ? 1 : -1);
+          // Every finger and the thumb touch the bar (skin within 3 mm of its surface).
+          for (const finger of [...FINGERS, 'thumb']) {
+            const gap = Math.min(
+              ...own.filter((h) => h.bone.startsWith(finger)).map((h) => h.radial - BAR_RADIUS),
+            );
+            expect(gap, `${finger} ${side} at step ${String(step)}`).toBeLessThan(0.003);
+          }
+        }
+        body.advance(0.55);
       }
-      body.advance(0.37);
-    }
-    // Bone origins sit inside the fingers: bar radius (1.4 cm) plus half a finger – no gap.
-    expect(Math.max(...seen)).toBeLessThan(0.04);
-    body.dispose();
-  });
+      body.dispose();
+    },
+  );
 
-  it('closes the fingers around the bar and lifts the shoulder girdle with the arm', async () => {
+  it('closes every finger around the bar from an open hand, and lifts the shoulder girdle', async () => {
     const rest = await bodyOf('male', 'rest');
     const pulldown = await bodyOf('male', 'verticalPull_cable');
     for (const body of [rest, pulldown]) body.root.updateMatrixWorld(true);
-    const bend = (root: Object3D, side: string) => {
-      const hand = worldOf(root, `hand_${side}`);
-      const fingers = worldOf(root, `fingers_${side}`);
-      const tips = worldOf(root, `fingerTips_${side}`);
-      return fingers.clone().sub(hand).angleTo(tips.clone().sub(fingers));
+    // Curl of a finger: from the back of the hand (wrist → knuckle) to its middle phalanx.
+    const curl = (root: Object3D, finger: string, side: string) => {
+      const [hand, a, b, c] = [`hand_${side}`, 1, 2, 3].map((k) =>
+        typeof k === 'string' ? worldOf(root, k) : worldOf(root, `${finger}${String(k)}_${side}`),
+      ) as [Vector3, Vector3, Vector3, Vector3];
+      return a.clone().sub(hand).angleTo(c.clone().sub(b));
     };
     for (const side of ['L', 'R']) {
-      // Relaxed at rest, curled around the bar in the clip.
-      expect(bend(pulldown.root, side)).toBeGreaterThan(bend(rest.root, side) + 0.7);
-      expect(rest.root.getObjectByName(`thumb_${side}`)).toBeTruthy();
+      // Each finger has its own joints and closes on its own (not one bone for all fingers).
+      for (const finger of FINGERS)
+        expect(curl(pulldown.root, finger, side), `${finger} ${side}`).toBeGreaterThan(
+          curl(rest.root, finger, side) + 0.6,
+        );
+      expect(rest.root.getObjectByName(`thumb3_${side}`)).toBeTruthy();
       // Arms overhead: the shoulder rises with the arm (scapulohumeral rhythm).
       const raised =
         worldOf(pulldown.root, `upperArm_${side}`).y - worldOf(pulldown.root, 'chest').y;
@@ -277,6 +341,199 @@ describe('Kalethra body "male" – grip and shoulder girdle', () => {
     rest.dispose();
     pulldown.dispose();
   });
+
+  it('fades highlights softly into the neighbouring muscles, primary > secondary > neutral', async () => {
+    const body = await bodyOf('male', 'rest', { chest: 'primary', triceps: 'secondary' });
+    const found = { groups: [] as string[] };
+    const blended: MeshStandardMaterial[] = [];
+    let shared = 0;
+    let total = 0;
+    body.root.traverse((node) => {
+      const list = (node.userData as { muscleGroups?: string[] }).muscleGroups;
+      if (list) found.groups = list;
+      if (!(node instanceof Mesh)) return;
+      const geometry = node.geometry as BufferGeometry;
+      if (!geometry.hasAttribute('_muscle_weights')) return;
+      const weights = geometry.getAttribute('_muscle_weights');
+      blended.push(node.material as MeshStandardMaterial);
+      for (let i = 0; i < weights.count; i++) {
+        total++;
+        // Shared vertices: no group owns them completely – the transition band.
+        if (weights.getX(i) < 0.95) shared++;
+      }
+    });
+    const { groups } = found;
+    expect([...groups].sort()).toEqual([...FIGURE_MUSCLES].sort());
+    // A band, not a cut: part of the surface is shared between groups, most of it is not.
+    expect(shared / total).toBeGreaterThan(0.05);
+    expect(shared / total).toBeLessThan(0.6);
+    // The shader takes each group's level from the highlight.
+    const shader = {
+      uniforms: {} as Record<string, { value: unknown }>,
+      vertexShader: '#include <common>\n#include <begin_vertex>',
+      fragmentShader: '#include <common>\nvec4 diffuseColor = vec4( diffuse, opacity );',
+    };
+    const material = blended[0];
+    if (!material) throw new Error('no blended material');
+    material.onBeforeCompile(shader as never, null as never);
+    expect(shader.vertexShader).toContain('_muscle_weights');
+    expect(shader.fragmentShader).toContain('mix( uSurface, uAccent, vMuscleMix )');
+    const mix = shader.uniforms.uMuscleMix?.value as Float32Array;
+    const level = (group: string) => mix[groups.indexOf(group)];
+    expect(level('chest')).toBeCloseTo(PRIMARY_MIX);
+    expect(level('triceps')).toBeGreaterThan(0);
+    expect(level('triceps')).toBeLessThan(level('chest') ?? 0);
+    expect(level('quadriceps')).toBe(0);
+    // No muscle (head, hands …): never tinted.
+    expect(mix[groups.length]).toBe(0);
+    body.setHighlight({ quadriceps: 'primary' });
+    expect(level('chest')).toBe(0);
+    expect(level('quadriceps')).toBeCloseTo(PRIMARY_MIX);
+    body.dispose();
+  });
+});
+
+describe('Kalethra body "male" – soft highlight in the file', () => {
+  it('rejects broken soft-highlight data', () => {
+    const male = fileOf('male');
+    expect(validateGlb(male, { variant: 'male' }).errors).toEqual([]);
+    const oneSided = editedGlb(male, (json) => {
+      const primitive = json.meshes?.[0]?.primitives[0];
+      if (primitive) delete primitive.attributes._MUSCLE_GROUPS;
+    });
+    expect(validateGlb(oneSided).errors.join()).toMatch(/only one of _MUSCLE_GROUPS/);
+    const noList = editedGlb(male, (json) => {
+      for (const node of json.nodes ?? []) delete node.extras;
+    });
+    expect(validateGlb(noList).errors.join()).toMatch(/list of known muscle groups/);
+    const unknown = editedGlb(male, (json) => {
+      for (const node of json.nodes ?? [])
+        if (node.extras?.muscleGroups) node.extras.muscleGroups = ['chest', 'wings'];
+    });
+    expect(validateGlb(unknown).errors.join()).toMatch(/list of known muscle groups/);
+  });
+});
+
+/**
+ * Local deformation of the back and shoulders in a clip pose: every sampled vertex's surrounding
+ * (3.5 cm along the surface, rest pose) is fitted rigidly to where it is posed; what is left along
+ * the normal is the dent (< 0) or bulge the skinning makes there. Returns the deepest dent (m).
+ */
+function deepestDent(root: Object3D): number {
+  root.updateMatrixWorld(true);
+  const BACK = /^muscle_(lats|back|shoulders|triceps|chest_upper)/;
+  const verts: { mesh: SkinnedMesh; i: number; rest: Vector3; back: boolean }[] = [];
+  const ids = new Map<string, number>();
+  const triangles: number[][] = [];
+  for (const node of skinnedMeshes(root)) {
+    const name = [node.name, node.parent?.name ?? ''].find((n) => /^(muscle|body)_/.test(n)) ?? '';
+    const material = (node.material as MeshStandardMaterial).name;
+    const geometry = node.geometry;
+    const position = geometry.getAttribute('position');
+    const local: number[] = [];
+    for (let i = 0; i < position.count; i++) {
+      const rest = new Vector3().fromBufferAttribute(position, i);
+      const key = `${material}|${rest
+        .toArray()
+        .map((x) => Math.round(x * 1e4))
+        .join(',')}`;
+      let id = ids.get(key);
+      if (id === undefined) {
+        id = verts.length;
+        ids.set(key, id);
+        verts.push({ mesh: node, i, rest, back: BACK.test(name) && rest.y > 1 });
+      }
+      local.push(id);
+    }
+    const index = geometry.getIndex();
+    if (!index) continue;
+    for (let t = 0; t < index.count; t += 3)
+      triangles.push([0, 1, 2].map((k) => local[index.getX(t + k)] ?? 0));
+  }
+  const neighbours = verts.map(() => new Set<number>());
+  for (const [a = 0, b = 0, c = 0] of triangles) {
+    neighbours[a]?.add(b).add(c);
+    neighbours[b]?.add(a).add(c);
+    neighbours[c]?.add(a).add(b);
+  }
+  const posed = verts.map(({ mesh, i }) => {
+    mesh.skeleton.update();
+    return mesh.getVertexPosition(i, new Vector3()).applyMatrix4(mesh.matrixWorld);
+  });
+  const normals = verts.map(() => new Vector3());
+  for (const [a = 0, b = 0, c = 0] of triangles) {
+    const n = new Vector3().crossVectors(
+      (posed[b] as Vector3).clone().sub(posed[a] as Vector3),
+      (posed[c] as Vector3).clone().sub(posed[a] as Vector3),
+    );
+    for (const v of [a, b, c]) normals[v]?.add(n);
+  }
+  let deepest = 0;
+  verts.forEach((vertex, k) => {
+    if (!vertex.back || k % 3 !== 0) return;
+    // Surrounding along the surface (rest pose).
+    const distance = new Map<number, number>([[k, 0]]);
+    const queue = [k];
+    while (queue.length) {
+      const u = queue.shift() ?? k;
+      for (const w of neighbours[u] ?? []) {
+        const d =
+          (distance.get(u) ?? 0) +
+          (verts[u] as typeof vertex).rest.distanceTo((verts[w] as typeof vertex).rest);
+        if (d < 0.035 && d < (distance.get(w) ?? Infinity)) {
+          if (!distance.has(w)) queue.push(w);
+          distance.set(w, d);
+        }
+      }
+    }
+    const hood = [...distance.keys()];
+    if (hood.length < 6) return;
+    const restCentre = new Vector3();
+    const posedCentre = new Vector3();
+    for (const u of hood) {
+      restCentre.add((verts[u] as typeof vertex).rest);
+      posedCentre.add(posed[u] as Vector3);
+    }
+    restCentre.divideScalar(hood.length);
+    posedCentre.divideScalar(hood.length);
+    // Best rotation (polar decomposition of the covariance).
+    const h = new Matrix3().set(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    const e = h.elements;
+    for (const u of hood) {
+      const a = (verts[u] as typeof vertex).rest.clone().sub(restCentre);
+      const b = (posed[u] as Vector3).clone().sub(posedCentre);
+      for (let i = 0; i < 3; i++)
+        for (let j = 0; j < 3; j++)
+          e[j * 3 + i] = (e[j * 3 + i] ?? 0) + b.getComponent(i) * a.getComponent(j);
+    }
+    let r = h.clone();
+    for (let it = 0; it < 25; it++) {
+      const inverse = r.clone().invert().transpose().elements;
+      r = new Matrix3().fromArray(r.elements.map((x, i) => (x + (inverse[i] ?? 0)) / 2));
+    }
+    const expected = vertex.rest.clone().sub(restCentre).applyMatrix3(r).add(posedCentre);
+    const off = (posed[k] as Vector3)
+      .clone()
+      .sub(expected)
+      .dot((normals[k] as Vector3).normalize());
+    deepest = Math.min(deepest, off);
+  });
+  return deepest;
+}
+
+describe('Kalethra body "male" – back and shoulders in motion', () => {
+  it.each(['verticalPull_cable', 'horizontalPush_bench'])(
+    'keeps the back continuous: no dent deeper than 9 mm in any phase (%s)',
+    async (clip) => {
+      const body = await bodyOf('male', clip);
+      // 0.29.0 folded the skin behind the armpit in by 9–12 mm in these phases.
+      for (let step = 0; step < 5; step++) {
+        expect(deepestDent(body.root)).toBeGreaterThan(-0.009);
+        body.advance(0.45);
+      }
+      body.dispose();
+    },
+  );
 });
 
 describe('Kalethra bodies – variants and resources', () => {

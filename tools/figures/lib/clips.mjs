@@ -2,14 +2,17 @@
  * The body's movement clips, named by the asset contract (`<movement>[_<variant>]`). Authored like
  * the code-built figure's motions: hands and feet follow targets, elbows and knees by two-bone IK
  * with a pole, the forearms turn the palms into the grip (shared between forearm, twist bone and
- * hand). Every bone's rest rotation is the identity, so a pose is a world rotation per bone.
+ * hand). With finger bones (male) the bar leads instead: the clip moves the bar and the hands hold
+ * it at their grip reference (lib/grip.mjs). Every bone's rest rotation is the identity, so a pose
+ * is a world rotation per bone.
  *
  * World layout of the scene (metres, +Y up, +Z front of the standing figure): the bench runs along
  * Z with its top at 0.45 m, the head end towards −Z; the pulldown seat at 0.455 m, the tower in
  * front of the user. Equipment: `prop_<variant>_<part>` nodes, shown only with clips of that variant.
  */
 import { Matrix4, Quaternion, Vector3 } from 'three';
-import { RIG } from './rig.mjs';
+import { FINGER_BONE, RIG } from './rig.mjs';
+import { BAR_RADIUS, gripLine, gripPose, handOnBar } from './grip.mjs';
 
 const v3 = (a) => new Vector3(...a);
 
@@ -47,20 +50,21 @@ function solveTwoBone(root, target, a, b, pole) {
     .add(bend.multiplyScalar(a * Math.sqrt(Math.max(0, 1 - cos * cos))));
 }
 
-/** Closing angles (degrees) of a full grip around a bar. */
-const GRIP = {
-  knuckles: 62,
-  middle: 78,
-  thumbOpposition: 40,
-  thumbFlex: -30,
-};
-
 /**
- * The shoulder girdle with the arm (scapulohumeral rhythm): above ~40° of arm elevation the
- * clavicle lifts with about a third of it, and it comes forward when the hands reach to the
- * front – the shoulder follows the arm instead of the skin folding in the armpit. Only for
- * frames that ask for it (`frame.shoulderRhythm`); otherwise the girdle stays with the chest.
+ * The shoulder girdle with the arm (scapulohumeral rhythm): above ~30° of arm elevation the
+ * clavicle and scapula lift with about a third of it, and they follow the upper arm forwards
+ * (protraction, elbows in front – the top of a press) or backwards (retraction, elbows behind
+ * the trunk – the bottom of a pull). The shoulder follows the arm instead of the skin folding
+ * behind the armpit. Only for frames that ask for it (`frame.shoulderRhythm`); otherwise the
+ * girdle stays with the chest.
  */
+const RHYTHM = {
+  liftFrom: 30,
+  liftShare: 0.3,
+  liftMax: 24,
+  protraction: 10,
+  retraction: 12,
+};
 function shoulderGirdle(frame, s, chest, restOf, heads) {
   if (!frame.shoulderRhythm) return chest;
   const i = s === 'L' ? 0 : 1;
@@ -74,14 +78,21 @@ function shoulderGirdle(frame, s, chest, restOf, heads) {
     .sub(restOf(`shoulder_${s}`))
     .applyQuaternion(chest)
     .add(girdle);
-  const toHand = frame.hands[i]
-    .clone()
-    .sub(joint)
-    .applyQuaternion(chest.clone().invert())
-    .normalize();
-  const elevation = Math.acos(Math.max(-1, Math.min(1, -toHand.y)));
-  const lift = Math.min(20, Math.max(0, ((elevation * 180) / Math.PI - 45) * 0.28));
-  const forward = Math.min(10, Math.max(0, toHand.z) * 12);
+  // The upper arm's direction from there (elbow by the same IK as the arm), in the chest frame.
+  const upper = restOf(`forearm_${s}`).distanceTo(restOf(`upperArm_${s}`));
+  const fore = restOf(`hand_${s}`).distanceTo(restOf(`forearm_${s}`));
+  const elbow = solveTwoBone(joint, frame.hands[i], upper, fore, frame.elbowPoles[i]);
+  const humerus = elbow.sub(joint).applyQuaternion(chest.clone().invert()).normalize();
+  const elevation = (Math.acos(Math.max(-1, Math.min(1, -humerus.y))) * 180) / Math.PI;
+  const lift = Math.min(
+    RHYTHM.liftMax,
+    Math.max(0, (elevation - RHYTHM.liftFrom) * RHYTHM.liftShare),
+  );
+  // Forward with the elbow in front of the shoulder, back with it behind (degrees).
+  const forward = Math.max(
+    -RHYTHM.retraction,
+    Math.min(RHYTHM.protraction, humerus.z * 2 * RHYTHM.protraction),
+  );
   const local = new Quaternion()
     .setFromAxisAngle(new Vector3(0, 0, 1), (sx * lift * Math.PI) / 180)
     .premultiply(
@@ -126,6 +137,52 @@ export function poseFrame(rest, frame, rig = RIG) {
   place('pelvis', qp);
   for (const name of ['spine', 'chest', 'neck', 'head']) place(name, frame.spine?.[name] ?? qp);
 
+  // Holding a bar (male rig): the hands follow the bar – wrist targets and hand rotations from
+  // the grip reference (lib/grip.mjs) – instead of given wrist targets.
+  let handRotations = null;
+  if (frame.bar) {
+    frame = { ...frame, hands: [...frame.hands] };
+    handRotations = [];
+    ['L', 'R'].forEach((s, i) => {
+      const sx = s === 'L' ? 1 : -1;
+      const grip = frame.bar.grips[s];
+      const outward = frame.bar.axis.clone().multiplyScalar(sx);
+      const point = frame.bar.centre
+        .clone()
+        .add(outward.clone().multiplyScalar(frame.bar.halfWidth));
+      // Shoulder joint for this reach (girdle from the bar point first, the hand is close by).
+      frame.hands[i] = point;
+      const girdle = shoulderGirdle(frame, s, world.get('chest'), restOf, heads);
+      const S = restOf(`upperArm_${s}`)
+        .sub(restOf(`shoulder_${s}`))
+        .applyQuaternion(girdle)
+        .add(
+          restOf(`shoulder_${s}`)
+            .sub(restOf('chest'))
+            .applyQuaternion(world.get('chest'))
+            .add(heads.get('chest')),
+        );
+      const a = restOf(`forearm_${s}`).distanceTo(restOf(`upperArm_${s}`));
+      const b = restOf(`hand_${s}`).distanceTo(restOf(`forearm_${s}`));
+      const held = handOnBar({
+        hand: grip.hand,
+        line: grip.line,
+        barPoint: point,
+        outward,
+        preferredPalm: frame.palms[i],
+        forearmDir: restOf(`hand_${s}`)
+          .sub(restOf(`forearm_${s}`))
+          .normalize(),
+        forearmFor: (W) =>
+          W.clone()
+            .sub(solveTwoBone(S, W, a, b, frame.elbowPoles[i]))
+            .normalize(),
+      });
+      frame.hands[i] = held.wrist;
+      handRotations[i] = held.q;
+    });
+  }
+
   ['L', 'R'].forEach((s, i) => {
     const sx = s === 'L' ? 1 : -1;
     place(`shoulder_${s}`, shoulderGirdle(frame, s, world.get('chest'), restOf, heads));
@@ -153,38 +210,26 @@ export function poseFrame(rest, frame, rig = RIG) {
     world.set(`upperArm_${s}`, qUpper);
     const qFore = frameRotation(f0, perp(hinge0, f0), f1, perp(hinge1, f1));
     // Palm into the grip: the turn needed about the forearm, shared by forearm, twist and hand.
+    // A hand on a bar takes its rotation from the grip; forearm and twist share the turn.
     let turn = 0;
-    if (frame.palms?.[i]) {
+    const held = handRotations?.[i];
+    if (held || frame.palms?.[i]) {
       const palm = perp(new Vector3(-sx, 0, 0), f0).applyQuaternion(qFore);
-      const want = perp(frame.palms[i], f1);
+      const want = perp(held ? new Vector3(-sx, 0, 0).applyQuaternion(held) : frame.palms[i], f1);
       turn = Math.atan2(new Vector3().crossVectors(palm, want).dot(f1), palm.dot(want));
     }
     const twist = (share) => new Quaternion().setFromAxisAngle(f1, turn * share).multiply(qFore);
     place(`forearm_${s}`, twist(0.25));
     place(`forearmTwist_${s}`, twist(0.7));
-    place(`hand_${s}`, twist(1));
-    if (PARENT.has(`fingers_${s}`)) {
-      // Grip: the fingers close at the knuckles and the middle joints, the thumb comes in.
-      const g = frame.grip ?? 0;
-      const handQ = world.get(`hand_${s}`);
-      const along0 = restOf(`fingers_${s}`)
-        .sub(restOf(`hand_${s}`))
-        .normalize();
-      const palm0 = perp(new Vector3(-sx, 0, 0), along0);
-      const axis = new Vector3().crossVectors(along0, palm0).normalize().applyQuaternion(handQ);
-      const curl = (deg) =>
-        new Quaternion().setFromAxisAngle(axis, (deg * Math.PI * g) / 180).multiply(handQ);
-      place(`fingers_${s}`, curl(GRIP.knuckles));
-      place(`fingerTips_${s}`, curl(GRIP.knuckles + GRIP.middle));
-      // Thumb from its saddle joint: turned in front of the palm (opposition), then flexed.
-      const along = along0.clone().applyQuaternion(handQ);
-      const opposition = new Quaternion().setFromAxisAngle(
-        along,
-        (-sx * GRIP.thumbOpposition * Math.PI * g) / 180,
-      );
-      const flex = new Quaternion().setFromAxisAngle(axis, (GRIP.thumbFlex * Math.PI * g) / 180);
-      place(`thumb_${s}`, flex.multiply(opposition).multiply(handQ));
-    }
+    place(`hand_${s}`, held ?? twist(1));
+    // Fingers: the grip pose (rest frame) turned with the hand; open hand otherwise.
+    const handQ = world.get(`hand_${s}`);
+    for (const [name] of rig)
+      if (FINGER_BONE.test(name) && name.endsWith(`_${s}`))
+        place(
+          name,
+          frame.bar ? handQ.clone().multiply(frame.bar.grips[s].pose.get(name)) : handQ.clone(),
+        );
 
     // Leg.
     const H0 = restOf(`thigh_${s}`);
@@ -224,6 +269,58 @@ export function poseFrame(rest, frame, rig = RIG) {
   return { world, heads: ordered };
 }
 
+/**
+ * Grip references per exercise: where across the palm the bar's axis lies (0 wrist … 1
+ * knuckles) and how much it crosses the palm diagonally. Bench press: low in the palm, over the
+ * forearm (the wrist stays stacked under the bar). Pulldown: at the base of the fingers (a hook
+ * that pulls).
+ */
+export const GRIPS = {
+  bench: { at: 0.75, oblique: 0 },
+  pulldown: { at: 0.9, oblique: 6 },
+};
+
+/** Elbow angle (degrees, 180 = straight) of the left arm in a posed frame. */
+function elbowAngle(heads) {
+  const E = heads.get('forearm_L');
+  return (
+    (heads.get('upperArm_L').clone().sub(E).angleTo(heads.get('hand_L').clone().sub(E)) * 180) /
+    Math.PI
+  );
+}
+
+/**
+ * Turns a clip into one that moves a bar the hands hold: `path(d, top)` gives the bar (centre,
+ * axis) over the repetition; `top` – the far end of the movement – is found so that the elbows
+ * stretch to `extension` degrees there (straight enough to read as locked out, never out of
+ * reach, so the hands never leave the bar).
+ */
+function holdBar(clip, rest, rig, hands, { grip, halfWidth, extension, path, range }) {
+  const grips = {};
+  for (const side of ['L', 'R']) {
+    const hand = hands[side];
+    const line = gripLine(hand, grip);
+    grips[side] = { hand, line, pose: gripPose(hand, line).rotations };
+  }
+  const base = clip.frame;
+  const frameAt = (phase, top) => {
+    const d = repetition(phase);
+    const { centre, axis } = path(d, top);
+    return { ...base(phase), bar: { centre, axis, halfWidth, grips } };
+  };
+  let [lo, hi] = range;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    const angle = elbowAngle(poseFrame(rest, frameAt(0, mid), rig).heads);
+    if (angle < extension) lo = mid;
+    else hi = mid;
+  }
+  const top = (lo + hi) / 2;
+  if (Math.abs(elbowAngle(poseFrame(rest, frameAt(0, top), rig).heads) - extension) > 0.5)
+    throw new Error(`${clip.name}: no bar position stretches the elbows to ${extension}°`);
+  clip.frame = (phase) => frameAt(phase, top);
+}
+
 /** Local rotations (parent space) of a posed frame, for the glTF animation channels. */
 export function localRotations(world, rig = RIG) {
   const ORDER = rig.map(([name]) => name);
@@ -243,8 +340,12 @@ export function localRotations(world, rig = RIG) {
  * @param body { backDepth: distance pelvis joint → back surface, chestFront: chest surface z in
  *   front of the shoulder joint, seatDrop: pelvis joint above the seat when sitting }
  */
-export function clipDefinitions(rest, body, { grip = false, shoulderRhythm = false } = {}) {
-  const motion = { ...(grip ? { grip: 1 } : {}), ...(shoulderRhythm ? { shoulderRhythm } : {}) };
+export function clipDefinitions(
+  rest,
+  body,
+  { shoulderRhythm = false, hands = null, rig = RIG } = {},
+) {
+  const motion = shoulderRhythm ? { shoulderRhythm } : {};
   const R = (name) => v3(rest.get(name));
   const pelvis0 = R('pelvis');
   const shoulder0 = R('upperArm_L');
@@ -329,6 +430,47 @@ export function clipDefinitions(rest, body, { grip = false, shoulderRhythm = fal
     bar: true,
     cable: true,
   };
+
+  // Holding the bar (male rig with finger bones): the bar moves, the hands hold it.
+  if (hands) {
+    holdBar(bench, rest, rig, hands, {
+      grip: GRIPS.bench,
+      halfWidth: shoulder0.x + 0.12,
+      extension: 168,
+      path(d, top) {
+        // From over the shoulders (arms locked) down to the lower chest, just above the shirt.
+        const sy = shoulder0.y;
+        const centre = lerp(
+          [0, sy - 0.03, top],
+          [0, sy - 0.12, body.chestFront + BAR_RADIUS + 0.012],
+          d,
+        );
+        return { centre: fromLyingBody(centre), axis: new Vector3(1, 0, 0) };
+      },
+      range: [shoulder0.z + 0.3, shoulder0.z + armLength + 0.1],
+    });
+    const sy = shoulder0.y;
+    // Bottom of the pull: in front of the upper chest, the trunk leaned back fully (8° + 6°).
+    const lowest = (() => {
+      const lean = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), -14 * (Math.PI / 180));
+      return v3([0, sy - 0.03, body.chestFront + BAR_RADIUS + 0.035])
+        .sub(pelvis0)
+        .applyQuaternion(lean)
+        .add(seatedPelvis);
+    })();
+    holdBar(pulldown, rest, rig, hands, {
+      grip: GRIPS.pulldown,
+      halfWidth: shoulder0.x + 0.2,
+      extension: 165,
+      path(d, top) {
+        return {
+          centre: new Vector3(0, top, 0.07).lerp(lowest, d),
+          axis: new Vector3(1, 0, 0),
+        };
+      },
+      range: [lowest.y + 0.3, lowest.y + armLength + 0.6],
+    });
+  }
 
   // Rest: the standing rest pose (one key).
   const restClip = {

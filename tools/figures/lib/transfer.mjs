@@ -10,12 +10,15 @@
  * 3. Fit: trunk, limbs and head are moved onto the sculpt's large form (nearest form point with a
  *    matching normal, smoothed over the mesh, a few rounds); hands and feet keep their MakeHuman
  *    shape (finger and toe topology) and blend in at wrist and ankle.
+ * 4. Folds the fit leaves in concave places are smoothed out, and the shoulder girdle's skin
+ *    weights are reworked (chest → scapula → upper arm), so raised arms do not fold the back in.
  * The sculpt's grooves and fibres are not geometry here: `detailNormal` hands them to the
  * normal-map bake.
  */
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { Quaternion, Vector3 } from 'three';
+import { FINGER_BONE } from './rig.mjs';
 
 export function readSculpt(path) {
   const raw = gunzipSync(readFileSync(path));
@@ -245,7 +248,7 @@ function boneMaps(mhJoints, target, scale) {
         v.add(axis.clone().multiplyScalar(along * (axial / scale - 1)));
         return v.add(H).toArray();
       });
-    } else if (['fingers', 'fingerTips', 'thumb'].includes(base)) {
+    } else if (FINGER_BONE.test(name)) {
       continue; // follow the hand (below)
     } else if (base === 'hand' || base === 'foot') {
       // Hands and feet keep their own shape: they turn with the forearm / shin and sit on the
@@ -272,9 +275,8 @@ function boneMaps(mhJoints, target, scale) {
     }
   }
   for (const name of mhJoints.keys()) {
-    const base = name.replace(/_[LR]$/, '');
-    if (!['fingers', 'fingerTips', 'thumb'].includes(base)) continue;
-    const hand = maps.get(`hand${name.slice(base.length)}`);
+    if (!FINGER_BONE.test(name)) continue;
+    const hand = maps.get(`hand${name.slice(-2)}`);
     maps.set(name, hand);
     target.set(name, hand(mhJoints.get(name)));
   }
@@ -350,7 +352,7 @@ export function transferAnatomy(body, sculpt, { rounds = 4 } = {}) {
   const fit = new Float64Array(count);
   const handOrFoot = new Set(
     names
-      .map((n, i) => (/^(hand|foot|fingers|fingerTips|thumb)_/.test(n) ? i : -1))
+      .map((n, i) => (/^(hand|foot)_/.test(n) || FINGER_BONE.test(n) ? i : -1))
       .filter((i) => i >= 0),
   );
   for (const v of used) {
@@ -457,11 +459,14 @@ export function transferAnatomy(body, sculpt, { rounds = 4 } = {}) {
       for (let c = 0; c < 3; c++) nextPositions[v * 3 + c] += fit[v] * field[v * 3 + c];
     current = nextPositions;
   }
+  // Snapping onto the nearest sculpt point folds the mesh where the surface is concave (behind
+  // and below the armpit, along the scapula): smooth those folds out.
+  current = relaxFolds(current, faces, used, adjacency, fit);
   // Head: radial fit from the skull centre (MakeHuman's head is already a smooth star-shaped
   // surface, see smoothHead; nearest-point snapping would fold the hidden eye and mouth rims).
   current = fitHead(current, body, sculpt);
   current = blendHeadSeam(current, body, adjacency, usedSet);
-  const smoothWeights = relaxShoulderWeights(body, adjacency);
+  const smoothWeights = girdleWeights(body, current, target, adjacency);
   // Floor at y = 0 (feet keep their MakeHuman soles).
   let minY = Infinity;
   for (const v of used) minY = Math.min(minY, current[v * 3 + 1]);
@@ -472,6 +477,84 @@ export function transferAnatomy(body, sculpt, { rounds = 4 } = {}) {
   // the coarser head mesh reads as smudges.
   const detail = fit;
   return { ...body, positions: current, joints: target, fit, detail, weights: smoothWeights };
+}
+
+/** Fold repair: a face pair counts as folded above this angle; rings around it that relax. */
+const FOLD = {
+  angle: 70,
+  rings: 2,
+  rounds: 6,
+};
+
+/** Unit normal of a (planar enough) polygon, Newell's method. */
+function faceNormal(p, f) {
+  const n = [0, 0, 0];
+  for (let i = 0; i < f.v.length; i++) {
+    const a = f.v[i] * 3;
+    const b = f.v[(i + 1) % f.v.length] * 3;
+    n[0] += (p[a + 1] - p[b + 1]) * (p[a + 2] + p[b + 2]);
+    n[1] += (p[a + 2] - p[b + 2]) * (p[a] + p[b]);
+    n[2] += (p[a] - p[b]) * (p[a + 1] + p[b + 1]);
+  }
+  const l = Math.hypot(...n) || 1;
+  return n.map((x) => x / l);
+}
+
+/**
+ * Smooths the fitted surface where it folded (neighbouring faces turned against each other by
+ * more than `FOLD.angle`): those vertices and a few rings around them relax towards their
+ * neighbours' centre, a few rounds until the folds are gone. Only fitted vertices move (hands,
+ * feet and the head keep their form); elsewhere nothing changes.
+ */
+function relaxFolds(positions, faces, used, adjacency, fit) {
+  const count = positions.length / 3;
+  const out = Float64Array.from(positions);
+  const limit = Math.cos((FOLD.angle * Math.PI) / 180);
+  const edgeFaces = new Map();
+  faces.forEach((f, i) => {
+    for (let k = 0; k < f.v.length; k++) {
+      const a = f.v[k];
+      const b = f.v[(k + 1) % f.v.length];
+      const key = a < b ? `${a}_${b}` : `${b}_${a}`;
+      if (!edgeFaces.has(key)) edgeFaces.set(key, []);
+      edgeFaces.get(key).push(i);
+    }
+  });
+  const pairs = [...edgeFaces].filter(([, l]) => l.length === 2);
+  for (let round = 0; round < FOLD.rounds; round++) {
+    const normals = faces.map((f) => faceNormal(out, f));
+    let mark = new Uint8Array(count);
+    let folds = 0;
+    for (const [key, [i, j]] of pairs) {
+      const a = normals[i];
+      const b = normals[j];
+      if (a[0] * b[0] + a[1] * b[1] + a[2] * b[2] > limit) continue;
+      const [x, y] = key.split('_').map(Number);
+      if (fit[x] <= 0 && fit[y] <= 0) continue;
+      folds++;
+      for (const v of [...faces[i].v, ...faces[j].v]) mark[v] = 1;
+    }
+    if (!folds) break;
+    for (let ring = 0; ring < FOLD.rings; ring++) {
+      const next = Uint8Array.from(mark);
+      for (const v of used) if (mark[v]) for (const u of adjacency[v]) next[u] = 1;
+      mark = next;
+    }
+    for (let pass = 0; pass < 10; pass++) {
+      const next = Float64Array.from(out);
+      for (const v of used) {
+        if (!mark[v] || fit[v] <= 0) continue;
+        const nb = adjacency[v];
+        for (let c = 0; c < 3; c++) {
+          let sum = 0;
+          for (const u of nb) sum += out[u * 3 + c];
+          next[v * 3 + c] += 0.5 * fit[v] * (sum / nb.length - out[v * 3 + c]);
+        }
+      }
+      out.set(next);
+    }
+  }
+  return out;
 }
 
 /**
@@ -676,63 +759,111 @@ function blendHeadSeam(positions, body, adjacency, usedSet) {
   return out;
 }
 
+/** Shoulder girdle skinning (phase 18.5): how far around the shoulder joint the weights are
+ * reworked (metres), the share of the chest ↔ upper arm overlap handed to the girdle, and the
+ * smoothing passes. */
+const GIRDLE = {
+  inner: 0.06,
+  outer: 0.2,
+  share: 1,
+  passes: 120,
+};
+
 /**
- * Softer skin weights around the shoulder: where chest, shoulder girdle and upper arm meet, the
- * weights are averaged over the mesh a few times. Linear blend skinning then spreads a raised
- * arm over a wider band instead of folding the armpit skin over the top's armhole.
+ * Skin weights of the shoulder girdle. MakeHuman hands the skin behind and in front of the
+ * armpit (latissimus, teres, the pectoral fold) from the chest straight to the upper arm within
+ * about 2 cm, the scapula (`shoulder_*`) carrying only a few per cent. With the arm raised by
+ * 150° linear blend skinning then averages two transforms that far apart over that narrow band,
+ * and the skin behind the armpit folds inwards (device test 0.29.0: "the back bends in").
+ *
+ * 1. Where chest and upper arm overlap, a share of both goes to the shoulder girdle: the
+ *    transition runs chest → scapula → upper arm, in smaller steps (the girdle turns with the
+ *    arm, see the scapulohumeral rhythm in clips.mjs).
+ * 2. The weights are smoothed over the mesh around the shoulder joint (fading out between
+ *    `inner` and `outer` distance), chest-only vertices included, so the band widens.
  */
-function relaxShoulderWeights(body, adjacency, passes = 10) {
+function girdleWeights(body, positions, joints, adjacency) {
   const { weights, used } = body;
   const names = weights.names;
-  const count = body.positions.length / 3;
-  const zone = new Set(
+  const count = positions.length / 3;
+  const index = (name) => names.indexOf(name);
+  const trunk = new Set(['chest', 'spine'].map(index));
+  const girdleBones = new Set(
     names
-      .map((n, i) => (/^(chest|shoulder_[LR]|upperArm_[LR])$/.test(n) ? i : -1))
+      .map((n, i) => (/^(chest|spine|shoulder_[LR]|upperArm_[LR])$/.test(n) ? i : -1))
       .filter((i) => i >= 0),
   );
   let maps = Array.from({ length: count }, (_, v) => {
     const m = new Map();
     for (let k = 0; k < 4; k++) {
       const w = weights.weights[v * 4 + k];
-      if (w) m.set(weights.joints[v * 4 + k], w);
+      if (w) m.set(weights.joints[v * 4 + k], (m.get(weights.joints[v * 4 + k]) ?? 0) + w);
     }
     return m;
   });
-  const inZone = new Uint8Array(count);
+  // Blend factor per vertex: 1 near the shoulder joint, 0 beyond `outer` or off the girdle.
+  const blend = new Float64Array(count);
+  const sideOf = new Int8Array(count);
   for (const v of used) {
+    const x = positions[v * 3];
+    const s = x >= 0 ? 'L' : 'R';
+    const j = joints.get(`upperArm_${s}`);
+    const d = Math.hypot(x - j[0], positions[v * 3 + 1] - j[1], positions[v * 3 + 2] - j[2]);
     let share = 0;
-    for (const [j, w] of maps[v]) if (zone.has(j)) share += w;
-    // Only the girdle region: shoulder or upper arm present, and nothing far from it.
-    const girdle = [...maps[v].keys()].some((j) => /^(shoulder|upperArm)_/.test(names[j]));
-    if (girdle && share > 0.95) inZone[v] = 1;
+    for (const [b, w] of maps[v]) if (girdleBones.has(b)) share += w;
+    if (share < 0.98) continue;
+    const t = Math.min(1, Math.max(0, (GIRDLE.outer - d) / (GIRDLE.outer - GIRDLE.inner)));
+    blend[v] = t * t * (3 - 2 * t);
+    sideOf[v] = s === 'L' ? 1 : -1;
   }
-  for (let pass = 0; pass < passes; pass++) {
+  // 1. Overlap of trunk and upper arm → shoulder girdle.
+  for (const v of used) {
+    if (!blend[v]) continue;
+    const s = sideOf[v] > 0 ? 'L' : 'R';
+    const upper = index(`upperArm_${s}`);
+    const girdle = index(`shoulder_${s}`);
+    const m = maps[v];
+    let wt = 0;
+    for (const b of trunk) wt += m.get(b) ?? 0;
+    const wu = m.get(upper) ?? 0;
+    const moved = GIRDLE.share * Math.min(wt, wu) * blend[v];
+    if (!moved) continue;
+    for (const b of trunk) if (m.has(b)) m.set(b, m.get(b) - (moved * m.get(b)) / wt);
+    m.set(upper, wu - moved);
+    m.set(girdle, (m.get(girdle) ?? 0) + 2 * moved);
+  }
+  // 2. Smoothing around the joint (vertices outside stay as they are and hold the border).
+  for (let pass = 0; pass < GIRDLE.passes; pass++) {
     const next = maps.slice();
     for (const v of used) {
-      if (!inZone[v]) continue;
-      const avg = new Map();
+      if (!blend[v]) continue;
       const nb = adjacency[v];
+      const avg = new Map();
       for (const u of nb)
         for (const [j, w] of maps[u]) avg.set(j, (avg.get(j) ?? 0) + w / nb.length);
+      const k = 0.5 * blend[v];
       const m = new Map();
       for (const j of new Set([...maps[v].keys(), ...avg.keys()]))
-        m.set(j, 0.5 * (maps[v].get(j) ?? 0) + 0.5 * (avg.get(j) ?? 0));
+        m.set(j, (1 - k) * (maps[v].get(j) ?? 0) + k * (avg.get(j) ?? 0));
       next[v] = m;
     }
     maps = next;
   }
-  const joints = Uint8Array.from(weights.joints);
   const out = Float32Array.from(weights.weights);
+  const outJoints = Uint8Array.from(weights.joints);
   for (const v of used) {
-    if (!inZone[v]) continue;
-    const top = [...maps[v]].sort((a, b) => b[1] - a[1]).slice(0, 4);
+    if (!blend[v]) continue;
+    const top = [...maps[v]]
+      .filter(([, w]) => w > 1e-6)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4);
     const sum = top.reduce((s, [, w]) => s + w, 0);
     for (let k = 0; k < 4; k++) {
-      joints[v * 4 + k] = top[k]?.[0] ?? 0;
+      outJoints[v * 4 + k] = top[k]?.[0] ?? 0;
       out[v * 4 + k] = top[k] ? top[k][1] / sum : 0;
     }
   }
-  return { ...weights, joints, weights: out };
+  return { ...weights, joints: outJoints, weights: out };
 }
 
 /**

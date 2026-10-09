@@ -1,7 +1,7 @@
 /** The shaped, posed body of a variant: positions, faces, rig, ready for segmentation. */
 import { readBaseMesh, readSkeleton, readWeights } from './makehuman.mjs';
 import { neighbours, poseMatrices, restPose, skin, smoothHead, twistForearms } from './pose.mjs';
-import { rigFor, rigJoints, rigWeights } from './rig.mjs';
+import { FINGER_BONE, rigFor, rigJoints, rigWeights } from './rig.mjs';
 import { buildShape } from './shape.mjs';
 import { relaxHands } from './hands.mjs';
 import { subdivideBody } from './subdivide.mjs';
@@ -49,9 +49,7 @@ export function assembleBody(sources, variant) {
   // Trunk and limbs get one subdivision step; head, hands and feet are dense already.
   const dense = new Set(
     weights.names
-      .map((n, i) =>
-        /^(head|hand_[LR]|foot_[LR]|fingers_[LR]|fingerTips_[LR]|thumb_[LR])$/.test(n) ? i : -1,
-      )
+      .map((n, i) => (/^(head|hand_[LR]|foot_[LR])$/.test(n) || FINGER_BONE.test(n) ? i : -1))
       .filter((i) => i >= 0),
   );
   return subdivideBody(

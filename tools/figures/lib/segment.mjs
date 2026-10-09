@@ -6,6 +6,8 @@
  * proportions.
  */
 
+import { FINGER_BONE } from './rig.mjs';
+
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const scale = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
@@ -121,7 +123,8 @@ export function segmentBody(body, { armhole = null, region = null } = {}) {
     const side = c[0] >= 0 ? 1 : -1;
     const S = side > 0 ? 'L' : 'R';
     const ax = Math.abs(c[0]);
-    const named = bone.replace(/_[LR]$/, '');
+    // Finger bones (male rig) are hand.
+    const named = FINGER_BONE.test(bone) ? 'hand' : bone.replace(/_[LR]$/, '');
     // The forearm's twist bone is forearm (the female 18.2 asset still runs it through the
     // trunk rules – kept unchanged until that body is rebuilt).
     const base = region && named === 'forearmTwist' ? 'forearm' : named;
@@ -133,9 +136,6 @@ export function segmentBody(body, { armhole = null, region = null } = {}) {
           ? 'back_trapezius'
           : 'skin_neck';
       case 'hand':
-      case 'fingers':
-      case 'fingerTips':
-      case 'thumb':
         return 'skin_hands';
       case 'foot':
         return 'skin_feet';
@@ -216,6 +216,8 @@ export function segmentBody(body, { armhole = null, region = null } = {}) {
     });
   }
 
+  if (region) current = mergeIslands(body, current, faceNeighbours);
+
   // Clothing layer: tight sleeveless top and short shorts.
   const layers = labels.map(({ c, bone }, i) => {
     const label = current[i];
@@ -259,6 +261,70 @@ export function segmentBody(body, { armhole = null, region = null } = {}) {
   return { labels: current, layers };
 }
 
+/** Below this area (m²) a stray piece of a region joins its surroundings. */
+const ISLAND_AREA = 0.003;
+
+/**
+ * Stray pieces of a region (modelled body): every muscle region is far larger than this; a small
+ * separate piece – the back's erectors on the front of the belly, a speck of triceps in the
+ * armpit – takes the label its border mostly touches. Such specks read as stains once
+ * highlights fade softly into their surroundings.
+ */
+function mergeIslands(body, labels, neighbours) {
+  const { positions: p, faces } = body;
+  const area = faces.map((f) => {
+    let sum = 0;
+    for (let k = 1; k + 1 < f.v.length; k++) {
+      const a = [0, 1, 2].map((c) => p[f.v[k] * 3 + c] - p[f.v[0] * 3 + c]);
+      const b = [0, 1, 2].map((c) => p[f.v[k + 1] * 3 + c] - p[f.v[0] * 3 + c]);
+      sum +=
+        Math.hypot(
+          a[1] * b[2] - a[2] * b[1],
+          a[2] * b[0] - a[0] * b[2],
+          a[0] * b[1] - a[1] * b[0],
+        ) / 2;
+    }
+    return sum;
+  });
+  let out = labels.slice();
+  for (let round = 0; round < 4; round++) {
+    const piece = new Int32Array(out.length).fill(-1);
+    const pieces = [];
+    for (let i = 0; i < out.length; i++) {
+      if (piece[i] >= 0) continue;
+      const list = [i];
+      piece[i] = pieces.length;
+      let size = 0;
+      for (let n = 0; n < list.length; n++) {
+        const f = list[n];
+        size += area[f];
+        for (const g of neighbours[f])
+          if (piece[g] < 0 && out[g] === out[i]) {
+            piece[g] = pieces.length;
+            list.push(g);
+          }
+      }
+      pieces.push({ label: out[i], faces: list, size });
+    }
+    let changed = false;
+    const next = out.slice();
+    for (const q of pieces) {
+      if (q.size >= ISLAND_AREA || q.label.startsWith('skin_')) continue;
+      const counts = new Map();
+      for (const f of q.faces)
+        for (const g of neighbours[f])
+          if (out[g] !== q.label) counts.set(out[g], (counts.get(out[g]) ?? 0) + 1);
+      const best = [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0];
+      if (!best) continue;
+      for (const f of q.faces) next[f] = best[0];
+      changed = true;
+    }
+    out = next;
+    if (!changed) break;
+  }
+  return out;
+}
+
 export function faceAdjacency(faces) {
   const edges = new Map();
   const list = faces.map(() => []);
@@ -283,14 +349,37 @@ export function faceAdjacency(faces) {
  * border is a staircase. Every vertex on exactly one border moves towards the middle of its two
  * border neighbours (within its tangent plane); junctions of three regions stay put.
  */
-export function smoothBorders(body, labels, layers, iterations = 12) {
+export function smoothBorders(body, labels, layers, iterations = 12, { foldSafe = false } = {}) {
   // Clothing edges first (on their own, so muscle borders crossing them do not pin them), then
   // every border.
-  smoothBordersOf(body, (i) => layers[i], iterations * 6);
-  smoothBordersOf(body, (i) => `${labels[i]}|${layers[i]}`, iterations * 6);
+  smoothBordersOf(body, (i) => layers[i], iterations * 6, foldSafe);
+  smoothBordersOf(body, (i) => `${labels[i]}|${layers[i]}`, iterations * 6, foldSafe);
 }
 
-function smoothBordersOf(body, regionOf, iterations) {
+/** Fold-safe straightening: a move that turns a face by more than this is taken back. */
+const FOLD_SAFE_COS = Math.cos((40 * Math.PI) / 180);
+
+function faceNormalOf(p, f) {
+  const n = [0, 0, 0];
+  for (let i = 0; i < f.v.length; i++) {
+    const a = f.v[i] * 3;
+    const b = f.v[(i + 1) % f.v.length] * 3;
+    n[0] += (p[a + 1] - p[b + 1]) * (p[a + 2] + p[b + 2]);
+    n[1] += (p[a + 2] - p[b + 2]) * (p[a] + p[b]);
+    n[2] += (p[a] - p[b]) * (p[a + 1] + p[b + 1]);
+  }
+  const l = Math.hypot(...n) || 1;
+  return [n[0] / l, n[1] / l, n[2] / l];
+}
+
+/**
+ * `foldSafe` (modelled body, phase 18.5): on a fine mesh, straightening a jagged border pulls a
+ * vertex across its neighbours and folds faces over – invisible at rest, a crumpled crease when
+ * the skin stretches (behind the armpit with the arm raised). Every move is checked against the
+ * faces around the vertex; a move that turns one of them by more than 40° from where it started
+ * is taken back and the vertex stays.
+ */
+function smoothBordersOf(body, regionOf, iterations, foldSafe = false) {
   const { positions: p, faces } = body;
   const edgeFaces = new Map();
   faces.forEach((f, i) => {
@@ -335,14 +424,40 @@ function smoothBordersOf(body, regionOf, iterations) {
       normal.set(v, [m[0] + n[0], m[1] + n[1], m[2] + n[2]]);
     }
   }
-  for (let it = 0; it < iterations; it++) {
-    const moves = movable.map(([v, [a, b]]) => {
-      const target = [0, 1, 2].map((k) => (p[a * 3 + k] + p[b * 3 + k]) / 2 - p[v * 3 + k]);
-      const n = normal.get(v);
-      const l = Math.hypot(...n) || 1;
-      const along = (target[0] * n[0] + target[1] * n[1] + target[2] * n[2]) / l;
-      return [v, target.map((x, k) => 0.5 * (x - (along * n[k]) / l))];
+  const facesOf = new Map();
+  const start = foldSafe ? faces.map((f) => faceNormalOf(p, f)) : null;
+  if (foldSafe)
+    faces.forEach((f, i) => {
+      for (const v of f.v) {
+        if (!facesOf.has(v)) facesOf.set(v, []);
+        facesOf.get(v).push(i);
+      }
     });
+  const frozen = new Set();
+  for (let it = 0; it < iterations; it++) {
+    const moves = movable
+      .filter(([v]) => !frozen.has(v))
+      .map(([v, [a, b]]) => {
+        const target = [0, 1, 2].map((k) => (p[a * 3 + k] + p[b * 3 + k]) / 2 - p[v * 3 + k]);
+        const n = normal.get(v);
+        const l = Math.hypot(...n) || 1;
+        const along = (target[0] * n[0] + target[1] * n[1] + target[2] * n[2]) / l;
+        return [v, target.map((x, k) => 0.5 * (x - (along * n[k]) / l))];
+      });
     for (const [v, d] of moves) for (let k = 0; k < 3; k++) p[v * 3 + k] += d[k];
+    if (!foldSafe) continue;
+    // Take back moves that folded a face (checked after all moves of the step: neighbours move
+    // together).
+    const turned = (v) =>
+      facesOf.get(v).some((i) => {
+        const n = faceNormalOf(p, faces[i]);
+        const m = start[i];
+        return n[0] * m[0] + n[1] * m[1] + n[2] * m[2] < FOLD_SAFE_COS;
+      });
+    for (const [v, d] of moves) {
+      if (!turned(v)) continue;
+      for (let k = 0; k < 3; k++) p[v * 3 + k] -= d[k];
+      frozen.add(v);
+    }
   }
 }

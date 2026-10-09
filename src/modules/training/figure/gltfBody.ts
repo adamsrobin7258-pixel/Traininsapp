@@ -7,6 +7,11 @@
  * fibre structure stay visible underneath (anatomy → structure → highlight). A muscle under the
  * clothing lights up on the clothing.
  *
+ * Soft transitions (bodies whose meshes carry per-vertex muscle weights, `_MUSCLE_GROUPS` /
+ * `_MUSCLE_WEIGHTS`, see tools/figures/lib/highlight.mjs): the tint is mixed per vertex from the
+ * levels of up to four groups, so a highlight fades into its neighbours along the body instead
+ * of ending at the node's polygon border. The node's own material colour still states its level.
+ *
  * One file serves every body shown at once (the summary shows front and back): it is loaded
  * once, each body is a clone with its own skeleton, and the shared geometry and textures are
  * freed when the last body using them is disposed.
@@ -27,7 +32,7 @@ import {
 } from 'three';
 import { GLTFLoader, type GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneWithSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
-import type { FigureMuscle } from '@/core/training';
+import { FIGURE_MUSCLES, isOneOf, type FigureMuscle } from '@/core/training';
 import {
   PRIMARY_MIX,
   SECONDARY_MIX,
@@ -80,6 +85,68 @@ function propOf(object: Object3D): string | null {
     if (variant) return variant;
   }
   return null;
+}
+
+/** Group list of a body with soft highlight (extras of its root node), or `null`. */
+function softGroupsOf(scene: Object3D): (FigureMuscle | null)[] | null {
+  let names: unknown = null;
+  scene.traverse((node) => {
+    const list = (node.userData as { muscleGroups?: unknown }).muscleGroups;
+    if (Array.isArray(list)) names = list;
+  });
+  if (!Array.isArray(names)) return null;
+  return (names as unknown[]).map((name) =>
+    typeof name === 'string' && isOneOf(FIGURE_MUSCLES, name) ? name : null,
+  );
+}
+
+/** Shared uniforms of the soft highlight: tint per group (last slot: no muscle) and accent. */
+interface SoftHighlight {
+  groups: (FigureMuscle | null)[];
+  mix: { value: Float32Array };
+  accent: { value: Color };
+}
+
+/**
+ * Lets a material take its tint from the per-vertex muscle weights: the surface colour (skin or
+ * fabric) mixed towards the accent by the weighted levels – shading, normal map and roughness
+ * stay the material's own.
+ */
+function softenMaterial(material: MeshStandardMaterial, soft: SoftHighlight, surface: Color) {
+  const slots = soft.groups.length + 1;
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uMuscleMix = soft.mix;
+    shader.uniforms.uAccent = soft.accent;
+    shader.uniforms.uSurface = { value: surface };
+    const at = (c: string) => `uMuscleMix[int(_muscle_groups.${c} + 0.5)]`;
+    shader.vertexShader = shader.vertexShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+attribute vec4 _muscle_groups;
+attribute vec4 _muscle_weights;
+uniform float uMuscleMix[${String(slots)}];
+varying float vMuscleMix;`,
+      )
+      .replace(
+        '#include <begin_vertex>',
+        `#include <begin_vertex>
+vMuscleMix = dot(_muscle_weights, vec4(${at('x')}, ${at('y')}, ${at('z')}, ${at('w')}));`,
+      );
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        '#include <common>',
+        `#include <common>
+uniform vec3 uAccent;
+uniform vec3 uSurface;
+varying float vMuscleMix;`,
+      )
+      .replace(
+        'vec4 diffuseColor = vec4( diffuse, opacity );',
+        'vec4 diffuseColor = vec4( mix( uSurface, uAccent, vMuscleMix ), opacity );',
+      );
+  };
+  material.customProgramCacheKey = () => `kalethra-soft-highlight-${String(slots)}`;
 }
 
 function texturesOf(material: Material): Texture[] {
@@ -139,6 +206,14 @@ export function gltfBodyFrom(
   const muscles: { group: FigureMuscle; material: MeshStandardMaterial; base: Color }[] = [];
   const props: { material: MeshStandardMaterial; metal: boolean }[] = [];
   const owned: Material[] = [];
+  const groups = softGroupsOf(scene);
+  const soft: SoftHighlight | null = groups
+    ? {
+        groups,
+        mix: { value: new Float32Array(groups.length + 1) },
+        accent: { value: new Color(palette.accent) },
+      }
+    : null;
   scene.traverse((node) => {
     const prop = propOf(node);
     if (prop && propVariantOfNode(node.name)) node.visible = prop === equipment;
@@ -151,26 +226,31 @@ export function gltfBodyFrom(
       return;
     }
     const group = groupOf(node);
-    if (!group) return;
+    const blended =
+      soft !== null && (node.geometry as BufferGeometry).hasAttribute('_muscle_weights');
+    if (!group && !blended) return;
     const material = node.material.clone();
     node.material = material;
     owned.push(material);
-    muscles.push({ group, material, base: material.color.clone() });
+    if (blended) softenMaterial(material, soft, material.color.clone());
+    if (group) muscles.push({ group, material, base: material.color.clone() });
   });
 
   let accent = new Color(palette.accent);
   let current = highlight;
+  const mixOf = (level: string | undefined) =>
+    level === 'primary' ? PRIMARY_MIX : level === 'secondary' ? SECONDARY_MIX : 0;
   const applyHighlight = () => {
     for (const { group, material, base } of muscles) {
       const level = current[group];
-      material.color.copy(
-        level === 'primary'
-          ? base.clone().lerp(accent, PRIMARY_MIX)
-          : level === 'secondary'
-            ? base.clone().lerp(accent, SECONDARY_MIX)
-            : base,
-      );
+      material.color.copy(base.clone().lerp(accent, mixOf(level)));
       material.userData.level = level ?? 'neutral';
+    }
+    if (soft) {
+      soft.groups.forEach((group, i) => {
+        soft.mix.value[i] = group ? mixOf(current[group]) : 0;
+      });
+      soft.accent.value.copy(accent);
     }
   };
   const applyProps = (next: FigurePalette) => {

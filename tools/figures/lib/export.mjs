@@ -36,6 +36,7 @@ export function exportGlb({
   extras,
   copyright,
   rig = RIG,
+  muscleBlend = null,
 }) {
   const g = new GltfBuilder();
   if (copyright) g.json.asset.copyright = copyright;
@@ -105,6 +106,22 @@ export function exportGlb({
       }
       triangles += p.indices.length / 3;
       const indices = n < 65536 ? Uint16Array.from(p.indices) : p.indices;
+      // Soft highlight (lib/highlight.mjs): muscle groups and weights per vertex.
+      const blend = {};
+      if (muscleBlend) {
+        const groups = new Uint8Array(n * 4);
+        const groupWeights = new Uint8Array(n * 4);
+        for (let i = 0; i < n; i++) {
+          const v = p.source[i]; // per surface vertex (layer-aware)
+          groups.set(muscleBlend.groups.subarray(v * 4, v * 4 + 4), i * 4);
+          groupWeights.set(muscleBlend.weights.subarray(v * 4, v * 4 + 4), i * 4);
+        }
+        blend._MUSCLE_GROUPS = g.accessor(groups, 'VEC4', { target: 34962 });
+        blend._MUSCLE_WEIGHTS = g.accessor(groupWeights, 'VEC4', {
+          target: 34962,
+          normalized: true,
+        });
+      }
       return {
         attributes: {
           POSITION: g.accessor(p.positions, 'VEC3', { target: 34962, minMax: true }),
@@ -113,6 +130,7 @@ export function exportGlb({
           TEXCOORD_0: g.accessor(p.uvs, 'VEC2', { target: 34962 }),
           JOINTS_0: g.accessor(joints, 'VEC4', { target: 34962 }),
           WEIGHTS_0: g.accessor(w, 'VEC4', { target: 34962, normalized: true }),
+          ...blend,
         },
         indices: g.accessor(indices, 'SCALAR', { target: 34963 }),
         material: material[p.material],
@@ -149,7 +167,13 @@ export function exportGlb({
     propNode.set(prop.name, index);
     children.push(index);
   }
-  g.json.scenes[0].nodes.push(g.add('nodes', { name: `kalethra_${variant}`, children }));
+  g.json.scenes[0].nodes.push(
+    g.add('nodes', {
+      name: `kalethra_${variant}`,
+      children,
+      ...(muscleBlend ? { extras: { muscleGroups: muscleBlend.names } } : {}),
+    }),
+  );
 
   // Clips.
   for (const clip of clips) {
@@ -178,29 +202,29 @@ export function exportGlb({
         rotations.get(name).set([q.x, q.y, q.z, q.w], f * 4);
       }
       pelvis.set(heads.get('pelvis').toArray(), f * 3);
-      // Bar in the palms: centre between the grips, along the line through them.
-      const grips = ['L', 'R'].map((s) => {
-        const sx = s === 'L' ? 1 : -1;
-        const w0 = new Vector3(...rest.get(`hand_${s}`));
-        const along = w0
-          .clone()
-          .sub(new Vector3(...rest.get(`forearm_${s}`)))
-          .normalize();
-        // A hand with finger bones holds the bar where its closed fingers wrap: just in front of
-        // the knuckles, a finger's thickness off the palm.
-        const offset = rest.has(`fingers_${s}`)
-          ? new Vector3(...rest.get(`fingers_${s}`))
-              .sub(w0)
-              .add(new Vector3(-sx * 0.024, 0, 0))
-              .add(along.clone().multiplyScalar(-0.008))
-          : along.multiplyScalar(0.075).add(new Vector3(-sx * 0.022, 0, 0));
-        return heads
-          .get(`hand_${s}`)
-          .clone()
-          .add(offset.applyQuaternion(world.get(`hand_${s}`)));
-      });
-      const centre = grips[0].clone().add(grips[1]).multiplyScalar(0.5);
-      const axis = grips[0].clone().sub(grips[1]).normalize();
+      // Bar: where the clip moves it (held bar, male) or in the palms, centre between the grips.
+      let centre;
+      let axis;
+      if (frame.bar) {
+        centre = frame.bar.centre.clone();
+        axis = frame.bar.axis.clone().normalize();
+      } else {
+        const grips = ['L', 'R'].map((s) => {
+          const sx = s === 'L' ? 1 : -1;
+          const w0 = new Vector3(...rest.get(`hand_${s}`));
+          const along = w0
+            .clone()
+            .sub(new Vector3(...rest.get(`forearm_${s}`)))
+            .normalize();
+          const offset = along.multiplyScalar(0.075).add(new Vector3(-sx * 0.022, 0, 0));
+          return heads
+            .get(`hand_${s}`)
+            .clone()
+            .add(offset.applyQuaternion(world.get(`hand_${s}`)));
+        });
+        centre = grips[0].clone().add(grips[1]).multiplyScalar(0.5);
+        axis = grips[0].clone().sub(grips[1]).normalize();
+      }
       const q = new Quaternion().setFromUnitVectors(new Vector3(1, 0, 0), axis);
       bar.t.set(centre.toArray(), f * 3);
       bar.r.set([q.x, q.y, q.z, q.w], f * 4);

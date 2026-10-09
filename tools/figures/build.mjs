@@ -22,6 +22,9 @@ import { MATERIALS, exportGlb } from './lib/export.mjs';
 import { SHAPES } from './lib/shape.mjs';
 import { rigFor } from './lib/rig.mjs';
 import { detailNormalField, readSculpt, sculptRegions, transferAnatomy } from './lib/transfer.mjs';
+import { refineHands } from './lib/handform.mjs';
+import { handModel } from './lib/grip.mjs';
+import { muscleBlend } from './lib/highlight.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = process.env.MAKEHUMAN_DATA;
@@ -97,14 +100,21 @@ for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
   // The male body takes the modelled Kalethra anatomy (phase 18.4, see lib/transfer.mjs).
   const sculptFile = SCULPTS[variant];
   const sculpt = sculptFile ? readSculpt(join(ROOT, sculptFile)) : null;
+  // …and slimmer hands with their finger joints in the fingers' middle (lib/handform.mjs).
   const body = sculpt
-    ? transferAnatomy(assembleBody(sources, variant), sculpt)
+    ? refineHands(transferAnatomy(assembleBody(sources, variant), sculpt))
     : assembleBody(sources, variant);
   const { labels, layers } = segmentBody(
     body,
     sculpt ? { armhole: ARMHOLE, region: sculptRegions(sculpt) } : {},
   );
-  smoothBorders(body, labels, layers, sculpt ? BORDER_ITERATIONS_MODELLED : 12);
+  smoothBorders(
+    body,
+    labels,
+    layers,
+    sculpt ? BORDER_ITERATIONS_MODELLED : 12,
+    sculpt ? { foldSafe: true } : {},
+  );
   const surface = sculptBody(
     body,
     labels,
@@ -136,7 +146,13 @@ for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
   const clips = clipDefinitions(
     body.joints,
     measure(body, sculpt ? LAYER_OFFSET_MODELLED : LAYER_OFFSET),
-    sculpt ? { grip: true, shoulderRhythm: true } : {},
+    sculpt
+      ? {
+          shoulderRhythm: true,
+          rig: rigFor(variant),
+          hands: { L: handModel(body, 'L'), R: handModel(body, 'R') },
+        }
+      : {},
   );
   const { glb, triangles } = exportGlb({
     variant,
@@ -148,6 +164,8 @@ for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
     clips,
     normalPng,
     copyright: CREDITS[variant]?.copyright,
+    // The modelled body's highlight fades into its neighbours (lib/highlight.mjs).
+    muscleBlend: sculpt ? muscleBlend(surface) : null,
     extras: {
       kalethra: {
         contract: 1,

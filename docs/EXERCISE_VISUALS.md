@@ -3,14 +3,17 @@
 Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
 dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 
-> **Stand (Version 0.29.0):** Zwei Kalethra-Körper (männlich, weiblich) sind gebündelt und
+> **Stand (Version 0.29.1):** Zwei Kalethra-Körper (männlich, weiblich) sind gebündelt und
 > werden in Übungsdetails, großer Ansicht und Trainings-Zusammenfassung gezeigt. Beide entstehen
 > reproduzierbar mit der Pipeline in `tools/figures/` auf MakeHuman-Daten (CC0). **Der männliche
 > Körper trägt seit 0.29.0 eine modellierte Anatomie** (Phase 18.3, aus „Proxy Human base Mesh“
 > von sphere_joe, CC BY 4.0, bearbeitet – Namensnennung in der App unter _Datenquellen_ und in
 > der GLB, siehe [`assets/figure/male/source/ATTRIBUTION.md`](../assets/figure/male/source/ATTRIBUTION.md)),
-> mit Finger-Griff und Schulterrhythmus in den Clips. Der weibliche ist unverändert (0.28.0). Gestaltung, Herkunft und
-> bekannte Grenzen: [`assets/figure/docs/README.md`](../assets/figure/docs/README.md).
+> mit Finger-Griff und Schulterrhythmus in den Clips. **0.29.1 (Phase 18.5)** korrigiert nach dem
+> ersten Gerätetest Rücken/Schulter beim Latzug, den Hand-Stangen-Kontakt, die Finger (ein Bone
+> je Fingerglied) und macht die Muskel-Hervorhebung weich (Gewichte pro Vertex). Der weibliche ist
+> unverändert (0.28.0). Gestaltung, Herkunft und bekannte Grenzen:
+> [`assets/figure/docs/README.md`](../assets/figure/docs/README.md).
 >
 > **Die aktuelle Fallback-Figur ist ausschließlich technischer Fallback und nicht die finale
 > visuelle Kalethra-Figur.** Sie erscheint nur, wenn ein Asset fehlt oder nicht geladen werden
@@ -117,6 +120,19 @@ Begriffe heißen im Vertrag `back_trapezius`, `core_rectus`, `core_obliques`, `q
 Kleidung darüber. Ein Mesh mit Haut- und Stoffteil wird vom Loader zu einer Gruppe mit Kindern
 `<name>_1`, `<name>_2`; die Endung gehört dem Loader und wird toleriert.
 
+**Weiche Übergänge (optional, männlich seit 0.29.1):** Ein Körper darf zusätzlich pro Vertex
+angeben, wie stark er zu welchen Muskelgruppen gehört – `_MUSCLE_GROUPS` (VEC4, unsigned byte:
+Index in die Gruppenliste, die Länge der Liste = kein Muskel) und `_MUSCLE_WEIGHTS` (VEC4,
+normalisierte unsigned bytes, Summe 1) auf jedem Körper-Primitive, die Gruppenliste als
+`extras.muscleGroups` an einem Knoten (dem Körper-Wurzelknoten). Die App mischt den Farbton dann
+pro Vertex aus den Stufen dieser Gruppen (Shader-Erweiterung des Standardmaterials), sodass eine
+Hervorhebung über etwa 1–2 cm in die Nachbarn ausläuft, statt an der Polygonkante zu enden. Die
+Knoten und die Hervorhebung pro Gruppe bleiben Vertrag: Die Materialfarbe jedes Muskelknotens
+nennt weiterhin seine Stufe, und ein Körper ohne diese Attribute (weiblich) wird wie bisher pro
+Knoten getönt. Die Gewichte entstehen im Build durch Glättung der Regionen über die Oberfläche
+derselben Lage (Haut, Top, Shorts; am Saum bleibt die Stoffkante die Grenze), primär bleibt
+erkennbar stärker als sekundär.
+
 Geräte (`prop_<variante>_*`) sind nur sichtbar, solange ein Clip dieser Variante läuft
 (`horizontalPush_bench` → `prop_bench_*`), und nehmen die Theme-Farben für Gerät und Metall an.
 
@@ -125,7 +141,9 @@ Geräte (`prop_<variante>_*`) sind nur sichtbar, solange ein Clip dieser Variant
 Pflicht-Bones: `root`, `pelvis`, `spine`, `chest`, `neck`, `head` und je Seite `shoulder`
 (Schlüsselbein), `upperArm`, `forearm` (Unterarm), `hand`, `thigh` (Oberschenkel), `shin`
 (Unterschenkel), `foot` (`_L`, `_R`). Zusätzliche Bones sind erlaubt (die Körper haben
-`forearmTwist_L/R`, der männliche außerdem `fingers_*`, `fingerTips_*`, `thumb_*` für den Griff). Ruhe-Rotationen aller Bones sind die Identität; die Ruhepose ist
+`forearmTwist_L/R`, der männliche seit 0.29.1 außerdem je Hand drei Glieder pro Finger:
+`thumb1–3_*`, `index1–3_*`, `middle1–3_*`, `ring1–3_*`, `pinky1–3_*`; bis 0.29.0 waren es
+`fingers_*`, `fingerTips_*`, `thumb_*`). Ruhe-Rotationen aller Bones sind die Identität; die Ruhepose ist
 aufrecht, Füße etwa schulterbreit, Arme 10–15° vom Körper, Ellbogen locker, Hände neutral.
 
 ### Koordinaten, Maßstab, Ursprung
@@ -148,11 +166,22 @@ Schleife – einen Moment, der die Übung erklärt.
 Vorhanden: `rest`, `horizontalPush_bench` (Langhantel-Bankdrücken auf der Flachbank),
 `verticalPull_cable` (Latzug sitzend). Spezifikation: `assets/figure/animations/clips.json`.
 
+**Griff (männlich, seit 0.29.1):** Führend ist die Stange, nicht das Handgelenk. Jede Übung
+bewegt die Stange; jede Hand hält sie an einer expliziten **Griffreferenz** – der Lage der
+Stangenachse im Ruheraum der Hand (Bankdrücken: tief in der Handfläche, Latzug: an der
+Fingerbasis). Daraus folgen Handposition und -orientierung (die Hand darf auf der runden Stange
+abrollen und wählt die Lage, in der das Handgelenk dem Unterarm am geradesten folgt), danach die
+Arm-IK. Finger und Daumen schließen sich per Kontakt um die Stange (gemessen an der fertigen
+Hand: Gelenke, Glied­längen, palmare Dicke). Die obere Endlage wird so gesucht, dass die Ellbogen
+auf 168° (Bankdrücken) bzw. 165° (Latzug) strecken – nie außer Reichweite, die Hände lösen sich
+nie. Tests prüfen an den gezeichneten Vertices: keine Hand in der Stange, jeder Finger und der
+Daumen an der Stange, über die ganze Wiederholung.
+
 ### Budgets und Validator
 
-| Größe       | Grenze pro Variante | männlich / weiblich (0.29.0) |
+| Größe       | Grenze pro Variante | männlich / weiblich (0.29.1) |
 | ----------- | ------------------- | ---------------------------- |
-| GLB         | ≤ 4 MB              | 3,06 / 3,53 MB               |
+| GLB         | ≤ 4 MiB             | 3,35 / 3,53 MiB              |
 | Dreiecke    | ≤ 60 000            | 52 090 / 52 014              |
 | Texturen    | ≤ 2048²             | 1 Normal-Map 2048² (PNG)     |
 | Materialien | ≤ 8                 | 4                            |
@@ -161,6 +190,8 @@ Vorhanden: `rest`, `horizontalPush_bench` (Langhantel-Bankdrücken auf der Flach
 Version, Chunks, JSON), alle Referenzen (Accessoren, Buffer-Views innerhalb des Binär-Chunks,
 Meshes, Materialien, Texturen, Bilder, Skins, Animationen), keine externen Dateien, sichere
 Namen, Vertrag (`validateFigureAsset`: Muskelgruppen, Pflicht-Bones, Clips, `rest`), Prop-Namen,
+weiche Übergänge, falls vorhanden (beide Attribute, VEC4 unsigned byte je Vertex, Gewichte
+normalisiert, genau eine Gruppenliste aus bekannten Gruppen),
 Variante (`asset.extras.kalethra.variant`), Einheit Meter, Materialanzahl, Texturgröße aus dem
 Bild-Header, Dreiecke, Dateigröße sowie Koordinatensystem aus den Bindepose-Grenzen:
 Körpergröße 1,45–2,05 m (fängt cm/mm-Exporte), Boden bei y = 0, zentriert über dem Ursprung,
@@ -186,7 +217,9 @@ die E2E-Tests prüfen `data-figure-source="asset"`.
 - Reduced Motion: keine automatische Schleife, Drehen ohne Übergang.
 - Genau ein WebGL-Kontext je sichtbarer Figur; Schließen, Übungswechsel und Wechsel klein ↔ groß
   geben Renderer, Geometrien, Materialien und Texturen frei (Tests und E2E prüfen das).
-- Gerätetest (Xiaomi 15 Ultra) noch offen – Checkliste: [`FIGURE_DEVICE_TEST.md`](FIGURE_DEVICE_TEST.md).
+- Gerätetest (Xiaomi 15 Ultra): 0.29.0 vom Nutzer geprüft (Befund → Phase 18.5); 0.29.1 noch
+  offen – Checkliste: [`FIGURE_DEVICE_TEST.md`](FIGURE_DEVICE_TEST.md). 0.29.1 hat 52 statt 28
+  Bones (Fingerglieder); Skinning bleibt bei 4 Einflüssen je Vertex.
 
 ## Lizenz
 

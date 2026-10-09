@@ -26,21 +26,28 @@ export const RIG = [
   ]),
 ];
 
+/** The fingers (MakeHuman `finger1…5`), thumb first. */
+export const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky'];
+/** A finger bone of the male rig (`index2_L` …). */
+export const FINGER_BONE = /^(thumb|index|middle|ring|pinky)[123]_[LR]$/;
+
 /**
- * Hand bones of the male body (phase 18.4, beyond the contract): the four fingers' first
- * phalanges, their middle and end phalanges, and the thumb – so a clip can close the hand around
- * a bar. A variant without them keeps fingers merged into `hand_*`.
+ * Hand bones of the male body (beyond the contract): three per finger and thumb – each phalanx
+ * turns about its own joint, so a clip can close every finger around a bar (phase 18.5; 18.4 had
+ * one bone for all first phalanges and one for the rest, turning the index and little finger
+ * about the middle finger's joints). The metacarpals stay in `hand_*`. A variant without them
+ * keeps fingers merged into `hand_*`.
  */
-const HAND_BONES = ['L', 'R'].flatMap((s) => [
-  [`fingers_${s}`, `hand_${s}`, `finger3-1.${s}`, [2, 3, 4, 5].map((f) => `finger${f}-1.${s}`)],
-  [
-    `fingerTips_${s}`,
-    `fingers_${s}`,
-    `finger3-2.${s}`,
-    [2, 3, 4, 5].flatMap((f) => [`finger${f}-2.${s}`, `finger${f}-3.${s}`]),
-  ],
-  [`thumb_${s}`, `hand_${s}`, `finger1-1.${s}`, [1, 2, 3].map((k) => `finger1-${k}.${s}`)],
-]);
+const HAND_BONES = ['L', 'R'].flatMap((s) =>
+  FINGERS.flatMap((finger, f) =>
+    [1, 2, 3].map((k) => [
+      `${finger}${k}_${s}`,
+      k === 1 ? `hand_${s}` : `${finger}${k - 1}_${s}`,
+      `finger${f + 1}-${k}.${s}`,
+      [`finger${f + 1}-${k}.${s}`],
+    ]),
+  ),
+);
 
 /** The rig of a variant: the contract bones, for the male body with hand bones. */
 export function rigFor(variant) {

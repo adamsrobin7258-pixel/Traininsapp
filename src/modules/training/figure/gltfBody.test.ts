@@ -2,6 +2,7 @@ import {
   AnimationClip,
   Bone,
   BoxGeometry,
+  BufferAttribute,
   Color,
   Group,
   Mesh,
@@ -11,7 +12,7 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FIGURE_MUSCLES } from '@/core/training';
-import { PRIMARY_MIX, type FigurePalette } from './body';
+import { PRIMARY_MIX, SECONDARY_MIX, type FigurePalette } from './body';
 import { REQUIRED_BONES, muscleNodeName } from './contract';
 import { FigureAssetError, STILL_PHASE, gltfBodyFrom } from './gltfBody';
 
@@ -102,6 +103,79 @@ describe('modelled body (GLB import path)', () => {
     expect((skin.material as MeshStandardMaterial).color.getHexString()).toBe(
       new Color(SKIN).getHexString(),
     );
+  });
+
+  it('fades the highlight per vertex when the model carries muscle weights', () => {
+    const { scene, animations } = syntheticBody();
+    // Soft highlight data (tools/figures/lib/highlight.mjs): group list on the root, per vertex
+    // up to four groups (index; the list's length = no muscle) and their weights.
+    scene.userData.muscleGroups = ['chest', 'lats'];
+    const vertices = (scene.getObjectByName('muscle_chest') as Mesh).geometry.getAttribute(
+      'position',
+    ).count;
+    const blend = (groups: number[], weights: number[]) => {
+      const geometry = new BoxGeometry(0.1, 0.1, 0.1);
+      const g = new Uint8Array(vertices * 4);
+      const w = new Uint8Array(vertices * 4);
+      for (let i = 0; i < vertices; i++) {
+        g.set(groups, i * 4);
+        w.set(weights, i * 4);
+      }
+      geometry.setAttribute('_muscle_groups', new BufferAttribute(g, 4));
+      geometry.setAttribute('_muscle_weights', new BufferAttribute(w, 4, true));
+      return geometry;
+    };
+    const skin = new MeshStandardMaterial({ color: new Color(SKIN) });
+    (scene.getObjectByName('muscle_chest') as Mesh).geometry = blend([0, 1, 2, 2], [191, 64, 0, 0]);
+    const head = Object.assign(new Mesh(blend([2, 0, 2, 2], [230, 25, 0, 0]), skin), {
+      name: 'body_head',
+    });
+    scene.add(head);
+    const body = gltfBodyFrom(scene, animations, {
+      clip: 'rest',
+      palette: PALETTE,
+      highlight: { chest: 'primary', lats: 'secondary' },
+    });
+    const compile = (mesh: Mesh) => {
+      const shader = {
+        uniforms: {} as Record<string, { value: unknown }>,
+        vertexShader: '#include <common>\n#include <begin_vertex>',
+        fragmentShader: '#include <common>\nvec4 diffuseColor = vec4( diffuse, opacity );',
+      };
+      (mesh.material as MeshStandardMaterial).onBeforeCompile(shader as never, null as never);
+      return shader;
+    };
+    const chest = compile(body.root.getObjectByName('muscle_chest') as Mesh);
+    expect(chest.vertexShader).toContain('uMuscleMix[int(_muscle_groups.x + 0.5)]');
+    expect(chest.fragmentShader).toContain('mix( uSurface, uAccent, vMuscleMix )');
+    const mix = chest.uniforms.uMuscleMix?.value as Float32Array;
+    expect([...mix]).toEqual([PRIMARY_MIX, SECONDARY_MIX, 0].map(Math.fround));
+    // The neutral head takes part too (its border with the chest fades), with its own material.
+    const headMesh = body.root.getObjectByName('body_head') as Mesh;
+    expect(headMesh.material).not.toBe(skin);
+    expect(compile(headMesh).uniforms.uMuscleMix).toBe(chest.uniforms.uMuscleMix);
+    // The node colour still states its level (fallback and readers of the material).
+    expect(levels(body.root).get('muscle_chest')?.level).toBe('primary');
+    body.setHighlight({ lats: 'primary' });
+    expect([...mix]).toEqual([0, PRIMARY_MIX, 0].map(Math.fround));
+    body.dispose();
+  });
+
+  it('keeps the node tint alone for a model without muscle weights', () => {
+    const { scene, animations } = syntheticBody();
+    const body = gltfBodyFrom(scene, animations, {
+      clip: 'rest',
+      palette: PALETTE,
+      highlight: { chest: 'primary' },
+    });
+    const chest = body.root.getObjectByName('muscle_chest') as Mesh;
+    const material = chest.material as MeshStandardMaterial;
+    // No own shader hook: three's standard material, tinted per node only.
+    expect(Object.prototype.hasOwnProperty.call(material, 'onBeforeCompile')).toBe(false);
+    expect(material.color.getHexString()).toBe(
+      new Color(SKIN).lerp(new Color('#557a5b'), PRIMARY_MIX).getHexString(),
+    );
+    body.dispose();
   });
 
   it('plays the requested clip and falls back to the rest pose', () => {

@@ -5,7 +5,8 @@
  *
  * Checks: container (magic, version, chunks, JSON), references (every index points to something
  * that exists, buffer views stay inside the binary chunk), safe names, the contract (muscle groups,
- * bones, clips, rest clip), variant, materials, textures (size from the image header), triangles,
+ * bones, clips, rest clip), the optional soft-highlight attributes, variant, materials, textures
+ * (size from the image header), triangles,
  * file size, and the coordinate system (metres, +Y up, +Z front, floor at y = 0, origin under the
  * body) from the bind-pose bounds of the body meshes.
  */
@@ -15,6 +16,7 @@ import {
   MUSCLE_NODE_PREFIX,
   PROP_NODE_PREFIX,
   SAFE_NAME,
+  muscleGroupOfNode,
   validateFigureAsset,
   type AssetReport,
   type FigureVariant,
@@ -51,6 +53,7 @@ interface Json {
   scenes?: { nodes?: number[] }[];
   nodes?: {
     name?: string;
+    extras?: { muscleGroups?: unknown };
     mesh?: number;
     skin?: number;
     children?: number[];
@@ -87,6 +90,7 @@ interface Json {
   accessors?: {
     bufferView?: number;
     count?: number;
+    normalized?: boolean;
     min?: number[];
     max?: number[];
     type?: string;
@@ -283,6 +287,46 @@ export function validateGlb(file: ArrayBuffer, expected?: { variant?: FigureVari
   for (const name of nodeNames) {
     if (name.startsWith(PROP_NODE_PREFIX) && !/^prop_[a-z][a-zA-Z]*_[a-zA-Z0-9]+$/.test(name))
       errors.push(`prop node "${name}" is not named prop_<variant>_<part>`);
+  }
+
+  // Soft highlight (optional): per-vertex muscle groups and weights, both or neither, matching
+  // the vertex count, and a group list of known muscle groups on a node.
+  const groupLists = nodes
+    .map((node) => node.extras?.muscleGroups)
+    .filter((list) => list !== undefined);
+  let softPrimitives = 0;
+  meshes.forEach((mesh, m) => {
+    (mesh.primitives ?? []).forEach((p, k) => {
+      const where = `mesh ${String(m)} primitive ${String(k)}`;
+      const groups = p.attributes?._MUSCLE_GROUPS;
+      const weights = p.attributes?._MUSCLE_WEIGHTS;
+      if (groups === undefined && weights === undefined) return;
+      softPrimitives++;
+      if (groups === undefined || weights === undefined) {
+        errors.push(`${where} has only one of _MUSCLE_GROUPS / _MUSCLE_WEIGHTS`);
+        return;
+      }
+      const count = accessors[p.attributes?.POSITION ?? -1]?.count;
+      for (const [name, index] of [
+        ['_MUSCLE_GROUPS', groups],
+        ['_MUSCLE_WEIGHTS', weights],
+      ] as const) {
+        const a = accessors[index];
+        if (a?.type !== 'VEC4' || a.componentType !== 5121 || a.count !== count)
+          errors.push(`${where} ${name} is not a VEC4 of unsigned bytes per vertex`);
+      }
+      if (!accessors[weights]?.normalized)
+        errors.push(`${where} _MUSCLE_WEIGHTS is not normalized`);
+    });
+  });
+  if (softPrimitives > 0) {
+    const list = groupLists[0];
+    if (
+      groupLists.length !== 1 ||
+      !Array.isArray(list) ||
+      list.some((name) => muscleGroupOfNode(`${MUSCLE_NODE_PREFIX}${String(name)}`) === null)
+    )
+      errors.push('soft highlight without one list of known muscle groups (extras.muscleGroups)');
   }
 
   // Variant.

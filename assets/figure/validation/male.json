@@ -2,7 +2,7 @@
   "ok": true,
   "errors": [],
   "stats": {
-    "bytes": 3208544,
+    "bytes": 3513372,
     "triangles": 52090,
     "materials": 4,
     "textures": [
@@ -13,13 +13,13 @@
     ],
     "bounds": {
       "min": [
-        -0.3397272229194641,
+        -0.3397333025932312,
         0,
-        -0.13181842863559723
+        -0.12719611823558807
       ],
       "max": [
-        0.3398315906524658,
-        1.7477388381958008,
+        0.33983391523361206,
+        1.747739315032959,
         0.15162983536720276
       ]
     },
@@ -47,12 +47,36 @@
       "thigh_R",
       "shin_R",
       "foot_R",
-      "fingers_L",
-      "fingerTips_L",
-      "thumb_L",
-      "fingers_R",
-      "fingerTips_R",
-      "thumb_R"
+      "thumb1_L",
+      "thumb2_L",
+      "thumb3_L",
+      "index1_L",
+      "index2_L",
+      "index3_L",
+      "middle1_L",
+      "middle2_L",
+      "middle3_L",
+      "ring1_L",
+      "ring2_L",
+      "ring3_L",
+      "pinky1_L",
+      "pinky2_L",
+      "pinky3_L",
+      "thumb1_R",
+      "thumb2_R",
+      "thumb3_R",
+      "index1_R",
+      "index2_R",
+      "index3_R",
+      "middle1_R",
+      "middle2_R",
+      "middle3_R",
+      "ring1_R",
+      "ring2_R",
+      "ring3_R",
+      "pinky1_R",
+      "pinky2_R",
+      "pinky3_R"
     ],
     "clips": [
       "rest",

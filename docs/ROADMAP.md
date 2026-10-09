@@ -466,6 +466,25 @@ Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md), [Gerätetest](FIGURE_DEVICE
 - Weiblicher Körper unverändert (byte-gleich zu 0.28.0)
 - Offen: Gerätetest auf dem Xiaomi 15 Ultra, weiblicher Körper im neuen Stil, weitere Clips
 
+## Phase 18.5 – 3D: Anatomie, Griff und Muskelhighlights verbessern ✅ (Version 0.29.1)
+
+Nach dem Gerätetest von 0.29.0 (Xiaomi 15 Ultra) gezielte Qualitätskorrektur des männlichen
+Körpers, keine neue Funktion. Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.md),
+[Asset-Doku](../assets/figure/docs/README.md), [Vorher/Nachher](figure-qa/phase-18.5/):
+
+- Rücken/Schulter beim Latzug: Ursache schmales Gewichtsband Brust ↔ Oberarm hinter der Achsel
+  (LBS-Kollaps) plus Netzfalten aus Fit und Grenzbegradigung; jetzt Schultergürtel als
+  Zwischenstufe in den Gewichten, faltensichere Begradigung, Faltenglättung nach dem Fit,
+  Schulterrhythmus mit Retraktion unten im Zug – lokale Dellen 8–12 mm → 4–7 mm
+- Griff: Stange führt, explizite Griffreferenz pro Übung, Hand und Arm folgen; Finger per
+  Kontakt-Löser – keine Hand mehr in der Stange (vorher bis 14 mm), jeder Finger an der Stange
+- Finger: ein Bone je Fingerglied (vorher drei Bones für alle Finger, falsche Drehpunkte),
+  Gelenke in der Querschnittsmitte, schlankere Finger und Handfläche
+- Highlights: weiche Übergänge über Gewichte pro Vertex (optional im Vertrag, Validator prüft
+  sie), Splitter-Regionen bereinigt; Gruppen und Zuordnung unverändert
+- Weiblicher Körper byte-gleich zu 0.28.0; Budgets eingehalten (52 090 Dreiecke, 3,35 MiB)
+- Offen: Gerätetest von 0.29.1; Rest-Delle hinter der Achsel bei Überkopf-Armen (LBS)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS
