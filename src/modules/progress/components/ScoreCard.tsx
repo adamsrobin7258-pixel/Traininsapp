@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useI18n } from '@/core/i18n';
 import { SCORE_AREAS, useScore, type ScoreResult, type ScoreTrend } from '@/core/score';
-import { Icon, type IconName } from '@/ui';
+import { Icon, ICON_FOR, type IconName } from '@/ui';
 import type { PeriodRange, ProgressPeriod } from '../domain/period';
 import { ScoreDetailSheet } from './ScoreDetailSheet';
 import styles from './Score.module.css';
@@ -55,48 +55,51 @@ export function ScoreCard({
         }}
       >
         <span className={styles.header}>
-          <span className={styles.eyebrow}>{t('progress.score.title')}</span>
-          <Icon name="chevronRight" size={18} className={styles.chevron} />
+          <span className={styles.title}>{t('progress.score.title')}</span>
+          <Icon name={ICON_FOR.navForward} size={20} className={styles.chevron} />
         </span>
 
         {current.score !== null && current.band !== null ? (
           <>
-            <span className={styles.figure}>
-              <span className={styles.number} data-preliminary={current.preliminary || undefined}>
-                {current.score}
+            <span className={styles.hero}>
+              <ScoreRing
+                value={current.score}
+                state={current.preliminary ? 'preliminary' : 'final'}
+                outOf={t('progress.score.outOf')}
+              />
+              <span className={styles.summary}>
+                {current.preliminary ? (
+                  // Few data: the number steps back, no wording ("Sehr gut unterwegs") and one
+                  // short line says why. A real trend stays; "no comparison yet" would only repeat it.
+                  <span className={styles.preliminary}>
+                    {t('progress.score.preliminaryLine', {
+                      label: t('progress.score.preliminary'),
+                      hint: t('progress.score.preliminaryHint'),
+                    })}
+                  </span>
+                ) : (
+                  <span className={styles.band}>{t(`progress.score.bands.${current.band}`)}</span>
+                )}
+                {!current.preliminary || trend !== 'none' ? (
+                  <span className={styles.trend} data-trend={trend}>
+                    {trendIcon ? <Icon name={trendIcon} size={16} /> : null}
+                    <span>
+                      {trendText}
+                      {deltaText ? ` · ${deltaText}` : ''}
+                    </span>
+                  </span>
+                ) : null}
               </span>
-              <span className={styles.outOf}>{t('progress.score.outOf')}</span>
             </span>
-            {current.preliminary ? (
-              // Few data: the number steps back, no wording ("Sehr gut unterwegs") and one short
-              // line says why. A real trend stays; "no comparison yet" would only repeat it.
-              <span className={styles.preliminary}>
-                {t('progress.score.preliminaryLine', {
-                  label: t('progress.score.preliminary'),
-                  hint: t('progress.score.preliminaryHint'),
-                })}
-              </span>
-            ) : (
-              <span className={styles.band}>{t(`progress.score.bands.${current.band}`)}</span>
-            )}
-            {!current.preliminary || trend !== 'none' ? (
-              <span className={styles.trend} data-trend={trend}>
-                {trendIcon ? <Icon name={trendIcon} size={16} /> : null}
-                <span>
-                  {trendText}
-                  {deltaText ? ` · ${deltaText}` : ''}
-                </span>
-              </span>
-            ) : null}
           </>
         ) : (
           <>
-            <span className={styles.figure}>
-              <span className={styles.number} data-empty="true">
-                –
+            <span className={styles.hero}>
+              <ScoreRing value={null} state="empty" outOf={null} />
+              <span className={styles.summary}>
+                <span className={styles.band}>{t('progress.score.empty')}</span>
               </span>
             </span>
-            <span className={styles.band}>{t('progress.score.empty')}</span>
             <span className={styles.note}>{t('progress.score.emptyHint')}</span>
           </>
         )}
@@ -106,9 +109,24 @@ export function ScoreCard({
             const value = current.areas[area].score;
             return (
               <span key={area} className={styles.area}>
-                <span className={styles.areaName}>{t(`progress.score.areas.${area}`)}</span>
-                <span className={styles.areaValue} data-empty={value === null || undefined}>
-                  {value ?? '–'}
+                <span className={styles.areaLine}>
+                  <span className={styles.areaName}>{t(`progress.score.areas.${area}`)}</span>
+                  <span className={styles.areaValue} data-empty={value === null || undefined}>
+                    {value ?? '–'}
+                  </span>
+                </span>
+                {/* Decorative: the number says everything. Without a rating no track – it would read as 0. */}
+                <span
+                  className={styles.areaTrack}
+                  data-empty={value === null || undefined}
+                  aria-hidden="true"
+                >
+                  {value !== null ? (
+                    <span
+                      className={styles.areaFill}
+                      style={{ '--area-ratio': value / 100 } as CSSProperties}
+                    />
+                  ) : null}
                 </span>
               </span>
             );
@@ -129,6 +147,52 @@ export function ScoreCard({
     </section>
   );
 }
+
+/**
+ * The score as a ring around its number: the arc shows score / 100 – the same value as the
+ * number, nothing more. Preliminary: a quieter arc; no score: only the track and "–".
+ * Decorative for assistive technology – the card's accessible name says it all.
+ */
+function ScoreRing({
+  value,
+  state,
+  outOf,
+}: {
+  value: number | null;
+  state: 'final' | 'preliminary' | 'empty';
+  outOf: string | null;
+}) {
+  const ratio = value === null ? 0 : Math.min(1, Math.max(0, value / 100));
+  return (
+    <span className={styles.ring} data-state={state}>
+      <svg className={styles.ringArt} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <circle className={styles.ringTrack} cx="60" cy="60" r={RING_RADIUS} />
+        {ratio > 0 ? (
+          <circle
+            className={styles.ringArc}
+            cx="60"
+            cy="60"
+            r={RING_RADIUS}
+            pathLength={100}
+            strokeDasharray={`${String(ratio * 100)} 100`}
+          />
+        ) : null}
+      </svg>
+      <span className={styles.ringText}>
+        <span
+          className={styles.number}
+          data-empty={state === 'empty' || undefined}
+          data-preliminary={state === 'preliminary' || undefined}
+        >
+          {value ?? '–'}
+        </span>
+        {outOf ? <span className={styles.outOf}>{outOf}</span> : null}
+      </span>
+    </span>
+  );
+}
+
+const RING_RADIUS = 52;
 
 /** What a screen reader announces for the card – the same facts as the visual card. */
 function summary(

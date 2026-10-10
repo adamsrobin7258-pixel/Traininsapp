@@ -237,22 +237,24 @@ den Tokens. Keine Icon-Bibliothek, keine Emojis, keine 3D-Icons.
 
 Zuordnung nach Bedeutung (`src/ui/icons/roles.ts`, `ICON_FOR`) – ein Thema, ein Symbol:
 
-| Thema       | Icon          | Thema         | Icon                           |
-| ----------- | ------------- | ------------- | ------------------------------ |
-| Training    | `training`    | Ziele         | `target`                       |
-| Ernährung   | `nutrition`   | Einstellungen | `settings`                     |
-| Gesundheit  | `health`      | Profil        | `profile`                      |
-| Gewicht     | `scale`       | Pause/Timer   | `timer`                        |
-| Wasser      | `drop`        | Plan          | `plan`                         |
-| Schlaf      | `sleep` (neu) | Information   | `info` (neu)                   |
-| Schritte    | `steps` (neu) | Warnung       | `warning` (neu)                |
-| Fortschritt | `progress`    | Weiter/Zurück | `chevronRight` / `chevronLeft` |
+| Thema       | Icon                     | Thema         | Icon                           |
+| ----------- | ------------------------ | ------------- | ------------------------------ |
+| Training    | `training`               | Ziele         | `target`                       |
+| Ernährung   | `nutrition`              | Einstellungen | `settings`                     |
+| Gesundheit  | `health`                 | Profil        | `profile`                      |
+| Gewicht     | `scale`                  | Pause/Timer   | `timer`                        |
+| Wasser      | `drop`                   | Plan          | `plan`                         |
+| Schlaf      | `sleep` (neu)            | Information   | `info` (neu)                   |
+| Schritte    | `steps` (neu)            | Warnung       | `warning` (neu)                |
+| Fortschritt | `progress`               | Weiter/Zurück | `chevronRight` / `chevronLeft` |
+| Aktivitäten | `activity` (neu, 0.32.0) |               |                                |
 
 Mahlzeiten: `cup` / `plate` / `moon` / `apple` (Frühstück, Mittag, Abend, Snacks); `moon` bleibt
 dem Abendessen vorbehalten, Schlaf hat ein eigenes Symbol. **Nicht selbsterklärend** und deshalb
-nie ohne sichtbare Beschriftung: Gesundheit, Fortschritt, Ziele, Plan, Schritte, Schlaf, Barcode,
-„Mehr“ (`ICON_NEEDS_LABEL`). Phase B stellt das System bereit; die Bildschirme übernehmen die
-Zuordnung in Phase C.
+nie ohne sichtbare Beschriftung: Gesundheit, Fortschritt, Ziele, Plan, Schritte, Aktivitäten,
+Schlaf, Barcode, „Mehr“ (`ICON_NEEDS_LABEL`). Phase B stellt das System bereit; die Bildschirme
+übernehmen die Zuordnung in Phase C (Fortschritt seit 0.32.0). `flame` steht derzeit noch für
+Kalorien, aktive Energie und Rezepte – die Aufteilung folgt mit den jeweiligen Modulen.
 
 ### Lebensmittel-Illustrationen
 
@@ -289,6 +291,30 @@ Lebensmittelliste, Favoriten, Detail- und Mengenansicht, leere Zustände – nic
 Sehr dezent: die leicht unregelmäßige Fläche hinter Illustrationen und Leer-Icons (die frühere
 Fläche hinter der Kalorienzahl auf „Heute“ ist mit Phase 7.1 entfallen). Weitere nur, wenn sie nichts unruhiger
 machen.
+
+## Referenzbildschirm: Fortschritt (Phase C.1)
+
+Die Fortschritt-Seite (`modules/progress`) zeigt die Muster, nach denen die übrigen Module in
+Phase C umgestellt werden:
+
+- **Eine Schwerpunkt-Karte.** Der Kalethra-Score trägt `--shadow-raised` und etwas mehr Raum;
+  alle anderen Karten `--shadow-card`. Nicht jede Karte bekommt dasselbe Gewicht.
+- **Kennzahl als Ring.** Die Zahl steht im Ring, der Bogen zeigt denselben Wert (Score / 100) –
+  keine zusätzliche Information, nur schnellere Erfassung. Vorläufig: Bogen und Zahl in
+  gedämpften Tönen plus Text; ohne Wert: nur die Spur und „–“. Der Ring ist dekorativ
+  (`aria-hidden`), die Karte trägt den vollständigen zugänglichen Namen.
+- **Bereichskarte.** Kopf aus Icon-Kachel (32 px, `--color-accent-subtle`), Titel in
+  Satzschreibweise (17 px halbfett) und Chevron; Inhalt bündig unter dem Titel (unter 360 px
+  volle Breite). Die ganze Karte ist ein Link.
+- **Leere Bereiche kompakt.** Ohne Werte (`data-empty`) schrumpft die Karte auf Titel und eine
+  kurze Zeile, ohne Schatten, Icon-Kachel neutral – Karten mit Werten tragen die Seite. Keine
+  erfundenen Nullen.
+- **Kleine Balken.** Bereichswerte bekommen eine 4-px-Spur mit Salbei-Füllung; ohne Bewertung
+  keine Spur (sie würde wie 0 wirken).
+- **Diagramme.** Balken stehen auf einer Haarlinie (Nulllinie), keine Gitter und Verläufe.
+  Referenzlinien sind gestrichelt und unter dem Diagramm benannt („Ø Ziel“). Tage ohne Daten
+  bleiben leer, Tage mit 0 zeigen einen kurzen Strich.
+- **Keine Versalien.** Karten- und Abschnittstitel in Satzschreibweise, auch im Erklär-Sheet.
 
 ## Bilder und Illustrationen
 

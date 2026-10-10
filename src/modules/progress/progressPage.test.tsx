@@ -237,6 +237,21 @@ describe('Fortschritt – the main page', () => {
     expect(main().queryByText(/^0 /)).not.toBeInTheDocument();
   });
 
+  it('keeps areas without values compact and lets areas with values carry the page', async () => {
+    await renderApp('/', {
+      prepare: async (services, profileId) => {
+        await eat(services, profileId, [['2026-10-03', 500]]);
+      },
+    });
+    await (await findCard(/^Ernährung/)).findByText('Ø 500 kcal / Tag');
+    const link = (name: RegExp) => main().getByRole('link', { name });
+    expect(link(/^Ernährung/)).not.toHaveAttribute('data-empty');
+    expect(link(/^Training/)).toHaveAttribute('data-empty', 'true');
+    expect(link(/^Gewicht/)).toHaveAttribute('data-empty', 'true');
+    // Compact, but still the whole card is one target of at least 44 px (checked in E2E).
+    expect(card(/^Training/).getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
+  });
+
   it('no longer shows any daily content', async () => {
     await renderApp('/', {
       prepare: async (services, profileId) => {
@@ -337,6 +352,8 @@ describe('Fortschritt – the main page', () => {
       // Protein: 1 Oct reached (200 g), today (75 %) still open – not a miss.
       expect(nutrition.getByText('Proteinziel erreicht an 1 von 1 Tagen')).toBeInTheDocument();
       expect(nutrition.getByText('An 2 von 7 Tagen erfasst')).toBeInTheDocument();
+      // The dashed reference line is named under the chart (Phase C.1).
+      expect(nutrition.getByText('Ø Ziel')).toBeInTheDocument();
 
       await userEvent.click(main().getByRole('link', { name: /^Ernährung/ }));
       await waitFor(() => {
@@ -574,7 +591,7 @@ describe('Fortschritt – the main page', () => {
       expect(training.getByText('75 %')).toBeInTheDocument();
       expect(training.getByText('Ziel: 4 pro Woche')).toBeInTheDocument();
       // The bar is decorative (aria-hidden) – the text carries the information.
-      const meter = container.querySelector('[aria-hidden="true"] > span[style]');
+      const meter = container.querySelector('[aria-hidden="true"] > span[style*="--meter-ratio"]');
       expect(meter?.getAttribute('style')).toContain('--meter-ratio: 0.75');
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
     });
@@ -592,7 +609,7 @@ describe('Fortschritt – the main page', () => {
       const training = await findCard(/^Training/);
       expect(await training.findByText('5 von 4 Einheiten')).toBeInTheDocument();
       expect(training.getByText('125 %')).toBeInTheDocument();
-      const meter = container.querySelector('[aria-hidden="true"] > span[style]');
+      const meter = container.querySelector('[aria-hidden="true"] > span[style*="--meter-ratio"]');
       expect(meter?.getAttribute('style')).toContain('--meter-ratio: 1');
     });
 

@@ -8,7 +8,7 @@ import { useProgressGoals, type Attainment, type ProgressGoals } from '@/core/pr
 import { useSettings } from '@/core/settings';
 import { parseLocalDateKey } from '@/shared/lib/date';
 import { formatDayMonth, formatDuration } from '@/shared/lib/format';
-import { Icon, SegmentedControl, type IconName } from '@/ui';
+import { Icon, ICON_FOR, SegmentedControl, type IconName } from '@/ui';
 import {
   periodRange,
   perWeek,
@@ -83,28 +83,36 @@ interface CardProps {
   day: (date: string) => string;
 }
 
+/**
+ * One area as one card that opens it. `empty`: the area has nothing to show yet – the card
+ * shrinks to its title and a short line, so cards with values carry the page.
+ */
 function ProgressRow({
   to,
   icon,
   title,
+  empty = false,
   children,
 }: {
   to: string;
   icon: IconName;
   title: string;
+  empty?: boolean;
   children: ReactNode;
 }) {
   return (
     <li>
-      <Link to={to} className={styles.row}>
+      <Link to={to} className={styles.row} data-empty={empty || undefined}>
         <span className={styles.rowHeader}>
           <span className={styles.rowTitle}>
-            <Icon name={icon} size={18} className={styles.rowIcon} />
+            <span className={styles.rowIcon}>
+              <Icon name={icon} size={18} />
+            </span>
             {title}
           </span>
-          <Icon name="chevronRight" size={18} className={styles.chevron} />
+          <Icon name={ICON_FOR.navForward} size={18} className={styles.chevron} />
         </span>
-        {children}
+        <span className={styles.rowBody}>{children}</span>
       </Link>
     </li>
   );
@@ -172,7 +180,12 @@ function TrainingProgress({ data, range, period, day }: CardProps) {
       ? t('progress.training.workoutsOne')
       : t('progress.training.workouts', { count: number.format(value) });
   return (
-    <ProgressRow to={ROUTES.training} icon="training" title={t('progress.training.title')}>
+    <ProgressRow
+      to={ROUTES.training}
+      icon={ICON_FOR.training}
+      title={t('progress.training.title')}
+      empty={summary !== null && summary.workouts === 0 && goal?.mode !== 'full'}
+    >
       {goal?.mode === 'full' ? (
         <GoalMeter
           level="lead"
@@ -286,7 +299,12 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
         : null
     : null;
   return (
-    <ProgressRow to={ROUTES.nutrition} icon="nutrition" title={t('progress.nutrition.title')}>
+    <ProgressRow
+      to={ROUTES.nutrition}
+      icon={ICON_FOR.nutrition}
+      title={t('progress.nutrition.title')}
+      empty={summary !== null && summary.avgKcal === null}
+    >
       {summary && summary.avgKcal !== null ? (
         <>
           {calories ? (
@@ -359,6 +377,7 @@ function NutritionProgress({ data, range, period, day }: CardProps) {
             <DayBars
               values={summary.perDay.map((entry) => entry.kcal)}
               reference={summary.avgGoalKcal}
+              referenceLabel={t('progress.nutrition.chartGoal')}
               label={t('progress.nutrition.chart', {
                 count: summary.loggedDays,
                 avg: number.format(summary.avgKcal),
@@ -383,7 +402,12 @@ function WeightProgress({ data, range, period, day }: CardProps) {
   const last = summary?.points.at(-1);
   const weight = (kg: number) => formatWeight(kg, unit, locale);
   return (
-    <ProgressRow to={ROUTES.health} icon="scale" title={t('progress.weight.title')}>
+    <ProgressRow
+      to={ROUTES.health}
+      icon={ICON_FOR.weight}
+      title={t('progress.weight.title')}
+      empty={summary !== null && !summary.latest}
+    >
       {summary?.latest ? (
         <>
           <span className={styles.figures}>
@@ -447,7 +471,12 @@ function ActivityProgress({ data, range, day }: CardProps) {
   if (!summary || !goal || (!connected && summary.count === 0 && goal.mode === 'none')) return null;
   const number = new Intl.NumberFormat(locale);
   return (
-    <ProgressRow to={TRAINING_LINKS.activities} icon="flame" title={t('progress.activities.title')}>
+    <ProgressRow
+      to={TRAINING_LINKS.activities}
+      icon={ICON_FOR.activity}
+      title={t('progress.activities.title')}
+      empty={summary.count === 0 && goal.mode !== 'full'}
+    >
       {goal.mode === 'full' ? (
         <GoalMeter
           level="lead"
@@ -521,7 +550,12 @@ function StepsProgress({ data, range, period }: Omit<CardProps, 'day'>) {
   const number = new Intl.NumberFormat(locale);
   const today = period === 'today';
   return (
-    <ProgressRow to={ROUTES.health} icon="health" title={t('progress.steps.title')}>
+    <ProgressRow
+      to={ROUTES.health}
+      icon={ICON_FOR.steps}
+      title={t('progress.steps.title')}
+      empty={summary.avgSteps === null}
+    >
       {summary.avgSteps === null ? (
         <span className={styles.note}>
           {today ? t('progress.steps.emptyToday') : t('progress.steps.empty')}

@@ -332,6 +332,71 @@ describe('Kalethra-Score on Fortschritt', () => {
   });
 });
 
+describe('score ring and area bars (Phase C.1)', () => {
+  const ring = async () => {
+    const button = await scoreButton();
+    const art = button.querySelector('svg[viewBox="0 0 120 120"]');
+    if (!art) throw new Error('no ring');
+    return { button, art, arc: art.querySelector('circle[stroke-dasharray]') };
+  };
+
+  it('draws the score as an arc of the same value – decorative, the name says it all', async () => {
+    await renderApp('/', {
+      prepare: async (s, profileId) => {
+        await goal(s, profileId);
+        await eat(s, profileId, '2026-10-03', 2990); // today: 30
+        await eat(s, profileId, '2026-09-30', 2300); // 100
+      },
+    });
+    await expectScore(30);
+    const today = await ring();
+    expect(today.art).toHaveAttribute('aria-hidden', 'true');
+    expect(today.arc).toHaveAttribute('stroke-dasharray', '30 100');
+    await showProgressPeriod('7 Tage');
+    await expectScore(65);
+    expect((await ring()).arc).toHaveAttribute('stroke-dasharray', '65 100');
+  });
+
+  it('marks a preliminary score in the ring, too – next to the words, never instead', async () => {
+    await renderApp('/', {
+      prepare: async (s, profileId) => {
+        await goal(s, profileId);
+        await eat(s, profileId, '2026-10-01', 2300);
+      },
+    });
+    await showProgressPeriod('7 Tage');
+    await expectScore(100);
+    const { art } = await ring();
+    expect(art.parentElement).toHaveAttribute('data-state', 'preliminary');
+    expect(
+      (await scoreCard()).getByText('Vorläufig · weitere Einträge machen ihn aussagekräftiger'),
+    ).toBeVisible();
+  });
+
+  it('shows only the empty track without data – no invented arc, no image role', async () => {
+    await renderApp('/');
+    await (await scoreCard()).findByText('Noch keine Daten für diesen Zeitraum.');
+    const { art, arc } = await ring();
+    expect(arc).toBeNull();
+    expect(art.parentElement).toHaveAttribute('data-state', 'empty');
+    expect(main().queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('gives each rated area a bar of its value and unrated areas none', async () => {
+    await renderApp('/', { prepare: goodWeek });
+    await showProgressPeriod('7 Tage');
+    await expectScore(100);
+    expect((await ring()).art.parentElement).toHaveAttribute('data-state', 'final');
+    const button = await scoreButton();
+    // Nutrition and recovery rated (100), training and activity without a target.
+    const fills = [...button.querySelectorAll<HTMLElement>('[style*="--area-ratio"]')];
+    expect(fills.map((fill) => fill.getAttribute('style'))).toEqual([
+      '--area-ratio: 1;',
+      '--area-ratio: 1;',
+    ]);
+  });
+});
+
 describe('score details', () => {
   it('opens on tap and explains goal, weighting and every area from the real data', async () => {
     await renderApp('/', {

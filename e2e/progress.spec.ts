@@ -27,6 +27,20 @@ test('Fortschritt is the read-only main page that opens the areas', async ({ pag
     true,
   );
 
+  // The score card (Phase C.1): ring and words stay inside the card, nothing is cut off.
+  const score = main.getByRole('button', { name: /Kalethra-Score/ });
+  const scoreBox = await score.boundingBox();
+  const ringBox = await score.locator('svg[viewBox="0 0 120 120"]').boundingBox();
+  expect(ringBox?.x ?? -1).toBeGreaterThanOrEqual(scoreBox?.x ?? 0);
+  expect((ringBox?.x ?? 0) + (ringBox?.width ?? 0)).toBeLessThanOrEqual(
+    (scoreBox?.x ?? 0) + (scoreBox?.width ?? 0),
+  );
+  expect(
+    await score.evaluate((card) =>
+      [...card.querySelectorAll('span')].every((span) => span.scrollWidth <= span.clientWidth + 1),
+    ),
+  ).toBe(true);
+
   // Every card is one large target (at least 44 px high) that opens its area.
   for (const name of [/^Training/, /^Ernährung/, /^Gewicht/]) {
     const box = await main.getByRole('link', { name }).boundingBox();

@@ -9,6 +9,8 @@ interface DayBarsProps {
   label: string;
   /** Optional reference value drawn as a dashed line (e.g. the average goal). */
   reference?: number | null;
+  /** Visible name of the reference line, e.g. "Ø Ziel". */
+  referenceLabel?: string;
   /** First and last day, shown under the chart. */
   from: string;
   to: string;
@@ -18,8 +20,16 @@ interface DayBarsProps {
  * Small daily bar strip: one quiet bar per day, a short tick for zero, nothing for unknown days.
  * Plain HTML, so bars keep their rounded ends at every width; no animation.
  */
-export function DayBars({ values, label, reference = null, from, to }: DayBarsProps) {
+export function DayBars({
+  values,
+  label,
+  reference = null,
+  referenceLabel,
+  from,
+  to,
+}: DayBarsProps) {
   const max = Math.max(1, reference ?? 0, ...values.map((value) => value ?? 0));
+  const showReference = reference !== null && reference > 0;
   return (
     <span className={styles.chart}>
       <span className={styles.bars} role="img" aria-label={label}>
@@ -35,7 +45,7 @@ export function DayBars({ values, label, reference = null, from, to }: DayBarsPr
             )}
           </span>
         ))}
-        {reference !== null && reference > 0 ? (
+        {showReference ? (
           <span
             className={styles.reference}
             style={{ '--bar-ratio': reference / max } as CSSProperties}
@@ -44,6 +54,12 @@ export function DayBars({ values, label, reference = null, from, to }: DayBarsPr
       </span>
       <span className={styles.axis} aria-hidden="true">
         <span>{from}</span>
+        {showReference && referenceLabel ? (
+          <span className={styles.legend}>
+            <span className={styles.legendLine} />
+            {referenceLabel}
+          </span>
+        ) : null}
         <span>{to}</span>
       </span>
     </span>

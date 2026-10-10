@@ -186,6 +186,7 @@ export const de = {
       logged: 'An {count} von {total} Tagen erfasst',
       empty: 'Noch keine Ernährungsdaten.',
       chart: 'Kalorien pro Tag an {count} erfassten Tagen, Durchschnitt {avg} kcal',
+      chartGoal: 'Ø Ziel',
     },
     weight: {
       title: 'Gewicht',

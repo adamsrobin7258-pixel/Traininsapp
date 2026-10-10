@@ -181,6 +181,7 @@ export const en: TranslationSchema = {
       logged: 'Logged on {count} of {total} days',
       empty: 'No nutrition data yet.',
       chart: 'Calories per day on {count} logged days, average {avg} kcal',
+      chartGoal: 'Avg. goal',
     },
     weight: {
       title: 'Weight',

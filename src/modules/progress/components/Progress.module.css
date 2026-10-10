@@ -2,10 +2,11 @@
 .progress {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  gap: var(--space-4);
 }
 
 .range {
+  margin-top: calc(var(--space-2) * -1);
   font-size: var(--font-size-footnote);
   font-variant-numeric: tabular-nums;
   color: var(--color-text-secondary);
@@ -24,14 +25,17 @@
 .row {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
-  min-height: 2.75rem;
-  padding: var(--space-4) var(--space-5) var(--space-5);
-  border-radius: var(--radius-lg);
+  gap: var(--space-3);
+  min-height: var(--size-tap-target);
+  padding: var(--space-4);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   color: inherit;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
 .row:active {
@@ -39,8 +43,36 @@
 }
 
 .row:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Content lines up with the title, right of the icon tile. */
+.rowBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  padding-left: calc(2rem + var(--space-3));
+}
+
+/* Small phones: the full card width for the figures. */
+@media (max-width: 359px) {
+  .rowBody {
+    padding-left: 0;
+  }
+}
+
+/* Nothing to show yet: a quiet, compact card – title and one short line. */
+.row[data-empty] {
+  gap: var(--space-1);
+  padding-block: var(--space-3);
+  box-shadow: none;
+}
+
+.row[data-empty] .rowIcon {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
 }
 
 .rowHeader {
@@ -53,21 +85,28 @@
 .rowTitle {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
-  font-size: var(--font-size-footnote);
+  gap: var(--space-3);
+  min-width: 0;
+  font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
-  color: var(--color-text-secondary);
+  line-height: var(--line-height-snug);
 }
 
+/* Icon tile: names the area at a glance; sage on a soft tint. */
 .rowIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
   color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
 }
 
 .chevron {
   flex-shrink: 0;
-  color: var(--color-text-secondary);
+  color: var(--color-text-tertiary);
 }
 
 .figures {
@@ -120,12 +159,14 @@
   margin-top: var(--space-1);
 }
 
+/* Bars stand on a hairline baseline – the zero of the chart. No grid, no gradients. */
 .bars {
   position: relative;
   display: flex;
   align-items: flex-end;
   gap: 2px;
-  height: 2.75rem;
+  height: 3rem;
+  border-bottom: var(--border-hairline) solid var(--color-border);
 }
 
 .column {
@@ -159,8 +200,20 @@
   right: 0;
   bottom: calc(var(--bar-ratio) * 100%);
   left: 0;
-  border-top: 1px dashed var(--color-text-tertiary);
+  border-top: 1px dashed var(--color-text-secondary);
   pointer-events: none;
+}
+
+.legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  white-space: nowrap;
+}
+
+.legendLine {
+  width: 0.875rem;
+  border-top: 1px dashed var(--color-text-secondary);
 }
 
 .axis {
@@ -214,14 +267,17 @@
 .secondary,
 .note {
   min-width: 0;
-  overflow-wrap: anywhere;
+  /* Whole words first; long compounds hyphenate instead of breaking anywhere. */
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .meter {
   display: block;
-  height: 6px;
+  height: 0.375rem;
   overflow: hidden;
-  border-radius: 3px;
+  border-radius: var(--radius-full);
   background: var(--color-surface-muted);
 }
 
@@ -229,6 +285,6 @@
   display: block;
   width: calc(var(--meter-ratio) * 100%);
   height: 100%;
-  border-radius: 3px;
+  border-radius: inherit;
   background: var(--color-accent);
 }

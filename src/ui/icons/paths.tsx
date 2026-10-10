@@ -124,6 +124,8 @@ export const ICON_PATHS = {
       <path d="M16.75 7.25c-1.65 0-3 1.9-3 4.5 0 1.9.6 3 .9 4.5h3.95c.3-1.5.9-2.6.9-4.5 0-2.6-1.1-4.5-2.75-4.5ZM14.75 19.25h3.75c0 1.6-.7 2.5-1.85 2.5s-1.9-.9-1.9-2.5Z" />
     </>
   ),
+  /** Activities (movement, active minutes): a calm pulse line. */
+  activity: <path d="M3.75 12.75h3.5l2.25-5.5 4.25 10 2.5-6h4" />,
   /** Information: an "i" in a circle. */
   info: (
     <>

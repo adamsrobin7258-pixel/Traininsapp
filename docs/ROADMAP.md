@@ -540,6 +540,22 @@ Zentrale Tokens und gemeinsame Komponenten modernisiert, keine Bildschirm-Neuges
 - Offen (Phase C): Modul-Karten mit Kante/Schatten, Versal-Labels in Modulen, Icons in den
   Bildschirmen; Gerätetest
 
+## Phase 20.1 – Fortschritt als Referenzbildschirm (Phase C.1) ✅ (Version 0.32.0)
+
+Erster vollständig umgestellter Bildschirm auf Basis des Designsystems; Score-Berechnung,
+Datenquellen und Produktstruktur unverändert. Vorher/Nachher:
+[`design-qa/phase-20.1/`](design-qa/phase-20.1/):
+
+- Kalethra-Score als Schwerpunkt: Zahl im Ring (Bogen = derselbe Wert), Bewertung und Tendenz
+  daneben, vier Bereiche mit kleinen Balken; vorläufig und leer weiterhin eindeutig gekennzeichnet
+- Bereichskarten mit Kante und Schatten, Icon-Kachel, Titel ohne Versalien; leere Bereiche
+  kompakt; Inhalt auf kleinen Displays in voller Breite
+- Icons nach Rolle (`ICON_FOR`), neues Icon `activity` für Aktivitäten, Schritte mit `steps`
+- Diagramme: Nulllinie, benannte Referenzlinie („Ø Ziel“)
+- Erklär-Sheet: Überschriften ohne Versalien, Kennzeichnung „Vorläufig“ als Plakette
+- Keine Bilder ergänzt: eine Illustration hätte hier nichts erklärt
+- Offen: Gerätetest; Training, Ernährung, Gesundheit und Einstellungen folgen nach Freigabe
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS
