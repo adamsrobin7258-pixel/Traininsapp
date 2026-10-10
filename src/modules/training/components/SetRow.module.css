@@ -48,6 +48,7 @@
 .input:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 .input[aria-invalid='true'] {

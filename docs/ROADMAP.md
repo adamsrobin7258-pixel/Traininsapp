@@ -556,6 +556,27 @@ Datenquellen und Produktstruktur unverändert. Vorher/Nachher:
 - Keine Bilder ergänzt: eine Illustration hätte hier nichts erklärt
 - Offen: Gerätetest; Training, Ernährung, Gesundheit und Einstellungen folgen nach Freigabe
 
+## Phase 20.2 – Alle Bereiche im neuen Design (Phase C.2) ✅ (Version 0.33.0)
+
+Training, Ernährung, Gesundheit und Einstellungen (mit Profil, Zielen, Meinen Inhalten, App)
+nach dem Muster der Fortschritt-Seite; Fortschritt selbst unverändert. Nur Darstellung –
+Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. Vorher/Nachher:
+[`design-qa/phase-20.2/`](design-qa/phase-20.2/):
+
+- Karten und Felder einheitlich (Kante, Schatten, Radien, Feldrahmen, Fokusring), keine Versalien
+- Training: Hero „Nächstes Training“/laufendes Training auf Salbei-Fläche; aktives Training mit
+  „Satz abschließen“ als einziger Hauptaktion, „Training beenden“ sekundär; erhöhte Fokus-Karte
+  und Pausenleiste
+- Ernährung: Tageskarte erhöht, Mahlzeiten-Kacheln in Lebensmitteltönen, Wasser-Kachel
+- Gesundheit: Gewicht mit Kachel (neutral ohne Wert), „Verlauf“ erst mit Einträgen, Schritte mit
+  Icon
+- Einstellungen: Profilkarte, Icons nach Rolle
+- Icons: `flame` nur noch Energie; neue Icons `recipe` und `distance`; Rollen für Mahlzeiten,
+  Inhalte, Energie, Distanz
+- Tokens: `--color-surface-accent(-border)`, `--color-switch-knob`, `--shadow-knob`
+- Keine Bilder ergänzt; 3D-Körper unverändert
+- Offen: Gerätetest
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

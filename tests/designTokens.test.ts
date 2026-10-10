@@ -49,6 +49,7 @@ const SURFACES = [
   '--color-surface',
   '--color-surface-elevated',
   '--color-surface-dialog',
+  '--color-surface-accent',
 ];
 
 describe('design tokens', () => {
@@ -60,6 +61,8 @@ describe('design tokens', () => {
     '--color-surface-muted',
     '--color-surface-pressed',
     '--color-surface-hover',
+    '--color-surface-accent',
+    '--color-surface-accent-border',
     '--color-control-selected',
     '--color-accent',
     '--color-accent-strong',
@@ -90,6 +93,7 @@ describe('design tokens', () => {
     '--shadow-card',
     '--shadow-raised',
     '--shadow-sheet',
+    '--color-switch-knob',
   ];
 
   it.each(Object.values(THEMES))('defines every color for %s', (selector) => {

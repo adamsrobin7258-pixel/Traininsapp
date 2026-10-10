@@ -2,7 +2,7 @@ import { CONTENT_LINKS, ROUTES } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { useNutritionData } from '@/core/nutrition';
 import { useTrainingData } from '@/core/training';
-import { List, ListRow, Screen, Section } from '@/ui';
+import { ICON_FOR, List, ListRow, Screen, Section } from '@/ui';
 
 /**
  * Einstellungen → Meine Inhalte: the one place where the user's own content is managed –
@@ -49,25 +49,25 @@ export function ContentScreen() {
       <Section title={t('settings.content.nutrition')} footer={t('settings.content.nutritionHint')}>
         <List label={t('settings.content.nutrition')}>
           <ListRow
-            icon="apple"
+            icon={ICON_FOR.food}
             title={t('nutrition.foods.title')}
             subtitle={hint('settings.content.foodsHint', counts?.foods)}
             to={CONTENT_LINKS.foods}
           />
           <ListRow
-            icon="nutrition"
+            icon={ICON_FOR.mealsOfDay}
             title={t('nutrition.mealsManage.title')}
             subtitle={hint('settings.content.mealsHint', counts?.meals)}
             to={CONTENT_LINKS.meals}
           />
           <ListRow
-            icon="plate"
+            icon={ICON_FOR.template}
             title={t('nutrition.templates.title')}
             subtitle={hint('settings.content.templatesHint', counts?.templates)}
             to={CONTENT_LINKS.templates}
           />
           <ListRow
-            icon="flame"
+            icon={ICON_FOR.recipe}
             title={t('nutrition.recipes.title')}
             subtitle={hint('settings.content.recipesHint', counts?.recipes)}
             to={CONTENT_LINKS.recipes}
@@ -77,7 +77,7 @@ export function ContentScreen() {
       <Section title={t('settings.content.training')} footer={t('settings.content.trainingHint')}>
         <List label={t('settings.content.training')}>
           <ListRow
-            icon="plan"
+            icon={ICON_FOR.plan}
             title={t('training.plansTitle')}
             subtitle={hint(
               'settings.content.plansHint',
@@ -86,7 +86,7 @@ export function ContentScreen() {
             to={CONTENT_LINKS.plans}
           />
           <ListRow
-            icon="training"
+            icon={ICON_FOR.exercise}
             title={t('training.exercises.title')}
             subtitle={t('settings.content.exercisesHint')}
             to={CONTENT_LINKS.exercises}

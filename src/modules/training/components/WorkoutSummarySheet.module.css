@@ -15,16 +15,16 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4) var(--space-3);
   padding: var(--space-4);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .heading {
   margin-bottom: var(--space-2);
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
@@ -32,8 +32,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .row {
@@ -71,8 +73,10 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .muscleList {

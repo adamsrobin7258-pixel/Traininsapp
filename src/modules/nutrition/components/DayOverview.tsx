@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
-import { Icon, Meter } from '@/ui';
+import { Icon, ICON_FOR, Meter } from '@/ui';
 import { formatGrams, formatKcal } from '../domain/format';
 import { ActivityBudget } from './ActivityBudget';
 import styles from './Nutrition.module.css';
@@ -37,7 +37,7 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
     <section className={styles.overview} aria-label={t('nutrition.overview.title')}>
       <div className={styles.hero}>
         <span className={styles.heroLabel}>
-          <Icon name="flame" size={16} className={styles.heroIcon} />
+          <Icon name={ICON_FOR.energy} size={16} className={styles.heroIcon} />
           {t('nutrition.overview.eaten')}
         </span>
         <span className={styles.heroNumber}>

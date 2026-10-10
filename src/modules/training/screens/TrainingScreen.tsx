@@ -4,7 +4,7 @@ import { CONTENT_LINKS, TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
-import { Button, List, ListRow, Screen, Section } from '@/ui';
+import { Button, Icon, ICON_FOR, List, ListRow, Screen, Section } from '@/ui';
 import { StartWorkoutSheet } from '../components/StartWorkoutSheet';
 import { WorkoutHistory } from '../components/WorkoutHistory';
 import { describeTrainingError } from '../domain/errors';
@@ -60,7 +60,12 @@ export function TrainingScreen() {
         <div className={styles.start}>
           {data.next ? (
             <div className={styles.next}>
-              <p className={styles.nextLabel}>{t('training.nextTitle')}</p>
+              <p className={styles.nextLabel}>
+                <span className={styles.nextIcon}>
+                  <Icon name={ICON_FOR.training} size={18} />
+                </span>
+                {t('training.nextTitle')}
+              </p>
               <p className={styles.nextTitle}>
                 {t('training.nextFromPlan', { day: data.next.dayName, plan: data.next.planName })}
               </p>
@@ -129,9 +134,11 @@ function ActiveWorkoutCard({
   const { t } = useI18n();
   const elapsed = useElapsedSeconds(startedAt);
   return (
-    <div className={styles.next}>
+    <div className={styles.next} data-active="true">
       <p className={styles.nextTitle}>{title}</p>
       <p className={styles.nextLabel}>
+        {/* A calm "running" marker next to the words – never colour alone. */}
+        <span className={styles.live} aria-hidden="true" />
         {t('training.activeSince', { duration: formatDuration(elapsed) })}
       </p>
       <Button fullWidth onClick={onResume}>

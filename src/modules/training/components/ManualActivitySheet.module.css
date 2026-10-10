@@ -13,7 +13,7 @@
 .field {
   min-height: calc(var(--size-tap-target) + var(--space-1));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--font-size-body);
@@ -24,6 +24,7 @@
 .field:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 .field[aria-invalid='true'] {
@@ -50,7 +51,8 @@
   gap: var(--space-3);
   min-height: var(--size-tap-target);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
 }
 
@@ -89,15 +91,13 @@
   gap: var(--space-1);
   margin-top: var(--space-3);
   padding: var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-control);
   background: var(--color-accent-subtle);
 }
 
 .estimateTitle {
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
@@ -125,7 +125,7 @@
   flex-shrink: 0;
   min-height: calc(var(--size-tap-target) + var(--space-2));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font: inherit;
   font-size: var(--font-size-body);
@@ -136,6 +136,7 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 .scroll {
@@ -151,7 +152,5 @@
   padding: 0 var(--space-1);
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }

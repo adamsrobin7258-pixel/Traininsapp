@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useHealthSync } from '@/core/health';
 import { useI18n } from '@/core/i18n';
-import { List, ListRow, Section } from '@/ui';
+import { ICON_FOR, List, ListRow, Section } from '@/ui';
 import { healthStatusKey } from '../domain/healthStatus';
 import { DisconnectHealthSheet } from './DisconnectHealthSheet';
 import { HealthConnectSheet } from './HealthConnectSheet';
@@ -19,7 +19,7 @@ export function HealthDataSection() {
     <Section title={t('healthConnect.sectionTitle')} footer={t('healthConnect.sectionFooter')}>
       <List>
         <ListRow
-          icon="health"
+          icon={ICON_FOR.health}
           title={t('healthConnect.name')}
           value={t(healthStatusKey(status, syncing))}
           onPress={() => {

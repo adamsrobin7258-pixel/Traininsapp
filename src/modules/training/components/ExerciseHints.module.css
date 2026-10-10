@@ -9,10 +9,8 @@
 }
 
 .lastTitle {
-  font-size: var(--font-size-caption);
+  font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 

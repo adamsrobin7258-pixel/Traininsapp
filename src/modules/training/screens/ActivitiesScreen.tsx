@@ -4,7 +4,7 @@ import { combineActivities, useActivityData, type ActivityEntry } from '@/core/a
 import { useHealthAutoSync, useHealthSync, useImportedHealthData } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { toLocalDateKey } from '@/shared/lib/date';
-import { Button, EmptyState, List, ListRow, Screen, Section } from '@/ui';
+import { Button, EmptyState, ICON_FOR, List, ListRow, Screen, Section } from '@/ui';
 import { ActivityDetailSheet } from '../components/ActivityDetailSheet';
 import { ManualActivitySheet } from '../components/ManualActivitySheet';
 import { entrySubtitle, entryTitle } from '../domain/activities';
@@ -57,7 +57,7 @@ export function ActivitiesScreen() {
 
       {list && list.length === 0 ? (
         <EmptyState
-          icon="training"
+          icon={ICON_FOR.activity}
           title={connected ? t('activities.emptyConnected') : t('activities.emptyDisconnected')}
           body={
             connected ? t('activities.emptyConnectedBody') : t('activities.emptyDisconnectedBody')

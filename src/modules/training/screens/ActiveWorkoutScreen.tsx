@@ -70,7 +70,10 @@ export function ActiveWorkoutScreen() {
       back={{ to: ROUTES.training, label: t('training.back') }}
       action={
         <div className={styles.headerActions}>
+          {/* Secondary on purpose: during the workout "Satz abschließen" is the main action. */}
           <Button
+            variant="secondary"
+            size="compact"
             className={styles.finish}
             onClick={() => {
               setDialog('finish');

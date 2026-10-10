@@ -203,6 +203,16 @@ describe('weight entry links', () => {
     expect(await screen.findByRole('button', { name: 'Gewicht eintragen' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+  it('leaves the history section out until there is an entry (Phase C.2)', async () => {
+    await renderApp('/health');
+    const main = within(await screen.findByRole('main'));
+    expect(await main.findByText('Noch kein Gewicht eingetragen.')).toBeInTheDocument();
+    expect(
+      main.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
+    ).toEqual(['Gewicht', 'Entwicklung', 'Regeneration']);
+    expect(main.queryByText('0,0 kg')).not.toBeInTheDocument();
+  });
+
   it('orders Gesundheit by topic and shows no empty placeholders (Phase 17.3)', async () => {
     await renderApp('/health', {
       healthPlatform: new FakeHealthPlatform(),

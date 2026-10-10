@@ -4,7 +4,7 @@ import { useI18n } from '@/core/i18n';
 import { useNutrition, type WaterEntry } from '@/core/nutrition';
 import { useSettings } from '@/core/settings';
 import { Link } from 'react-router';
-import { Icon, List, ListRow, Meter, Section } from '@/ui';
+import { Icon, ICON_FOR, List, ListRow, Meter, Section } from '@/ui';
 import { describeNutritionError, formatWater } from '../domain/format';
 import { WaterSheet } from './WaterSheets';
 import styles from './Nutrition.module.css';
@@ -53,7 +53,9 @@ export function WaterSection({
     <Section title={t('nutrition.water.title')}>
       <div className={styles.waterCard}>
         <div className={styles.waterHead}>
-          <Icon name="drop" size={22} className={styles.waterIcon} />
+          <span className={styles.waterIcon}>
+            <Icon name={ICON_FOR.water} size={20} />
+          </span>
           <span className={styles.waterTotal}>{total}</span>
           {goalMl !== null ? (
             <span className={styles.waterGoal}>

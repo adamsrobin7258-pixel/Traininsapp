@@ -2,7 +2,7 @@ import { useId, useState } from 'react';
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import type { Recipe } from '@/core/nutrition';
-import { EmptyState, List, ListRow, Screen, Section } from '@/ui';
+import { EmptyState, ICON_FOR, List, ListRow, Screen, Section } from '@/ui';
 import { RecipeFormSheet } from '../components/RecipeFormSheet';
 import { matchesRecipe, useRecipes } from '../components/useRecipes';
 import { recipeSubtitle } from '../domain/recipes';
@@ -81,7 +81,7 @@ export function RecipesScreen() {
         </List>
         {recipes.status === 'ready' && list.length === 0 ? (
           <EmptyState
-            icon="flame"
+            icon={ICON_FOR.recipe}
             title={t('nutrition.recipes.empty')}
             body={t('nutrition.recipes.emptyBody')}
           />

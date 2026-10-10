@@ -4,7 +4,7 @@ import { summarizeStepGoal, useHealthSync, useImportedHealthData } from '@/core/
 import { useI18n } from '@/core/i18n';
 import { targetOn, useTargetData } from '@/core/targets';
 import { addDays, toLocalDateKey } from '@/shared/lib/date';
-import { EmptyValue, List, ListRow, Meter, Section } from '@/ui';
+import { EmptyValue, Icon, ICON_FOR, List, ListRow, Meter, Section } from '@/ui';
 import styles from './ImportedHealthOverview.module.css';
 
 /**
@@ -82,7 +82,10 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
     >
       {/* Steps and step goal as one statement: "7.842 / 10.000 Schritte". */}
       <div className={styles.steps} role="group" aria-label={stepsLabel}>
-        <span className={styles.stepsTitle}>{t('healthConnect.stepsToday')}</span>
+        <span className={styles.stepsTitle}>
+          <Icon name={ICON_FOR.steps} size={18} className={styles.stepsIcon} />
+          {t('healthConnect.stepsToday')}
+        </span>
         <span className={styles.stepsFigure} aria-hidden="true">
           <span className={styles.stepsValue}>
             {todaySteps !== null ? number.format(todaySteps) : '–'}
@@ -110,7 +113,7 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
       </div>
       <List label={t('healthConnect.activityTitle')}>
         <ListRow
-          icon="flame"
+          icon={ICON_FOR.energy}
           title={t('healthConnect.activeEnergyToday')}
           value={
             todayActivity?.activeKcal != null
@@ -121,7 +124,7 @@ export function ImportedHealthOverview({ today }: { today: Date }) {
           }
         />
         <ListRow
-          icon="plan"
+          icon={ICON_FOR.steps}
           title={t('healthConnect.stepsAverage')}
           value={average !== null ? number.format(average) : none}
         />

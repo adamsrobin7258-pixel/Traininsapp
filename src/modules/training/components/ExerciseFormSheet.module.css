@@ -14,7 +14,7 @@
 .field {
   min-height: calc(var(--size-tap-target) + var(--space-1));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   color: var(--color-text);
@@ -24,6 +24,7 @@
 .field:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 .field[aria-invalid='true'] {

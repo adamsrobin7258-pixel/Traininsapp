@@ -237,24 +237,33 @@ den Tokens. Keine Icon-Bibliothek, keine Emojis, keine 3D-Icons.
 
 Zuordnung nach Bedeutung (`src/ui/icons/roles.ts`, `ICON_FOR`) – ein Thema, ein Symbol:
 
-| Thema       | Icon                     | Thema         | Icon                           |
-| ----------- | ------------------------ | ------------- | ------------------------------ |
-| Training    | `training`               | Ziele         | `target`                       |
-| Ernährung   | `nutrition`              | Einstellungen | `settings`                     |
-| Gesundheit  | `health`                 | Profil        | `profile`                      |
-| Gewicht     | `scale`                  | Pause/Timer   | `timer`                        |
-| Wasser      | `drop`                   | Plan          | `plan`                         |
-| Schlaf      | `sleep` (neu)            | Information   | `info` (neu)                   |
-| Schritte    | `steps` (neu)            | Warnung       | `warning` (neu)                |
-| Fortschritt | `progress`               | Weiter/Zurück | `chevronRight` / `chevronLeft` |
-| Aktivitäten | `activity` (neu, 0.32.0) |               |                                |
+| Thema                | Icon                     | Thema          | Icon                           |
+| -------------------- | ------------------------ | -------------- | ------------------------------ |
+| Training             | `training`               | Ziele          | `target`                       |
+| Ernährung            | `nutrition`              | Einstellungen  | `settings`                     |
+| Gesundheit           | `health`                 | Profil         | `profile`                      |
+| Gewicht              | `scale`                  | Pause/Timer    | `timer`                        |
+| Wasser               | `drop`                   | Plan           | `plan`                         |
+| Schlaf               | `sleep` (neu)            | Information    | `info` (neu)                   |
+| Schritte             | `steps` (neu)            | Warnung        | `warning` (neu)                |
+| Fortschritt          | `progress`               | Weiter/Zurück  | `chevronRight` / `chevronLeft` |
+| Aktivitäten          | `activity` (neu, 0.32.0) | Energie (kcal) | `flame`                        |
+| Rezepte              | `recipe` (neu, 0.33.0)   | Distanz        | `distance` (neu, 0.33.0)       |
+| Lebensmittel         | `apple`                  | Vorlagen       | `plate`                        |
+| Mahlzeiten des Tages | `nutrition`              | Meine Inhalte  | `plan`                         |
 
 Mahlzeiten: `cup` / `plate` / `moon` / `apple` (Frühstück, Mittag, Abend, Snacks); `moon` bleibt
 dem Abendessen vorbehalten, Schlaf hat ein eigenes Symbol. **Nicht selbsterklärend** und deshalb
 nie ohne sichtbare Beschriftung: Gesundheit, Fortschritt, Ziele, Plan, Schritte, Aktivitäten,
 Schlaf, Barcode, „Mehr“ (`ICON_NEEDS_LABEL`). Phase B stellt das System bereit; die Bildschirme
-übernehmen die Zuordnung in Phase C (Fortschritt seit 0.32.0). `flame` steht derzeit noch für
-Kalorien, aktive Energie und Rezepte – die Aufteilung folgt mit den jeweiligen Modulen.
+übernehmen die Zuordnung über `ICON_FOR` (alle Bereiche seit 0.33.0).
+
+Seit 0.33.0 steht `flame` nur noch für **Energie in kcal** – gegessen (Ernährung) oder verbraucht
+(aktive Energie): eine Bedeutung, ein Symbol. Rezepte haben ein eigenes Symbol (`recipe`, Topf),
+Aktivitäten `activity`, Schritte `steps`, Distanz `distance`; ein Test stellt sicher, dass `flame`
+in den Modulen nicht mehr anders verwendet wird. Die Mahlzeit-Symbole (`cup`, `plate`, `moon`,
+`apple`) erscheinen nur im Zusammenhang einer Mahlzeit; `plate` (Mittag) und `apple` (Snack)
+teilen sich das Symbol mit Vorlagen bzw. Lebensmitteln unter „Meine Inhalte“.
 
 ### Lebensmittel-Illustrationen
 
@@ -315,6 +324,24 @@ Phase C umgestellt werden:
   Referenzlinien sind gestrichelt und unter dem Diagramm benannt („Ø Ziel“). Tage ohne Daten
   bleiben leer, Tage mit 0 zeigen einen kurzen Strich.
 - **Keine Versalien.** Karten- und Abschnittstitel in Satzschreibweise, auch im Erklär-Sheet.
+
+## Muster der Bereiche (Phase C.2)
+
+Alle Bereiche nutzen dieselben Bausteine (Karte mit Kante und `--shadow-card`, eine erhöhte
+Schwerpunkt-Karte mit `--shadow-raised`, Icon-Kacheln, Felder mit Rahmen, keine Versalien), aber
+jeder Bereich setzt seinen Akzent anders:
+
+| Bereich       | Schwerpunkt                                                                                                                   | Eigenes Merkmal                                                                                                                              |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Fortschritt   | Score-Ring                                                                                                                    | Bereichskarten mit Kachel, kompakte leere Bereiche                                                                                           |
+| Training      | „Nächstes Training“ bzw. das laufende Training auf der Salbei-Fläche (`--color-surface-accent`), Icon-Kachel in vollem Salbei | Im aktiven Training ist „Satz abschließen“ die einzige Hauptaktion; „Training beenden“ sekundär und kompakt; Pausenleiste schwebt erhöht     |
+| Ernährung     | Tageskarte: gegessene Kalorien groß, Ziel/Übrig, Makros                                                                       | Mahlzeiten-Kacheln in den natürlichen Lebensmitteltönen (`--tint-*`): Frühstück Sonne, Mittag Blatt, Abend Meer, Snacks Rose; Wasser in Blau |
+| Gesundheit    | Messwert mit Kachel (Salbei mit Wert, neutral ohne Wert)                                                                      | Kein Abschnitt ohne Inhalt („Verlauf“ erst ab dem ersten Eintrag); fehlende Werte in Worten                                                  |
+| Einstellungen | Profilkarte                                                                                                                   | Ruhige gruppierte Listen, keine Farbflächen                                                                                                  |
+
+Neue Tokens dafür: `--color-surface-accent` (+ `-border`) für die eine führende Karte eines
+Bereichs (nur Training nutzt sie bisher), `--color-switch-knob` und `--shadow-knob` für die
+Schalter (vorher Rohwerte in vier Dateien).
 
 ## Bilder und Illustrationen
 

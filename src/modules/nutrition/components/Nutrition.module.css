@@ -18,7 +18,7 @@
   min-width: 0;
   min-height: calc(var(--size-tap-target) + var(--space-1));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   color: var(--color-text);
@@ -28,6 +28,7 @@
 .field:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 .field[aria-invalid='true'] {
@@ -113,10 +114,11 @@
   place-items: center;
   width: var(--size-tap-target);
   height: var(--size-tap-target);
-  border: 0;
+  border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-full);
   color: var(--color-accent-text);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   cursor: pointer;
 }
 
@@ -148,7 +150,7 @@
 }
 
 .dayLabel:focus-within {
-  outline: 2px solid var(--color-focus);
+  outline: var(--focus-ring-width) solid var(--color-focus);
 }
 
 /* The native date picker sits invisibly over the label, so tapping the date opens it. */
@@ -177,14 +179,25 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-4) var(--space-5) var(--space-5);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
+/*
+ * The day's figure: one raised card – the eaten calories large, goal and remaining quietly, then
+ * the macros. Nutrition's own colour comes from the meal tiles below, not from this card.
+ */
 .overview {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .hero {
@@ -197,10 +210,8 @@
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
@@ -247,7 +258,9 @@
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
   line-height: var(--line-height-tight);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .figureLabel {
@@ -287,7 +300,7 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-control);
   background: var(--color-accent-subtle);
 }
 
@@ -306,8 +319,10 @@
 .meals {
   margin-bottom: var(--space-3);
   padding: var(--space-1);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .mealRows {
@@ -343,9 +358,36 @@
   background: var(--color-surface-pressed);
 }
 
+/* Meal tiles: the natural food tints (see FoodArt), so the four meals read at a glance. */
 .mealIcon {
+  display: grid;
   flex: none;
-  color: var(--color-accent-text);
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
+  color: var(--tint-sage-ink);
+  background: var(--tint-sage-bg);
+}
+
+.mealIcon[data-meal='breakfast'] {
+  color: var(--tint-sun-ink);
+  background: var(--tint-sun-bg);
+}
+
+.mealIcon[data-meal='lunch'] {
+  color: var(--tint-leaf-ink);
+  background: var(--tint-leaf-bg);
+}
+
+.mealIcon[data-meal='dinner'] {
+  color: var(--tint-sea-ink);
+  background: var(--tint-sea-bg);
+}
+
+.mealIcon[data-meal='snacks'] {
+  color: var(--tint-rose-ink);
+  background: var(--tint-rose-bg);
 }
 
 .mealName {
@@ -353,7 +395,9 @@
   min-width: 0;
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .mealKcal {
@@ -431,7 +475,9 @@
 .mealEntryName {
   font-size: var(--font-size-body);
   line-height: var(--line-height-snug);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .mealEntryDetail {
@@ -473,8 +519,10 @@
   gap: var(--space-4);
   margin-bottom: var(--space-3);
   padding: var(--space-4) var(--space-5) var(--space-5);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .waterHead {
@@ -490,8 +538,14 @@
 }
 
 .waterIcon {
+  display: grid;
   flex: none;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: var(--radius-sm);
   color: var(--color-water);
+  background: var(--color-water-subtle);
 }
 
 /* The day's water first: the amount large, the goal quietly next to it. */
@@ -610,7 +664,7 @@
   flex-shrink: 0;
   min-height: calc(var(--size-tap-target) + var(--space-2));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   background: var(--color-surface);
@@ -619,6 +673,7 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 /* The search is the first step: a full-width field with the scanner at its end. */
@@ -690,7 +745,8 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
 }
 
@@ -698,7 +754,9 @@
   font-size: var(--font-size-subhead);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .previewLabel {
@@ -709,7 +767,9 @@
 .foodName {
   font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .itemRow {
@@ -729,7 +789,9 @@
 
 .itemName {
   font-size: var(--font-size-subhead);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .checkbox {
@@ -760,7 +822,7 @@
   gap: 2px;
   width: 100%;
   padding: var(--space-3) var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   text-align: left;
   color: var(--color-text);
@@ -789,7 +851,8 @@
   justify-content: space-between;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
 }
 
@@ -812,8 +875,8 @@
   width: 1.5rem;
   height: 1.5rem;
   border-radius: 50%;
-  background: var(--color-bg);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+  background: var(--color-switch-knob);
+  box-shadow: var(--shadow-knob);
   transition: transform var(--duration-fast) var(--ease-standard);
 }
 
@@ -851,7 +914,8 @@
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
 }
 
@@ -884,8 +948,6 @@
   padding: 0 var(--space-1);
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
@@ -989,6 +1051,6 @@
 }
 
 .addRow:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }

@@ -1,7 +1,7 @@
 import { formatWeight, formatWeightChange, useWeightData } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
-import { Button } from '@/ui';
+import { Button, Icon, ICON_FOR } from '@/ui';
 import { mediumDate, shortDate } from '../domain/dates';
 import styles from './WeightOverview.module.css';
 
@@ -20,23 +20,34 @@ export function WeightOverview({ onAdd }: { onAdd: () => void }) {
           {t('weight.errors.loadFailed')}
         </p>
       ) : latest ? (
-        <div>
-          <p className={styles.value}>{formatWeight(latest.kg, unit, locale)}</p>
-          <p className={styles.meta}>
-            {t('weight.latestOn', { date: mediumDate(latest.date, locale) })}
-            {previous ? (
-              <>
-                {' · '}
-                {t('weight.changeSince', {
-                  change: formatWeightChange(latest.kg - previous.kg, unit, locale),
-                  date: shortDate(previous.date, locale),
-                })}
-              </>
-            ) : null}
-          </p>
+        <div className={styles.current}>
+          <span className={styles.icon}>
+            <Icon name={ICON_FOR.weight} size={20} />
+          </span>
+          <div>
+            <p className={styles.value}>{formatWeight(latest.kg, unit, locale)}</p>
+            <p className={styles.meta}>
+              {t('weight.latestOn', { date: mediumDate(latest.date, locale) })}
+              {previous ? (
+                <>
+                  {' · '}
+                  {t('weight.changeSince', {
+                    change: formatWeightChange(latest.kg - previous.kg, unit, locale),
+                    date: shortDate(previous.date, locale),
+                  })}
+                </>
+              ) : null}
+            </p>
+          </div>
         </div>
       ) : recent.status === 'ready' ? (
-        <p className={styles.meta}>{t('weight.empty')}</p>
+        // No value yet: said in words, with a quiet (neutral) tile – never a 0.
+        <div className={styles.current} data-empty="true">
+          <span className={styles.icon}>
+            <Icon name={ICON_FOR.weight} size={20} />
+          </span>
+          <p className={styles.meta}>{t('weight.empty')}</p>
+        </div>
       ) : null}
       <Button fullWidth onClick={onAdd}>
         {t('weight.add')}

@@ -1,19 +1,19 @@
 import { useI18n } from '@/core/i18n';
 import { sumNutrients, type DefaultMealKey, type FoodEntry } from '@/core/nutrition';
-import { Button, Icon, Sheet, type IconName } from '@/ui';
+import { Button, Icon, ICON_FOR, Sheet, type IconName } from '@/ui';
 import type { MealGroup } from '../domain/day';
 import { formatGrams, formatKcal, formatQuantity, mealName } from '../domain/format';
 import styles from './Nutrition.module.css';
 
 const MEAL_ICONS: Record<DefaultMealKey, IconName> = {
-  breakfast: 'cup',
-  lunch: 'plate',
-  dinner: 'moon',
-  snacks: 'apple',
+  breakfast: ICON_FOR.breakfast,
+  lunch: ICON_FOR.lunch,
+  dinner: ICON_FOR.dinner,
+  snacks: ICON_FOR.snack,
 };
 
 const mealIcon = (group: MealGroup): IconName =>
-  group.defaultKey ? MEAL_ICONS[group.defaultKey] : 'nutrition';
+  group.defaultKey ? MEAL_ICONS[group.defaultKey] : ICON_FOR.mealsOfDay;
 
 /**
  * The meals of the day as one calm overview: name and kcal per meal, one quick "+" each. The
@@ -51,7 +51,10 @@ export function MealList({
                   else onOpen(group);
                 }}
               >
-                <Icon name={mealIcon(group)} size={20} className={styles.mealIcon} />
+                {/* A soft tile per meal time (natural tints), the same symbol as everywhere. */}
+                <span className={styles.mealIcon} data-meal={group.defaultKey ?? 'custom'}>
+                  <Icon name={mealIcon(group)} size={20} />
+                </span>
                 <span className={styles.mealName}>{name}</span>
                 <span className={styles.mealKcal}>{kcal}</span>
               </button>

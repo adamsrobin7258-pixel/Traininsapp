@@ -37,6 +37,27 @@ describe('icon system', () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
+  it('separates energy, recipes, activities, steps and distance (Phase C.2)', () => {
+    const roles = ['energy', 'recipe', 'activity', 'steps', 'distance'] as const;
+    const names = roles.map((role) => ICON_FOR[role]);
+    expect(new Set(names).size).toBe(names.length);
+    expect(ICON_FOR.energy).toBe('flame');
+  });
+
+  it('is used by role in the modules – "flame" only means energy', () => {
+    const files = import.meta.glob<string>('/src/modules/**/*.tsx', {
+      query: '?raw',
+      import: 'default',
+      eager: true,
+    });
+    expect(Object.keys(files).length).toBeGreaterThan(50);
+    const offenders = Object.entries(files)
+      .filter(([path]) => !path.endsWith('.test.tsx'))
+      .filter(([, source]) => /(icon|name)="flame"|'flame'/.test(source))
+      .map(([path]) => path);
+    expect(offenders).toEqual([]);
+  });
+
   it('only lists mapped roles as needing a label', () => {
     for (const role of ICON_NEEDS_LABEL) expect(ICON_FOR).toHaveProperty(role);
   });

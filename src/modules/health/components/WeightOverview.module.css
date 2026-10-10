@@ -3,8 +3,37 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.current {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.current[data-empty='true'] {
+  align-items: center;
+}
+
+/* The measurement's tile: sage with a value, neutral without one. */
+.icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--radius-control);
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+.current[data-empty='true'] .icon {
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
 }
 
 .value {
@@ -17,6 +46,7 @@
 
 .meta {
   margin-top: var(--space-1);
+  line-height: var(--line-height-snug);
   font-size: var(--font-size-subhead);
   color: var(--color-text-secondary);
 }

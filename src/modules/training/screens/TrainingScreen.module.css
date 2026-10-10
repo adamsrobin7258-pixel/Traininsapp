@@ -4,22 +4,52 @@
   gap: var(--space-3);
 }
 
+/*
+ * The leading card of the training area: the next (or running) workout on the sage feature
+ * surface – the one place where Training gets colour, so starting is the obvious next step.
+ */
 .next {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  border: var(--border-hairline) solid var(--color-surface-accent-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-accent);
+  box-shadow: var(--shadow-raised);
 }
 
 .next > button {
-  margin-top: var(--space-2);
+  margin-top: var(--space-3);
 }
 
 .nextLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
+}
+
+.nextIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--radius-sm);
+  color: var(--color-on-accent);
+  background: var(--color-accent);
+}
+
+/* Running workout: a small steady dot (no pulsing). */
+.live {
+  flex: none;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
 }
 
 .nextTitle {

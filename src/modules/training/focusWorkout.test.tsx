@@ -139,6 +139,17 @@ describe('focus view of a workout in progress', () => {
     expect(textFieldFocused()).toBe(false);
   });
 
+  it('keeps "Satz abschließen" the one primary action; finishing stays reachable (Phase C.2)', async () => {
+    await startedPush();
+    const complete = exercise('Langhantel-Bankdrücken').getByRole('button', {
+      name: 'Satz 1 abschließen',
+    });
+    expect(complete).toHaveAttribute('data-variant', 'primary');
+    const finish = screen.getByRole('button', { name: 'Training beenden' });
+    expect(finish).toHaveAttribute('data-variant', 'secondary');
+    expect(finish).toBeEnabled();
+  });
+
   it('+/− and typing change the same value; completing stores the last entry', async () => {
     const { db } = await startedPush();
     const bench = exercise('Langhantel-Bankdrücken');

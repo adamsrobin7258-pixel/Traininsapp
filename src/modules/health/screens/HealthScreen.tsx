@@ -57,9 +57,8 @@ export function HealthScreen() {
         <WeightChart />
       </Section>
 
-      <Section title={t('weight.history')}>
-        <WeightHistory onEdit={setEditing} />
-      </Section>
+      {/* Its own section only once there are entries – no heading over nothing. */}
+      <WeightHistory onEdit={setEditing} />
 
       <Section title={t('health.recoveryTitle')}>
         <RecoveryCheckIn />

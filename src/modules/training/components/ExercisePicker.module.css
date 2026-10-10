@@ -2,7 +2,7 @@
   flex-shrink: 0;
   min-height: calc(var(--size-tap-target) + var(--space-2));
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
+  border: var(--border-control) solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-body);
   background: var(--color-surface);
@@ -11,6 +11,7 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
 }
 
 /* Brand-coloured clear button instead of the system default. */
@@ -110,8 +111,6 @@
   padding: 0 var(--space-1);
   font-size: var(--font-size-footnote);
   font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
   color: var(--color-text-secondary);
 }
 
@@ -167,7 +166,9 @@
   margin: 0;
   font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
 }
 
 .favorite {
@@ -198,7 +199,8 @@
   gap: var(--space-1);
   margin: var(--space-4) 0 0;
   padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-md);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   background: var(--color-surface);
   font-size: var(--font-size-subhead);
 }

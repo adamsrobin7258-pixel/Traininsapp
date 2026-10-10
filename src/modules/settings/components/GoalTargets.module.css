@@ -9,8 +9,10 @@
   margin: 0;
   padding: 0;
   list-style: none;
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
   overflow: hidden;
 }
 
@@ -43,7 +45,7 @@
 }
 
 .option:focus-visible {
-  outline: 2px solid var(--color-focus);
+  outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: -2px;
 }
 

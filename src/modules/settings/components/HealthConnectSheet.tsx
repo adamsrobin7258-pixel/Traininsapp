@@ -2,16 +2,16 @@ import { useState } from 'react';
 import { useHealthSync, type ConnectOutcome, type HealthStatusView } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { HEALTH_DATA_KINDS } from '@/core/platform/health';
-import { Button, Icon, List, ListRow, Sheet, type IconName } from '@/ui';
+import { Button, Icon, ICON_FOR, type IconName, List, ListRow, Sheet } from '@/ui';
 import { healthStatusKey } from '../domain/healthStatus';
 import styles from './HealthData.module.css';
 
 const KIND_ICONS = {
-  weight: 'scale',
-  steps: 'health',
-  activeEnergy: 'flame',
-  exercise: 'training',
-  distance: 'plan',
+  weight: ICON_FOR.weight,
+  steps: ICON_FOR.steps,
+  activeEnergy: ICON_FOR.energy,
+  exercise: ICON_FOR.activity,
+  distance: ICON_FOR.distance,
 } as const satisfies Record<(typeof HEALTH_DATA_KINDS)[number], IconName>;
 
 /**

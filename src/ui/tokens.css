@@ -93,6 +93,9 @@
   --color-surface-muted: #e9e4d8;
   --color-surface-pressed: #ece7dc;
   --color-surface-hover: rgb(28 33 29 / 0.04);
+  /* Feature surface: the one card of a screen that leads (next workout, today's figure). */
+  --color-surface-accent: #f1f2ec;
+  --color-surface-accent-border: rgb(85 122 91 / 0.22);
   --color-control-selected: #fffdf9;
   --color-text: #1c211d;
   --color-text-secondary: #4b534c;
@@ -128,6 +131,9 @@
   --shadow-card: 0 1px 2px rgb(52 44 28 / 0.05), 0 2px 8px rgb(52 44 28 / 0.04);
   --shadow-raised: 0 1px 2px rgb(52 44 28 / 0.08), 0 4px 14px rgb(52 44 28 / 0.08);
   --shadow-sheet: 0 -4px 24px rgb(52 44 28 / 0.1);
+  /* Switch knob: always light, with a small lift (both themes). */
+  --color-switch-knob: #ffffff;
+  --shadow-knob: 0 1px 2px rgb(0 0 0 / 0.25);
 
   /* Food illustration tints: a soft background and a line color per family. */
   --tint-rose-bg: #f6e4df;
@@ -164,6 +170,8 @@
   --color-surface-muted: #323d35;
   --color-surface-pressed: #2b352d;
   --color-surface-hover: rgb(237 240 234 / 0.05);
+  --color-surface-accent: #2c3a2f;
+  --color-surface-accent-border: rgb(147 181 151 / 0.28);
   --color-control-selected: #46524a;
   --color-text: #edf0ea;
   --color-text-secondary: #b3bab0;
@@ -195,6 +203,7 @@
   --shadow-card: none;
   --shadow-raised: 0 2px 10px rgb(0 0 0 / 0.3);
   --shadow-sheet: 0 -6px 28px rgb(0 0 0 / 0.4);
+  --color-switch-knob: #e4e8e1;
 
   --tint-rose-bg: rgb(224 128 110 / 0.16);
   --tint-rose-ink: #e9a597;

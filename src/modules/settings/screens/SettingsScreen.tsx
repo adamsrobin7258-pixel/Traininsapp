@@ -1,7 +1,7 @@
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useProfile } from '@/core/user';
-import { List, ListRow, Screen, Section } from '@/ui';
+import { ICON_FOR, List, ListRow, Screen, Section } from '@/ui';
 import { ProfileHeader } from '../components/ProfileHeader';
 
 /**
@@ -17,25 +17,25 @@ export function SettingsScreen() {
       <Section>
         <List label={t('settings.title')}>
           <ListRow
-            icon="profile"
+            icon={ICON_FOR.profile}
             title={t('settings.profile.title')}
             subtitle={t('settings.profile.summary')}
             to={SETTINGS_LINKS.profile}
           />
           <ListRow
-            icon="target"
+            icon={ICON_FOR.goals}
             title={t('settings.goals.title')}
             subtitle={t('settings.goals.summary')}
             to={SETTINGS_LINKS.goals}
           />
           <ListRow
-            icon="plan"
+            icon={ICON_FOR.content}
             title={t('settings.content.title')}
             subtitle={t('settings.content.summary')}
             to={SETTINGS_LINKS.content}
           />
           <ListRow
-            icon="settings"
+            icon={ICON_FOR.settings}
             title={t('settings.app.title')}
             subtitle={t('settings.app.summary')}
             to={SETTINGS_LINKS.app}

@@ -7,7 +7,7 @@ import {
   type Recipe,
   type SavedMeal,
 } from '@/core/nutrition';
-import { EmptyState, List, ListRow, SegmentedControl, Sheet } from '@/ui';
+import { EmptyState, ICON_FOR, List, ListRow, SegmentedControl, Sheet } from '@/ui';
 import { mealName } from '../domain/format';
 import { recipeSubtitle } from '../domain/recipes';
 import { ApplyTemplateSheet } from './ApplyTemplateSheet';
@@ -202,7 +202,7 @@ export function AddSheet({
             </List>
             {recipes.status === 'ready' && recipeList.length === 0 ? (
               <EmptyState
-                icon="flame"
+                icon={ICON_FOR.recipe}
                 title={t('nutrition.recipes.empty')}
                 body={t('nutrition.recipes.emptyBodyAdd')}
               />

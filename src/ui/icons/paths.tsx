@@ -126,6 +126,21 @@ export const ICON_PATHS = {
   ),
   /** Activities (movement, active minutes): a calm pulse line. */
   activity: <path d="M3.75 12.75h3.5l2.25-5.5 4.25 10 2.5-6h4" />,
+  /** Recipes: a cooking pot with its lid. */
+  recipe: (
+    <>
+      <path d="M5.25 11.25h13.5v4.5a3.5 3.5 0 0 1-3.5 3.5h-6.5a3.5 3.5 0 0 1-3.5-3.5Z" />
+      <path d="M5.25 13.25h-1.5M18.75 13.25h1.5M6.25 8.75a5.75 2.5 0 0 1 11.5 0ZM12 4.75v1.5" />
+    </>
+  ),
+  /** Distance: a route between two points. */
+  distance: (
+    <>
+      <circle cx="6" cy="18" r="1.75" />
+      <circle cx="18" cy="6" r="1.75" />
+      <path d="M7.75 18h6.5a2.75 2.75 0 0 0 0-5.5h-4.5a2.75 2.75 0 0 1 0-5.5h6.5" />
+    </>
+  ),
   /** Information: an "i" in a circle. */
   info: (
     <>

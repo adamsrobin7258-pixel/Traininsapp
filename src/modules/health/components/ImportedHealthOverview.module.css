@@ -5,13 +5,23 @@
   gap: var(--space-2);
   margin-bottom: var(--space-3);
   padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .stepsTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
   font-size: var(--font-size-subhead);
   color: var(--color-text-secondary);
+}
+
+.stepsIcon {
+  flex: none;
+  color: var(--color-accent-text);
 }
 
 .stepsFigure {
