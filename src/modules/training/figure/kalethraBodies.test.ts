@@ -536,6 +536,108 @@ describe('Kalethra body "male" – back and shoulders in motion', () => {
   );
 });
 
+/**
+ * Skin faces folded against their own corners in the current pose, where the head meets the
+ * neck at the back (band from the rest positions: neck joint up to just above the head joint,
+ * behind the neck), and kinks sharper than 60° there – the saw-tooth edge of 0.30.0.
+ */
+function posedHeadNeck(root: Object3D): { folded: number; sharp: number } {
+  root.updateMatrixWorld(true);
+  const ids = new Map<string, number>();
+  const rest: Vector3[] = [];
+  const posed: Vector3[] = [];
+  const triangles: number[][] = [];
+  let neck: Vector3 | null = null;
+  let head: Vector3 | null = null;
+  for (const mesh of skinnedMeshes(root)) {
+    if ((mesh.material as MeshStandardMaterial).name !== 'skin') continue;
+    mesh.skeleton.update();
+    mesh.skeleton.bones.forEach((bone, k) => {
+      const inverse = mesh.skeleton.boneInverses[k];
+      if (!inverse) return;
+      const at = new Vector3().setFromMatrixPosition(inverse).negate();
+      if (bone.name === 'neck') neck = at;
+      if (bone.name === 'head') head = at;
+    });
+    const position = mesh.geometry.getAttribute('position');
+    const local: number[] = [];
+    for (let i = 0; i < position.count; i++) {
+      const p = new Vector3().fromBufferAttribute(position, i);
+      const key = p
+        .toArray()
+        .map((x) => Math.round(x * 1e4))
+        .join(',');
+      let id = ids.get(key);
+      if (id === undefined) {
+        id = rest.length;
+        ids.set(key, id);
+        rest.push(p);
+        posed.push(mesh.getVertexPosition(i, new Vector3()).applyMatrix4(mesh.matrixWorld));
+      }
+      local.push(id);
+    }
+    const index = mesh.geometry.getIndex();
+    if (!index) continue;
+    for (let t = 0; t < index.count; t += 3)
+      triangles.push([0, 1, 2].map((k) => local[index.getX(t + k)] ?? 0));
+  }
+  const n = neck as Vector3 | null;
+  const h = head as Vector3 | null;
+  if (!n || !h) throw new Error('neck and head bones expected');
+  const inside = (v: number) => {
+    const p = rest[v] as Vector3;
+    return p.y > n.y && p.y < h.y + 0.02 && p.z < n.z + 0.02;
+  };
+  const faceNormal = ([a = 0, b = 0, c = 0]: number[]) =>
+    new Vector3()
+      .crossVectors(
+        (posed[b] as Vector3).clone().sub(posed[a] as Vector3),
+        (posed[c] as Vector3).clone().sub(posed[a] as Vector3),
+      )
+      .normalize();
+  const normals = rest.map(() => new Vector3());
+  for (const t of triangles) for (const v of t) normals[v]?.add(faceNormal(t));
+  for (const normal of normals) normal.normalize();
+  let folded = 0;
+  const edges = new Map<string, Vector3[]>();
+  for (const t of triangles) {
+    if (!t.every(inside)) continue;
+    const f = faceNormal(t);
+    const mean = t.reduce((sum, v) => sum + f.dot(normals[v] as Vector3), 0) / 3;
+    if (mean < 0.2) folded++;
+    for (let k = 0; k < 3; k++) {
+      const a = t[k] ?? 0;
+      const b = t[(k + 1) % 3] ?? 0;
+      const key = a < b ? `${String(a)}_${String(b)}` : `${String(b)}_${String(a)}`;
+      edges.set(key, [...(edges.get(key) ?? []), f]);
+    }
+  }
+  // Sharp kinks: neighbouring faces turned more than 60° against each other.
+  let sharp = 0;
+  for (const list of edges.values()) {
+    if (list.length === 2 && (list[0] as Vector3).dot(list[1] as Vector3) < 0.5) sharp++;
+  }
+  return { folded, sharp };
+}
+
+describe('Kalethra body "female" – head and neck in motion', () => {
+  it.each(['rest', 'verticalPull_cable', 'horizontalPush_bench'])(
+    'head and neck join without folds or a saw-tooth edge (%s)',
+    async (clip) => {
+      const body = await bodyOf('female', clip);
+      const counts: { folded: number; sharp: number }[] = [];
+      for (let step = 0; step < 5; step++) {
+        counts.push(posedHeadNeck(body.root));
+        body.advance(0.45);
+      }
+      body.dispose();
+      // Before Phase A in every pose: 15 folded faces, 51 kinks sharper than 60°.
+      expect(Math.max(...counts.map((c) => c.folded))).toBe(0);
+      expect(Math.max(...counts.map((c) => c.sharp))).toBeLessThanOrEqual(3);
+    },
+  );
+});
+
 describe('Kalethra bodies – variants and resources', () => {
   it('has two own anatomical models, not one scaled body', async () => {
     const male = await gltfOf('male');

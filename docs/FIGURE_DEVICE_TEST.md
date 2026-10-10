@@ -8,6 +8,21 @@ wurde in Unit-Tests (jsdom, u. a. Griffkontakt und Rückendeformation an den gez
 Vertices), E2E (Chromium) und mit QA-Renderings (headless Chromium, Software-WebGL/SwiftShader);
 Vorher/Nachher-Bögen: [`figure-qa/phase-18.5/`](figure-qa/phase-18.5/).
 
+## Kurz-Checkliste 0.30.1 (Phase 19.1) – Rücken, Nacken, Achsel
+
+Nur Software-WebGL geprüft ([`figure-qa/phase-19.1/`](figure-qa/phase-19.1/)); bitte auf dem Gerät,
+große Ansicht, angehalten **und** laufend, per Wischen von hinten, schräg hinten und seitlich:
+
+| #   | Prüfung                                                                 | Erwartet                                                                                     |
+| --- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| P1  | **männlich, Nacken/Trapez hinten** – Ruhepose (Kniebeuge-Details)       | ruhige Fläche von Hinterkopf bis Schultern, keine Knitter oder Streifen                      |
+| P2  | **männlich, hintere Schulter/Achsel** – Ruhepose und Latzug             | keine Delle und keine zerfurchte Stelle am hinteren Deltamuskel; Muskelform bleibt erkennbar |
+| P3  | **weiblich, Hinterkopf–Hals** – Ruhepose, Latzug, Bankdrücken           | glatter Übergang, keine Zacken unter dem Hinterkopf                                          |
+| P4  | **weiblich, Achsel hinten/seitlich**                                    | keine kleinen hellen oder dunklen Spitzen am Armausschnitt                                   |
+| P5  | **Halsausschnitt des Tops** (beide, hinten)                             | weitgehend ruhige Kante; männlich unten zwei kleine Stufen (bekannt)                         |
+| P6  | **Vorderseite und Highlights** (Bankdrücken: Brust; Latzug: Latissimus) | unverändert gegenüber 0.30.0, Hervorhebung weich, Griff an der Stange                        |
+| P7  | **Dunkles Systemdesign**, Profil männlich und weiblich                  | Rücken gut lesbar, keine Übergangskante, wo das Relief gedämpft ist                          |
+
 ## Kurz-Checkliste 0.29.1 (Phase 18.5)
 
 Zuerst diese vier Bereiche, jeweils in der großen Ansicht mit angehaltener **und** laufender

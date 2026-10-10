@@ -10,10 +10,10 @@
   },
   "heightMetres": 1.748,
   "triangles": 52090,
-  "bytes": 3513372,
+  "bytes": 3471040,
   "normalMap": {
     "size": 2048,
-    "bytes": 947901
+    "bytes": 905389
   },
   "bodyMeshes": [
     "muscle_adductors",

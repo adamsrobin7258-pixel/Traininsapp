@@ -6,7 +6,8 @@
  * Writes public/figure/<variant>/kalethra-<variant>.glb for male and female. The pipeline:
  * shape (MakeHuman targets) → rest pose (contract rig, LBS) → relaxed hands, featureless head →
  * one subdivision step on trunk and limbs → muscle segmentation and clothing layers →
- * sculpting (grooves, bellies, hems) → detail normal map → skin, clips, props → GLB.
+ * sculpting (grooves, bellies, hems) → detail normal map → skin, clips, props → GLB → local
+ * surface repair (lib/repair.mjs).
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -25,6 +26,7 @@ import { detailNormalField, readSculpt, sculptRegions, transferAnatomy } from '.
 import { refineHands } from './lib/handform.mjs';
 import { handModel } from './lib/grip.mjs';
 import { muscleBlend } from './lib/highlight.mjs';
+import { repairBody } from './lib/repair.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
 const DATA = process.env.MAKEHUMAN_DATA;
@@ -154,7 +156,7 @@ for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
         }
       : {},
   );
-  const { glb, triangles } = exportGlb({
+  const { glb: exported, triangles } = exportGlb({
     variant,
     meshes,
     weights: body.weights,
@@ -182,6 +184,9 @@ for (const variant of (process.env.VARIANTS ?? 'male,female').split(',')) {
       },
     },
   });
+  // Last step: local surface repair of the finished mesh (lib/repair.mjs).
+  const { glb, report } = repairBody(exported, variant);
+  console.log(`${variant}: repair ${JSON.stringify(report)}`);
   const dir = join(OUT, variant);
   mkdirSync(dir, { recursive: true });
   const file = join(dir, `kalethra-${variant}.glb`);

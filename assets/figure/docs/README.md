@@ -173,6 +173,18 @@ wird zurückgenommen – vorher entstanden dort die meisten Falten an Schulter u
 Detail-Normal-Map. Clips per IK aus den neuen Gelenken – neu erzeugt,
 nicht skaliert. Die Sculpt-Datei erzeugt `tools/figure-experiment/blender/stage6_export_sculpt.py`.
 
+**Oberflächenreparatur (seit 0.30.1, Phase 19.1, `lib/repair.mjs`):** letzter Build-Schritt auf der
+fertigen GLB, nur lokal und deterministisch – Glättung entlang der Normalen an Nacken/Trapez hinten
+und hinterer Schulter (männlich, ≤ 6 mm, Muskelform bleibt), Entfalten gefalteter Hautdreiecke
+an der Achsel (beide) und am Übergang Hinterkopf–Hals (weiblich, nicht im Gesicht), Begradigen der
+Naht am Halsausschnitt mit dem Saum, und Dämpfen des Sculpt-Reliefs der Detail-Normal-Map auf 20 %
+an Nacken und hinterer Schulter (männlich; dort war das Relief selbst zerknittert). Masken aus den
+Gelenkpositionen, Saumvertices bleiben (außer am Halsausschnitt), Normalen und Tangenten werden mit
+der Fläche gedreht; alles andere bleibt byte-gleich. Eine Datei trägt
+`asset.extras.kalethra.repair` und wird nicht zweimal repariert. `node tools/figures/repair.mjs`
+wendet den Schritt ohne Gesamtbuild auf die gebündelten Dateien an (so entstand 0.30.1).
+Messungen und Vorher/Nachher: [`docs/figure-qa/phase-19.1/`](../../../docs/figure-qa/phase-19.1/).
+
 **Prüfen ohne Gerät:** `tools/figures/qa/` rendert eine GLB mit dem App-Code und -Licht in
 headless Chromium (`npx vite --port 5179`, dann `node tools/figures/qa/shoot.mjs <ordner> <liste.json>`;
 die Liste der Phase 18.5: `tools/figures/qa/shots-phase-18.5.json`, Ergebnisse vorher/nachher:
@@ -203,10 +215,13 @@ einem 3D-Künstler fertig gestaltet. Bekannt:
   Handmodellierung (an Übergängen teils vereinfacht, z. B. Schulterblatt-Bereich).
 - Linear Blend Skinning: bei starker Beugung (Ellbogen im Bankdrücken unten, Knie) etwas
   Volumenverlust. Männlich bleibt hinter der Achsel bei Überkopf-Armen eine lokale Delle von
-  3–7 mm (0.29.0: 8–12 mm) und eine leichte Wölbung der hinteren Schulter unten im Latzug –
+  wenigen Millimetern (0.29.0: 8–12 mm; Ruhepose seit 0.30.1 ohne Faltung) und eine leichte
+  Wölbung der hinteren Schulter unten im Latzug –
   ohne Korrektur-Shapes oder Dual-Quaternion-Skinning nicht ganz zu vermeiden. Weiblich
   umschließen die Hände die Stange nur angedeutet (keine Finger-Bones).
-- Männlich: Gesicht reduziert und weich, Stoffkanten an Nacken/Armausschnitt fransen in starker
+- Männlich: Gesicht reduziert und weich; am hinteren Halsausschnitt bleiben zwei kleine Stufen
+  der Stoffgrenze (Topologie, 0.30.1 glättet nur die Lage der Naht). Weiblich franst der
+  Armausschnitt bei hoch gehobenem Arm (Latzug) aus. Stoffkanten am Armausschnitt fransen in starker
   Nahansicht leicht (an der vorderen Achsel blitzt bei hoch gehobenem Arm stellenweise der
   Saum durch). Hände: MakeHuman-Topologie, verfeinert, keine Nägel/Falten modelliert; der Griff
   ist pro Übung fest (keine Druckverformung der Fingerballen). Highlight-Übergänge auf dem

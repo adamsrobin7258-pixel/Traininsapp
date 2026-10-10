@@ -1,5 +1,5 @@
-/** RGB(A) PNG encoder on top of node:zlib (no dependencies). */
-import { deflateSync } from 'node:zlib';
+/** RGB(A) PNG encoder and decoder on top of node:zlib (no dependencies). */
+import { deflateSync, inflateSync } from 'node:zlib';
 
 const CRC = new Int32Array(256).map((_, n) => {
   let c = n;
@@ -73,4 +73,57 @@ export function encodePng(width, height, pixels, channels = 3) {
     chunk('IDAT', deflateSync(raw, { level: 9 })),
     chunk('IEND', Buffer.alloc(0)),
   ]);
+}
+
+/**
+ * Decodes an 8-bit RGB(A) PNG without interlacing (what `encodePng` writes) into
+ * `{ width, height, channels, pixels }`.
+ */
+export function decodePng(bytes) {
+  const data = Buffer.from(bytes);
+  if (data.readUInt32BE(0) !== 0x89504e47) throw new Error('not a PNG');
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let channels = 0;
+  const idat = [];
+  while (offset < data.length) {
+    const length = data.readUInt32BE(offset);
+    const type = data.toString('ascii', offset + 4, offset + 8);
+    const body = data.subarray(offset + 8, offset + 8 + length);
+    if (type === 'IHDR') {
+      width = body.readUInt32BE(0);
+      height = body.readUInt32BE(4);
+      if (body[8] !== 8 || body[12] !== 0) throw new Error('only 8-bit, non-interlaced PNGs');
+      channels = body[9] === 6 ? 4 : body[9] === 2 ? 3 : 0;
+      if (!channels) throw new Error('only RGB or RGBA PNGs');
+    } else if (type === 'IDAT') idat.push(body);
+    else if (type === 'IEND') break;
+    offset += 12 + length;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const pixels = new Uint8Array(stride * height);
+  for (let y = 0; y < height; y++) {
+    const type = raw[y * (stride + 1)];
+    const row = raw.subarray(y * (stride + 1) + 1, (y + 1) * (stride + 1));
+    for (let x = 0; x < stride; x++) {
+      const a = x >= channels ? pixels[y * stride + x - channels] : 0;
+      const b = y > 0 ? pixels[(y - 1) * stride + x] : 0;
+      const c = y > 0 && x >= channels ? pixels[(y - 1) * stride + x - channels] : 0;
+      let predicted = 0;
+      if (type === 1) predicted = a;
+      else if (type === 2) predicted = b;
+      else if (type === 3) predicted = (a + b) >> 1;
+      else if (type === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        predicted = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      pixels[y * stride + x] = (row[x] + predicted) & 0xff;
+    }
+  }
+  return { width, height, channels, pixels };
 }

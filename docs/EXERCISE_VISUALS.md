@@ -3,7 +3,7 @@
 Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
 dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 
-> **Stand (Version 0.29.1):** Zwei Kalethra-Körper (männlich, weiblich) sind gebündelt und
+> **Stand (Version 0.30.1):** Zwei Kalethra-Körper (männlich, weiblich) sind gebündelt und
 > werden in Übungsdetails, großer Ansicht und Trainings-Zusammenfassung gezeigt. Beide entstehen
 > reproduzierbar mit der Pipeline in `tools/figures/` auf MakeHuman-Daten (CC0). **Der männliche
 > Körper trägt seit 0.29.0 eine modellierte Anatomie** (Phase 18.3, aus „Proxy Human base Mesh“
@@ -11,8 +11,11 @@ dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanim
 > der GLB, siehe [`assets/figure/male/source/ATTRIBUTION.md`](../assets/figure/male/source/ATTRIBUTION.md)),
 > mit Finger-Griff und Schulterrhythmus in den Clips. **0.29.1 (Phase 18.5)** korrigiert nach dem
 > ersten Gerätetest Rücken/Schulter beim Latzug, den Hand-Stangen-Kontakt, die Finger (ein Bone
-> je Fingerglied) und macht die Muskel-Hervorhebung weich (Gewichte pro Vertex). Der weibliche ist
-> unverändert (0.28.0). Gestaltung, Herkunft und bekannte Grenzen:
+> je Fingerglied) und macht die Muskel-Hervorhebung weich (Gewichte pro Vertex). **0.30.1 (Phase
+> 19.1)** repariert beide Körper lokal als letzten Build-Schritt (`tools/figures/lib/repair.mjs`):
+> Nacken, Trapez und hintere Schulter (männlich), Übergang Hinterkopf–Hals und Achsel (weiblich),
+> Halsausschnitt (beide); Vorher/Nachher: [`figure-qa/phase-19.1/`](figure-qa/phase-19.1/).
+> Gestaltung, Herkunft und bekannte Grenzen:
 > [`assets/figure/docs/README.md`](../assets/figure/docs/README.md).
 >
 > **Die aktuelle Fallback-Figur ist ausschließlich technischer Fallback und nicht die finale
@@ -217,8 +220,8 @@ die E2E-Tests prüfen `data-figure-source="asset"`.
 - Reduced Motion: keine automatische Schleife, Drehen ohne Übergang.
 - Genau ein WebGL-Kontext je sichtbarer Figur; Schließen, Übungswechsel und Wechsel klein ↔ groß
   geben Renderer, Geometrien, Materialien und Texturen frei (Tests und E2E prüfen das).
-- Gerätetest (Xiaomi 15 Ultra): 0.29.0 vom Nutzer geprüft (Befund → Phase 18.5); 0.29.1 noch
-  offen – Checkliste: [`FIGURE_DEVICE_TEST.md`](FIGURE_DEVICE_TEST.md). 0.29.1 hat 52 statt 28
+- Gerätetest (Xiaomi 15 Ultra): 0.29.0 vom Nutzer geprüft (Befund → Phase 18.5); 0.29.1 und
+  0.30.1 (Phase 19.1) noch offen – Checkliste: [`FIGURE_DEVICE_TEST.md`](FIGURE_DEVICE_TEST.md). 0.29.1 hat 52 statt 28
   Bones (Fingerglieder); Skinning bleibt bei 4 Einflüssen je Vertex.
 
 ## Lizenz

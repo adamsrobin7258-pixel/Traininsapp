@@ -1,0 +1,138 @@
+[
+  {
+    "name": "male_rest_180",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=180&el=6&dist=1.9&y=1.150&w=420&h=520"
+  },
+  {
+    "name": "male_rest_135",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=135&el=6&dist=1.9&y=1.150&w=420&h=520"
+  },
+  {
+    "name": "male_rest_90",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=90&el=6&dist=1.9&y=1.150&w=420&h=520"
+  },
+  {
+    "name": "male_rest_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=0&el=6&dist=1.9&y=1.150&w=420&h=520"
+  },
+  {
+    "name": "male_neck_180",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=180&el=8&dist=0.7&y=1.420&w=420&h=520"
+  },
+  {
+    "name": "male_neck_150",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=150&el=8&dist=0.8&y=1.400&w=420&h=520"
+  },
+  {
+    "name": "male_neck_90",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=90&el=8&dist=0.8&y=1.400&w=420&h=520"
+  },
+  {
+    "name": "male_front_0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=rest&az=0&el=8&dist=0.7&y=1.420&w=420&h=520"
+  },
+  {
+    "name": "male_pd_180_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&az=180&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_pd_180_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&az=180&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_pd_180_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&az=180&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_pd_135_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=0&az=135&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_pd_135_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=1.1&az=135&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_pd_135_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=verticalPull_cable&t=2.2&az=135&el=5&dist=1.5&y=1.200&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_bp_t0",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=0&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_bp_t1.1",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=1.1&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  },
+  {
+    "name": "male_bp_t2.2",
+    "query": "glb=/figure/male/kalethra-male.glb&clip=horizontalPush_bench&t=2.2&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_rest_180",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=180&el=6&dist=1.9&y=1.048&w=420&h=520"
+  },
+  {
+    "name": "female_rest_135",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=135&el=6&dist=1.9&y=1.048&w=420&h=520"
+  },
+  {
+    "name": "female_rest_90",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=90&el=6&dist=1.9&y=1.048&w=420&h=520"
+  },
+  {
+    "name": "female_rest_0",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=0&el=6&dist=1.9&y=1.048&w=420&h=520"
+  },
+  {
+    "name": "female_neck_180",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=180&el=8&dist=0.7&y=1.294&w=420&h=520"
+  },
+  {
+    "name": "female_neck_150",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=150&el=8&dist=0.8&y=1.276&w=420&h=520"
+  },
+  {
+    "name": "female_neck_90",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=90&el=8&dist=0.8&y=1.276&w=420&h=520"
+  },
+  {
+    "name": "female_front_0",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=rest&az=0&el=8&dist=0.7&y=1.294&w=420&h=520"
+  },
+  {
+    "name": "female_pd_180_t0",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=0&az=180&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_pd_180_t1.1",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=1.1&az=180&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_pd_180_t2.2",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=2.2&az=180&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_pd_135_t0",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=0&az=135&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_pd_135_t1.1",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=1.1&az=135&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_pd_135_t2.2",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=verticalPull_cable&t=2.2&az=135&el=5&dist=1.5&y=1.094&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_bp_t0",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=horizontalPush_bench&t=0&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_bp_t1.1",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=horizontalPush_bench&t=1.1&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  },
+  {
+    "name": "female_bp_t2.2",
+    "query": "glb=/figure/female/kalethra-female.glb&clip=horizontalPush_bench&t=2.2&az=200&el=35&dist=1.8&y=0.6&props=0&w=420&h=520"
+  }
+]

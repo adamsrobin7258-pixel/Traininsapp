@@ -502,6 +502,21 @@ Das laufende Training ist einfacher und schneller zu bedienen. Details:
 - Keine Migration, keine neue Abhängigkeit
 - Offen: Gerätetest (Xiaomi 15 Ultra)
 
+## Phase 19.1 – 3D-Körper: Rücken, Nacken, Achsel ✅ (Version 0.30.1)
+
+Gezielte Qualitätskorrektur beider Körper, keine neue Funktion. Details und Messungen:
+[`figure-qa/phase-19.1/`](figure-qa/phase-19.1/):
+
+- Neuer letzter Build-Schritt `tools/figures/lib/repair.mjs` (deterministisch, lokal, Masken aus den
+  Gelenken), angewendet mit `node tools/figures/repair.mjs`
+- Männlich: Knitter an Nacken/Trapez und Furchen an der hinteren Schulter beseitigt (Glättung
+  entlang der Normalen, Sculpt-Relief dort gedämpft); Achsel ohne gefaltete Dreiecke
+- Weiblich: zackiger Übergang Hinterkopf–Hals und Spitzen an der hinteren Achsel beseitigt
+- Halsausschnitt des Tops geglättet (männlich bleiben zwei kleine Stufen)
+- Neue Tests (`bodySurface.test.ts`, Kopf–Hals in Bewegung); Lizenzen, Assets und Ladepfade
+  unverändert, kein neues Asset, keine Beleuchtungsänderung
+- Offen: Gerätetest; Gesamtbuild aus MakeHuman-Quellen hier nicht ausgeführt
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS
