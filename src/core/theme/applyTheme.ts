@@ -3,8 +3,8 @@ import type { ResolvedTheme } from '@/core/settings';
 
 /** Background colors per theme; must match --color-bg in src/ui/tokens.css. */
 const BROWSER_THEME_COLOR: Record<ResolvedTheme, string> = {
-  light: '#f4f3ee',
-  dark: '#0f1210',
+  light: '#f3efe6',
+  dark: '#101612',
 };
 
 /** Applies the resolved theme to the document and the native system bars. */

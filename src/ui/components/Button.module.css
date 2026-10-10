@@ -1,30 +1,44 @@
 .button {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(var(--size-tap-target) + var(--space-1));
+  gap: var(--space-2);
+  min-height: var(--size-control);
   padding: 0 var(--space-5);
-  border: 0;
-  border-radius: var(--radius-md);
+  border: var(--border-control) solid transparent;
+  border-radius: var(--radius-control);
   font-size: var(--font-size-body);
   font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-tight);
+  text-align: center;
   cursor: pointer;
   transition:
     opacity var(--duration-fast) var(--ease-standard),
-    background-color var(--duration-fast) var(--ease-standard);
-}
-
-.button:active:not(:disabled) {
-  opacity: 0.85;
+    background-color var(--duration-fast) var(--ease-standard),
+    border-color var(--duration-fast) var(--ease-standard);
 }
 
 .button:disabled {
   cursor: default;
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
 }
 
 .fullWidth {
   width: 100%;
+}
+
+/* Compact: smaller visual height, the invisible tap area keeps 44 pt. */
+.compact {
+  min-height: var(--size-control-compact);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-subhead);
+}
+
+.compact::after {
+  position: absolute;
+  inset: calc((var(--size-control-compact) - var(--size-tap-target)) / 2) 0;
+  content: '';
 }
 
 .primary {
@@ -32,12 +46,45 @@
   background: var(--color-accent);
 }
 
+.primary:active:not(:disabled) {
+  background: var(--color-accent-strong);
+}
+
 .secondary {
+  border-color: var(--color-border-strong);
   color: var(--color-text);
-  background: var(--color-surface-muted);
+  background: transparent;
+}
+
+.secondary:active:not(:disabled) {
+  background: var(--color-surface-pressed);
+}
+
+.tertiary {
+  color: var(--color-accent-text);
+  background: transparent;
+}
+
+.tertiary:active:not(:disabled) {
+  background: var(--color-accent-subtle);
 }
 
 .destructive {
   color: var(--color-critical);
-  background: var(--color-surface-muted);
+  background: var(--color-critical-subtle);
+}
+
+.destructive:active:not(:disabled) {
+  opacity: 0.8;
+}
+
+@media (hover: hover) {
+  .primary:hover:not(:disabled) {
+    background: var(--color-accent-strong);
+  }
+
+  .secondary:hover:not(:disabled),
+  .tertiary:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
 }

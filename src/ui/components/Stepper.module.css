@@ -43,15 +43,15 @@
 }
 
 .step:disabled {
-  color: var(--color-text-tertiary);
+  color: var(--color-disabled);
   cursor: default;
-  opacity: 0.5;
+  opacity: var(--opacity-disabled);
 }
 
 .step:focus-visible,
 .value:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .value {
@@ -60,7 +60,7 @@
   height: calc(var(--size-tap-target) + var(--space-3));
   padding: 0 var(--space-1);
   border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   font-size: var(--font-size-metric);
   font-weight: var(--font-weight-semibold);
   font-variant-numeric: tabular-nums;

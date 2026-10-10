@@ -4,8 +4,10 @@
   gap: var(--space-4);
   min-height: calc(var(--size-tap-target) + var(--space-2));
   padding: 0 var(--space-4);
-  border-radius: var(--radius-lg);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
+  box-shadow: var(--shadow-card);
 }
 
 .label {
@@ -35,6 +37,6 @@
 }
 
 .field:focus-within {
-  outline: 2px solid var(--color-focus);
+  outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: -2px;
 }

@@ -33,14 +33,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.1875rem;
+  gap: var(--space-1);
   min-width: 0;
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   transition: color var(--duration-fast) var(--ease-standard);
+}
+
+/* Active tab: a restrained sage pill behind the icon, label in the accent text color. */
+.indicator {
+  display: inline-grid;
+  place-items: center;
+  width: 3.5rem;
+  height: 1.875rem;
+  border-radius: var(--radius-full);
+  transition: background-color var(--duration-fast) var(--ease-standard);
 }
 
 .link:global(.active) {
   color: var(--color-accent-text);
+}
+
+.link:global(.active) .indicator {
+  background: var(--color-accent-subtle-strong);
+}
+
+.link:global(.active) .label {
+  font-weight: var(--font-weight-semibold);
 }
 
 .link:focus-visible {
@@ -55,9 +73,9 @@
 .label {
   max-width: 100%;
   overflow: hidden;
-  font-size: 0.6875rem;
+  font-size: var(--font-size-tab-label);
   font-weight: var(--font-weight-medium);
-  line-height: 1;
+  line-height: 1.1;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -7,7 +7,7 @@
   flex-wrap: wrap;
   gap: 0.125rem;
   padding: 0.1875rem;
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-control);
   background: var(--color-surface-muted);
 }
 
@@ -19,7 +19,7 @@
   white-space: nowrap;
   line-height: var(--line-height-snug);
   border: 0;
-  border-radius: calc(var(--radius-md) - 0.1875rem);
+  border-radius: calc(var(--radius-control) - 0.1875rem);
   font-size: var(--font-size-subhead);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
@@ -34,4 +34,14 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   background: var(--color-control-selected);
+  box-shadow: var(--shadow-card);
+}
+
+.segment:focus-visible {
+  outline-offset: -1px;
+}
+
+.segment:disabled {
+  color: var(--color-disabled);
+  cursor: default;
 }

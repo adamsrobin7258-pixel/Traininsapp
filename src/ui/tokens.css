@@ -38,21 +38,35 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
 
-  /* Radii */
+  /* Radii – semantic radii first; components use these, not the raw scale. */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 999px;
+  --radius-control: var(--radius-md); /* buttons, fields, segmented tracks */
+  --radius-card: var(--radius-lg); /* cards, grouped lists */
+  --radius-sheet: var(--radius-xl); /* top corners of sheets and dialogs */
 
   /* Sizes */
   --size-tap-target: 2.75rem; /* 44 pt minimum touch target */
+  --size-control: 3rem; /* standard button / field height */
+  --size-control-compact: 2.25rem; /* compact visual height; tap area stays 44 pt */
   --size-icon: 1.5rem;
   --size-icon-sm: 1.25rem;
+  --size-icon-xs: 1rem;
+  --size-icon-stroke: 1.75;
   --size-tab-bar: 3.5rem;
+  --font-size-tab-label: 0.6875rem; /* 11 – the only text below caption */
   --layout-gutter: var(--space-5);
   --layout-max-width: 36rem;
   --border-hairline: 0.5px;
+  --border-control: 1px;
+
+  /* States */
+  --opacity-disabled: 0.45;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
 
   /* Motion */
   --duration-fast: 120ms;
@@ -67,36 +81,53 @@
   --safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
   --safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
 
-  /* Color – light theme (default). Kalethra: muted sage on warm paper. */
-  --color-bg: #f4f3ee;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #fbfaf7;
-  --color-surface-muted: #e9e8e1;
-  --color-surface-pressed: #efeee8;
-  --color-control-selected: #ffffff;
-  --color-text: #1b1f1c;
-  --color-text-secondary: #50574f;
-  --color-text-tertiary: #676e66;
-  --color-disabled: #8e948c;
-  --color-separator: rgb(27 31 28 / 0.1);
-  --color-border: rgb(27 31 28 / 0.16);
+  /*
+   * Color – light theme (default). Kalethra "natural & calm": sage and forest on warm cream.
+   * Levels: bg (page) < dialog (sheets) < surface (cards) – cards are separated by a fine border
+   * and a soft shadow, not by color alone.
+   */
+  --color-bg: #f3efe6;
+  --color-surface: #fffdf9;
+  --color-surface-elevated: #ffffff;
+  --color-surface-dialog: #f8f5ee;
+  --color-surface-muted: #e9e4d8;
+  --color-surface-pressed: #ece7dc;
+  --color-surface-hover: rgb(28 33 29 / 0.04);
+  --color-control-selected: #fffdf9;
+  --color-text: #1c211d;
+  --color-text-secondary: #4b534c;
+  --color-text-tertiary: #5c645d;
+  --color-disabled: #8a9088;
+  --color-separator: rgb(28 33 29 / 0.1);
+  --color-border: rgb(28 33 29 / 0.16);
+  --color-border-strong: rgb(28 33 29 / 0.28); /* field outlines, secondary buttons */
+  --color-card-border: rgb(28 33 29 / 0.07);
   /* Primary (sage): active states, primary actions, progress. Never whole surfaces. */
   --color-accent: #557a5b;
-  --color-accent-text: #45684b;
+  --color-accent-strong: #466a4c; /* forest: pressed primary */
+  --color-accent-text: #43654a;
   --color-accent-subtle: rgb(85 122 91 / 0.12);
+  --color-accent-subtle-strong: rgb(85 122 91 / 0.2);
   --color-on-accent: #ffffff;
   /* Semantic colors – each only for its meaning, never decoration. */
   --color-positive: #23795a;
   --color-positive-subtle: rgb(35 121 90 / 0.1);
-  --color-warning: #8f5d0f;
+  --color-warning: #875a0e;
   --color-warning-subtle: rgb(196 138 34 / 0.14);
-  --color-critical: #b23a2e;
-  --color-critical-subtle: rgb(178 58 46 / 0.1);
-  --color-water: #33719c;
-  --color-water-subtle: rgb(51 113 156 / 0.12);
-  --color-tab-bar: rgb(244 243 238 / 0.88);
-  --color-scrim: rgb(27 31 28 / 0.32);
+  --color-critical: #ad382c;
+  --color-critical-subtle: rgb(173 56 44 / 0.1);
+  --color-info: #2f6489;
+  --color-info-subtle: rgb(47 100 137 / 0.1);
+  --color-water: #30709b;
+  --color-water-subtle: rgb(48 112 155 / 0.12);
+  --color-tab-bar: rgb(243 239 230 / 0.9);
+  --color-scrim: rgb(28 33 29 / 0.32);
   --color-focus: var(--color-accent);
+
+  /* Elevation – light: soft, warm shadows; dark: borders instead (see below). */
+  --shadow-card: 0 1px 2px rgb(52 44 28 / 0.05), 0 2px 8px rgb(52 44 28 / 0.04);
+  --shadow-raised: 0 1px 2px rgb(52 44 28 / 0.08), 0 4px 14px rgb(52 44 28 / 0.08);
+  --shadow-sheet: 0 -4px 24px rgb(52 44 28 / 0.1);
 
   /* Food illustration tints: a soft background and a line color per family. */
   --tint-rose-bg: #f6e4df;
@@ -122,32 +153,48 @@
 }
 
 :root[data-theme='dark'] {
-  --color-bg: #0f1210;
-  --color-surface: #181c19;
-  --color-surface-elevated: #1d211e;
-  --color-surface-muted: #252a26;
-  --color-surface-pressed: #212622;
-  --color-control-selected: #363c37;
-  --color-text: #eef0eb;
-  --color-text-secondary: #a8afa6;
-  --color-text-tertiary: #8b9289;
-  --color-disabled: #5d635c;
-  --color-separator: rgb(238 240 235 / 0.09);
-  --color-border: rgb(238 240 235 / 0.16);
+  /*
+   * Dark: deep grey-green. Levels get lighter as they rise: bg < dialog < surface (card) <
+   * elevated; muted controls sit lighter still, so a field on a card stays visible.
+   */
+  --color-bg: #101612;
+  --color-surface: #222b24;
+  --color-surface-elevated: #2b352d;
+  --color-surface-dialog: #19211b;
+  --color-surface-muted: #323d35;
+  --color-surface-pressed: #2b352d;
+  --color-surface-hover: rgb(237 240 234 / 0.05);
+  --color-control-selected: #46524a;
+  --color-text: #edf0ea;
+  --color-text-secondary: #b3bab0;
+  --color-text-tertiary: #a0a89d;
+  --color-disabled: #69716a;
+  --color-separator: rgb(237 240 234 / 0.09);
+  --color-border: rgb(237 240 234 / 0.16);
+  --color-border-strong: rgb(237 240 234 / 0.3);
+  --color-card-border: rgb(237 240 234 / 0.07);
   --color-accent: #93b597;
-  --color-accent-text: #a8c8ab;
+  --color-accent-strong: #b2d0b5;
+  --color-accent-text: #a9c8ac;
   --color-accent-subtle: rgb(147 181 151 / 0.15);
+  --color-accent-subtle-strong: rgb(147 181 151 / 0.24);
   --color-on-accent: #102014;
-  --color-positive: #5fc492;
-  --color-positive-subtle: rgb(95 196 146 / 0.14);
-  --color-warning: #e2ad55;
-  --color-warning-subtle: rgb(226 173 85 / 0.14);
-  --color-critical: #ff7b6e;
-  --color-critical-subtle: rgb(255 123 110 / 0.14);
-  --color-water: #7fb6dc;
-  --color-water-subtle: rgb(127 182 220 / 0.15);
-  --color-tab-bar: rgb(15 18 16 / 0.88);
+  --color-positive: #66c896;
+  --color-positive-subtle: rgb(102 200 150 / 0.14);
+  --color-warning: #e3b05b;
+  --color-warning-subtle: rgb(227 176 91 / 0.14);
+  --color-critical: #ff8579;
+  --color-critical-subtle: rgb(255 133 121 / 0.14);
+  --color-info: #8dbddc;
+  --color-info-subtle: rgb(141 189 220 / 0.14);
+  --color-water: #80b7dc;
+  --color-water-subtle: rgb(128 183 220 / 0.15);
+  --color-tab-bar: rgb(16 22 18 / 0.9);
   --color-scrim: rgb(0 0 0 / 0.55);
+
+  --shadow-card: none;
+  --shadow-raised: 0 2px 10px rgb(0 0 0 / 0.3);
+  --shadow-sheet: 0 -6px 28px rgb(0 0 0 / 0.4);
 
   --tint-rose-bg: rgb(224 128 110 / 0.16);
   --tint-rose-ink: #e9a597;

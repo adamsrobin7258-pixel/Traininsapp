@@ -12,6 +12,7 @@ export { SegmentedControl, type SegmentOption } from './components/SegmentedCont
 export { Stat } from './components/Stat';
 export { TextField } from './components/TextField';
 export { Icon, type IconName } from './icons/Icon';
+export { ICON_FOR, ICON_NAMES, ICON_NEEDS_LABEL, type IconRole } from './icons/roles';
 export { FoodArt, type FoodArtName } from './illustrations/FoodArt';
 export { AUTOFOCUS, dismissKeyboard, isTextEntry } from './focus';
 export { closeTopOverlay, registerBackHandler } from './backStack';

@@ -17,11 +17,12 @@
 .field {
   width: 100%;
   min-width: 0;
-  min-height: calc(var(--size-tap-target) + var(--space-1));
+  min-height: var(--size-control);
   padding: 0 var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border: var(--border-control) solid var(--color-border);
+  border-radius: var(--radius-control);
   font-size: var(--font-size-body);
+  font-variant-numeric: tabular-nums;
   color: var(--color-text);
   background: var(--color-surface);
 }
@@ -29,6 +30,12 @@
 .field:focus-visible {
   outline: none;
   border-color: var(--color-focus);
+  box-shadow: 0 0 0 1px var(--color-focus);
+}
+
+.field:disabled {
+  color: var(--color-disabled);
+  opacity: var(--opacity-disabled);
 }
 
 .field[aria-invalid='true'] {
@@ -72,8 +79,8 @@
 
 .chip:focus-visible,
 .option:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
 }
 
 .options {
@@ -90,8 +97,8 @@
   width: 100%;
   min-height: var(--size-tap-target);
   padding: var(--space-3) var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
+  border: var(--border-control) solid var(--color-card-border);
+  border-radius: var(--radius-control);
   text-align: left;
   color: var(--color-text);
   background: var(--color-surface);

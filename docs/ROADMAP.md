@@ -517,6 +517,29 @@ Gezielte Qualitätskorrektur beider Körper, keine neue Funktion. Details und Me
   unverändert, kein neues Asset, keine Beleuchtungsänderung
 - Offen: Gerätetest; Gesamtbuild aus MakeHuman-Quellen hier nicht ausgeführt
 
+## Phase 20 – Designsystem „Natürlich & ruhig“ (Phase B) ✅ (Version 0.31.0)
+
+Zentrale Tokens und gemeinsame Komponenten modernisiert, keine Bildschirm-Neugestaltung. Details:
+[`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md), Vorher/Nachher: [`design-qa/phase-20/`](design-qa/phase-20/):
+
+- Hell: warme Creme (`#f3efe6`) statt Kaltweiß, Karten mit feiner Kante und leichtem Schatten,
+  Akzent `#557a5b` unverändert, Waldgrün für gedrückte Primärknöpfe
+- Dunkel: tiefes Graugrün mit klaren Ebenen (Hintergrund < Sheet < Karte < erhöht),
+  Hintergrund/Karte 1,26 : 1, Kanten statt Schatten, alle Textstufen ≥ 4,5 : 1
+- Neue semantische Tokens: Dialogfläche, Hover, starke Kante, Kartenkante, Waldgrün,
+  Info-Farbe, Schatten, semantische Radien, Steuerhöhen, Icon-Größen, Fokus- und
+  Deaktiviert-Zustand
+- `Button`: neue Variante `tertiary` und Größe `compact`; `secondary` als Kontur,
+  `destructive` auf zarter Fehlerfläche; bestehende Aufrufe unverändert
+- Felder, Segmente, Stepper, Listen, Sheets und Tab-Leiste vereinheitlicht (aktiver Tab mit
+  Salbei-Pille); Eyebrow ohne Versalien; Listentitel trennen Wörter nicht mehr mitten im Wort
+- Icon-System: neue Icons `sleep`, `steps`, `info`, `warning`, Zuordnung `ICON_FOR`
+  (`src/ui/icons/roles.ts`), optionales `label` für bedeutungstragende Icons;
+  Regeln für Bilder und Illustrationen dokumentiert
+- Tests: WCAG-Kontraste beider Modi, Ebenen, Theme-Farbe, Button-Varianten/-Zustände, Icons
+- Offen (Phase C): Modul-Karten mit Kante/Schatten, Versal-Labels in Modulen, Icons in den
+  Bildschirmen; Gerätetest
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

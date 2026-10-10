@@ -14,7 +14,9 @@ export function TabBar({ modules }: { modules: readonly AppModule[] }) {
         {tabs.map(({ module, labelKey, icon }) => (
           <li key={module.id} className={styles.item}>
             <NavLink to={module.path} end={module.path === '/'} className={styles.link}>
-              <Icon name={icon} className={styles.icon} />
+              <span className={styles.indicator}>
+                <Icon name={icon} className={styles.icon} />
+              </span>
               <span className={styles.label}>{t(labelKey)}</span>
             </NavLink>
           </li>

@@ -14,10 +14,8 @@
 
 .eyebrow {
   margin-bottom: var(--space-1);
-  font-size: var(--font-size-footnote);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: var(--letter-spacing-caps);
-  text-transform: uppercase;
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 

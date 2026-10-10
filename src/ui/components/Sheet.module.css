@@ -29,8 +29,10 @@
   overscroll-behavior: contain;
   padding: var(--space-3) calc(var(--safe-right) + var(--layout-gutter))
     calc(var(--safe-bottom) + var(--space-5)) calc(var(--safe-left) + var(--layout-gutter));
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-  background: var(--color-bg);
+  border-top: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  background: var(--color-surface-dialog);
+  box-shadow: var(--shadow-sheet);
   animation: rise var(--duration-base) var(--ease-standard);
 }
 
@@ -58,7 +60,7 @@
   width: 2.25rem;
   height: 0.3125rem;
   border-radius: var(--radius-full);
-  background: var(--color-border);
+  background: var(--color-border-strong);
 }
 
 .title {
