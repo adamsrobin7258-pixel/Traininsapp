@@ -296,9 +296,26 @@ nichts erfunden), Progressionsvorschläge (`progression.ts`, siehe
 „Neues Höchstgewicht“: schwerster abgeschlossener Arbeitssatz einer gewichteten Übung, höher als in
 allen früheren Trainings (das erste Mal ist kein Rekord). Keine Migration in Phase 13.
 
-**Laufendes Workout.** Jede Eingabe wird beim Verlassen des Feldes bzw. beim Abhaken gespeichert;
-das aktive Workout liegt in der Datenbank (höchstens eines pro Profil) und wird nach Neustart
-wieder geöffnet. Gleichzeitige Speichervorgänge serialisiert die Datenbankschicht.
+**Laufendes Workout.** Jede Eingabe wird beim Verlassen des Feldes, bei jedem −/+ bzw. beim
+Abschließen gespeichert; das aktive Workout liegt in der Datenbank (höchstens eines pro Profil) und
+wird nach Neustart wieder geöffnet. Gleichzeitige Speichervorgänge serialisiert die Datenbankschicht.
+
+**Fokusansicht (Phase 19).** Standardansicht des laufenden Trainings ist eine Übung im Mittelpunkt
+(`FocusWorkout`); die bisherige Liste bleibt als „Alle Übungen“ umschaltbar (`WorkoutEditor`, auch
+für abgeschlossene Trainings). Beide Ansichten lesen dasselbe gespeicherte Workout, eine zweite
+Datenhaltung gibt es nicht. Eingabe und Speichern eines Satzes teilen sich beide über
+`useSetDraft` (je Satz-ID eine Instanz, Doppeltipp schließt nur einmal ab). Wo das Training steht,
+berechnet die reine Funktion `modules/training/domain/focus.ts` aus den Sätzen (Reihenfolge wie
+`groupSets`: Aufwärmsätze, Arbeitssätze mit ihren Drops): nach einem Abschluss der nächste offene
+Satz dieser Übung, sonst die nächste Übung mit offenem Satz. Es wird dabei nie ein Satz angelegt.
+−/+ nutzt `LOAD_STEP` und `SET_LIMITS` (`domain/stepper.ts`). Der Pausentimer gehört zum Workout,
+nicht zum Bildschirm (`hooks/restTimerStore.ts`, nur im Speicher): Zurück und Fortsetzen behalten
+die laufende Pause, ein App-Neustart nicht.
+
+**Beenden.** `WorkoutService.finish` setzt den Abschluss und entfernt in derselben Transaktion
+jeden nicht abgeschlossenen Satz (`deleteOpenSets`) – vorbelegte Werte sind Vorschläge, keine
+Trainingsdaten. Ausnahme: ein offener Arbeitssatz bleibt, solange ein abgeschlossener Drop an ihm
+hängt (`drop_of` löscht kaskadierend). Ein zweites Beenden schlägt fehl und ändert nichts.
 
 **Kennzahlen.** `metrics.ts` berechnet Volumen, geschätztes 1RM (Epley) und besten Satz aus
 abgeschlossenen Sätzen – zentral, rein funktional, getestet. Rekorde (PRs) und Statistiken bauen

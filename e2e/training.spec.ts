@@ -83,16 +83,24 @@ test('plan, workout, history and reopening a finished workout', async ({ page })
   await page.getByLabel('Satz 1: Gewicht').fill('60');
   await page.getByLabel('Satz 1: Wdh.').fill('10');
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).click();
-  await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Satz 1: 60 kg × 10, abgeschlossen' }),
+  ).toBeVisible();
+  // Nothing open any more: one more set only when asked for.
+  await expect(page.getByText('Alle Sätze sind erledigt.')).toBeVisible();
   await page.getByRole('button', { name: 'Satz hinzufügen', exact: true }).click();
   await expect(page.getByLabel('Satz 2: Gewicht')).toHaveValue('60');
   await page.getByLabel('Satz 2: Wdh.').fill('8');
   await page.getByRole('button', { name: 'Satz 2 abschließen' }).click();
-  await expect(page.getByRole('button', { name: 'Satz 2 wieder öffnen' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Satz 2: 60 kg × 8, abgeschlossen' }),
+  ).toBeVisible();
 
   // The active workout survives a reload.
   await page.reload();
-  await expect(page.getByLabel('Satz 2: Wdh.')).toHaveValue('8');
+  await expect(
+    page.getByRole('button', { name: 'Satz 2: 60 kg × 8, abgeschlossen' }),
+  ).toBeVisible();
 
   // Finish: first the summary – 60 × 10 + 60 × 8 = 1.080 kg – then the workout.
   await page.getByRole('button', { name: 'Training beenden' }).click();
@@ -135,13 +143,20 @@ test('A – the set check keeps values, focus and the workout', async ({ page })
 
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
 
-  await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
+  const done = page.getByRole('button', { name: 'Satz 1: 82,5 kg × 5, abgeschlossen' });
+  await expect(done).toBeVisible();
   expect(await textFieldFocused(page)).toBe(false);
-  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
-  await expect(page.getByLabel('Satz 1: Wdh.')).toHaveValue('5');
   await expect(page.getByText('Laufendes Training')).toBeVisible();
   expect(page.url()).toMatch(/\/training\/workout$/);
-  expect(Math.abs((await page.evaluate(() => window.scrollY)) - scrollBefore)).toBeLessThan(40);
+  // The page does not jump away: the result of the tap is in view.
+  await expect(done).toBeInViewport();
+  expect(await page.evaluate(() => window.scrollY)).toBeLessThanOrEqual(scrollBefore + 40);
+
+  // The completed set opens again for corrections, still without the keyboard.
+  await done.tap();
+  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
+  await expect(page.getByLabel('Satz 1: Wdh.')).toHaveValue('5');
+  expect(await textFieldFocused(page)).toBe(false);
 
   // Without a focused field the check must not focus one either.
   await page.getByRole('button', { name: 'Satz 1 wieder öffnen' }).tap();
@@ -261,20 +276,28 @@ test('warm-ups and drops from the plan into the workout', async ({ page }) => {
   await expect(page.getByText('1 × Aufwärmen · 2 × 8 · 1 Drop')).toBeVisible();
 
   await startPlanDay(page, /^Tag A/);
+  // The focus view begins with the warm-up; set 2 is chosen directly, its drop follows.
   await expect(page.getByLabel('Aufwärmsatz 1: Gewicht')).toBeVisible();
+  await page.getByRole('button', { name: /^Satz 2: .*offen$/ }).tap();
   await page.getByLabel('Satz 2: Gewicht', { exact: true }).fill('100');
   await page.getByRole('button', { name: 'Satz 2 abschließen', exact: true }).tap();
   await page.getByLabel('Drop 1 zu Satz 2: Gewicht').fill('70');
   await page.getByLabel('Drop 1 zu Satz 2: Wdh.').fill('6');
   await page.getByRole('button', { name: 'Drop 1 zu Satz 2 abschließen' }).tap();
-  await expect(page.getByRole('button', { name: 'Drop 1 zu Satz 2 wieder öffnen' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Drop 1 zu Satz 2: 70 kg × 6, abgeschlossen' }),
+  ).toBeVisible();
+  // Then back to the skipped warm-up of the same exercise.
+  await expect(page.getByLabel('Aufwärmsatz 1: Gewicht')).toBeVisible();
   expect(await textFieldFocused(page)).toBe(false);
   await expect(page.getByLabel(/RPE/)).toHaveCount(0);
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Survives a reload with types and values.
+  // Survives a reload with types and values (the full list shows every set).
   await page.reload();
+  await page.getByRole('radio', { name: 'Alle Übungen' }).click();
   await expect(page.getByLabel('Drop 1 zu Satz 2: Gewicht')).toHaveValue('70');
+  await expect(page.getByRole('group', { name: 'Aufwärmen' })).toBeVisible();
 });
 
 test('exercise library: filters, details and favourites without the keyboard', async ({ page }) => {

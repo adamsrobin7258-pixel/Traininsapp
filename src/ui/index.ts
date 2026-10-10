@@ -17,3 +17,4 @@ export { AUTOFOCUS, dismissKeyboard, isTextEntry } from './focus';
 export { closeTopOverlay, registerBackHandler } from './backStack';
 export { ChoiceCards, ChoiceChips } from './components/ChoiceCards';
 export { NumberField } from './components/NumberField';
+export { Stepper } from './components/Stepper';

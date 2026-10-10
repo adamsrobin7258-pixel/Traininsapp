@@ -485,6 +485,23 @@ Körpers, keine neue Funktion. Details: [EXERCISE_VISUALS.md](EXERCISE_VISUALS.m
 - Weiblicher Körper byte-gleich zu 0.28.0; Budgets eingehalten (52 090 Dreiecke, 3,35 MiB)
 - Offen: Gerätetest von 0.29.1; Rest-Delle hinter der Achsel bei Überkopf-Armen (LBS)
 
+## Phase 19 – Trainings-Tracking: Fokusansicht ✅ (Version 0.30.0)
+
+Das laufende Training ist einfacher und schneller zu bedienen. Details:
+[ARCHITECTURE.md](ARCHITECTURE.md#trainingssystem-phase-3):
+
+- Fokusansicht als Standard: eine Übung, „Übung x von y“, freie Navigation ‹ ›, letzte Werte,
+  Vorschlag, Sätze in Kurzform (abgeschlossen mit Haken, aktueller Satz hervorgehoben)
+- Gewicht und Wdh. mit großen −/+-Tasten (1,25 kg bzw. 2,5 lb, ganze Wdh.) und Direkteingabe
+- „Satz N abschließen“: speichert, startet die Pause, bereitet den nächsten offenen Satz vor, nach
+  dem letzten Satz einer Übung folgt die nächste Übung; nie ein zusätzlicher Satz, Doppeltipp
+  schließt nur einmal ab; abgeschlossene Sätze antippen zum Korrigieren oder Wiederöffnen
+- „Alle Übungen“ als umschaltbare Liste mit allen bisherigen Funktionen
+- Pause übersteht Zurück und Fortsetzen (nicht den App-Neustart)
+- Beenden entfernt alle nicht abgeschlossenen (auch vorbelegten) Sätze
+- Keine Migration, keine neue Abhängigkeit
+- Offen: Gerätetest (Xiaomi 15 Ultra)
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

@@ -318,12 +318,14 @@ export class WorkoutRepository {
     ]);
   }
 
-  async finish(id: string, endedAt: string, durationS: number, now: string): Promise<void> {
-    await this.db.run(
+  /** Marks an active workout as completed; `false` when it was not active (any more). */
+  async finish(id: string, endedAt: string, durationS: number, now: string): Promise<boolean> {
+    const result = await this.db.run(
       `UPDATE workouts SET status = 'completed', ended_at = ?, duration_s = ?, updated_at = ?
        WHERE id = ? AND status = 'active'`,
       [endedAt, durationS, now, id],
     );
+    return result.changes > 0;
   }
 
   async touch(id: string, now: string): Promise<void> {
@@ -429,16 +431,17 @@ export class WorkoutRepository {
   }
 
   /**
-   * Removes placeholder sets without any value (e.g. unused planned sets) from a workout. Empty
-   * drops go first; a working set is kept while it still has a drop with values.
+   * Removes every set of a workout that was not completed – empty placeholders as well as sets
+   * that were only pre-filled (last values, plan targets, a suggestion): only completed sets are
+   * a record of training. Open drops go first; an open working set is kept while a completed
+   * drop still continues it (`drop_of` deletes in cascade – the completed drop must not be lost).
    */
-  async deleteEmptySets(workoutId: string): Promise<void> {
-    const empty = `workout_exercise_id IN (SELECT id FROM workout_exercises WHERE workout_id = ?)
-       AND weight_kg IS NULL AND reps IS NULL AND duration_s IS NULL AND distance_m IS NULL
-       AND rpe IS NULL`;
-    await this.db.run(`DELETE FROM workout_sets WHERE set_type = 'drop' AND ${empty}`, [workoutId]);
+  async deleteOpenSets(workoutId: string): Promise<void> {
+    const open = `workout_exercise_id IN (SELECT id FROM workout_exercises WHERE workout_id = ?)
+       AND completed = 0`;
+    await this.db.run(`DELETE FROM workout_sets WHERE set_type = 'drop' AND ${open}`, [workoutId]);
     await this.db.run(
-      `DELETE FROM workout_sets WHERE ${empty}
+      `DELETE FROM workout_sets WHERE ${open}
        AND NOT EXISTS (SELECT 1 FROM workout_sets d WHERE d.drop_of = workout_sets.id)`,
       [workoutId],
     );

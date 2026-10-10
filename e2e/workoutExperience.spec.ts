@@ -72,7 +72,9 @@ async function trainAndFinish(page: Page, sets: readonly [string, string][]) {
     await page.getByLabel(`Satz ${n}: Gewicht`).fill(kg);
     await page.getByLabel(`Satz ${n}: Wdh.`).fill(reps);
     await page.getByRole('button', { name: `Satz ${n} abschließen` }).tap();
-    await expect(page.getByRole('button', { name: `Satz ${n} wieder öffnen` })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: new RegExp(`^Satz ${n}: .*abgeschlossen$`) }),
+    ).toBeVisible();
   }
   await page.getByRole('button', { name: 'Training beenden' }).click();
   await sheet(page).getByRole('button', { name: 'Training beenden' }).click();
@@ -239,14 +241,15 @@ test('4 – equal sessions lead to a suggestion with more load and fewer reps', 
   await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('80');
   await suggestion.getByRole('button', { name: /^Vorschlag 83,75 kg × 6/ }).click();
   await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('83,75');
-  await expect(page.getByLabel('Satz 3: Wdh.')).toHaveValue('6');
+  await expect(page.getByRole('button', { name: 'Satz 3: 83,75 kg × 6, offen' })).toBeVisible();
   expect(await textFieldFocused(page)).toBe(false);
   // Overwrite freely.
   await page.getByLabel('Satz 1: Gewicht').fill('82,5');
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
-  // Saved (the check is confirmed) before the page is left.
-  await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
-  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
+  // Saved (the completed set is listed) before the page is left.
+  await expect(
+    page.getByRole('button', { name: 'Satz 1: 82,5 kg × 6, abgeschlossen' }),
+  ).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Cautious needs four sessions: no suggestion yet.
@@ -260,7 +263,9 @@ test('4 – equal sessions lead to a suggestion with more load and fewer reps', 
     'Vorsichtig',
   );
   await page.goto('/training/workout');
-  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('82,5');
+  await expect(
+    page.getByRole('button', { name: 'Satz 1: 82,5 kg × 6, abgeschlossen' }),
+  ).toBeVisible();
   await expect(page.getByRole('region', { name: 'Vorschlag' })).toHaveCount(0);
 });
 
@@ -271,6 +276,69 @@ test('5 – rest time 0: no timer', async ({ page }) => {
   await page.getByLabel('Satz 1: Gewicht').fill('60');
   await page.getByLabel('Satz 1: Wdh.').fill('8');
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
-  await expect(page.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Satz 1: 60 kg × 8, abgeschlossen' }),
+  ).toBeVisible();
   await expect(page.getByRole('timer')).toHaveCount(0);
+});
+
+test('6 – focus flow: plan day, sets in focus, correct in the list, back to focus, finish, history', async ({
+  page,
+}) => {
+  await createPlan(page);
+  await setRestTime(page, '60 s');
+  await startDay(page, /^Push/);
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await expect(page.getByRole('radio', { name: 'Fokus' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByText('Übung 1 von 1')).toBeVisible();
+
+  // Set 1 with the large −/+ buttons, set 2 typed; the rest timer follows each set.
+  await page.getByLabel('Satz 1: Gewicht').fill('60');
+  await page.getByLabel('Satz 1: Wdh.').fill('8');
+  const plus = page.getByRole('button', { name: 'Gewicht um 1,25 kg erhöhen' });
+  for (const button of [plus, page.getByRole('button', { name: 'Satz 1 abschließen' })]) {
+    expect((await button.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+  await plus.tap();
+  await plus.tap();
+  await expect(page.getByLabel('Satz 1: Gewicht')).toHaveValue('62,5');
+  expect(await textFieldFocused(page)).toBe(false);
+  await page.getByRole('button', { name: 'Satz 1 abschließen' }).tap();
+  await expect(page.getByRole('timer', { name: 'Pause' })).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Satz 1: 62,5 kg × 8, abgeschlossen' }),
+  ).toBeVisible();
+  await expect(page.locator('[aria-current="step"]')).toHaveAccessibleName(/^Satz 2: /);
+  await page.getByLabel('Satz 2: Gewicht').fill('62,5');
+  await page.getByLabel('Satz 2: Wdh.').fill('7');
+  await page.getByRole('button', { name: 'Satz 2 abschließen' }).tap();
+  await expect(
+    page.getByRole('button', { name: 'Satz 2: 62,5 kg × 7, abgeschlossen' }),
+  ).toBeVisible();
+
+  // The full list: correct set 2, nothing is lost on the way back.
+  await page.getByRole('radio', { name: 'Alle Übungen' }).click();
+  const card = page.getByRole('article', { name: 'Langhantel-Bankdrücken' });
+  await expect(card.getByLabel('Satz 2: Wdh.')).toHaveValue('7');
+  await card.getByLabel('Satz 2: Wdh.').fill('6');
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await page.getByRole('radio', { name: 'Fokus' }).click();
+  await expect(
+    page.getByRole('button', { name: 'Satz 2: 62,5 kg × 6, abgeschlossen' }),
+  ).toBeVisible();
+  await expect(page.locator('[aria-current="step"]')).toHaveAccessibleName('Satz 3: – × 8, offen');
+
+  // Finishing removes the open set 3; history shows exactly the two sets.
+  await page.getByRole('button', { name: 'Training beenden' }).click();
+  await sheet(page).getByRole('button', { name: 'Training beenden' }).click();
+  const summary = page.getByRole('dialog', { name: 'Training abgeschlossen' });
+  await expect(summary.getByText(/^2 Sätze · bester Satz 62,5 kg × 8$/)).toBeVisible();
+  await summary.getByRole('button', { name: 'Schließen' }).click();
+  await expect(page).toHaveURL(/\/training$/);
+  await page.getByRole('link', { name: /Push/ }).first().click();
+  // 62,5 × 8 + 62,5 × 6 = 875 kg.
+  await expect(page.getByText('875 kg')).toBeVisible();
+  await expect(page.getByText('62,5 kg × 8')).toBeVisible();
+  await expect(page.getByText('62,5 kg × 6')).toBeVisible();
+  await expect(page.getByText('– × 8')).toHaveCount(0);
 });

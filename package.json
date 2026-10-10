@@ -1,7 +1,7 @@
 {
   "name": "kalethra",
   "private": true,
-  "version": "0.29.1",
+  "version": "0.30.0",
   "type": "module",
   "description": "Modulare Fitness- und Gesundheits-App für Android und iOS (React, TypeScript, Vite, Capacitor, SQLite).",
   "engines": {

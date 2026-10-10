@@ -8,8 +8,17 @@ import { ExerciseCard } from './ExerciseCard';
 import { ExercisePicker } from './ExercisePicker';
 import styles from './WorkoutEditor.module.css';
 
-/** Exercises and sets of a workout; used while training and when editing a finished one. */
-export function WorkoutEditor({ workout }: { workout: WorkoutDetail }) {
+/**
+ * Exercises and sets of a workout: the full list while training ("Alle Übungen") and when
+ * editing a finished one. While training, an exercise name opens it in the focus view.
+ */
+export function WorkoutEditor({
+  workout,
+  onOpenExercise,
+}: {
+  workout: WorkoutDetail;
+  onOpenExercise?: (workoutExerciseId: string) => void;
+}) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const { mutate } = useTraining();
@@ -23,11 +32,19 @@ export function WorkoutEditor({ workout }: { workout: WorkoutDetail }) {
       ) : null}
       {workout.exercises.map((exercise, index) => (
         <ExerciseCard
-          key={exercise.id}
+          // A replaced exercise starts with fresh entry fields: no typing carries over.
+          key={`${exercise.id}:${exercise.exerciseId ?? ''}`}
           exercise={exercise}
           index={index}
           count={workout.exercises.length}
           live={workout.status === 'active'}
+          {...(onOpenExercise
+            ? {
+                onOpen: () => {
+                  onOpenExercise(exercise.id);
+                },
+              }
+            : {})}
         />
       ))}
       <Button

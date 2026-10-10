@@ -26,6 +26,7 @@ const paths = {
   chevronRight: <path d="M9.5 5.75 15.75 12 9.5 18.25" />,
   check: <path d="m5.5 12.5 4.25 4.25L18.5 8" />,
   plus: <path d="M12 5.5v13M5.5 12h13" />,
+  minus: <path d="M5.5 12h13" />,
   arrowUp: <path d="M12 18.5v-13M6.75 10.75 12 5.5l5.25 5.25" />,
   arrowDown: <path d="M12 5.5v13M6.75 13.25 12 18.5l5.25-5.25" />,
   /** Einstellungen: two sliders. */

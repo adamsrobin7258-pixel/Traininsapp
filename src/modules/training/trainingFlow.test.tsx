@@ -60,6 +60,23 @@ function textFieldFocused() {
   );
 }
 
+/** Switches the workout in progress to the full list ("Alle Übungen"). */
+async function showAll() {
+  await userEvent.click(screen.getByRole('radio', { name: 'Alle Übungen' }));
+}
+
+/**
+ * Completes a set in the focus view. Right after a completion the button is locked briefly
+ * (a double tap must not complete the next set), so wait until it can be used.
+ */
+async function complete(name: string) {
+  const button = await screen.findByRole('button', { name });
+  await waitFor(() => {
+    expect(button).toBeEnabled();
+  });
+  await userEvent.click(button);
+}
+
 async function fill(label: string, value: string) {
   const input = await screen.findByLabelText(label);
   await userEvent.clear(input);
@@ -112,17 +129,18 @@ describe('training', () => {
     await fill('Satz 1: Gewicht', '80');
     await fill('Satz 1: Wdh.', '8');
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
-    expect(await screen.findByRole('button', { name: 'Satz 1 wieder öffnen' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
+    // The focus view lists the completed set; with nothing open the workout can be finished.
+    expect(
+      await screen.findByRole('button', { name: 'Satz 1: 80 kg × 8, abgeschlossen' }),
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Alle Sätze sind erledigt.')).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole('button', { name: 'Satz hinzufügen' }));
-    // The new set copies the previous load and reps.
+    // The new set copies the previous load and reps and is the one being entered.
     expect(await screen.findByLabelText('Satz 2: Gewicht')).toHaveValue('80');
     await fill('Satz 2: Wdh.', '6');
-    await userEvent.click(screen.getByRole('button', { name: 'Satz 2 abschließen' }));
-    await screen.findByRole('button', { name: 'Satz 2 wieder öffnen' });
+    await complete('Satz 2 abschließen');
+    await screen.findByRole('button', { name: 'Satz 2: 80 kg × 6, abgeschlossen' });
 
     await userEvent.click(screen.getByRole('button', { name: 'Training beenden' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Training beenden' }));
@@ -217,8 +235,12 @@ describe('training', () => {
       expect(router.state.location.pathname).toBe('/training/workout');
     });
     expect(await screen.findByRole('heading', { level: 1, name: 'Push A' })).toBeInTheDocument();
+    // The focus view starts with the first exercise; the full list shows all of them.
     expect(screen.getByRole('heading', { name: 'Langhantel-Bankdrücken' })).toBeInTheDocument();
+    expect(screen.getByText('Übung 1 von 3')).toBeInTheDocument();
+    await showAll();
     expect(screen.getByRole('heading', { name: 'Langhantel-Schulterdrücken' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Trizepsdrücken am Kabel/ })).toBeInTheDocument();
   });
 
   it('works in English with pounds and the dark theme', async () => {
@@ -239,12 +261,14 @@ describe('training', () => {
     await fill('Set 1: Weight', '225');
     await fill('Set 1: Reps', '5');
     await userEvent.click(screen.getByRole('button', { name: 'Complete set 1' }));
-    await screen.findByRole('button', { name: 'Reopen set 1' });
+    const done = await screen.findByRole('button', { name: 'Set 1: 225 lb × 5, completed' });
 
     // Stored in kilograms, shown in pounds.
     const [set] = await setRows(db);
     expect(set?.weight_kg).toBeCloseTo(102.058, 3);
-    expect(screen.getByLabelText('Set 1: Weight')).toHaveValue('225');
+    await userEvent.click(done);
+    expect(await screen.findByLabelText('Set 1: Weight')).toHaveValue('225');
+    expect(screen.getByRole('button', { name: 'Reopen set 1' })).toBeInTheDocument();
   });
 
   describe('start flow', () => {
@@ -349,11 +373,17 @@ describe('training', () => {
       const check = screen.getByRole('button', { name: 'Satz 1 abschließen' });
       await userEvent.click(check);
 
-      await screen.findByRole('button', { name: 'Satz 1 wieder öffnen' });
+      const done = await screen.findByRole('button', {
+        name: 'Satz 1: 82,5 kg × 5, abgeschlossen',
+      });
       expect(textFieldFocused()).toBe(false);
+      expect(await setRows(db)).toEqual([{ weight_kg: 82.5, reps: 5, completed: 1 }]);
+
+      // Choosing the completed set shows its values without focusing a field.
+      await userEvent.click(done);
       expect(screen.getByLabelText('Satz 1: Gewicht')).toHaveValue('82,5');
       expect(screen.getByLabelText('Satz 1: Wdh.')).toHaveValue('5');
-      expect(await setRows(db)).toEqual([{ weight_kg: 82.5, reps: 5, completed: 1 }]);
+      expect(textFieldFocused()).toBe(false);
 
       // Reopening does not focus a field either.
       await userEvent.click(screen.getByRole('button', { name: 'Satz 1 wieder öffnen' }));
@@ -438,6 +468,9 @@ describe('training', () => {
       // Started in the training area (next workout card), not from the plan page.
       await userEvent.click(tab('Training'));
       await userEvent.click(await screen.findByRole('button', { name: 'Starten' }));
+      // The focus view starts with the first warm-up of the structure.
+      expect(await screen.findByLabelText('Aufwärmsatz 1: Gewicht')).toBeInTheDocument();
+      await showAll();
       const card = within(await screen.findByRole('article', { name: 'Langhantel-Kniebeugen' }));
       expect(card.getByRole('group', { name: 'Aufwärmen' })).toBeInTheDocument();
       expect(card.getByRole('group', { name: 'Arbeitssätze' })).toBeInTheDocument();
@@ -474,7 +507,8 @@ describe('training', () => {
       const { db } = await renderApp('/training');
       await startFreeWorkout();
       await pickExercise('bank', /^Langhantel-Bankdrücken/);
-      const card = within(screen.getByRole('article', { name: 'Langhantel-Bankdrücken' }));
+      await showAll();
+      const card = within(await screen.findByRole('article', { name: 'Langhantel-Bankdrücken' }));
       await fill('Satz 1: Gewicht', '80');
 
       await userEvent.click(card.getByRole('button', { name: 'Aufwärmsatz hinzufügen' }));

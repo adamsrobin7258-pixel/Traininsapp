@@ -68,6 +68,23 @@ async function trained(
   return workout.id;
 }
 
+/**
+ * Completes a set in the focus view. Right after a completion the button is locked briefly
+ * (a double tap must not complete the next set), so wait until it can be used.
+ */
+async function complete(name: string) {
+  const button = await screen.findByRole('button', { name });
+  await waitFor(() => {
+    expect(button).toBeEnabled();
+  });
+  await userEvent.click(button);
+}
+
+/** Switches the workout in progress to the full list ("Alle Übungen"). */
+async function showAll() {
+  await userEvent.click(screen.getByRole('radio', { name: 'Alle Übungen' }));
+}
+
 async function startDay(day: RegExp) {
   await userEvent.click(await screen.findByRole('button', { name: 'Anderes Training' }));
   await userEvent.click(dialog().getByRole('button', { name: /^Aus Plan starten/ }));
@@ -146,14 +163,16 @@ describe('training experience', () => {
     await waitFor(() => {
       expect(card.getByLabelText('Satz 1: Gewicht')).toHaveValue('83,75');
     });
-    expect(card.getByLabelText('Satz 3: Wdh.')).toHaveValue('6');
+    // Every open working set took it over – none of them is completed by that.
+    expect(card.getByRole('button', { name: 'Satz 3: 83,75 kg × 6, offen' })).toBeInTheDocument();
     expect(textFieldFocused()).toBe(false);
     // The user can still enter something else.
     await userEvent.clear(card.getByLabelText('Satz 1: Gewicht'));
     await userEvent.type(card.getByLabelText('Satz 1: Gewicht'), '82,5');
     await userEvent.click(card.getByRole('button', { name: 'Satz 1 abschließen' }));
-    await card.findByRole('button', { name: 'Satz 1 wieder öffnen' });
-    expect(card.getByLabelText('Satz 1: Gewicht')).toHaveValue('82,5');
+    await card.findByRole('button', { name: 'Satz 1: 82,5 kg × 6, abgeschlossen' });
+    // The next set is prepared with the suggestion, still open.
+    expect(card.getByLabelText('Satz 2: Gewicht')).toHaveValue('83,75');
   });
 
   it('no suggestion without enough history or with the setting off', async () => {
@@ -231,7 +250,7 @@ describe('training experience', () => {
     await userEvent.type(screen.getByLabelText('Satz 1: Gewicht'), '60');
     await userEvent.type(screen.getByLabelText('Satz 1: Wdh.'), '8');
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
-    await screen.findByRole('button', { name: 'Satz 1 wieder öffnen' });
+    await screen.findByRole('button', { name: 'Satz 1: 60 kg × 8, abgeschlossen' });
     expect(screen.queryByRole('timer')).not.toBeInTheDocument();
     expect(screen.queryByText(/Pause/)).not.toBeInTheDocument();
   });
@@ -260,7 +279,8 @@ describe('training experience', () => {
     const stored = await services.training.plans.getPlan(profileId, plans[0]?.id ?? '');
     expect(stored.days[0]?.exercises.map((e) => e.exerciseId)).toEqual(['sys.bench-press']);
 
-    // Set 3 becomes a drop of set 2, then set 1 is deleted.
+    // Set types are changed in the full list: set 3 becomes a drop of set 2, then set 1 is deleted.
+    await showAll();
     await userEvent.click(screen.getByRole('button', { name: 'Optionen für Satz 3' }));
     const options = within(await screen.findByRole('dialog', { name: 'Optionen für Satz 3' }));
     expect(options.getByRole('button', { name: 'Arbeitssatz' })).toHaveAttribute(
@@ -294,8 +314,10 @@ describe('training experience', () => {
       const weight = screen.getByLabelText(`Satz ${number}: Gewicht`);
       await userEvent.clear(weight);
       await userEvent.type(weight, number === 1 ? '82,5' : '80');
-      await userEvent.click(screen.getByRole('button', { name: `Satz ${number} abschließen` }));
-      await screen.findByRole('button', { name: `Satz ${number} wieder öffnen` });
+      await complete(`Satz ${number} abschließen`);
+      await screen.findByRole('button', {
+        name: `Satz ${number}: ${number === 1 ? '82,5' : '80'} kg × 8, abgeschlossen`,
+      });
     }
     vi.setSystemTime(new Date(NOW.getTime() + 45 * 60_000));
     await userEvent.click(screen.getByRole('button', { name: 'Training beenden' }));
@@ -342,7 +364,7 @@ describe('training experience', () => {
     await userEvent.type(screen.getByLabelText('Satz 1: Gewicht'), '60');
     await userEvent.type(screen.getByLabelText('Satz 1: Wdh.'), '8');
     await userEvent.click(screen.getByRole('button', { name: 'Satz 1 abschließen' }));
-    await screen.findByRole('button', { name: 'Satz 1 wieder öffnen' });
+    await screen.findByRole('button', { name: 'Satz 1: 60 kg × 8, abgeschlossen' });
     await userEvent.click(screen.getByRole('button', { name: 'Training beenden' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Training beenden' }));
     const summary = within(await screen.findByRole('dialog', { name: 'Training abgeschlossen' }));

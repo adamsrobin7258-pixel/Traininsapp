@@ -12,6 +12,7 @@ import {
   tickRest,
   type RestTimerState,
 } from '../domain/restTimer';
+import { useRestTimerState } from '../hooks/restTimerStore';
 import { RestTimerContext } from '../hooks/useRestTimer';
 import styles from './RestTimer.module.css';
 
@@ -20,16 +21,26 @@ import styles from './RestTimer.module.css';
  * at the bottom (the workout has no tab bar): label, remaining time, pause/resume and skip. It never blocks input: every set stays reachable, the timer can be paused,
  * resumed or skipped, and system back closes it first. With 0 seconds nothing is shown.
  * When the rest is over, a quiet notice and – on the device – a short vibration follow.
+ * The state belongs to the workout, not to the screen: back and resume keep the rest running.
  */
-export function RestTimerProvider({ seconds, children }: { seconds: number; children: ReactNode }) {
-  const [state, setState] = useState<RestTimerState>(IDLE);
+export function RestTimerProvider({
+  workoutId,
+  seconds,
+  children,
+}: {
+  workoutId: string;
+  seconds: number;
+  children: ReactNode;
+}) {
+  const [state, setState] = useRestTimerState(workoutId);
   const start = useCallback(() => {
     setState(startRest(seconds, Date.now()));
-  }, [seconds]);
+  }, [seconds, setState]);
   const api = useMemo(() => ({ start }), [start]);
   return (
     <RestTimerContext.Provider value={api}>
-      {children}
+      {/* `data-rest` lets content keep clear of the bar (e.g. a sticky action above it). */}
+      <div data-rest={state.status !== 'idle'}>{children}</div>
       {state.status !== 'idle' ? (
         <>
           <div className={styles.spacer} aria-hidden="true" />

@@ -4,15 +4,18 @@ import { ROUTES, TRAINING_LINKS } from '@/app/routes';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
-import { Button, ConfirmSheet, Icon, Screen, Sheet } from '@/ui';
+import { Button, ConfirmSheet, dismissKeyboard, Icon, Screen, SegmentedControl, Sheet } from '@/ui';
+import { FocusWorkout } from '../components/FocusWorkout';
 import { RestTimerProvider } from '../components/RestTimer';
 import { WorkoutDetailsSheet } from '../components/WorkoutDetailsSheet';
 import { WorkoutEditor } from '../components/WorkoutEditor';
+import { AUTO_FOCUS, type FocusSelection } from '../domain/focus';
 import { formatDuration, trainingTypeLabel } from '../domain/format';
 import { useElapsedSeconds } from '../hooks/useElapsedSeconds';
 import styles from './WorkoutScreens.module.css';
 
 type Dialog = 'finish' | 'more' | 'discard' | 'details' | null;
+type View = 'focus' | 'list';
 
 /**
  * The workout in progress. Every change is written to the encrypted database immediately,
@@ -21,6 +24,9 @@ type Dialog = 'finish' | 'more' | 'discard' | 'details' | null;
  * Its own mode: no tab bar (AppLayout), "Training beenden" as the one primary action in the
  * header, and the rare actions – title and notes, discarding – behind "Mehr", discarding only
  * after a confirmation.
+ *
+ * Two views of the same stored workout: the focus view (one exercise, the default) and the full
+ * list ("Alle Übungen"). Switching saves a focused field first (blur), nothing is held twice.
  */
 export function ActiveWorkoutScreen() {
   const { t } = useI18n();
@@ -28,6 +34,8 @@ export function ActiveWorkoutScreen() {
   const { restTimerSeconds } = useSettings().settings;
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
+  const [view, setView] = useState<View>('focus');
+  const [focus, setFocus] = useState<FocusSelection>(AUTO_FOCUS);
   // The workout being finished: finishing reloads the active workout, which can arrive before
   // the navigation below – then it is gone and this screen must still lead to its summary.
   const [finishing, setFinishing] = useState<string | null>(null);
@@ -84,8 +92,38 @@ export function ActiveWorkoutScreen() {
       }
     >
       <Elapsed startedAt={workout.startedAt} />
-      <RestTimerProvider seconds={restTimerSeconds}>
-        <WorkoutEditor workout={workout} />
+      <SegmentedControl
+        label={t('training.focus.viewLabel')}
+        options={[
+          { value: 'focus', label: t('training.focus.viewFocus') },
+          { value: 'list', label: t('training.focus.viewList') },
+        ]}
+        value={view}
+        onChange={(next) => {
+          // A field still being typed in is saved (on blur) before the other view opens.
+          dismissKeyboard();
+          setView(next);
+        }}
+      />
+      <RestTimerProvider workoutId={workout.id} seconds={restTimerSeconds}>
+        {view === 'focus' ? (
+          <FocusWorkout
+            workout={workout}
+            selection={focus}
+            onSelect={setFocus}
+            onFinish={() => {
+              setDialog('finish');
+            }}
+          />
+        ) : (
+          <WorkoutEditor
+            workout={workout}
+            onOpenExercise={(exerciseId) => {
+              setFocus({ ...AUTO_FOCUS, exerciseId });
+              setView('focus');
+            }}
+          />
+        )}
       </RestTimerProvider>
       {dialog === 'finish' ? (
         <ConfirmSheet

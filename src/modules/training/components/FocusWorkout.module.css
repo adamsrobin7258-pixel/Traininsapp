@@ -1,0 +1,264 @@
+/* The focus view: one exercise, the set being entered and the one primary action. */
+.focus {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.exercise {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+}
+
+.header {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  margin: calc(var(--space-2) * -1);
+}
+
+.nav {
+  display: grid;
+  place-items: center;
+  width: var(--size-tap-target);
+  height: var(--size-tap-target);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: pointer;
+}
+
+.nav:active:not(:disabled) {
+  background: var(--color-surface-pressed);
+}
+
+.nav:disabled {
+  color: var(--color-text-tertiary);
+  opacity: 0.4;
+  cursor: default;
+}
+
+.title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  text-align: center;
+}
+
+.position {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-caps);
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.name {
+  font-size: var(--font-size-title);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+  overflow-wrap: break-word;
+  -webkit-hyphens: auto;
+  hyphens: auto;
+}
+
+.advanced {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-accent-text);
+}
+
+/* The sets of the exercise in short form; done ones carry a check (not colour alone). */
+.sets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.set {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 2px solid transparent;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+}
+
+.set[data-done='true'] {
+  color: var(--color-text);
+}
+
+.set[data-type='warmup'] .badge,
+.set[data-type='drop'] .badge {
+  font-weight: var(--font-weight-medium);
+}
+
+.set[aria-current='step'] {
+  border-color: var(--color-accent);
+  color: var(--color-text);
+  background: var(--color-accent-subtle);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: var(--font-weight-semibold);
+}
+
+.set[data-done='true'] .badge {
+  color: var(--color-positive);
+}
+
+.value {
+  white-space: nowrap;
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.editorHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.setLabel {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-positive);
+  background: var(--color-positive-subtle);
+}
+
+.state[data-current='true'] {
+  color: var(--color-accent-text);
+  background: var(--color-accent-subtle);
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/*
+ * The primary action stays within thumb reach: it sticks to the bottom of the screen (above the
+ * keyboard, and above the rest timer bar while that is shown) as long as its set is in view.
+ */
+.complete {
+  position: sticky;
+  bottom: calc(var(--safe-bottom) + var(--space-3));
+  z-index: 1;
+  gap: var(--space-2);
+  min-height: calc(var(--size-tap-target) + var(--space-4));
+  font-size: var(--font-size-headline);
+  box-shadow: 0 0 0 var(--space-2) var(--color-surface);
+  touch-action: manipulation;
+}
+
+/* Locked briefly after a completion: opaque, so nothing shows through while it sticks. */
+.complete:disabled {
+  opacity: 1;
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+}
+
+:global([data-rest='true']) .complete {
+  bottom: calc(var(--safe-bottom) + var(--size-tap-target) + var(--space-8));
+}
+
+.completedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.completedActions > * {
+  flex: 1 1 10rem;
+}
+
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.doneTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+}
+
+.doneTitle svg {
+  flex: none;
+  color: var(--color-positive);
+}
+
+.hint,
+.empty {
+  font-size: var(--font-size-subhead);
+  color: var(--color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--size-tap-target);
+  padding: 0 var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-subhead);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+}
+
+.error {
+  font-size: var(--font-size-footnote);
+  color: var(--color-critical);
+}

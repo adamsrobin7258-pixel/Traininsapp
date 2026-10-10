@@ -554,15 +554,22 @@ export class WorkoutService {
 
   // ── Ending ─────────────────────────────────────────────────────────────────
 
-  /** Finishes the active workout: drops untouched placeholder sets and stores the duration. */
+  /**
+   * Finishes the active workout: removes every set that was not completed (pre-filled values are
+   * suggestions, not training) and stores the duration – together or not at all. Finishing twice
+   * fails the second time and changes nothing.
+   */
   async finish(profileId: string, workoutId: string): Promise<Workout> {
     const workout = await this.requireWorkout(profileId, workoutId);
     if (workout.status !== 'active') throw new TrainingError('workout-not-active');
     const endedAt = this.now();
     const durationS = durationSeconds(workout.startedAt, endedAt);
     await this.store.atomic(async (repos) => {
-      await repos.workouts.deleteEmptySets(workoutId);
-      await repos.workouts.finish(workoutId, endedAt, durationS, endedAt);
+      // Checked again inside the transaction: a parallel finish may have won meanwhile.
+      if (!(await repos.workouts.finish(workoutId, endedAt, durationS, endedAt))) {
+        throw new TrainingError('workout-not-active');
+      }
+      await repos.workouts.deleteOpenSets(workoutId);
     });
     return { ...workout, status: 'completed', endedAt, durationS, updatedAt: endedAt };
   }

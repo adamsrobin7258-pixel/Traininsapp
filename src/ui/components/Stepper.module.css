@@ -1,0 +1,78 @@
+/* A number with −/+ on both sides; large enough to hit with a thumb between two sets. */
+.stepper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.caption {
+  font-size: var(--font-size-footnote);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.row[data-steps='false'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.step {
+  display: grid;
+  place-items: center;
+  width: calc(var(--size-tap-target) + var(--space-3));
+  height: calc(var(--size-tap-target) + var(--space-3));
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-full);
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.step:active:not(:disabled) {
+  background: var(--color-surface-pressed);
+}
+
+.step:disabled {
+  color: var(--color-text-tertiary);
+  cursor: default;
+  opacity: 0.5;
+}
+
+.step:focus-visible,
+.value:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.value {
+  width: 100%;
+  min-width: 0;
+  height: calc(var(--size-tap-target) + var(--space-3));
+  padding: 0 var(--space-1);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-metric);
+  font-weight: var(--font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--color-text);
+  background: var(--color-surface-muted);
+}
+
+.value:focus {
+  border-color: var(--color-focus);
+}
+
+.value[aria-invalid='true'] {
+  border-color: var(--color-critical);
+}

@@ -257,7 +257,9 @@ describe('system back', () => {
       },
     });
     await act(() => router.navigate('/training/workout'));
-    expect(await screen.findByLabelText('Satz 1: Gewicht')).toHaveValue('80');
+    expect(
+      await screen.findByRole('button', { name: 'Satz 1: 80 kg × 8, abgeschlossen' }),
+    ).toBeInTheDocument();
 
     await pressBack();
     expect(router.state.location.pathname).toBe('/training');
@@ -269,12 +271,12 @@ describe('system back', () => {
     expect(active?.status).toBe('active');
 
     await userEvent.click(screen.getByRole('button', { name: 'Fortsetzen' }));
-    expect(await screen.findByLabelText('Satz 1: Gewicht')).toHaveValue('80');
-    expect(
-      within(screen.getByRole('article', { name: 'Langhantel-Bankdrücken' })).getByRole('button', {
-        name: 'Satz 1 wieder öffnen',
-      }),
-    ).toBeInTheDocument();
+    const exercise = within(await screen.findByRole('article', { name: 'Langhantel-Bankdrücken' }));
+    await userEvent.click(
+      exercise.getByRole('button', { name: 'Satz 1: 80 kg × 8, abgeschlossen' }),
+    );
+    expect(exercise.getByLabelText('Satz 1: Gewicht')).toHaveValue('80');
+    expect(exercise.getByRole('button', { name: 'Satz 1 wieder öffnen' })).toBeInTheDocument();
   });
 
   it('training: the rest timer and the exercise picker close first, then back to Training', async () => {

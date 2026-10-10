@@ -137,6 +137,7 @@ beim Tippen kurz nach. Keine Dauer-, Puls- oder Bounce-Animationen.
 | `Section`          | Abschnitt mit Titel (`h2`) und optionaler Fußnote                                              |
 | `List` / `ListRow` | Gruppierte Liste; Zeile mit Icon, Titel, Untertitel, Wert oder Link                            |
 | `SegmentedControl` | Einfachauswahl (Radiogruppe) mit Pfeiltasten-Bedienung                                         |
+| `Stepper`          | Zahl mit großen −/+-Tasten; Antippen der Zahl öffnet die Zifferntastatur (Satzeingabe)         |
 | `TextField`        | Inline-Eingabe; übernimmt bei Enter/Verlassen, verwirft bei Escape                             |
 | `Stat`             | Kennzahl: große tabellarische Zahl + Beschriftung                                              |
 | `EmptyState`       | Leerer Zustand: kleines Bild (Icon oder Illustration), Titel, ein Satz, optional eine Aktion   |
