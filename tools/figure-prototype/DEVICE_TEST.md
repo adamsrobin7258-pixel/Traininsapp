@@ -24,7 +24,7 @@ eingebettete Figur oder Offline-Prüfung nicht stimmen.
 1. github.com öffnen und **anmelden** (Artefakte gibt es nur angemeldet).
 2. Repository → **Actions** → links **„Figure prototype APK“** → obersten grünen Lauf öffnen.
 3. Ganz unten unter **Artifacts** auf **`kalethra-FIGUR-TEST-1db10ca`** tippen. Es kommt eine
-   ZIP-Datei (ca. 30 MB). Tipp: Wenn die Seite die Artefakte nicht zeigt, „Desktop-Website“ im
+   ZIP-Datei (ca. 16 MB). Tipp: Wenn die Seite die Artefakte nicht zeigt, „Desktop-Website“ im
    Chrome-Menü einschalten.
 
 **Achtung, nicht verwechseln:** Im normalen Workflow „CI“ desselben Branches gibt es auch eine
