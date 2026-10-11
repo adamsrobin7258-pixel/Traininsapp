@@ -577,6 +577,55 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Markenfiguren F1–F4 – in Planung
+
+Kleines Büstenpaar (weiblich und männlich, Steinskulptur) als Markenelement rechts neben dem
+Titel der Seite Fortschritt. Konzept und Regeln: [BRAND_FIGURE.md](BRAND_FIGURE.md),
+Designsystem [Markenelemente](DESIGN_SYSTEM.md#markenelemente). Jede Phase beginnt erst nach
+ausdrücklicher Freigabe; alle Größen sind bis F4 vorläufige Zielwerte.
+
+**F1 – Konzept festschreiben (nur Dokumentation)**
+
+- [ ] `docs/BRAND_FIGURE.md` mit den Abschnitten 1–9 vorhanden; Designsystem um
+      „Markenelemente“ ergänzt; dieser Eintrag vorhanden
+- [ ] Diff gegenüber dem Standardbranch enthält ausschließlich diese drei Dateien
+- [ ] Lizenzfrage als offene Freigabebedingung dokumentiert, nicht als geklärt
+- [ ] Prüfsummen der Produktionsfiguren unverändert
+
+**F2 – Bilder erzeugen (ohne Einbindung in die App)**
+
+- [ ] Voraussetzungen aus `BRAND_FIGURE.md`, Abschnitt 8, erfüllt und Entscheidungen
+      festgehalten (Modellquelle, Umgang mit der Lizenzfrage)
+- [ ] reproduzierbares Renderskript unter `tools/`; erneuter Lauf erzeugt bytegleiche oder im
+      Manifest dokumentierte Bilder
+- [ ] Bilder unter `public/visuals/brand/` mit `ATTRIBUTION.md` und Manifest (Abmessungen,
+      Bytes, SHA-256); Manifesttest und Größenbudget grün
+- [ ] Probebilder hell und dunkel vom Projektinhaber abgenommen (Material, Licht,
+      Gleichwertigkeit, nicht sexualisiert, keine Bodybuilder-Proportionen)
+- [ ] Produktionsfiguren unverändert (Prüfsummentest), kein App-Code geändert
+
+**F3 – Einbindung in den Fortschritts-Kopfbereich**
+
+- [ ] freie Titelbreite auf dem Xiaomi bei 100 %, 130 % und größter Systemschrift gemessen und
+      in `BRAND_FIGURE.md` eingetragen
+- [ ] `Screen` nur optional erweitert; ohne die neue Angabe identisches Markup (Test), andere Tabs
+      unverändert
+- [ ] E2E bei 320/360/390/430 px und 100/130/200 % Schrift, hell/dunkel: Kopfbereichshöhe und
+      Lage von Zeitraumschalter, Zeitraumzeile und Score-Karte mit und ohne Markenfigur gleich;
+      bei zu wenig Platz vollständig ausgeblendet
+- [ ] Auswahltest: Ergebnis für jedes `profile.sex` und beliebige Daten immer das Paar; keine
+      Profil- oder Gesundheitsdaten gelesen; keine neuen Datenbankfelder oder Einstellungen
+- [ ] dekorativ (`alt=""`/`aria-hidden`, nicht fokussierbar); Score-Karte ohne Bild; weiterhin
+      genau ein Knopf in `main`, kein horizontales Scrollen; kein WebGL auf der Seite
+- [ ] Datenquellen-Eintrag (de/en) entsprechend der geklärten Lizenzfrage
+
+**F4 – Gerätetest und Abschluss**
+
+- [ ] Xiaomi 15 Ultra, hell/dunkel, kleinste und größte Systemschrift: Büsten erkennbar, kein
+      Springen beim Laden, Ausblenden bei großer Schrift – Ergebnis mit Screenshots dokumentiert
+- [ ] vorläufige Zielwerte in `BRAND_FIGURE.md` durch gemessene Werte ersetzt
+- [ ] `npm run check`, Build und CI grün; Version erhöht; Roadmap-Eintrag abgeschlossen
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

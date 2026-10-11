@@ -383,6 +383,41 @@ mit „nur privat“, ohne Lizenzangabe oder mit KI-Bildern ungeklärter Herkunf
 werden in der App unter Profil → Datenquellen (`DataSourcesSheet`) und in der `ATTRIBUTION.md`
 geführt.
 
+## Markenelemente
+
+Seit Phase F1 als Konzept festgelegt, noch nicht in der App. Vollständige Festlegung:
+[BRAND_FIGURE.md](BRAND_FIGURE.md).
+
+**Markenfigur:** zwei kleine freigestellte Büsten (weiblich und männlich) im Stil klassischer
+griechischer Steinskulpturen – anatomisch glaubwürdig, feiner matter Naturkalkstein in warmem
+Elfenbein, einheitliches Licht, gleichwertig gestaltet; keine Bodybuilder-Proportionen, nicht
+sexualisiert, nicht künstlich.
+
+**Ausnahme von „keine dekorativen Bilder ohne Inhalt“:** Die Markenfigur ist Dekoration mit
+festem Zweck (Wiedererkennung der Marke). Die Ausnahme gilt nur für sie, nur an freigegebenen
+Orten und nur so, wie in `BRAND_FIGURE.md` beschrieben. Sie ist ein vierter Bildstil neben den
+drei aus [Bilder und Illustrationen](#bilder-und-illustrationen) und ersetzt keinen davon.
+
+**Regeln:**
+
+- **Höchstens ein Markenelement je Bildschirm**; das Büstenpaar zählt als eines.
+- **Freigegebene Orte:** nur der Kopfbereich der Seite Fortschritt (rechts neben dem Titel).
+  Jede Erweiterung braucht eine eigene Freigabe. Score-Karte, Diagramme und Sheets sind
+  ausgeschlossen.
+- **Layout hat Vorrang:** Die Markenfigur verändert weder Höhe noch Umbruch des Kopfbereichs noch
+  die Lage der folgenden Elemente. Reicht der Platz nicht, wird sie ganz ausgeblendet – nicht
+  verkleinert, nicht beschnitten.
+- **Statisch und lokal:** fertige Bilder unter `public/visuals/brand/` mit `ATTRIBUTION.md`;
+  kein 3D-Renderer, keine Animation, keine Netzwerkanfragen.
+- **Dekorativ:** für Screenreader unsichtbar, nicht fokussierbar, nicht antippbar.
+- **Gleich für alle:** standardmäßig immer das Paar. Keine Auswahl nach Geschlecht, Gewicht,
+  Körperform, Score, Leistung, Tageszeit, Zufall oder anderen Gesundheitsdaten; keine neuen
+  persönlichen Daten. Die Markenfigur ist von der Trainingsfigur (`public/figure/`, Auswahl nach
+  `profile.sex`) getrennt und ändert deren Regeln nicht.
+- **Hell und dunkel:** freigestellt auf `--color-bg`, ohne Kasten oder Lichthof.
+- **Lizenz:** Freigabebedingung; ohne geklärte Lizenz- und Attributionsfrage werden keine
+  Markenbilder eingebunden (Stand: offen, siehe `BRAND_FIGURE.md`, Abschnitt 7).
+
 ## Barrierefreiheit
 
 - Semantische Elemente (`main`, `nav`, `section` mit Überschrift, Listen).
