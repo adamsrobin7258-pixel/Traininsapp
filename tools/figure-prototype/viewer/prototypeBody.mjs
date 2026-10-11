@@ -13,6 +13,12 @@
  *    stay strong, the others are dimmed.
  *  - Corrective shapes (`fix_*` morph targets) follow their bone's bend every frame (drivers in
  *    the GLB's root extras), in both views.
+ *
+ * Looks (option `look`): '1A' – the phase-1A look described above (group colours, fibre map,
+ * plane-wave stone variation); '1C' – phase 1C (look.json → sculpture1C): one warm-ivory stone
+ * family in both views, no group colours (trained groups in a slightly deeper stone tone), no
+ * fibre map (the texture is then never decoded or uploaded), non-periodic grain, stone drape.
+ * The GLB is the same for both.
  */
 import { AnimationMixer, Box3, Color, MeshStandardMaterial, Sphere, Vector3 } from 'three';
 import {
@@ -27,6 +33,7 @@ import look from '../look.json';
 
 export const VIEWS = ['skin', 'muscle'];
 export const DEFAULT_VIEW = 'skin';
+export const LOOKS = ['1A', '1C'];
 export const STILL_PHASE = 0.3;
 const VIEW_ANGLES = {
   horizontalPush: { azimuth: 74, elevation: 30 },
@@ -39,7 +46,16 @@ const SKIN_ONLY = /^proto_(hair|drape)$/;
 
 const linearColor = (hex) => new Color(hex); // three converts sRGB hex to the working (linear) space
 
-function stoneUniforms() {
+function stoneUniforms(lookName) {
+  if (lookName === '1C') {
+    const g = look.sculpture1C.stone.grain;
+    return {
+      uGrain: {
+        value: [g.coarse.scale, g.coarse.amount, g.fine.scale, g.fine.amount],
+      },
+      uWarmCool: { value: [g.warmCool.scale, g.warmCool.amount] },
+    };
+  }
   const s = look.stone;
   return {
     uStoneDirs: {
@@ -58,18 +74,61 @@ function stoneUniforms() {
   };
 }
 
+// Phase-1A variation: six plane waves per scale (periodic; the fine scale is below a pixel).
+const PLANE_WAVES = `uniform vec3 uStoneDirs[6];
+uniform float uStonePhases[6];
+uniform vec4 uStoneVar;
+uniform float uWarm;
+float stoneNoise(vec3 p, float s) {
+  float a = 0.0;
+  for (int i = 0; i < 6; i++) a += sin(dot(p, uStoneDirs[i]) / s * 6.2831853 + uStonePhases[i]);
+  return a / 1.7320508;
+}`;
+const PLANE_WAVES_COLOUR = `float big = stoneNoise(vRest, uStoneVar.x) * uStoneVar.y;
+float fine = stoneNoise(vRest * 1.7, uStoneVar.z) * uStoneVar.w;
+float warm = stoneNoise(vRest + vec3(3.1), uStoneVar.x * 1.6) * uWarm;
+vec3 stone = diffuse * (1.0 + big + fine) * vec3(1.0 + warm, 1.0, 1.0 - warm);`;
+
+// Phase-1C grain: smooth value noise (hash lattice, no repeating direction), two octaves of a
+// few centimetres – large enough not to flicker at the viewer's distance, small enough to read
+// as worked stone, not as stains.
+const VALUE_NOISE = `uniform vec4 uGrain;
+uniform vec2 uWarmCool;
+float grainHash(vec3 p) {
+  p = fract(p * 0.3183099 + vec3(0.71, 0.113, 0.419));
+  p *= 17.0;
+  return fract(p.x * p.y * p.z * (p.x + p.y + p.z));
+}
+float grainNoise(vec3 x) {
+  vec3 i = floor(x);
+  vec3 f = fract(x);
+  f = f * f * (3.0 - 2.0 * f);
+  float n = mix(
+    mix(mix(grainHash(i), grainHash(i + vec3(1, 0, 0)), f.x),
+        mix(grainHash(i + vec3(0, 1, 0)), grainHash(i + vec3(1, 1, 0)), f.x), f.y),
+    mix(mix(grainHash(i + vec3(0, 0, 1)), grainHash(i + vec3(1, 0, 1)), f.x),
+        mix(grainHash(i + vec3(0, 1, 1)), grainHash(i + vec3(1, 1, 1)), f.x), f.y),
+    f.z);
+  return n * 2.0 - 1.0;
+}`;
+const VALUE_NOISE_COLOUR = `float coarse = grainNoise(vRest / uGrain.x) * uGrain.y;
+float fine = grainNoise(vRest / uGrain.z + vec3(7.3)) * uGrain.w;
+float warm = grainNoise(vRest / uWarmCool.x + vec3(19.1)) * uWarmCool.y;
+vec3 stone = diffuse * (1.0 + coarse + fine) * vec3(1.0 + warm, 1.0, 1.0 - warm);`;
+
 /**
  * Stone material: base colour varied in the rest pose's object space (so the pattern stays on
  * the body when it moves), optionally tinted per vertex by the muscle groups.
  */
-function stoneMaterial({ color, roughness, groups = null, normalMap = null }) {
+function stoneMaterial({ color, roughness, groups = null, normalMap = null, lookName = '1A' }) {
   const material = new MeshStandardMaterial({
     color: linearColor(color),
     roughness,
     metalness: 0,
     ...(normalMap ? { normalMap } : {}),
   });
-  const uniforms = stoneUniforms();
+  const uniforms = stoneUniforms(lookName);
+  const valueNoise = lookName === '1C';
   const slots = groups ? groups.mix.value.length : 0;
   material.onBeforeCompile = (shader) => {
     Object.assign(shader.uniforms, uniforms);
@@ -111,35 +170,36 @@ vTint = vAmount > 0.0001 ? tint / vAmount : vec3(0.0);`
       .replace(
         '#include <common>',
         `#include <common>
-uniform vec3 uStoneDirs[6];
-uniform float uStonePhases[6];
-uniform vec4 uStoneVar;
-uniform float uWarm;
+${valueNoise ? VALUE_NOISE : PLANE_WAVES}
 varying vec3 vRest;
 varying vec3 vTint;
-varying float vAmount;
-float stoneNoise(vec3 p, float s) {
-  float a = 0.0;
-  for (int i = 0; i < 6; i++) a += sin(dot(p, uStoneDirs[i]) / s * 6.2831853 + uStonePhases[i]);
-  return a / 1.7320508;
-}`,
+varying float vAmount;`,
       )
       .replace(
         'vec4 diffuseColor = vec4( diffuse, opacity );',
-        `float big = stoneNoise(vRest, uStoneVar.x) * uStoneVar.y;
-float fine = stoneNoise(vRest * 1.7, uStoneVar.z) * uStoneVar.w;
-float warm = stoneNoise(vRest + vec3(3.1), uStoneVar.x * 1.6) * uWarm;
-vec3 stone = diffuse * (1.0 + big + fine) * vec3(1.0 + warm, 1.0, 1.0 - warm);
+        `${valueNoise ? VALUE_NOISE_COLOUR : PLANE_WAVES_COLOUR}
 vec4 diffuseColor = vec4(mix(stone, vTint, clamp(vAmount, 0.0, 1.0)), opacity);`,
       );
   };
   material.customProgramCacheKey = () =>
-    `kalethra-prototype-stone-${groups ? 'groups' : 'plain'}-${normalMap ? 'fibres' : 'smooth'}`;
+    `kalethra-prototype-stone-${lookName}-${groups ? 'groups' : 'plain'}-${normalMap ? 'fibres' : 'smooth'}`;
   return material;
 }
 
 /** Per group: how far the tint goes (levels → mix) and with which colour, for a view. */
-export function groupTints(groupNames, highlight, view, accent = look.accent) {
+export function groupTints(groupNames, highlight, view, accent = look.accent, lookName = '1A') {
+  if (lookName === '1C') {
+    // One stone family in both views: only trained groups get the deeper stone tone.
+    const h = look.sculpture1C.highlight;
+    const mix = [];
+    const tint = [];
+    for (const group of [...groupNames, null]) {
+      const level = group ? highlight[group] : undefined;
+      mix.push(level === 'primary' ? h.primaryMix : level === 'secondary' ? h.secondaryMix : 0);
+      tint.push(h.tone);
+    }
+    return { mix, tint };
+  }
   const any = Object.values(highlight).some(Boolean);
   const mv = look.muscleView;
   const sv = look.skinView;
@@ -174,8 +234,10 @@ export function groupTints(groupNames, highlight, view, accent = look.accent) {
  */
 export async function prototypeBodyFrom(
   gltf,
-  { clip: requested, highlight, palette, view = DEFAULT_VIEW },
+  { clip: requested, highlight, palette, view = DEFAULT_VIEW, look: lookName = '1A' },
 ) {
+  if (!LOOKS.includes(lookName)) throw new Error(`unknown look ${String(lookName)}`);
+  const sculpture = lookName === '1C' ? look.sculpture1C : null;
   const scene = gltf.scene;
   const animations = gltf.animations;
   const nodeNames = [];
@@ -199,8 +261,10 @@ export async function prototypeBodyFrom(
   const groupNames = root.userData.muscleGroups;
   const drivers = root.userData.correctives ?? [];
   const fibreIndex = root.userData.prototypeMaterials?.muscle;
+  // 1C without fibres: the material (and its 4096² texture) is never requested.
+  const useFibres = !sculpture || sculpture.fibres.use;
   const fibreMaterial =
-    fibreIndex !== undefined && gltf.parser
+    useFibres && fibreIndex !== undefined && gltf.parser
       ? await gltf.parser.getDependency('material', fibreIndex)
       : null;
   const fibreMap = fibreMaterial?.normalMap ?? null;
@@ -214,24 +278,27 @@ export async function prototypeBodyFrom(
 
   const groups = { mix: { value: new Array(groupNames.length + 1).fill(0) }, tint: { value: [] } };
   for (let i = 0; i <= groupNames.length; i++) groups.tint.value.push(new Color());
+  const stone = sculpture ? sculpture.stone : look.stone;
+  const cloth = sculpture ? sculpture.drape : look.cloth;
+  const eyes = sculpture ? sculpture.eyes : look.eyes;
+  const fibreScale = sculpture ? sculpture.fibres.normalScale : look.muscleView.fibreNormalScale;
   const skinMaterial = stoneMaterial({
-    color: look.stone.color,
-    roughness: look.stone.roughness,
+    color: stone.color,
+    roughness: stone.roughness,
     groups,
+    lookName,
   });
   const muscleMaterial = stoneMaterial({
-    color: look.stone.color,
-    roughness: look.stone.roughness,
+    color: stone.color,
+    roughness: stone.roughness,
     groups,
     normalMap: fibreMap,
+    lookName,
   });
-  muscleMaterial.normalScale.set(
-    look.muscleView.fibreNormalScale,
-    look.muscleView.fibreNormalScale,
-  );
-  const hairMaterial = stoneMaterial({ color: look.stone.color, roughness: look.stone.roughness });
-  const drapeMaterial = stoneMaterial({ color: look.cloth.color, roughness: look.cloth.roughness });
-  const eyeMaterial = stoneMaterial({ color: look.eyes.color, roughness: look.eyes.roughness });
+  muscleMaterial.normalScale.set(fibreScale, fibreScale);
+  const hairMaterial = stoneMaterial({ color: stone.color, roughness: stone.roughness, lookName });
+  const drapeMaterial = stoneMaterial({ color: cloth.color, roughness: cloth.roughness, lookName });
+  const eyeMaterial = stoneMaterial({ color: eyes.color, roughness: eyes.roughness, lookName });
   const owned = [skinMaterial, muscleMaterial, hairMaterial, drapeMaterial, eyeMaterial];
 
   const bodyMeshes = [];
@@ -269,7 +336,7 @@ export async function prototypeBodyFrom(
   let current = highlight;
   let accent = palette.accent ?? look.accent;
   const applyHighlight = () => {
-    const { mix, tint } = groupTints(groupNames, current, currentView, accent);
+    const { mix, tint } = groupTints(groupNames, current, currentView, accent, lookName);
     mix.forEach((m, i) => (groups.mix.value[i] = m));
     tint.forEach((t, i) => groups.tint.value[i].set(t));
     for (const mesh of bodyMeshes) {
@@ -335,6 +402,9 @@ export async function prototypeBodyFrom(
     get displayView() {
       return currentView;
     },
+    look: lookName,
+    /** Whether the fibre map is in use (1C: never loaded). */
+    fibres: Boolean(fibreMap),
     advance(seconds) {
       mixer.update(seconds);
       applyCorrectives();
@@ -370,10 +440,14 @@ export async function prototypeBodyFrom(
       mixer.stopAllAction();
       mixer.uncacheRoot(scene);
       for (const material of owned) material.dispose();
+      const skeletons = new Set();
       scene.traverse((node) => {
         if (!node.isMesh) return;
         node.geometry.dispose();
+        if (node.isSkinnedMesh) skeletons.add(node.skeleton);
       });
+      // The skeleton's bone texture is a GPU texture of its own (one per rebuild otherwise).
+      for (const skeleton of skeletons) skeleton.dispose();
       fibreMap?.dispose();
     },
   };

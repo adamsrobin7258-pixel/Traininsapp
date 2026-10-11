@@ -46,6 +46,37 @@
     "dimmedDarken": 0.08,
     "fibreNormalScale": 1.0
   },
+  "sculpture1C": {
+    "note": "Phase 1C look (viewer default): classical stone sculpture in warm ivory, one material family, forms read by light. The keys above stay the phase-1A look (selectable in the viewer for comparison; the GLB build reads them). Colours sRGB.",
+    "stone": {
+      "color": "#E7DBC5",
+      "roughness": 0.9,
+      "grain": {
+        "note": "Non-periodic value noise in the rest pose's object space (metres); amounts are relative brightness",
+        "coarse": { "scale": 0.11, "amount": 0.022 },
+        "fine": { "scale": 0.032, "amount": 0.01 },
+        "warmCool": { "scale": 0.3, "amount": 0.01 }
+      }
+    },
+    "drape": { "color": "#D9CBB3", "roughness": 0.93 },
+    "eyes": { "color": "#E7DBC5", "roughness": 0.9 },
+    "highlight": {
+      "note": "Trained groups: a slightly deeper warm stone tone – same material family, no colour fields",
+      "tone": "#C9AE86",
+      "primaryMix": 0.5,
+      "secondaryMix": 0.28
+    },
+    "fibres": { "use": false, "normalScale": 0 },
+    "lights": {
+      "note": "Positions in scene space: +x right, +y up, +z towards the camera. No shadows.",
+      "hemisphere": { "sky": "#FFF5E8", "ground": "#6F6353", "intensity": 0.55 },
+      "key": { "color": "#FFEBD4", "intensity": 3.0, "position": [-2.4, 3.6, 2.6] },
+      "fill": { "color": "#FFF3E8", "intensity": 0.45, "position": [2.8, 1.0, 2.2] },
+      "rim": { "color": "#FFF6EC", "intensity": 0.5, "position": [1.8, 2.4, -3.0] }
+    },
+    "toneMapping": "ACESFilmic",
+    "exposure": 1.05
+  },
   "groups": {
     "chest": "#B5524A",
     "shoulders": "#C27C3A",

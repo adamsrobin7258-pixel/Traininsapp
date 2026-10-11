@@ -8,7 +8,7 @@
  */
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { Mesh, SkinnedMesh, Vector3 } from 'three';
+import { Color, Mesh, SkinnedMesh, Vector3 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { FIGURE_MUSCLES } from '@/core/training';
 import { validateGlb } from '@/modules/training/figure/assetValidator';
@@ -45,8 +45,8 @@ function withoutImages(buffer) {
   return out.buffer;
 }
 const load = () => new GLTFLoader().parseAsync(withoutImages(file), '');
-const body = async (clip, highlight = {}, view) =>
-  prototypeBodyFrom(await load(), { clip, highlight, palette: PALETTE, view });
+const body = async (clip, highlight = {}, view, lookName) =>
+  prototypeBodyFrom(await load(), { clip, highlight, palette: PALETTE, view, look: lookName });
 
 describe('prototype file', () => {
   it('keeps the production assets unchanged', () => {
@@ -243,5 +243,81 @@ describe('prototype body', () => {
     for (const g of geometries) g.addEventListener('dispose', () => disposed++);
     b.dispose();
     expect(disposed).toBe(geometries.length);
+  });
+});
+
+describe('look 1C (phase 1C, viewer default)', () => {
+  const names = [...FIGURE_MUSCLES].sort();
+  const hsl = (hex) => new Color(hex).getHSL({}, 'srgb');
+  const sc = look.sculpture1C;
+
+  it('keeps one warm stone family: stone, drape, eyes and highlight tone', () => {
+    for (const hex of [sc.stone.color, sc.drape.color, sc.eyes.color, sc.highlight.tone]) {
+      const { h, s, l } = hsl(hex);
+      expect(h * 360).toBeGreaterThanOrEqual(30); // warm: no pink, green or grey-blue
+      expect(h * 360).toBeLessThanOrEqual(45); // and not orange-red
+      expect(s).toBeLessThan(0.45); // no saturated colour field
+      expect(l).toBeGreaterThan(0.6);
+    }
+    expect(sc.stone.roughness).toBeGreaterThanOrEqual(0.85);
+    expect(sc.fibres.use).toBe(false);
+    expect(sc.toneMapping).toBe('ACESFilmic');
+  });
+
+  it('has no group colours: nothing tinted without an exercise, in both views', () => {
+    for (const view of ['skin', 'muscle']) {
+      const { mix, tint } = groupTints(names, {}, view, look.accent, '1C');
+      expect(mix.every((m) => m === 0)).toBe(true);
+      expect(new Set(tint).size).toBe(1);
+      expect(tint[0]).toBe(sc.highlight.tone);
+    }
+  });
+
+  it('highlights trained groups in the deeper stone tone: primary > secondary > others = 0', () => {
+    const hl = { chest: 'primary', triceps: 'secondary' };
+    for (const view of ['skin', 'muscle']) {
+      const r = groupTints(names, hl, view, look.accent, '1C');
+      const at = (g) => r.mix[names.indexOf(g)];
+      expect(at('chest')).toBe(sc.highlight.primaryMix);
+      expect(at('triceps')).toBe(sc.highlight.secondaryMix);
+      expect(at('lats')).toBe(0);
+      expect(new Set(r.tint).size).toBe(1);
+    }
+  });
+
+  it('builds the body without the fibre map in both views', async () => {
+    const b = await body('rest', {}, 'muscle', '1C');
+    expect(b.look).toBe('1C');
+    expect(b.fibres).toBe(false);
+    b.root.traverse((n) => {
+      if (n instanceof Mesh && /^(muscle|body)_/.test(n.name))
+        expect(n.material.normalMap).toBeNull();
+    });
+    b.setView('skin');
+    expect(b.root.getObjectByName('proto_drape').visible).toBe(true);
+    b.dispose();
+  });
+
+  it('keeps 1A as the default of the body builder and rejects unknown looks', async () => {
+    const b = await body('rest');
+    expect(b.look).toBe('1A');
+    b.dispose();
+    await expect(body('rest', {}, 'skin', '1B')).rejects.toThrow();
+  });
+
+  it('frees the skeleton (bone texture) on dispose', async () => {
+    const b = await body('rest', {}, 'skin', '1C');
+    const skeletons = new Set();
+    b.root.traverse((n) => n instanceof SkinnedMesh && skeletons.add(n.skeleton));
+    let freed = 0;
+    for (const s of skeletons) {
+      const original = s.dispose.bind(s);
+      s.dispose = () => {
+        freed++;
+        original();
+      };
+    }
+    b.dispose();
+    expect(freed).toBe(skeletons.size);
   });
 });

@@ -1,0 +1,220 @@
+{
+ "note": "Software-WebGL (SwiftShader) pre-check, not a device measurement. Figure pixels vs background; luminance Rec.709 (0-255); hue/sat/val of the median figure colour (HSV). Before = look 1A (pixel-identical to the 1A viewer), after = look 1C (final values).",
+ "before": {
+  "skin_front": {
+   "p5": 132,
+   "p95": 210,
+   "span": 77,
+   "p99": 221,
+   "clip": 0.0,
+   "hue": 38.6,
+   "sat": 0.145,
+   "val": 0.757,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    193,
+    183,
+    165
+   ]
+  },
+  "skin_back": {
+   "p5": 128,
+   "p95": 211,
+   "span": 82,
+   "p99": 222,
+   "clip": 0.0,
+   "hue": 37.2,
+   "sat": 0.154,
+   "val": 0.737,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    188,
+    177,
+    159
+   ]
+  },
+  "skin_threeq": {
+   "p5": 136,
+   "p95": 207,
+   "span": 71,
+   "p99": 219,
+   "clip": 0.0,
+   "hue": 37.2,
+   "sat": 0.151,
+   "val": 0.753,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    192,
+    181,
+    163
+   ]
+  },
+  "muscle_front": {
+   "p5": 111,
+   "p95": 205,
+   "span": 94,
+   "p99": 218,
+   "clip": 0.0,
+   "hue": 31.9,
+   "sat": 0.254,
+   "val": 0.725,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    185,
+    163,
+    138
+   ]
+  },
+  "muscle_back": {
+   "p5": 96,
+   "p95": 192,
+   "span": 96,
+   "p99": 217,
+   "clip": 0.0,
+   "hue": 40.0,
+   "sat": 0.172,
+   "val": 0.616,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    157,
+    148,
+    130
+   ]
+  },
+  "muscle_threeq": {
+   "p5": 114,
+   "p95": 204,
+   "span": 90,
+   "p99": 216,
+   "clip": 0.0,
+   "hue": 33.2,
+   "sat": 0.257,
+   "val": 0.718,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    183,
+    162,
+    136
+   ]
+  }
+ },
+ "after": {
+  "skin_front": {
+   "p5": 108,
+   "p95": 212,
+   "span": 104,
+   "p99": 219,
+   "clip": 0.0,
+   "hue": 37.1,
+   "sat": 0.211,
+   "val": 0.78,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    199,
+    183,
+    157
+   ]
+  },
+  "skin_back": {
+   "p5": 103,
+   "p95": 210,
+   "span": 108,
+   "p99": 217,
+   "clip": 0.0,
+   "hue": 36.3,
+   "sat": 0.219,
+   "val": 0.769,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    196,
+    179,
+    153
+   ]
+  },
+  "skin_threeq": {
+   "p5": 111,
+   "p95": 212,
+   "span": 102,
+   "p99": 217,
+   "clip": 0.0,
+   "hue": 37.1,
+   "sat": 0.212,
+   "val": 0.776,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    198,
+    182,
+    156
+   ]
+  },
+  "muscle_front": {
+   "p5": 108,
+   "p95": 212,
+   "span": 104,
+   "p99": 219,
+   "clip": 0.0,
+   "hue": 36.6,
+   "sat": 0.206,
+   "val": 0.78,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    199,
+    183,
+    158
+   ]
+  },
+  "muscle_back": {
+   "p5": 104,
+   "p95": 211,
+   "span": 107,
+   "p99": 217,
+   "clip": 0.0,
+   "hue": 37.1,
+   "sat": 0.214,
+   "val": 0.769,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    196,
+    180,
+    154
+   ]
+  },
+  "muscle_threeq": {
+   "p5": 111,
+   "p95": 212,
+   "span": 102,
+   "p99": 217,
+   "clip": 0.0,
+   "hue": 36.6,
+   "sat": 0.206,
+   "val": 0.78,
+   "bg_hue": 40.0,
+   "bg_sat": 0.038,
+   "med": [
+    199,
+    183,
+    158
+   ]
+  }
+ },
+ "flicker": {
+  "note": "mean absolute change of fine detail (high-pass, sigma 1.5 px) between two frames 0.4 degrees apart, muscle view front, flat areas only",
+  "before_1A": 0.384,
+  "after_1C": 0.081
+ },
+ "fibreMap": {
+  "before": "4096x4096 normal map in the muscle view (~85 MiB GPU estimate)",
+  "after": "not loaded (GPU estimate ~32 MiB total)"
+ }
+}

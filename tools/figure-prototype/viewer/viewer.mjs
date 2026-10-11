@@ -5,11 +5,17 @@
  * and open /tools/figure-prototype/viewer/ (also on a phone in the same network: `--host`).
  *
  * Query (for automated shots): view=skin|muscle, ex=bench|pull|rest|restAll, side=front|back,
- * t=<seconds> (still frame), w/h (canvas size).
+ * t=<seconds> (still frame), w/h (canvas size), look=1C|1A (default 1C), turn=<degrees> (extra
+ * turn of the figure, e.g. 45 for a three-quarter view).
+ *
+ * Phase 1C: the look "1C" (look.json → sculpture1C, own sculpture lights) is the default; the
+ * button "Vergleich" switches to the phase-1A look (app lights) and back, on the same device.
  */
 import {
   ACESFilmicToneMapping,
+  DirectionalLight,
   Group,
+  HemisphereLight,
   PerspectiveCamera,
   SRGBColorSpace,
   Scene,
@@ -17,7 +23,8 @@ import {
 } from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { addFigureLights } from '@/modules/training/figure/figureRenderer';
-import { prototypeBodyFrom, DEFAULT_VIEW } from './prototypeBody.mjs';
+import { prototypeBodyFrom, DEFAULT_VIEW, LOOKS } from './prototypeBody.mjs';
+import look from '../look.json';
 
 const ASSET = '/assets/figure/prototype/kalethra-male-prototype.glb';
 const EXERCISES = {
@@ -75,7 +82,26 @@ renderer.debug.onShaderError = (gl, program, vertex, fragment) => {
 window.addEventListener('error', (e) => problems.push(`Fehler: ${e.message}`));
 window.addEventListener('unhandledrejection', (e) => problems.push(`Fehler: ${String(e.reason)}`));
 const scene = new Scene();
-addFigureLights(scene);
+const lights = new Group();
+scene.add(lights);
+
+/** Lights of a look: 1A = the app's figure lights; 1C = the sculpture rig from look.json. */
+function setLights(name) {
+  lights.clear();
+  if (name === '1A') {
+    addFigureLights(lights);
+    renderer.toneMappingExposure = 1.05;
+    return;
+  }
+  const l = look.sculpture1C.lights;
+  lights.add(new HemisphereLight(l.hemisphere.sky, l.hemisphere.ground, l.hemisphere.intensity));
+  for (const d of [l.key, l.fill, l.rim]) {
+    const light = new DirectionalLight(d.color, d.intensity);
+    light.position.set(...d.position);
+    lights.add(light);
+  }
+  renderer.toneMappingExposure = look.sculpture1C.exposure;
+}
 const stage = new Group();
 scene.add(stage);
 const camera = new PerspectiveCamera(30, 3 / 4, 0.05, 20);
@@ -84,8 +110,11 @@ const state = {
   exercise: q.get('ex') ?? 'bench',
   view: q.get('view') ?? DEFAULT_VIEW,
   side: q.get('side') ?? 'front',
+  look: LOOKS.includes(q.get('look')) ? q.get('look') : '1C',
+  turn: Number(q.get('turn') ?? 0),
   playing: !q.has('t'),
 };
+setLights(state.look);
 const loadStarted = performance.now();
 const gltfPromise = new GLTFLoader().loadAsync(ASSET);
 let body = null;
@@ -105,7 +134,8 @@ function frame() {
   const dist = (v.radius / Math.sin((camera.fov * Math.PI) / 360)) * 0.92;
   camera.position.set(0, v.y + dist * Math.sin(el), dist * Math.cos(el));
   camera.lookAt(0, v.y, 0);
-  stage.rotation.y = (((v.azimuth + (state.side === 'back' ? 180 : 0)) * Math.PI) / 180) * -1;
+  const deg = v.azimuth + state.turn + (state.side === 'back' ? 180 : 0);
+  stage.rotation.y = ((deg * Math.PI) / 180) * -1;
 }
 
 async function build() {
@@ -121,6 +151,7 @@ async function build() {
     highlight: ex.highlight,
     palette: PALETTE,
     view: state.view,
+    look: state.look,
   });
   stage.add(body.root);
   if (q.has('t') && body.duration > 0) {
@@ -142,11 +173,23 @@ function legend() {
   viewBtn.setAttribute('aria-pressed', String(state.view === 'muscle'));
   document.getElementById('side').textContent =
     state.side === 'front' ? 'Rückseite zeigen' : 'Vorderseite zeigen';
+  document.getElementById('look').textContent =
+    state.look === '1C' ? 'Vergleich: Stand 1A zeigen' : 'Vergleich: Stand 1C zeigen';
   const play = document.getElementById('play');
   play.textContent = state.playing ? 'Pause' : 'Abspielen';
   play.setAttribute('aria-pressed', String(state.playing));
 }
 
+// Before/after on the same device: 1C (default) ↔ 1A. Same GLB, rebuilt body and lights.
+const lookBtn = document.createElement('button');
+lookBtn.id = 'look';
+lookBtn.type = 'button';
+document.getElementById('view').after(lookBtn);
+lookBtn.addEventListener('click', () => {
+  state.look = state.look === '1C' ? '1A' : '1C';
+  setLights(state.look);
+  void build();
+});
 document.getElementById('view').addEventListener('click', () => {
   state.view = state.view === 'skin' ? 'muscle' : 'skin';
   body.setView(state.view); // the same body: clip time, side and highlight stay
@@ -210,8 +253,10 @@ function report() {
     `Bildrate (gemessen, letzte 5 s): ${fps.toFixed(0)} fps · langsamstes Bild ${slowest.toFixed(0)} ms`,
     `${info.render.triangles.toLocaleString('de-DE')} Dreiecke/Bild · ${info.memory.geometries} Geometrien · ${info.memory.textures} Texturen · Pixelverhältnis ${renderer.getPixelRatio()}`,
     heap,
-    'Grafikspeicher: ca. 117 MiB (Schätzung aus der Datei, nicht gemessen)',
-    `Ansicht: ${state.view === 'skin' ? 'Haut' : 'Muskeln'} · Übung: ${state.exercise} · Seite: ${state.side === 'front' ? 'vorne' : 'hinten'}`,
+    body.fibres
+      ? 'Grafikspeicher: ca. 117 MiB (Schätzung aus der Datei, nicht gemessen)'
+      : 'Grafikspeicher: ca. 32 MiB (Schätzung: ohne Fasermap, nicht gemessen)',
+    `Stand: ${state.look} · Ansicht: ${state.view === 'skin' ? 'Haut' : 'Muskeln'} · Übung: ${state.exercise} · Seite: ${state.side === 'front' ? 'vorne' : 'hinten'}`,
     ...(problems.length ? problems : ['Fehler: keine']),
   ].join('\n');
 }
