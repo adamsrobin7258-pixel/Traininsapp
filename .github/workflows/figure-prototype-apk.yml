@@ -1,0 +1,216 @@
+# Phase 1A-APK: separate Android test app "Kalethra Figur-Test" (com.kalethra.figureprototype)
+# with the phase-1A figure viewer and the prototype GLB, offline, no dev server.
+# Runs only for pushes to claude/figure-prototype-apk. It never touches the Kalethra app: the
+# test app's id, name and permissions are set in the runner's workspace only
+# (tools/figure-prototype/apk/prepare-android.sh); nothing is committed or released.
+name: Figure prototype APK
+
+on:
+  push:
+    branches:
+      - claude/figure-prototype-apk
+
+permissions:
+  contents: read
+
+concurrency:
+  group: figure-prototype-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BASE_COMMIT: 1db10ca51f1871e851dc4bce95cc3a71672ba7bb
+  APP_ID: com.kalethra.figureprototype
+  APP_LABEL: Kalethra Figur-Test
+  APK_NAME: kalethra-FIGUR-TEST-1db10ca.apk
+  GLB: assets/figure/prototype/kalethra-male-prototype.glb
+
+jobs:
+  apk:
+    name: Build figure test APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Only the four phase-1A-APK files differ from the prototype commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$BASE_COMMIT"
+          ACTUAL=$(git diff --name-only "$BASE_COMMIT" HEAD | sort)
+          EXPECTED=$(printf '%s\n' \
+            .github/workflows/figure-prototype-apk.yml \
+            tools/figure-prototype/DEVICE_TEST.md \
+            tools/figure-prototype/apk/prepare-android.sh \
+            tools/figure-prototype/apk/vite.config.mjs | sort)
+          echo "$ACTUAL"
+          test "$ACTUAL" = "$EXPECTED"
+
+      - name: Production figures keep their checksums
+        run: |
+          sha256sum -c - <<'EOF'
+          4724ca4530912ebc4dbbb524458c33042b5c35dbb310ed63504c78eff3224af1  public/figure/male/kalethra-male.glb
+          11bf26cfff80adfee78c91047b53b0020f558c32b074014c753723270cf02f44  public/figure/female/kalethra-female.glb
+          EOF
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - run: npm ci
+
+      - name: Turn the CI workspace into the test app (not committed)
+        env:
+          KALETHRA_FIGURE_APK: ci-workspace
+        run: bash tools/figure-prototype/apk/prepare-android.sh
+
+      - name: Build the viewer bundle
+        run: npx vite build --config tools/figure-prototype/apk/vite.config.mjs
+
+      - name: Offline check (headless Chromium, every external request blocked)
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx playwright install --with-deps chromium
+          node --input-type=module <<'EOF'
+          import { createReadStream, statSync } from 'node:fs';
+          import { createServer } from 'node:http';
+          import { extname, join, normalize } from 'node:path';
+          import { chromium } from '@playwright/test';
+
+          const DIST = join(process.cwd(), 'dist');
+          const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.glb': 'model/gltf-binary' };
+          const server = createServer((req, res) => {
+            const path = normalize(decodeURIComponent(new URL(req.url, 'http://x').pathname));
+            const file = join(DIST, path === '/' ? 'index.html' : path);
+            try {
+              if (!file.startsWith(DIST) || !statSync(file).isFile()) throw new Error('missing');
+              res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+              createReadStream(file).pipe(res);
+            } catch {
+              res.writeHead(404).end();
+            }
+          });
+          await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
+          const origin = `http://127.0.0.1:${server.address().port}`;
+
+          const browser = await chromium.launch({
+            args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
+          });
+          const page = await browser.newPage({ viewport: { width: 412, height: 915 } });
+          const external = [];
+          const problems = [];
+          let glb = 0;
+          await page.route('**/*', (route) => {
+            const url = route.request().url();
+            if (url.startsWith(origin) || url.startsWith('data:') || url.startsWith('blob:')) {
+              return route.continue();
+            }
+            external.push(url);
+            return route.abort();
+          });
+          page.on('response', (r) => {
+            if (r.url().endsWith('/' + process.env.GLB) && r.ok()) glb++;
+          });
+          page.on('console', (m) => {
+            if (m.type() === 'error') problems.push(`console: ${m.text()}`);
+          });
+          page.on('pageerror', (e) => problems.push(`pageerror: ${e.message}`));
+          await page.goto(`${origin}/index.html`);
+          await page.waitForFunction(() => document.body.dataset.ready === 'true', null, {
+            timeout: 240000,
+          });
+          await page.waitForFunction(
+            () => /Fehler: /.test(document.getElementById('stats').textContent),
+            null,
+            { timeout: 60000 },
+          );
+          const stats = await page.locator('#stats').textContent();
+          const csp = await page.locator('meta[http-equiv="Content-Security-Policy"]').count();
+          await browser.close();
+          server.close();
+          console.log(stats);
+          const fail = [];
+          if (external.length) fail.push(`external requests: ${external.join(', ')}`);
+          if (glb !== 1) fail.push(`GLB loaded ${glb}x from the local origin (expected 1)`);
+          if (!stats.includes('Fehler: keine')) fail.push('viewer reports errors');
+          if (csp !== 1) fail.push('Content-Security-Policy missing');
+          fail.push(...problems);
+          if (fail.length) {
+            console.error(`OFFLINE CHECK FAILED:\n${fail.join('\n')}`);
+            process.exit(1);
+          }
+          console.log('Offline check passed: viewer and model load without any external request.');
+          EOF
+
+      - run: npx cap sync android
+
+      - name: Assemble debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Verify the test APK
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK="$APK_NAME"
+          cp android/app/build/outputs/apk/debug/app-debug.apk "$APK"
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | grep -v -- '-rc' | sort -V | tail -1)"
+          BADGING=$("$BUILD_TOOLS/aapt2" dump badging "$APK")
+          sed -n 1p <<< "$BADGING"
+
+          echo "-- package id"
+          grep -q "^package: name='${APP_ID}' " <<< "$BADGING"
+          echo "-- app label"
+          grep -qx "application-label:'${APP_LABEL}'" <<< "$BADGING"
+
+          echo "-- permissions (only INTERNET and the app-private receiver permission of androidx)"
+          PERMS=$("$BUILD_TOOLS/aapt2" dump permissions "$APK" \
+            | sed -n "s/^ *uses-permission: name='\([^']*\)'.*/\1/p" | sort -u)
+          echo "$PERMS"
+          EXPECTED=$(printf '%s\n' android.permission.INTERNET \
+            "${APP_ID}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" | sort -u)
+          test "$PERMS" = "$EXPECTED"
+
+          echo "-- prototype GLB inside the APK, byte for byte"
+          IN_APK=$(unzip -p "$APK" "assets/public/$GLB" | sha256sum | cut -d' ' -f1)
+          IN_REPO=$(sha256sum "$GLB" | cut -d' ' -f1)
+          echo "$IN_APK"
+          test "$IN_APK" = "$IN_REPO"
+
+          echo "-- local viewer page with offline guard, test app config, no native plugins"
+          HTML=$(unzip -p "$APK" assets/public/index.html)
+          grep -q 'http-equiv="Content-Security-Policy"' <<< "$HTML"
+          if grep -Eq '(src|href)="(https?:)?//' <<< "$HTML"; then
+            echo "external reference in index.html"; exit 1
+          fi
+          CONFIG=$(unzip -p "$APK" assets/capacitor.config.json)
+          grep -q "\"appId\": \"${APP_ID}\"" <<< "$CONFIG"
+          grep -q '"includePlugins": \[\]' <<< "$CONFIG"
+
+          echo "-- signed with the shared debug key from the repository (no release key)"
+          SIGNER=$("$BUILD_TOOLS/apksigner" verify --print-certs "$APK" 2>&1 \
+            | grep -m1 'certificate SHA-256 digest' | awk '{print $NF}')
+          DEBUG=$(keytool -list -v -keystore android/app/debug.keystore -storepass android \
+            -alias androiddebugkey | grep 'SHA256:' | awk '{print $2}' | tr -d ':' | tr 'A-F' 'a-f')
+          test -n "$SIGNER" && test "$SIGNER" = "$DEBUG"
+          echo "ok"
+          ls -l "$APK"
+
+      - name: Production figures still unchanged after the build
+        run: |
+          sha256sum -c - <<'EOF'
+          4724ca4530912ebc4dbbb524458c33042b5c35dbb310ed63504c78eff3224af1  public/figure/male/kalethra-male.glb
+          11bf26cfff80adfee78c91047b53b0020f558c32b074014c753723270cf02f44  public/figure/female/kalethra-female.glb
+          EOF
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: kalethra-FIGUR-TEST-1db10ca
+          path: ${{ env.APK_NAME }}
+          if-no-files-found: error
+          retention-days: 14

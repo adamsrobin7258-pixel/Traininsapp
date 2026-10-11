@@ -4,7 +4,56 @@ Branch `claude/figure-prototype-device-test`. Der Prototyp ist **nicht** in der 
 der APK: Er läuft als eigene Seite im Browser des Handys, ausgeliefert vom Entwicklungsserver auf
 deinem Rechner. Die App und ihre Figuren bleiben unverändert.
 
-## 1. Auf dem Rechner starten (einmalig ca. 5 Minuten)
+Zwei Wege: **A – ohne PC** über die Test-App (empfohlen) oder **B – mit PC** über den
+Entwicklungsserver (Abschnitte 1 und 2). Die Prüfpunkte ab Abschnitt 3 gelten für beide.
+
+## A. Ohne PC: Test-App „Kalethra Figur-Test“
+
+Eigene Android-App nur für diesen Test: Paket-ID `com.kalethra.figureprototype`, Name „Kalethra
+Figur-Test“. Sie enthält den Viewer und die Prototyp-Figur lokal, läuft im Flugmodus und
+installiert sich **neben** Kalethra – deine Kalethra-App und ihre Daten bleiben unberührt (eigene
+App, eigener Speicher). Berechtigungen: nur Internet (technisch für die Capacitor-Hülle; der
+Viewer lädt nichts aus dem Netz), keine Kamera, kein Health Connect.
+
+Gebaut wird sie von GitHub Actions (Workflow „Figure prototype APK“, nur Branch
+`claude/figure-prototype-apk`). Der Workflow bricht ab, wenn Paket-ID, Name, Berechtigungen,
+eingebettete Figur oder Offline-Prüfung nicht stimmen.
+
+**Herunterladen (im Chrome auf dem Xiaomi):**
+
+1. github.com öffnen und **anmelden** (Artefakte gibt es nur angemeldet).
+2. Repository → **Actions** → links **„Figure prototype APK“** → obersten grünen Lauf öffnen.
+3. Ganz unten unter **Artifacts** auf **`kalethra-FIGUR-TEST-1db10ca`** tippen. Es kommt eine
+   ZIP-Datei (ca. 30 MB). Tipp: Wenn die Seite die Artefakte nicht zeigt, „Desktop-Website“ im
+   Chrome-Menü einschalten.
+
+**Achtung, nicht verwechseln:** Im normalen Workflow „CI“ desselben Branches gibt es auch eine
+`kalethra-debug-apk` – das ist die **normale Kalethra-App** und würde deine installierte App
+überschreiben. Nur die Datei mit **FIGUR-TEST** im Namen installieren.
+
+**Installieren:**
+
+1. App **„Dateien“** (Xiaomi) → Downloads → ZIP antippen → **Entpacken**.
+2. `kalethra-FIGUR-TEST-1db10ca.apk` antippen.
+3. Beim ersten Mal fragt Android, ob „Dateien“ **unbekannte Apps installieren** darf → für diese
+   App erlauben (Einstellungen → Apps → Spezielle App-Berechtigungen → Unbekannte Apps
+   installieren). Danach zurück und erneut antippen.
+4. HyperOS-Sicherheitsprüfung bzw. Google Play Protect warnen, weil die App nicht aus dem Play
+   Store kommt und mit dem Debug-Schlüssel signiert ist → **„Trotzdem installieren“**. Fragt
+   HyperOS nach einer Wartezeit oder einem Mi-Konto, ist das normal.
+5. Auf dem Startbildschirm erscheint **„Kalethra Figur-Test“** (gleiches Symbol wie Kalethra,
+   anderer Name). Öffnen – das erste Laden dauert ein paar Sekunden.
+6. Optional: Flugmodus einschalten und die App neu starten – sie muss genauso funktionieren.
+
+Danach mit Abschnitt 3 weitermachen. Hinweis: In der Test-App ist die Seite nicht im Chrome,
+sondern in der Android-WebView (gleiche Chromium-Technik). Falls „Zoom mit zwei Fingern“ (Punkt 11)
+dort nicht geht: Screenshot machen und im Foto hineinzoomen.
+
+**Entfernen:** „Kalethra Figur-Test“ lange drücken → Deinstallieren. Kalethra bleibt.
+
+## B. Mit PC
+
+### 1. Auf dem Rechner starten (einmalig ca. 5 Minuten)
 
 Voraussetzung: Node 22 (wie `.nvmrc`), Git, Rechner und Handy im **selben WLAN**.
 
@@ -25,7 +74,7 @@ Vite zeigt zwei Adressen, z. B.
 Die **Network**-Adresse ist die richtige fürs Handy. Windows fragt beim ersten Start nach der
 Firewall – „Private Netzwerke“ erlauben, sonst erreicht das Handy den Rechner nicht.
 
-## 2. Auf dem Xiaomi öffnen
+### 2. Auf dem Xiaomi öffnen
 
 In **Chrome** (nicht im Mi-Browser – der verhält sich bei WebGL anders):
 
