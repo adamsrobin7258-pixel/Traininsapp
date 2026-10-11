@@ -1,0 +1,113 @@
+{
+ "browser": "Chromium 1194 headless (Playwright 1.56.1 aus node_modules), ANGLE/SwiftShader – Software-GPU",
+ "note": "Bildraten hier sind CPU-Rendering und für das Gerät nicht aussagekräftig; die fps-Werte des ersten Laufs waren durch eine Zeitkappe geschönt (behoben, Nachmessung 2 fps).",
+ "results": [
+  {
+   "name": "skin_bench_front",
+   "readyMs": 1322,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": [
+    "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+   ]
+  },
+  {
+   "name": "muscle_bench_front",
+   "readyMs": 1045,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": []
+  },
+  {
+   "name": "skin_pull_back",
+   "readyMs": 898,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "Laden: 512 ms · 12 fps · 217.212 Dreiecke/Bild · 36 Geometrien · 31 Texturen",
+   "errors": []
+  },
+  {
+   "name": "muscle_pull_back",
+   "readyMs": 994,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": []
+  },
+  {
+   "name": "skin_rest_front",
+   "readyMs": 1006,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": []
+  },
+  {
+   "name": "muscle_rest_front",
+   "readyMs": 1013,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": []
+  },
+  {
+   "name": "muscle_restAll_back",
+   "readyMs": 1059,
+   "gl": {
+    "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "maxTex": 8192
+   },
+   "stats": "",
+   "errors": []
+  },
+  {
+   "name": "toggle",
+   "toggle": [
+    [
+     "start",
+     "Muskeln zeigen",
+     "false"
+    ],
+    [
+     "after click",
+     "Haut zeigen",
+     "true"
+    ],
+    [
+     "after side",
+     "Haut zeigen",
+     "Vorderseite zeigen"
+    ],
+    [
+     "after 2nd click",
+     "Muskeln zeigen",
+     "Vorderseite zeigen"
+    ],
+    [
+     "after exercise change",
+     "Muskeln zeigen",
+     "PrimärLatissimusSekundärBizeps, oberer Rücken"
+    ],
+    [
+     "stats",
+     "Laden: 539 ms · 14 fps · 217.212 Dreiecke/Bild · 36 Geometrien · 32 Texturen"
+    ]
+   ],
+   "errors": []
+  }
+ ]
+}

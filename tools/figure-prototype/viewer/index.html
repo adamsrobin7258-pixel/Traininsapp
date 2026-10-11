@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Kalethra Figur – Prototyp</title>
+    <link rel="icon" href="data:," />
+    <style>
+      :root {
+        --bg: #ece9e3;
+        --fg: #2b2d2a;
+        --muted: #6b6e68;
+        --line: #d6d2c9;
+        --accent: #557a5b;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font:
+          15px/1.4 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 520px;
+        margin: 0 auto;
+        padding: 12px 16px 24px;
+      }
+      h1 {
+        font-size: 17px;
+        margin: 4px 0 2px;
+      }
+      p.note {
+        color: var(--muted);
+        font-size: 13px;
+        margin: 0 0 8px;
+      }
+      .stage {
+        position: relative;
+        aspect-ratio: 3 / 4;
+        width: 100%;
+        border-radius: 14px;
+        overflow: hidden;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        touch-action: none;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        flex-wrap: wrap;
+      }
+      button,
+      select {
+        font: inherit;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: #fff;
+        color: var(--fg);
+        padding: 8px 14px;
+        min-height: 40px;
+      }
+      button[aria-pressed='true'] {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      dl {
+        margin: 12px 0 0;
+        font-size: 14px;
+      }
+      dt {
+        color: var(--muted);
+      }
+      dd {
+        margin: 0 0 6px;
+      }
+      #stats {
+        color: var(--muted);
+        font-size: 12px;
+        margin-top: 10px;
+        white-space: pre-line;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Kalethra-Figur · Prototyp 1A</h1>
+      <p class="note">
+        Isolierter Prototyp (männlich), nicht Teil der App. Steinoptik, Haut-/Muskelansicht.
+      </p>
+      <div class="stage" id="stage"><canvas id="c"></canvas></div>
+      <div class="controls">
+        <button id="play" type="button" aria-pressed="true">Pause</button>
+        <button id="side" type="button">Rückseite zeigen</button>
+        <button id="view" type="button" aria-pressed="false">Muskeln zeigen</button>
+      </div>
+      <div class="controls">
+        <select id="exercise" aria-label="Übung">
+          <option value="bench">Langhantel-Bankdrücken</option>
+          <option value="pull">Latzug</option>
+          <option value="rest">Ruhe (keine Hervorhebung)</option>
+          <option value="restAll">Ruhe – Brust, Rücken, Beine</option>
+        </select>
+      </div>
+      <dl id="legend"></dl>
+      <div id="stats"></div>
+    </main>
+    <script type="module" src="./viewer.mjs"></script>
+  </body>
+</html>

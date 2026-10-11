@@ -1,0 +1,64 @@
+public/figure/male/kalethra-male.glb – horizontalPush_bench: whole body 3.31 % edges outside 0.65–1.35×, 166 flipped faces
+   Achsel              24.42 %   p99.9  5.50×   max  6.29×   flipped 5
+   Latissimus/Rücken    0.04 %   p99.9  1.43×   max  1.92×   flipped 6
+   Bizeps/Ellbogen     20.93 %   p99.9 11.01×   max 28.47×   flipped 73
+   Handgelenk           3.28 %   p99.9  2.20×   max  2.36×   flipped 3
+   Hüfte/Schritt        4.48 %   p99.9  3.55×   max  3.72×   flipped 27
+   Knie                14.29 %   p99.9  4.73×   max  4.99×   flipped 15
+   Sprunggelenk         1.94 %   p99.9  2.00×   max  2.18×   flipped 1
+public/figure/male/kalethra-male.glb – verticalPull_cable: whole body 5.76 % edges outside 0.65–1.35×, 183 flipped faces
+   Achsel              31.65 %   p99.9  7.43×   max  8.43×   flipped 17
+   Latissimus/Rücken    1.13 %   p99.9  1.53×   max  1.55×   flipped 1
+   Bizeps/Ellbogen     17.65 %   p99.9  8.11×   max 10.44×   flipped 67
+   Handgelenk           4.15 %   p99.9  2.63×   max  2.77×   flipped 1
+   Hüfte/Schritt       17.08 %   p99.9  9.03×   max 10.27×   flipped 38
+   Knie                19.05 %   p99.9  5.99×   max  6.33×   flipped 19
+   Sprunggelenk         0.00 %   p99.9  1.29×   max  1.31×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@0! – horizontalPush_bench: whole body 3.45 % edges outside 0.65–1.35×, 372 flipped faces
+   Achsel              25.01 %   p99.9  3.39×   max  3.93×   flipped 18
+   Latissimus/Rücken    0.04 %   p99.9  1.31×   max  1.42×   flipped 4
+   Bizeps/Ellbogen     16.79 %   p99.9 14.06×   max 26.55×   flipped 245
+   Handgelenk           3.59 %   p99.9  2.45×   max  3.35×   flipped 0
+   Hüfte/Schritt        4.31 %   p99.9  1.93×   max  2.47×   flipped 21
+   Knie                12.84 %   p99.9  3.01×   max  3.47×   flipped 0
+   Sprunggelenk         0.00 %   p99.9  1.41×   max  1.48×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@0! – verticalPull_cable: whole body 6.26 % edges outside 0.65–1.35×, 483 flipped faces
+   Achsel              33.05 %   p99.9  4.94×   max  5.40×   flipped 282
+   Latissimus/Rücken    0.99 %   p99.9  1.51×   max  1.66×   flipped 0
+   Bizeps/Ellbogen     14.97 %   p99.9 11.29×   max 16.34×   flipped 246
+   Handgelenk           3.91 %   p99.9  1.98×   max  3.05×   flipped 0
+   Hüfte/Schritt       18.71 %   p99.9  6.39×   max 13.29×   flipped 30
+   Knie                17.58 %   p99.9  6.98×   max  7.57×   flipped 4
+   Sprunggelenk         0.00 %   p99.9  1.09×   max  1.11×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@0 – horizontalPush_bench: whole body 3.44 % edges outside 0.65–1.35×, 275 flipped faces
+   Achsel              25.13 %   p99.9  3.37×   max  3.92×   flipped 18
+   Latissimus/Rücken    0.04 %   p99.9  1.31×   max  1.42×   flipped 4
+   Bizeps/Ellbogen     15.56 %   p99.9 10.17×   max 19.97×   flipped 149
+   Handgelenk           3.59 %   p99.9  2.45×   max  3.35×   flipped 0
+   Hüfte/Schritt        4.31 %   p99.9  1.93×   max  2.47×   flipped 21
+   Knie                14.31 %   p99.9  2.91×   max  3.27×   flipped 0
+   Sprunggelenk         0.00 %   p99.9  1.41×   max  1.48×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@0 – verticalPull_cable: whole body 6.18 % edges outside 0.65–1.35×, 461 flipped faces
+   Achsel              31.47 %   p99.9  4.86×   max  5.27×   flipped 275
+   Latissimus/Rücken    0.99 %   p99.9  1.51×   max  1.66×   flipped 0
+   Bizeps/Ellbogen     14.81 %   p99.9 10.26×   max 20.91×   flipped 123
+   Handgelenk           3.91 %   p99.9  1.98×   max  3.05×   flipped 0
+   Hüfte/Schritt       18.71 %   p99.9  6.39×   max 13.29×   flipped 30
+   Knie                21.26 %   p99.9  6.75×   max  7.59×   flipped 4
+   Sprunggelenk         0.00 %   p99.9  1.09×   max  1.11×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@1 – horizontalPush_bench: whole body 3.40 % edges outside 0.65–1.35×, 285 flipped faces
+   Achsel              24.47 %   p99.9  3.59×   max  3.92×   flipped 0
+   Latissimus/Rücken    0.00 %   p99.9  1.28×   max  1.37×   flipped 2
+   Bizeps/Ellbogen     15.62 %   p99.9 10.37×   max 18.92×   flipped 151
+   Handgelenk           3.59 %   p99.9  2.45×   max  3.35×   flipped 0
+   Hüfte/Schritt        4.26 %   p99.9  1.92×   max  2.47×   flipped 35
+   Knie                14.75 %   p99.9  2.93×   max  3.28×   flipped 0
+   Sprunggelenk         0.00 %   p99.9  1.41×   max  1.48×   flipped 0
+assets/figure/prototype/kalethra-male-prototype.glb@1 – verticalPull_cable: whole body 6.16 % edges outside 0.65–1.35×, 362 flipped faces
+   Achsel              31.45 %   p99.9  4.96×   max  5.42×   flipped 178
+   Latissimus/Rücken    0.93 %   p99.9  1.47×   max  1.51×   flipped 0
+   Bizeps/Ellbogen     14.57 %   p99.9  8.22×   max 13.10×   flipped 137
+   Handgelenk           3.91 %   p99.9  1.98×   max  3.05×   flipped 0
+   Hüfte/Schritt       18.46 %   p99.9  4.61×   max  8.67×   flipped 37
+   Knie                21.61 %   p99.9  7.78×   max  8.50×   flipped 4
+   Sprunggelenk         0.00 %   p99.9  1.09×   max  1.11×   flipped 0

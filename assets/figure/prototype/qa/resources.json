@@ -1,0 +1,46 @@
+[
+ {
+  "file": "public/figure/male/kalethra-male.glb",
+  "fileMiB": 3.31,
+  "triangles": 52090,
+  "bodyTriangles": 51450,
+  "vertices": 32614,
+  "bones": 52,
+  "morphTargets": 0,
+  "textures": [
+   {
+    "name": "detail_normal",
+    "size": "2048×2048",
+    "fileBytes": 905389
+   }
+  ],
+  "gpuEstimateMiB": {
+   "vertexBuffers": 2.3,
+   "morphTexture": 0.0,
+   "textures": 21.3,
+   "total": 23.6
+  }
+ },
+ {
+  "file": "assets/figure/prototype/kalethra-male-prototype.glb",
+  "fileMiB": 23.27,
+  "triangles": 217584,
+  "bodyTriangles": 216944,
+  "vertices": 118885,
+  "bones": 52,
+  "morphTargets": 7,
+  "textures": [
+   {
+    "name": "fibre_normal",
+    "size": "4096×4096",
+    "fileBytes": 5106055
+   }
+  ],
+  "gpuEstimateMiB": {
+   "vertexBuffers": 8.2,
+   "morphTexture": 23.3,
+   "textures": 85.3,
+   "total": 116.8
+  }
+ }
+]

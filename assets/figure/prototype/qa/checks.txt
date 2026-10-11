@@ -1,0 +1,125 @@
+
+ RUN  v5.0.3
+
+stdout | tools/figure-prototype/checks/prototype.check.mjs > prototype file > fulfils the asset contract; only the budgets are exceeded (on purpose, phase 1A)
+{
+ "stats": {
+  "bytes": 24405008,
+  "triangles": 217584,
+  "materials": 8,
+  "textures": [
+   {
+    "width": 4096,
+    "height": 4096
+   }
+  ],
+  "bounds": {
+   "min": [
+    -0.3434080183506012,
+    0.0002727329556364566,
+    -0.15964576601982117
+   ],
+   "max": [
+    0.34341534972190857,
+    1.751257300376892,
+    0.15101665258407593
+   ]
+  },
+  "variant": "male",
+  "bones": [
+   "root",
+   "pelvis",
+   "spine",
+   "chest",
+   "neck",
+   "head",
+   "shoulder_L",
+   "upperArm_L",
+   "forearm_L",
+   "forearmTwist_L",
+   "hand_L",
+   "thigh_L",
+   "shin_L",
+   "foot_L",
+   "shoulder_R",
+   "upperArm_R",
+   "forearm_R",
+   "forearmTwist_R",
+   "hand_R",
+   "thigh_R",
+   "shin_R",
+   "foot_R",
+   "thumb1_L",
+   "thumb2_L",
+   "thumb3_L",
+   "index1_L",
+   "index2_L",
+   "index3_L",
+   "middle1_L",
+   "middle2_L",
+   "middle3_L",
+   "ring1_L",
+   "ring2_L",
+   "ring3_L",
+   "pinky1_L",
+   "pinky2_L",
+   "pinky3_L",
+   "thumb1_R",
+   "thumb2_R",
+   "thumb3_R",
+   "index1_R",
+   "index2_R",
+   "index3_R",
+   "middle1_R",
+   "middle2_R",
+   "middle3_R",
+   "ring1_R",
+   "ring2_R",
+   "ring3_R",
+   "pinky1_R",
+   "pinky2_R",
+   "pinky3_R"
+  ],
+  "clips": [
+   "rest",
+   "horizontalPush_bench",
+   "verticalPull_cable"
+  ]
+ },
+ "errors": [
+  "texture 4096×4096, budget 2048",
+  "217584 triangles, budget 60000",
+  "24405008 bytes, budget 4194304"
+ ],
+ "budget": {
+  "maxBytes": 4194304,
+  "maxTriangles": 60000,
+  "maxTextureSize": 2048,
+  "maxMaterials": 8
+ }
+}
+
+stdout | tools/figure-prototype/checks/prototype.check.mjs > prototype body > parses (Node/jsdom, without image decoding) – a rough load-time figure for the report
+parse times (ms, jsdom, no image decode): 400, 426, 405
+
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype file > keeps the production assets unchanged 46ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype file > fulfils the asset contract; only the budgets are exceeded (on purpose, phase 1A) 14ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > parses (Node/jsdom, without image decoding) – a rough load-time figure for the report 1232ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > starts in the skin view: skin form, hair and drape visible, no fibre map 400ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > switches to the muscle view and back on the same body (pose and highlight kept) 390ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > carries all 13 muscle groups, each with its own colour in the muscle view 423ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > highlights in both views: primary > secondary > others (dimmed in the muscle view) 1ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > drives the corrective shapes by the joints’ bend in both views 804ms
+stdout | tools/figure-prototype/checks/prototype.check.mjs > prototype body > closes the body surface in both forms (no holes under the former clothing)
+form skin: 100339 vertices, 0 open edges, 2 non-manifold
+form muscle: 100340 vertices, 0 open edges, 0 non-manifold
+
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > skins hair, drape and eyes with the body’s skeleton 409ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > closes the body surface in both forms (no holes under the former clothing) 1792ms
+ ✓ tools/figure-prototype/checks/prototype.check.mjs > prototype body > frees materials and geometry on dispose 365ms
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  01:19:32
+   Duration  7.58s (tests 79%, environment 11%, transform 6%, import 2%, setup 1%)
+

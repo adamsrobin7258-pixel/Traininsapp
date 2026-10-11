@@ -1,0 +1,64 @@
+{
+  "note": "Look of the prototype figure \u2013 read by the viewer (viewer/prototypeBody.mjs) and the screenshot renderer (py/render_proto.py), so both show the same thing. Colours sRGB.",
+  "stone": {
+    "color": "#D6C8B0",
+    "roughness": 0.88,
+    "variationLarge": {
+      "scale": 0.22,
+      "amount": 0.045
+    },
+    "variationFine": {
+      "scale": 0.006,
+      "amount": 0.018
+    },
+    "warmCool": 0.02,
+    "noise": {
+      "note": "Six plane waves per scale (direction, phase); value = sum of sines / sqrt(3)",
+      "dirs": [
+        [0.62, 0.48, -0.62],
+        [-0.21, 0.93, 0.3],
+        [0.8, -0.12, 0.59],
+        [-0.56, -0.39, 0.73],
+        [0.11, -0.85, -0.51],
+        [-0.92, 0.27, -0.28]
+      ],
+      "phases": [0.4, 2.1, 4.0, 1.3, 5.2, 3.3]
+    }
+  },
+  "cloth": {
+    "color": "#EEE8DC",
+    "roughness": 0.9
+  },
+  "eyes": {
+    "color": "#D9CCB5",
+    "roughness": 0.82
+  },
+  "accent": "#557a5b",
+  "skinView": {
+    "primaryMix": 0.72,
+    "secondaryMix": 0.42
+  },
+  "muscleView": {
+    "baseMix": 0.5,
+    "primaryMix": 0.88,
+    "secondaryMix": 0.66,
+    "dimmedMix": 0.16,
+    "dimmedDarken": 0.08,
+    "fibreNormalScale": 1.0
+  },
+  "groups": {
+    "chest": "#B5524A",
+    "shoulders": "#C27C3A",
+    "biceps": "#8E5BA6",
+    "triceps": "#5B6FB0",
+    "forearms": "#3F8F8A",
+    "back": "#4E7A4F",
+    "lats": "#2F6E99",
+    "core": "#C9A23A",
+    "glutes": "#A3477A",
+    "quadriceps": "#CF6B57",
+    "hamstrings": "#7A5236",
+    "adductors": "#8FA34A",
+    "calves": "#4A9A6A"
+  }
+}
