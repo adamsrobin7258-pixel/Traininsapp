@@ -3,10 +3,21 @@ import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { Button, Icon, ICON_FOR } from '@/ui';
 import { mediumDate, shortDate } from '../domain/dates';
+import { WeightChart } from './WeightChart';
 import styles from './WeightOverview.module.css';
 
-/** Current (latest) weight, change to the previous entry and the primary "add" action. */
-export function WeightOverview({ onAdd }: { onAdd: () => void }) {
+/**
+ * Weight in one place (Phase 24): the current (latest) value and the change to the previous
+ * entry, the chart of the course, the primary "add" action and – once there are entries – the
+ * way to the entries to correct or delete one.
+ */
+export function WeightOverview({
+  onAdd,
+  onShowEntries,
+}: {
+  onAdd: () => void;
+  onShowEntries: () => void;
+}) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const recent = useWeightData((service, profileId) => service.getHistory(profileId, 2), []);
@@ -49,9 +60,15 @@ export function WeightOverview({ onAdd }: { onAdd: () => void }) {
           <p className={styles.meta}>{t('weight.empty')}</p>
         </div>
       ) : null}
+      <WeightChart embedded />
       <Button fullWidth onClick={onAdd}>
         {t('weight.add')}
       </Button>
+      {latest ? (
+        <Button fullWidth variant="tertiary" onClick={onShowEntries}>
+          {t('weight.editEntries')}
+        </Button>
+      ) : null}
     </div>
   );
 }

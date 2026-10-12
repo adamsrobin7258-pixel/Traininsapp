@@ -146,7 +146,7 @@ describe('Kalethra-Score on Fortschritt', () => {
     await renderApp('/', { prepare: goodWeek });
     const button = await scoreButton();
     const areas = main().getByRole('list', { name: 'Bereiche des Scores' });
-    const calendar = main().getByRole('region', { name: 'Letzte 20 Tage' });
+    const calendar = main().getByRole('region', { name: 'Die letzten Tage' });
     expect(button.compareDocumentPosition(areas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(areas.compareDocumentPosition(calendar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Period switch first, then the score.

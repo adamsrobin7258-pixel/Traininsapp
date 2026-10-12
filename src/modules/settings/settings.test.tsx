@@ -310,20 +310,29 @@ describe('Einstellungen → Profil', () => {
     expect((await services.profile.ensureLocalProfile()).heightCm).toBeNull();
   });
 
-  it('shows the weight read-only and leads to Gesundheit to record it', async () => {
-    const { router } = await renderApp('/settings/profile', {
+  it('has no weight section any more – weight lives under Gesundheit (Phase 24)', async () => {
+    const { services } = await renderApp('/settings/profile', {
       prepare: async (s, profileId) => {
         await s.weight.save(profileId, '2026-10-02', 84.6);
       },
     });
-    const weight = section('Gewicht');
-    expect(await weight.findByText(/84,6 kg/)).toBeInTheDocument();
-    expect(weight.queryByRole('textbox')).not.toBeInTheDocument();
+    const main = within(await screen.findByRole('main'));
+    await main.findByRole('heading', { level: 1, name: 'Profil' });
+    expect(main.queryByRole('region', { name: 'Gewicht' })).not.toBeInTheDocument();
+    expect(main.queryByText(/84,6 kg/)).not.toBeInTheDocument();
+    expect(main.queryByRole('link', { name: /Gewicht/ })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Gewicht in kg/)).not.toBeInTheDocument();
-    await userEvent.click(weight.getByRole('link', { name: 'Gewicht unter Gesundheit erfassen' }));
-    await waitFor(() => {
-      expect(router.state.location.pathname).toBe('/health');
-    });
+    // The other profile parts are all still there.
+    expect(main.getByLabelText('Name')).toBeInTheDocument();
+    expect(main.getByRole('radio', { name: 'Weiblich' })).toBeInTheDocument();
+    expect(main.getByLabelText('Geburtsdatum')).toBeInTheDocument();
+    expect(main.getByLabelText('Körpergröße (cm)')).toBeInTheDocument();
+    expect(main.getByRole('button', { name: 'Persönliche Daten speichern' })).toBeInTheDocument();
+    // The weight itself is untouched.
+    const profileId = (await services.profile.ensureLocalProfile()).id;
+    expect((await services.weight.getHistory(profileId, 5)).map((entry) => entry.kg)).toEqual([
+      84.6,
+    ]);
   });
 
   it('a change of the body data updates the automatic nutrition goals', async () => {

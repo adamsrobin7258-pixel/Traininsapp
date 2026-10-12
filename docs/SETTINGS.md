@@ -13,7 +13,7 @@ tägliche Tracking.
 | Route               | Seite         | Inhalt                                                                                                                                          |
 | ------------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/settings`         | Einstellungen | Profilkopf, Liste der vier Bereiche                                                                                                             |
-| `/settings/profile` | Profil        | Name, Geschlecht, Geburtsdatum, Körpergröße; Gewicht nur zur Ansicht mit Link zu Gesundheit                                                     |
+| `/settings/profile` | Profil        | Name, Geschlecht, Geburtsdatum, Körpergröße (Gewicht seit Phase 24 nicht mehr hier – nur unter Gesundheit)                                      |
 | `/settings/goals`   | Ziele         | Hauptziel (+ Wunschgewicht), Ernährung, Aktivitätskalorien, Training, Aktivitäten, Gesundheit (Schrittziel)                                     |
 | `/settings/content` | Meine Inhalte | Übersicht der eigenen Inhalte, getrennt nach Ernährung und Training (siehe unten)                                                               |
 | `/settings/app`     | App           | Darstellung, Gewichtseinheit, Sprache, Wasser-Schnellmengen, Health Connect, Datenschutz/Speicherprüfung, Über Kalethra (Version, Datenquellen) |

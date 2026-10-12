@@ -577,6 +577,17 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 24 – Gesundheit vereinfacht, Gewicht nicht mehr im Profil, Kalender in Wochen ✅ (Version 0.37.0)
+
+- Gesundheit: Gewicht in einer Karte – aktueller Wert mit Veränderung, Diagramm (unverändert),
+  „Gewicht eintragen“; die Abschnitte „Entwicklung“ und „Verlauf“ entfallen. Die Liste der
+  Einträge (zum Korrigieren und Löschen, sonst nirgends möglich) liegt in einem Sheet hinter
+  „Einträge bearbeiten“. Daten, Erfassung, Berechnung unverändert
+- Einstellungen → Profil: Abschnitt „Gewicht“ entfernt (Gewicht nur unter Gesundheit)
+- Fortschritt: Kalender „Die letzten Tage“ – aktuelle Woche und die zwei davor, Montag bis
+  Sonntag; zukünftige Tage ruhig, ohne Symbol, nicht antippbar ([PROGRESS.md](PROGRESS.md))
+- Offen: Gerätetest
+
 ## Phase 23 – Fortschritt kompakt, Anatomie nach Profil, Logo in der Kopfzeile ✅ (Version 0.36.0)
 
 - Fortschritt: Score, darunter die vier Score-Bereiche mit Bewertung als Links zu ihren Seiten,

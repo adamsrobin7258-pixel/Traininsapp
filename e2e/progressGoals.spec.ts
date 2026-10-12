@@ -120,7 +120,7 @@ test('goals from Einstellungen against tracked values on Fortschritt', async ({ 
   expect(await noHorizontalScroll()).toBe(true);
 
   // 7. Calendar: Abnehmen is a limit – today 2.100 of 2.200 is still running, never a miss.
-  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
+  const calendar = main.getByRole('region', { name: 'Die letzten Tage' });
   const today = calendar.locator('[aria-current="date"]');
   await expect(today.locator('[data-mark]')).toHaveCount(0);
   await today.click();
@@ -132,7 +132,7 @@ test('goals from Einstellungen against tracked values on Fortschritt', async ({ 
 
   // 8. The period changes the score, the calendar stays the last 20 days.
   await main.getByRole('radio', { name: '30 Tage' }).click();
-  await expect(calendar.getByRole('button')).toHaveCount(20);
+  await expect(calendar.locator('[data-date]')).toHaveCount(21);
   await expect(main.getByText(/^0 von/)).toHaveCount(0);
 
   // 9. An area opens its module, back returns to Fortschritt.
@@ -148,7 +148,7 @@ test('goals from Einstellungen against tracked values on Fortschritt', async ({ 
   // Large system font: nothing overflows, areas and days stay tappable.
   await page.addStyleTag({ content: 'html { font-size: 130%; }' });
   await main.getByRole('radio', { name: 'Heute' }).click();
-  await expect(calendar.getByRole('button')).toHaveCount(20);
+  await expect(calendar.locator('[data-date]')).toHaveCount(21);
   expect(await noHorizontalScroll()).toBe(true);
   const width = page.viewportSize()?.width ?? 0;
   for (const target of [

@@ -149,7 +149,7 @@ Screen ─► Hook/Provider ─► Service (Regeln, Validierung) ─► Reposito
 ### Datenfluss der ersten Gesundheitsfunktion (Körpergewicht)
 
 ```
-modules/health  (Gesundheit: Übersicht, Diagramm, Verlauf, Eingabe-Sheet)
+modules/health  (Gesundheit: Gewichtskarte mit Diagramm, Einträge-Sheet, Eingabe-Sheet)
 modules/dashboard (damals „Heute“, seit 7.1 modules/progress „Fortschritt“)
         │  useWeightForDate / useWeightData / useWeightService   (core/health/WeightProvider)
         ▼

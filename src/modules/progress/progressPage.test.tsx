@@ -83,13 +83,13 @@ async function calorieGoal(
 }
 
 function calendar() {
-  return within(main().getByRole('region', { name: 'Letzte 20 Tage' }));
+  return within(main().getByRole('region', { name: 'Die letzten Tage' }));
 }
 
 /** The calendar cell of a local day (YYYY-MM-DD). */
 function dayCell(date: string): HTMLElement {
   const cell = screen
-    .getByRole('region', { name: 'Letzte 20 Tage' })
+    .getByRole('region', { name: 'Die letzten Tage' })
     .querySelector<HTMLElement>(`button[data-date="${date}"]`);
   if (!cell) throw new Error(`no cell for ${date}`);
   return cell;
@@ -102,7 +102,7 @@ const marks = (date: string) =>
 async function calendarReady() {
   await waitFor(() => {
     expect(
-      screen.getByRole('region', { name: 'Letzte 20 Tage' }).querySelector('[aria-busy]'),
+      screen.getByRole('region', { name: 'Die letzten Tage' }).querySelector('[aria-busy]'),
     ).toBeNull();
   });
 }
@@ -190,7 +190,7 @@ describe('Fortschritt – the main page', () => {
       ).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: '7 days' })).toHaveAttribute('aria-checked', 'true');
       expect(await main().findByText('Kalethra score')).toBeInTheDocument();
-      const days = within(main().getByRole('region', { name: 'Last 20 days' }));
+      const days = within(main().getByRole('region', { name: 'Recent days' }));
       expect(days.getByText('Workout')).toBeInTheDocument();
       expect(days.getByText('Calorie goal met')).toBeInTheDocument();
       const nav = within(screen.getByRole('navigation', { name: 'Main navigation' }));
@@ -224,12 +224,12 @@ describe('Fortschritt – the main page', () => {
       expect(main().getByText('03.10.')).toBeInTheDocument();
     });
 
-    it('changes the score, never the calendar: always the last 20 days', async () => {
+    it('changes the score, never the calendar: always the same three weeks', async () => {
       await renderApp('/');
       await calendarReady();
-      expect(calendar().getByText('14.09. – 03.10.')).toBeInTheDocument();
+      expect(calendar().getByText('14.09. – 04.10.')).toBeInTheDocument();
       await showProgressPeriod('30 Tage');
-      expect(calendar().getByText('14.09. – 03.10.')).toBeInTheDocument();
+      expect(calendar().getByText('14.09. – 04.10.')).toBeInTheDocument();
       expect(calendar().getAllByRole('button')).toHaveLength(20);
     });
   });
@@ -240,7 +240,7 @@ describe('Fortschritt – the main page', () => {
       await calendarReady();
       const score = main().getByRole('region', { name: 'Kalethra-Score' });
       const areas = within(score).getByRole('list', { name: 'Bereiche des Scores' });
-      const days = main().getByRole('region', { name: 'Letzte 20 Tage' });
+      const days = main().getByRole('region', { name: 'Die letzten Tage' });
       const legend = within(days).getByRole('list', { name: 'Legende' });
       const order = [score.querySelector('button'), areas, days.querySelector('button'), legend];
       for (const [index, element] of order.entries()) {
@@ -354,22 +354,26 @@ describe('Fortschritt – the main page', () => {
     });
   });
 
-  describe('calendar of the last 20 days', () => {
-    it('shows exactly the last 20 local days including today, under their weekdays', async () => {
+  describe('calendar: the current week and the two before', () => {
+    /** All 21 day cells of the grid (tappable days and days still to come), in grid order. */
+    const dayCells = () => [
+      ...screen
+        .getByRole('region', { name: 'Die letzten Tage' })
+        .querySelectorAll<HTMLElement>('[data-date]'),
+    ];
+    const key = (day: Date) =>
+      `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+
+    it('shows three whole weeks, Monday to Sunday, today included', async () => {
       await renderApp('/');
       await calendarReady();
-      const cells = calendar().getAllByRole('button');
-      expect(cells).toHaveLength(20);
-      expect(cells[0]).toHaveAttribute('data-date', '2026-09-14');
-      expect(cells.at(-1)).toHaveAttribute('data-date', '2026-10-03');
-      // Consecutive days, no gap, no doubles (also across the month).
+      expect(calendar().getByRole('heading', { name: 'Die letzten Tage' })).toBeInTheDocument();
+      expect(screen.queryByText(/20 Tage/)).not.toBeInTheDocument();
+      const cells = dayCells();
+      // Saturday, 3 October: Monday 14 September to Sunday 4 October – 21 days, no gaps.
       expect(cells.map((cell) => cell.dataset.date)).toEqual(
-        Array.from({ length: 20 }, (_, index) => {
-          const day = new Date(2026, 8, 14 + index);
-          return `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
-        }),
+        Array.from({ length: 21 }, (_, index) => key(new Date(2026, 8, 14 + index))),
       );
-      // 14 September 2026 is a Monday: first column, no blank before it.
       const grid = cells[0]?.parentElement;
       const children = [...(grid?.children ?? [])];
       expect(children.slice(0, 7).map((cell) => cell.textContent)).toEqual([
@@ -381,27 +385,70 @@ describe('Fortschritt – the main page', () => {
         'Sa',
         'So',
       ]);
+      // No blank cells: the first day sits right under "Mo", every day under its weekday.
       expect(children[7]).toBe(cells[0]);
-      expect(cells[0]).toHaveAccessibleName(/^Montag, 14\. September/);
-    });
-
-    it('puts the first day under its weekday when it is not a Monday', async () => {
-      // Monday, 12 October 2026 → the 20 days start on Wednesday, 23 September.
-      vi.setSystemTime(new Date(2026, 9, 12, 9));
-      await renderApp('/');
-      await calendarReady();
-      const cells = calendar().getAllByRole('button');
-      expect(cells[0]).toHaveAttribute('data-date', '2026-09-23');
-      expect(cells[0]).toHaveAccessibleName(/^Mittwoch, 23\. September/);
-      const children = [...(cells[0]?.parentElement?.children ?? [])];
-      // 7 weekday names, 2 empty cells (Mo, Di), then Wednesday.
-      expect(children.indexOf(cells[0] as Element)).toBe(9);
-      expect(cells.at(-1)).toHaveAttribute('data-date', '2026-10-12');
-      // Columns: index modulo 7 is the weekday from Monday on.
       for (const cell of cells) {
         const date = new Date(`${cell.dataset.date ?? ''}T12:00:00`);
         expect((children.indexOf(cell) - 7) % 7).toBe((date.getDay() + 6) % 7);
       }
+      // Up to today the days can be opened; Sunday is still to come.
+      const buttons = calendar().getAllByRole('button');
+      expect(buttons).toHaveLength(20);
+      expect(buttons.at(-1)).toHaveAttribute('data-date', '2026-10-03');
+      expect(buttons[0]).toHaveAccessibleName(/^Montag, 14\. September/);
+    });
+
+    it('keeps the days still to come neutral: no mark, nothing to open', async () => {
+      // Wednesday, 30 September: Thursday to Sunday are still to come.
+      vi.setSystemTime(new Date(2026, 8, 30, 9));
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await calorieGoal(services, profileId, 2000);
+          await completedWorkout(services, profileId, new Date(2026, 8, 30, 7));
+          vi.setSystemTime(new Date(2026, 8, 30, 9));
+        },
+      });
+      await calendarReady();
+      const future = dayCells().filter((cell) => cell.dataset.future === 'true');
+      expect(future.map((cell) => cell.dataset.date)).toEqual([
+        '2026-10-01',
+        '2026-10-02',
+        '2026-10-03',
+        '2026-10-04',
+      ]);
+      for (const cell of future) {
+        expect(cell.tagName).toBe('SPAN');
+        expect(cell.querySelector('[data-mark]')).toBeNull();
+        expect(cell).not.toHaveAttribute('aria-current');
+      }
+      expect(future[0]).toHaveTextContent('Donnerstag, 1. Oktober, liegt in der Zukunft');
+      await userEvent.click(future[0] as HTMLElement);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      // Today keeps its mark and is the last day that can be opened.
+      expect(marks('2026-09-30')).toEqual(['training']);
+      expect(calendar().getAllByRole('button').at(-1)).toHaveAttribute('aria-current', 'date');
+    });
+
+    it('crosses the turn of the year: weeks from December into January', async () => {
+      // Friday, 1 January 2027 → Monday, 14 December 2026 to Sunday, 3 January 2027.
+      vi.setSystemTime(new Date(2027, 0, 1, 10));
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await completedWorkout(services, profileId, new Date(2026, 11, 31, 18));
+          vi.setSystemTime(new Date(2027, 0, 1, 10));
+        },
+      });
+      await calendarReady();
+      const cells = dayCells();
+      expect(cells[0]).toHaveAttribute('data-date', '2026-12-14');
+      expect(cells.at(-1)).toHaveAttribute('data-date', '2027-01-03');
+      expect(new Set(cells.map((cell) => cell.dataset.date)).size).toBe(21);
+      expect(calendar().getByText('14.12. – 03.01.')).toBeInTheDocument();
+      expect(marks('2026-12-31')).toEqual(['training']);
+      expect(dayCell('2027-01-01')).toHaveAttribute('aria-current', 'date');
+      expect(calendar().getAllByRole('button')).toHaveLength(19);
     });
 
     it('uses local days: a workout at 23:30 and the first minutes of the new day', async () => {
@@ -488,7 +535,7 @@ describe('Fortschritt – the main page', () => {
         },
       });
       await calendarReady();
-      const region = screen.getByRole('region', { name: 'Letzte 20 Tage' });
+      const region = screen.getByRole('region', { name: 'Die letzten Tage' });
       // Only the two symbols of the legend – no day carries any mark.
       expect(region.querySelectorAll('button [data-mark]')).toHaveLength(0);
       expect(region.querySelectorAll('[data-mark]')).toHaveLength(2);

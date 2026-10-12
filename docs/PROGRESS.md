@@ -26,8 +26,8 @@ Kompakt, in dieser Reihenfolge – darunter folgt nichts mehr:
 
    Zuordnung in `modules/progress/domain/areaLinks.ts`. Keine neuen Kategorien oder Kennzahlen.
 
-4. **Kalender der letzten 20 Tage** (einschließlich heute, unabhängig vom Zeitraum) und darunter
-   die **Legende**.
+4. **Kalender „Die letzten Tage“**: die aktuelle Kalenderwoche und die beiden davor (seit Phase
+   24; vorher starr 20 Tage), unabhängig vom Zeitraum, darunter die **Legende**.
 
 ### Eine Bildschirmseite ohne Scrollen
 
@@ -38,21 +38,24 @@ Kalenderkarte. Unverändert: alle Inhalte, Ziele von mindestens 44 px (Bereiche,
 Schriftgrößen der Texte. Kein eigener Scrollbereich.
 
 Gemessen im Produktions-Build (Chromium, auch E2E-getestet), ungünstigster Fall = noch keine
-Daten (Score mit Hinweistext, Kalender mit vier Wochenzeilen):
+Daten (Score mit Hinweistext). Seit Phase 24 hat der Kalender immer genau drei Wochenzeilen
+(vorher je nach Wochentag bis zu vier) – die Seite ist dadurch eher kürzer geworden:
 
-| Bildschirm (CSS-px)                                         | Ergebnis                                           |
-| ----------------------------------------------------------- | -------------------------------------------------- |
-| Xiaomi 15 Ultra 412 × 915, Statusleiste 40, Gestenleiste 24 | passt vollständig, **kein Scrollen**               |
-| dito mit 3-Tasten-Navigation (unten 48)                     | alles sichtbar, 23 px Restscroll (nur Leerraum)    |
-| 390 × 844 ohne Systemleisten                                | alles sichtbar über der Tab-Leiste (6 px Leerraum) |
-| Xiaomi mit Systemschrift 105 %                              | alles sichtbar (knapp), Restscroll nur Leerraum    |
+| Bildschirm (CSS-px)                                         | Ergebnis                                                |
+| ----------------------------------------------------------- | ------------------------------------------------------- |
+| Xiaomi 15 Ultra 412 × 915, Statusleiste 40, Gestenleiste 24 | passt vollständig, **kein Scrollen**                    |
+| dito mit 3-Tasten-Navigation (unten 48)                     | passt vollständig, kein Scrollen                        |
+| Xiaomi mit Systemschrift 105 %                              | passt vollständig, kein Scrollen                        |
+| Xiaomi mit Systemschrift 110 %                              | alles sichtbar über der Tab-Leiste, Restscroll Leerraum |
+| 390 × 844 ohne Systemleisten                                | passt vollständig, kein Scrollen                        |
 
 **Grenzen – hier wird gescrollt** (nichts wird abgeschnitten, alles bleibt erreichbar und
 bedienbar; E2E-getestet mit 130 %):
 
-- Systemschrift ab etwa 110 % auf dem Xiaomi bzw. ab etwa 105 % bei 390 × 844,
-- Bildschirme unter etwa 800 px nutzbarer Höhe, z. B. 360 × 780 (ca. 120 px zu hoch) und 320 ×
-  568 (ca. 330 px zu hoch; dort stehen die Bereiche einspaltig).
+- Systemschrift über etwa 110 % auf dem Xiaomi bzw. ab etwa 105 % bei 390 × 844 (dort nur
+  wenige Pixel),
+- Bildschirme unter etwa 780 px nutzbarer Höhe, z. B. 360 × 780 (ca. 70 px zu hoch) und 320 ×
+  568 (ca. 290 px zu hoch; dort stehen die Bereiche einspaltig).
 - Bei schmalem Bildschirm und großer Schrift rückt der Score-Text unter den Ring statt
   überzulaufen.
 
@@ -63,10 +66,14 @@ vorhanden und getestet, werden auf Fortschritt aber nicht mehr angezeigt.
 
 ### Kalender
 
-- **Tage:** `calendarRange` – 20 lokale Kalendertage bis heute (`toLocalDateKey`, keine
-  UTC-Rechnung, also kein Verrutschen um Mitternacht). Sieben Spalten, Woche ab Montag wie überall
-  in Kalethra; leere Zellen vor dem ersten Tag richten ihn unter seinen Wochentag aus
-  (`leadingBlanks`). Heute: dezenter Rahmen und fette Zahl, `aria-current="date"`.
+- **Tage (seit Phase 24):** `calendarRange` – vom Montag vor zwei Wochen bis zum Sonntag der
+  aktuellen Woche, also immer drei vollständige Wochen = 21 Tage, Woche ab Montag wie überall in
+  Kalethra (`startOfWeek`). Lokale Kalendertage (`addDays`, `toLocalDateKey`, keine
+  UTC-Rechnung), daher korrekt über Monats- und Jahreswechsel, Schaltjahr und Zeitumstellung
+  (getestet). Heute: dezenter Rahmen und fette Zahl, `aria-current="date"`.
+- **Zukünftige Tage** dieser Woche: nur gezeichnet, ruhig grau, ohne Symbol und nicht antippbar;
+  für Screenreader „… liegt in der Zukunft“. Daten werden nur bis heute geladen
+  (`untilToday`).
 - **Training** (Trainingssymbol `ICON_FOR.training`): mindestens ein **abgeschlossenes**
   Kalethra-Training an dem Tag – `WorkoutService.dailyStatsBetween` zählt nur
   `status = 'completed'` je `local_date`; laufende, verworfene oder geplante Einheiten nie.
@@ -82,6 +89,8 @@ vorhanden und getestet, werden auf Fortschritt aber nicht mehr angezeigt.
   Kontrast hätte). Beide unabhängig, beide an einem Tag möglich.
 - **Nie negativ:** Tage ohne Erfolg bleiben schlicht – kein Rot, kein Fehlersymbol, keine
   Markierung für verfehlte Ziele oder fehlende Daten.
+- **Überschrift:** „Die letzten Tage“ (englisch „Recent days“) – kein Versprechen einer festen
+  Tageszahl mehr.
 - **Tagesdetails:** Antippen öffnet ein Sheet mit Wochentag und Datum, Training („Training
   abgeschlossen“, „2 Trainings abgeschlossen“ oder „Kein abgeschlossenes Training erfasst“) und
   Kalorienziel: erreicht · an diesem Tag nicht erreicht · Tag läuft noch · kein Kalorienziel ·

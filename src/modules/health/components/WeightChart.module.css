@@ -9,6 +9,15 @@
   box-shadow: var(--shadow-card);
 }
 
+/* Inside the weight card: the card's frame is enough. */
+.panel[data-embedded] {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+
 .chart {
   display: block;
   width: 100%;

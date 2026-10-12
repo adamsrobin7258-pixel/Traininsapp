@@ -1,6 +1,6 @@
 /*
- * The day calendar of the progress page: the last 20 days under the weekdays. Quiet by default –
- * only met goals get a mark, in forest green; nothing is ever red.
+ * The day calendar of the progress page: three whole weeks, Monday first. Quiet by default – only
+ * met goals get a mark, in forest green; nothing is ever red.
  */
 .calendar {
   display: flex;
@@ -87,6 +87,12 @@
   font-size: var(--font-size-subhead);
   font-variant-numeric: tabular-nums;
   line-height: var(--line-height-snug);
+}
+
+/* Days still to come this week: drawn, quiet, not tappable. */
+.day[data-future] {
+  cursor: default;
+  color: var(--color-text-tertiary);
 }
 
 .day[data-today] .number {

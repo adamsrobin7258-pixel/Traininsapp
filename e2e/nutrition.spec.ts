@@ -189,11 +189,13 @@ test('nutrition profile: personal data, goal and calculation', async ({ page }) 
   await main.getByLabel('Körpergröße (cm)').fill('180');
   await main.getByRole('button', { name: 'Persönliche Daten speichern' }).click();
   await expect(main.getByText(/Gespeichert/)).toBeVisible();
-  // The weight is shown, not edited here.
-  await expect(main.getByText(/90,0 kg/)).toBeVisible();
+  // Weight is not part of the profile (Phase 24): neither shown nor edited here.
+  await expect(main.getByText(/90,0 kg/)).toHaveCount(0);
   await expect(main.getByLabel(/Gewicht in kg/)).toHaveCount(0);
   await page.goBack();
   await expect(page).toHaveURL(/\/settings\/goals$/);
+  // The goals still use the weight recorded under Gesundheit.
+  await expect(main.getByText(/90,0 kg/).first()).toBeVisible();
 
   await main.getByRole('radio', { name: /^Moderat aktiv/ }).click();
   await main.getByRole('radio', { name: 'Abnehmen' }).click();

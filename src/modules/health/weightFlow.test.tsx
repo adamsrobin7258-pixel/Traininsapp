@@ -17,6 +17,12 @@ function dialog() {
   return within(screen.getByRole('dialog'));
 }
 
+/** Opens the list of own entries (Phase 24: a sheet instead of a section "Verlauf"). */
+async function openEntries() {
+  await userEvent.click(await screen.findByRole('button', { name: 'Einträge bearbeiten' }));
+  return within(await screen.findByRole('dialog', { name: 'Gewichtseinträge' }));
+}
+
 describe('weight tracking', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
@@ -42,8 +48,11 @@ describe('weight tracking', () => {
     await waitFor(() => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
-    expect(await screen.findAllByText('82,4 kg')).toHaveLength(2); // overview + history
+    // Shown once on the page – in the weight card; the entries are one tap away.
+    expect(await screen.findAllByText('82,4 kg')).toHaveLength(1);
     expect(await weightRows(db)).toEqual([{ date: '2026-10-03', value: 82.4 }]);
+    const entries = await openEntries();
+    expect(entries.getByRole('button', { name: /82,4 kg/ })).toBeInTheDocument();
   });
 
   it.each([
@@ -84,14 +93,15 @@ describe('weight tracking', () => {
     });
   });
 
-  it('edits and deletes entries from the history after confirmation', async () => {
+  it('edits and deletes entries from the entry list after confirmation', async () => {
     const { db } = await renderApp('/health', {
       prepare: async (services, profileId) => {
         await services.weight.save(profileId, '2026-10-01', 83);
         await services.weight.save(profileId, '2026-10-02', 82.7);
       },
     });
-    const history = within(await screen.findByRole('list', { name: 'Verlauf' }));
+    const sheet = await openEntries();
+    const history = within(sheet.getByRole('list', { name: 'Gewichtseinträge' }));
     const rows = history.getAllByRole('button');
     expect(rows.map((row) => row.textContent)).toEqual([
       expect.stringContaining('82,7 kg'),
@@ -103,9 +113,11 @@ describe('weight tracking', () => {
     await userEvent.clear(dialog().getByLabelText('Gewicht in kg'));
     await userEvent.type(dialog().getByLabelText('Gewicht in kg'), '83,5');
     await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
-    expect(await screen.findByRole('button', { name: /83,5 kg/ })).toBeInTheDocument();
+    // Back in the entry list after saving.
+    const back = within(await screen.findByRole('dialog', { name: 'Gewichtseinträge' }));
+    expect(await back.findByRole('button', { name: /83,5 kg/ })).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /83,5 kg/ }));
+    await userEvent.click(back.getByRole('button', { name: /83,5 kg/ }));
     await userEvent.click(dialog().getByRole('button', { name: 'Gewicht löschen' }));
     expect(
       dialog().getByText('83,5 kg vom Donnerstag, 1. Oktober wird dauerhaft gelöscht.'),
@@ -124,7 +136,7 @@ describe('weight tracking', () => {
         await services.weight.save(profileId, '2026-10-02', 82.7);
       },
     });
-    await userEvent.click(await screen.findByRole('button', { name: /82,7 kg/ }));
+    await userEvent.click((await openEntries()).getByRole('button', { name: /82,7 kg/ }));
     await userEvent.click(dialog().getByRole('button', { name: 'Gewicht löschen' }));
     await userEvent.click(dialog().getByRole('button', { name: 'Abbrechen' }));
     expect(dialog().getByRole('heading', { name: 'Gewicht bearbeiten' })).toBeInTheDocument();
@@ -155,7 +167,7 @@ describe('weight tracking', () => {
     await userEvent.type(dialog().getByLabelText('Weight in lb'), '181.7');
     await userEvent.click(dialog().getByRole('button', { name: 'Save' }));
 
-    expect(await screen.findAllByText('181.7 lb')).toHaveLength(2);
+    expect(await screen.findAllByText('181.7 lb')).toHaveLength(1);
     const [row] = await weightRows(db);
     expect(row?.value).toBeCloseTo(toKg(181.7, 'lb'), 10);
   });
@@ -203,14 +215,39 @@ describe('weight entry links', () => {
     expect(await screen.findByRole('button', { name: 'Gewicht eintragen' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
-  it('leaves the history section out until there is an entry (Phase C.2)', async () => {
+  it('offers the entries only once there is one (Phase C.2 / 24)', async () => {
     await renderApp('/health');
     const main = within(await screen.findByRole('main'));
     expect(await main.findByText('Noch kein Gewicht eingetragen.')).toBeInTheDocument();
     expect(
       main.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
-    ).toEqual(['Gewicht', 'Entwicklung', 'Regeneration']);
+    ).toEqual(['Gewicht', 'Regeneration']);
+    expect(main.queryByRole('button', { name: 'Einträge bearbeiten' })).not.toBeInTheDocument();
     expect(main.queryByText('0,0 kg')).not.toBeInTheDocument();
+  });
+
+  it('shows weight once: value, chart and entry in one card – no "Verlauf", no "Entwicklung"', async () => {
+    await renderApp('/health', {
+      prepare: async (services, profileId) => {
+        await services.weight.save(profileId, '2026-09-20', 84);
+        await services.weight.save(profileId, '2026-10-03', 82.4);
+      },
+    });
+    const weight = within(await screen.findByRole('region', { name: 'Gewicht' }));
+    expect(await weight.findByText('82,4 kg')).toBeInTheDocument();
+    expect(
+      await weight.findByRole('img', { name: /Gewichtsverlauf vom Sonntag, 20\. September/ }),
+    ).toBeInTheDocument();
+    expect(weight.getByRole('radiogroup', { name: 'Zeitraum' })).toBeInTheDocument();
+    expect(weight.getByRole('button', { name: 'Gewicht eintragen' })).toBeInTheDocument();
+    expect(weight.getByRole('button', { name: 'Einträge bearbeiten' })).toBeInTheDocument();
+    for (const name of ['Verlauf', 'Entwicklung']) {
+      expect(screen.queryByRole('heading', { name })).not.toBeInTheDocument();
+      expect(screen.queryByRole('region', { name })).not.toBeInTheDocument();
+    }
+    // Each value appears once on the page (the list is in the sheet only).
+    expect(screen.getAllByText('82,4 kg')).toHaveLength(1);
+    expect(screen.queryByText('84,0 kg')).not.toBeInTheDocument();
   });
 
   it('orders Gesundheit by topic and shows no empty placeholders (Phase 17.3)', async () => {
@@ -225,7 +262,7 @@ describe('weight entry links', () => {
     const main = within(screen.getByRole('main'));
     expect(
       main.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent),
-    ).toEqual(['Gewicht', 'Entwicklung', 'Verlauf', 'Regeneration', 'Schritte & Aktivität']);
+    ).toEqual(['Gewicht', 'Regeneration', 'Schritte & Aktivität']);
     // Kalethra does not collect these: no rows that can never be filled.
     for (const placeholder of ['Ruhepuls', 'Schlaf', 'Körperfett', 'Muskelmasse', 'Körper']) {
       expect(main.queryByText(placeholder)).not.toBeInTheDocument();

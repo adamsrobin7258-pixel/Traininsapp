@@ -40,7 +40,9 @@ test('Einstellungen: profile, goals, content and app – each in one place', asy
   await main.getByRole('button', { name: 'Persönliche Daten speichern' }).click();
   await expect(main.getByText(/Gespeichert/)).toBeVisible();
   await expect(main.getByLabel(/Gewicht in kg/)).toHaveCount(0);
-  await expect(main.getByRole('link', { name: 'Gewicht unter Gesundheit erfassen' })).toBeVisible();
+  // Weight is not part of the profile (Phase 24) – it is kept under Gesundheit only.
+  await expect(main.getByRole('region', { name: 'Gewicht' })).toHaveCount(0);
+  await expect(main.getByText(/Gewicht/)).toHaveCount(0);
   expect(await noHorizontalScroll()).toBe(true);
 
   // Back to Einstellungen (in-app back link), then Ziele.

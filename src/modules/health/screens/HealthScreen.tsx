@@ -5,7 +5,6 @@ import { useHealthAutoSync, type WeightEntry } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { isLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
 import { Screen, Section } from '@/ui';
-import { WeightChart } from '../components/WeightChart';
 import { WeightEntrySheet, type WeightSheetMode } from '../components/WeightEntrySheet';
 import { ImportedHealthOverview } from '../components/ImportedHealthOverview';
 import { RecoveryCheckIn } from '../components/RecoveryCheckIn';
@@ -13,7 +12,8 @@ import { WeightHistory } from '../components/WeightHistory';
 import { WeightOverview } from '../components/WeightOverview';
 
 /**
- * Gesundheit: the own weight (current value, course, entries), the daily recovery check-in, then
+ * Gesundheit: the own weight in one section (current value, chart, add; the entries in a sheet
+ * to correct them – Phase 24), the daily recovery check-in, then
  * steps and activity and the remaining values from Health Connect. Only what Kalethra records –
  * no empty placeholders for data it does not collect.
  */
@@ -21,6 +21,7 @@ export function HealthScreen() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
   const [editing, setEditing] = useState<WeightEntry | null>(null);
+  const [entriesOpen, setEntriesOpen] = useState(false);
   // Opening Health refreshes imported Health Connect data (throttled, only when connected).
   useHealthAutoSync();
 
@@ -50,15 +51,11 @@ export function HealthScreen() {
           onAdd={() => {
             openAdd(today);
           }}
+          onShowEntries={() => {
+            setEntriesOpen(true);
+          }}
         />
       </Section>
-
-      <Section title={t('weight.trend')}>
-        <WeightChart />
-      </Section>
-
-      {/* Its own section only once there are entries – no heading over nothing. */}
-      <WeightHistory onEdit={setEditing} />
 
       <Section title={t('health.recoveryTitle')}>
         <RecoveryCheckIn />
@@ -66,6 +63,15 @@ export function HealthScreen() {
 
       <ImportedHealthOverview today={new Date()} />
 
+      {/* The entries step back while one of them is edited and return afterwards. */}
+      {entriesOpen && !sheet ? (
+        <WeightHistory
+          onEdit={setEditing}
+          onClose={() => {
+            setEntriesOpen(false);
+          }}
+        />
+      ) : null}
       {sheet ? (
         <WeightEntrySheet
           key={sheet.kind === 'edit' ? sheet.entry.id : sheet.date}

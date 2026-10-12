@@ -5,10 +5,10 @@ import {
   type CalendarCalorieState,
   type ProgressCalendarDay,
 } from '@/core/progress';
-import { addDays, parseLocalDateKey } from '@/shared/lib/date';
+import { parseLocalDateKey } from '@/shared/lib/date';
 import { formatDayMonth, formatLongDate, formatShortWeekday } from '@/shared/lib/format';
 import { Icon, ICON_FOR, Sheet } from '@/ui';
-import { calendarRange, leadingBlanks } from '../domain/period';
+import { calendarRange } from '../domain/period';
 import styles from './Calendar.module.css';
 
 const CALORIE_DETAIL: Record<CalendarCalorieState, TranslationKey> = {
@@ -20,32 +20,32 @@ const CALORIE_DETAIL: Record<CalendarCalorieState, TranslationKey> = {
 };
 
 /**
- * The last 20 local days under the weekdays (Phase 23). A day gets the training symbol when a
- * Kalethra workout was completed and the nutrition symbol when the calorie goal was met – both in
- * forest green, independent of each other. Every other day stays plain: no data or a goal not met
- * is never shown as a failure. Tapping a day shows what is known about it.
+ * "Die letzten Tage": the current calendar week and the two before, Monday first (Phase 24; until
+ * then the last 20 days). A day gets the training symbol when a Kalethra workout was completed
+ * and the nutrition symbol when the calorie goal was met – both in forest green, independent of
+ * each other. Every other day stays plain: no data or a goal not met is never shown as a failure.
+ * Tapping a day shows what is known about it. Days after today are only drawn (quiet, no mark,
+ * not tappable) – there is nothing to know about them yet.
  */
 export function ProgressCalendar({ now }: { now: Date }) {
   const { t, locale } = useI18n();
   const todayKey = now.toDateString();
   // eslint-disable-next-line react-hooks/exhaustive-deps -- recomputed per day, not per minute
   const range = useMemo(() => calendarRange(now), [todayKey]);
-  const calendar = useProgressCalendar(range.dates, range.to);
+  // Data only up to today – the rest of this week is still to come.
+  const calendar = useProgressCalendar(range.untilToday, range.today);
   const [selected, setSelected] = useState<string | null>(null);
   const titleId = useId();
-  const first = parseLocalDateKey(range.from) ?? now;
-  const blanks = leadingBlanks(first);
-  // Weekday names from the days themselves, starting with the first column (Monday).
-  const weekdays = Array.from({ length: 7 }, (_, index) =>
-    formatShortWeekday(addDays(first, index - blanks), locale),
-  );
+  const dateOf = (key: string) => parseLocalDateKey(key) ?? now;
+  // Weekday names from the first week's days (Monday … Sunday).
+  const weekdays = range.dates.slice(0, 7).map((key) => formatShortWeekday(dateOf(key), locale));
   const days: ProgressCalendarDay[] =
     calendar.status === 'ready'
       ? calendar.data
-      : range.dates.map((date) => ({ date, workouts: 0, calories: 'noData' }));
+      : range.untilToday.map((date) => ({ date, workouts: 0, calories: 'noData' }));
   const loading = calendar.status === 'loading';
   const day = days.find((entry) => entry.date === selected) ?? null;
-  const dateOf = (key: string) => parseLocalDateKey(key) ?? now;
+  const future = range.dates.filter((date) => date > range.today);
 
   return (
     <section className={styles.calendar} aria-labelledby={titleId}>
@@ -71,12 +71,9 @@ export function ProgressCalendar({ now }: { now: Date }) {
             {name}
           </span>
         ))}
-        {Array.from({ length: blanks }, (_, index) => (
-          <span key={`blank-${String(index)}`} aria-hidden="true" />
-        ))}
         {days.map((entry) => {
           const date = dateOf(entry.date);
-          const isToday = entry.date === range.to;
+          const isToday = entry.date === range.today;
           const trained = entry.workouts > 0;
           const reached = entry.calories === 'reached';
           const marks = [
@@ -118,6 +115,17 @@ export function ProgressCalendar({ now }: { now: Date }) {
             </button>
           );
         })}
+        {future.map((key) => (
+          <span key={key} className={styles.day} data-date={key} data-future="true">
+            <span className={styles.number} aria-hidden="true">
+              {dateOf(key).getDate()}
+            </span>
+            <span className={styles.marks} aria-hidden="true" />
+            <span className="visually-hidden">
+              {`${formatLongDate(dateOf(key), locale)}, ${t('progress.calendar.future')}`}
+            </span>
+          </span>
+        ))}
       </div>
       <ul className={styles.legend} aria-label={t('progress.calendar.legendLabel')}>
         <li>

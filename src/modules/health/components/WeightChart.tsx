@@ -19,8 +19,11 @@ const BOX: ChartBox = { width: 320, height: 150, top: 12, right: 8, bottom: 22, 
 /** Above this many points the line alone reads better than individual dots. */
 const MAX_DOTS = 31;
 
-/** Minimal SVG line chart of the weight trend; no chart library. */
-export function WeightChart() {
+/**
+ * Minimal SVG line chart of the weight trend; no chart library. `embedded`: inside the weight
+ * card (no card of its own).
+ */
+export function WeightChart({ embedded = false }: { embedded?: boolean }) {
   const { t, locale } = useI18n();
   const { weightUnit: unit } = useSettings().settings;
   const [period, setPeriod] = useState<WeightPeriod>('3m');
@@ -36,7 +39,7 @@ export function WeightChart() {
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
 
   return (
-    <div className={styles.panel}>
+    <div className={styles.panel} data-embedded={embedded || undefined}>
       <SegmentedControl
         label={t('weight.periodLabel')}
         options={WEIGHT_PERIODS.map((value) => ({ value, label: t(`weight.periods.${value}`) }))}

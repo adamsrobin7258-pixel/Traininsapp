@@ -1,8 +1,6 @@
 import { useId, useState } from 'react';
 import { ROUTES } from '@/app/routes';
-import { formatWeight, useLatestWeight } from '@/core/health';
 import { useI18n } from '@/core/i18n';
-import { useSettings } from '@/core/settings';
 import {
   BODY_DATA_LIMITS,
   DISPLAY_NAME_MAX_LENGTH,
@@ -11,9 +9,8 @@ import {
   type ProfileSex,
 } from '@/core/user';
 import { parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
-import { formatMediumDate } from '@/shared/lib/format';
 import { formatNumberInput, parseNumberInput } from '@/shared/lib/numberInput';
-import { Button, ChoiceChips, List, ListRow, NumberField, Screen, Section, TextField } from '@/ui';
+import { Button, ChoiceChips, NumberField, Screen, Section, TextField } from '@/ui';
 import styles from '../components/Settings.module.css';
 
 function reportError(error: unknown) {
@@ -23,13 +20,12 @@ function reportError(error: unknown) {
 /**
  * Einstellungen → Profil: the only place for personal master data – name, sex, birth date,
  * height. Saved through ProfileService (`updateBodyData`); the automatic nutrition goals follow
- * on their own (NutritionGoalSync). Body weight is shown only – it is recorded under Gesundheit.
+ * on their own (NutritionGoalSync). Body weight is not part of it: it is recorded and shown under
+ * Gesundheit only (Phase 24).
  */
 export function ProfileSettingsScreen() {
   const { t, locale } = useI18n();
   const { profile, rename, updateBodyData } = useProfile();
-  const { weightUnit } = useSettings().settings;
-  const latest = useLatestWeight();
   const birthId = useId();
   const [sex, setSex] = useState<ProfileSex | null>(profile.sex);
   const [birthDate, setBirthDate] = useState(profile.birthDate ?? '');
@@ -78,8 +74,6 @@ export function ProfileSettingsScreen() {
       setBusy(false);
     }
   }
-
-  const weight = latest.status === 'ready' ? latest.data : null;
 
   return (
     <Screen
@@ -165,23 +159,6 @@ export function ProfileSettingsScreen() {
             </Button>
           </div>
         </div>
-      </Section>
-
-      <Section title={t('settings.profile.weight')} footer={t('settings.profile.weightHint')}>
-        <List>
-          <ListRow
-            title={t('nutrition.profile.currentWeight')}
-            value={
-              weight
-                ? t('nutrition.profile.currentWeightValue', {
-                    value: formatWeight(weight.kg, weightUnit, locale),
-                    date: formatMediumDate(parseLocalDateKey(weight.date) ?? new Date(), locale),
-                  })
-                : t('nutrition.profile.noWeight')
-            }
-          />
-          <ListRow title={t('settings.profile.recordWeight')} to={ROUTES.health} />
-        </List>
       </Section>
     </Screen>
   );

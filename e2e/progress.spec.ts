@@ -11,6 +11,13 @@ const dayKey = (page: Page, offset = 0) =>
     return `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
   }, offset);
 
+/**
+ * Days of the calendar up to today: Monday two weeks ago … today (14 + weekday from Monday on).
+ * The calendar shows the current week and the two before; later days are still to come.
+ */
+const daysUntilToday = (page: Page) =>
+  page.evaluate(() => 14 + ((new Date().getDay() + 6) % 7) + 1);
+
 test('Fortschritt is the compact, read-only main page: score, areas, calendar', async ({
   page,
 }) => {
@@ -37,8 +44,10 @@ test('Fortschritt is the compact, read-only main page: score, areas, calendar', 
   await expect(score).toHaveAccessibleName(/Details zum Kalethra-Score$/);
   const areas = main.getByRole('list', { name: 'Bereiche des Scores' }).getByRole('link');
   await expect(areas).toHaveCount(4);
-  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
-  await expect(calendar.getByRole('button')).toHaveCount(20);
+  const calendar = main.getByRole('region', { name: 'Die letzten Tage' });
+  // Three whole weeks; the days up to today can be opened.
+  await expect(calendar.locator('[data-date]')).toHaveCount(21);
+  await expect(calendar.getByRole('button')).toHaveCount(await daysUntilToday(page));
   await expect(calendar.getByRole('list', { name: 'Legende' })).toContainText(
     'TrainingKalorienziel erreicht',
   );
@@ -85,10 +94,17 @@ test('Fortschritt is the compact, read-only main page: score, areas, calendar', 
   const today = await dayKey(page);
   await expect(calendar.locator('[aria-current="date"]')).toHaveCount(1);
   await expect(calendar.getByRole('button').last()).toHaveAttribute('data-date', today);
+  const sinceMonday = (await daysUntilToday(page)) - 1;
   await expect(calendar.getByRole('button').first()).toHaveAttribute(
     'data-date',
-    await dayKey(page, -19),
+    await dayKey(page, -sinceMonday),
   );
+  // The last cell is Sunday of this week; later days have no button and no mark.
+  await expect(calendar.locator('[data-date]').last()).toHaveAttribute(
+    'data-date',
+    await dayKey(page, 20 - sinceMonday),
+  );
+  await expect(calendar.locator('[data-future] [data-mark]')).toHaveCount(0);
 
   // Each area opens its module; back and forward work.
   for (const [area, url] of [
@@ -171,9 +187,9 @@ test('progress over a day: workout and calorie goal in the calendar, day details
 
   // Fortschritt before anything happened: no marks at all, today neutral.
   await tab('Fortschritt').click();
-  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
+  const calendar = main.getByRole('region', { name: 'Die letzten Tage' });
   const today = calendar.locator('[aria-current="date"]');
-  await expect(calendar.getByRole('button')).toHaveCount(20);
+  await expect(calendar.getByRole('button')).toHaveCount(await daysUntilToday(page));
   await expect(calendar.locator('button [data-mark]')).toHaveCount(0);
 
   // Log 500 kcal: the goal of today is met (no main goal: a range of ±5 %).
@@ -240,7 +256,7 @@ test('progress over a day: workout and calorie goal in the calendar, day details
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
   // Yesterday without data: neutral, no symbol, no "missed".
-  await calendar.getByRole('button').nth(18).click();
+  await calendar.locator(`button[data-date="${await dayKey(page, -1)}"]`).click();
   await expect(details.getByText('Kein abgeschlossenes Training erfasst')).toBeVisible();
   await expect(details.getByText('Keine Ernährungseinträge erfasst')).toBeVisible();
   await page.keyboard.press('Escape');
@@ -312,7 +328,7 @@ test('the whole overview fits the screen without scrolling (390 px and Xiaomi 15
   for (const part of [
     main.getByRole('button', { name: /Kalethra-Score/ }),
     main.getByRole('list', { name: 'Bereiche des Scores' }),
-    main.getByRole('region', { name: 'Letzte 20 Tage' }),
+    main.getByRole('region', { name: 'Die letzten Tage' }),
     main.getByRole('list', { name: 'Legende' }),
   ]) {
     await expect(part).toBeInViewport({ ratio: 1 });
@@ -334,9 +350,9 @@ test('small screen or large font: the page scrolls instead of cutting anything o
   expect((await fit(page)).overflowX).toBe(false);
   const targets = [
     ...(await main.getByRole('list', { name: 'Bereiche des Scores' }).getByRole('link').all()),
-    ...(await main.getByRole('region', { name: 'Letzte 20 Tage' }).getByRole('button').all()),
+    ...(await main.getByRole('region', { name: 'Die letzten Tage' }).getByRole('button').all()),
   ];
-  expect(targets).toHaveLength(24);
+  expect(targets).toHaveLength(4 + (await daysUntilToday(page)));
   for (const target of targets) {
     // Centred, so no sub-pixel edge and never under the tab bar.
     await target.evaluate((element) => {
