@@ -130,3 +130,19 @@ test('muscle map follows the profile: "Weiblich" shows the female body everywher
   expect(await levels(page)).toMatchObject({ 'pectoralis-major': 'primary' });
   expect(await noHorizontalScroll(page)).toBe(true);
 });
+
+test('the former 3D bodies are not shipped; the 2D maps need none of them', async ({ page }) => {
+  const requests: string[] = [];
+  page.on('request', (request) => requests.push(request.url()));
+  for (const path of ['/figure/male/kalethra-male.glb', '/figure/female/kalethra-female.glb']) {
+    const response = await page.request.get(path);
+    // The preview answers unknown paths with the app page – never with a glTF model.
+    const body = await response.body();
+    expect(body.subarray(0, 4).toString()).not.toBe('glTF');
+  }
+  await openExercise(page, 'langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+  const section = sheet(page).getByRole('region', { name: 'Beanspruchte Muskeln' });
+  await expect(section.locator('svg')).toHaveCount(2);
+  expect(await levels(page)).toMatchObject({ 'pectoralis-major': 'primary' });
+  expect(requests.filter((url) => /\.glb|\/figure\//.test(url))).toEqual([]);
+});

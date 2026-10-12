@@ -10,8 +10,8 @@ Kalethra-Symbol ([BRAND.md](BRAND.md)).
 
 Kompakt, in dieser Reihenfolge – darunter folgt nichts mehr:
 
-1. **Zeitraum** (Heute / 7 Tage / 30 Tage) und darunter der Zeitraum als Datum – gilt nur für den
-   Score.
+1. **Zeitraum** (Heute / 7 Tage / 30 Tage) – gilt nur für den Score; das Datum des Zeitraums steht
+   klein rechts im Kopf der Score-Karte (für Screenreader als eigener Satz davor).
 2. **Kalethra-Score** ([SCORE.md](SCORE.md)): Ring, Zahl, Einordnung, Trend. Antippen öffnet die
    Erklärung (unverändert). Berechnung unverändert.
 3. **Die vier Score-Bereiche** mit ihrer Bewertung aus dem Score (`–` ohne Bewertung), jede Zeile
@@ -28,6 +28,33 @@ Kompakt, in dieser Reihenfolge – darunter folgt nichts mehr:
 
 4. **Kalender der letzten 20 Tage** (einschließlich heute, unabhängig vom Zeitraum) und darunter
    die **Legende**.
+
+### Eine Bildschirmseite ohne Scrollen
+
+Die ganze Übersicht – Score, vier Bereiche, Kalender, Legende – passt auf einem Telefon auf eine
+Seite. Dafür: weniger Abstand unter dem Titel (`Screen dense`, nur hier), Datum im Kopf der
+Score-Karte statt in eigener Zeile, Ring 6,25 rem (Zahl 2,5 rem), engere Bereichszeilen und
+Kalenderkarte. Unverändert: alle Inhalte, Ziele von mindestens 44 px (Bereiche, Kalendertage),
+Schriftgrößen der Texte. Kein eigener Scrollbereich.
+
+Gemessen im Produktions-Build (Chromium, auch E2E-getestet), ungünstigster Fall = noch keine
+Daten (Score mit Hinweistext, Kalender mit vier Wochenzeilen):
+
+| Bildschirm (CSS-px)                                         | Ergebnis                                           |
+| ----------------------------------------------------------- | -------------------------------------------------- |
+| Xiaomi 15 Ultra 412 × 915, Statusleiste 40, Gestenleiste 24 | passt vollständig, **kein Scrollen**               |
+| dito mit 3-Tasten-Navigation (unten 48)                     | alles sichtbar, 23 px Restscroll (nur Leerraum)    |
+| 390 × 844 ohne Systemleisten                                | alles sichtbar über der Tab-Leiste (6 px Leerraum) |
+| Xiaomi mit Systemschrift 105 %                              | alles sichtbar (knapp), Restscroll nur Leerraum    |
+
+**Grenzen – hier wird gescrollt** (nichts wird abgeschnitten, alles bleibt erreichbar und
+bedienbar; E2E-getestet mit 130 %):
+
+- Systemschrift ab etwa 110 % auf dem Xiaomi bzw. ab etwa 105 % bei 390 × 844,
+- Bildschirme unter etwa 800 px nutzbarer Höhe, z. B. 360 × 780 (ca. 120 px zu hoch) und 320 ×
+  568 (ca. 330 px zu hoch; dort stehen die Bereiche einspaltig).
+- Bei schmalem Bildschirm und großer Schrift rückt der Score-Text unter den Ring statt
+  überzulaufen.
 
 Entfernt wurden auf dieser Seite nur die fünf Karten Training, Ernährung, Gewicht, Aktivitäten
 und Schritte (und ihre Mini-Diagramme). Module, Daten, Services und Einstiege bleiben; die

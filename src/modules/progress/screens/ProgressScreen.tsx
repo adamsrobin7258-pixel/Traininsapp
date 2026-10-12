@@ -20,7 +20,7 @@ export function ProgressScreen() {
   useHealthAutoSync();
 
   return (
-    <Screen eyebrow={buildGreeting(t, now, profile.displayName)} title={t('progress.title')}>
+    <Screen eyebrow={buildGreeting(t, now, profile.displayName)} title={t('progress.title')} dense>
       <ProgressSection now={now} />
     </Screen>
   );

@@ -14,7 +14,8 @@ import { ScoreCard } from './ScoreCard';
 import styles from './Progress.module.css';
 
 /**
- * The compact main page (Phase 23): the Kalethra score of today (the default) or the last 7 or 30
+ * The compact main page (Phase 23) – on a phone the whole overview fits the screen without
+ * scrolling (see docs/PROGRESS.md for the limits): the Kalethra score of today (the default) or the last 7 or 30
  * days with its four areas – each opens its area – then the calendar of the last 20 days with
  * completed workouts and met calorie goals. Nothing is entered or calculated here; the score and
  * the calendar get their values ready-made from the services.
@@ -40,13 +41,29 @@ export function ProgressSection({ now }: { now: Date }) {
         value={period}
         onChange={setPeriod}
       />
-      <p className={styles.range}>
-        <span className="visually-hidden">{t(`progress.rangeHint.${period}`)} </span>
+      {/* The period's days for screen readers; on screen they sit in the score card's header. */}
+      <p className="visually-hidden">
         {range.from === range.to
-          ? t('progress.rangeDay', { day: day(range.to) })
-          : t('progress.range', { from: day(range.from), to: day(range.to) })}
+          ? t('progress.rangeA11yDay', {
+              hint: t(`progress.rangeHint.${period}`),
+              day: day(range.to),
+            })
+          : t('progress.rangeA11y', {
+              hint: t(`progress.rangeHint.${period}`),
+              from: day(range.from),
+              to: day(range.to),
+            })}
       </p>
-      <ScoreCard period={period} range={range} previous={previous} />
+      <ScoreCard
+        period={period}
+        range={range}
+        previous={previous}
+        rangeLabel={
+          range.from === range.to
+            ? t('progress.rangeDay', { day: day(range.to) })
+            : t('progress.range', { from: day(range.from), to: day(range.to) })
+        }
+      />
       <ProgressCalendar now={now} />
     </div>
   );

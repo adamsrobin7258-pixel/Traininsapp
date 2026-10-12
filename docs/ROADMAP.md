@@ -590,8 +590,13 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Kalethra-Symbol oben rechts auf allen normalen Seiten (`Screen`), nicht doppelt
   ([BRAND.md](BRAND.md))
 - Token `--color-success-mark`
-- Offen: Gerätetest; Hinweis „3D-Körper“ unter Datenquellen bleibt, solange die GLB-Dateien
-  mit der App ausgeliefert werden (CC BY 4.0)
+- Fortschritt passt auf dem Xiaomi 15 Ultra ohne Scrollen auf eine Seite (Grenzen in
+  [PROGRESS.md](PROGRESS.md))
+- 3D-Körper (`public/figure/*.glb`) werden nicht mehr ausgeliefert: bleiben im Repository, der
+  Build entfernt sie aus der Ausgabe (`vite.config.ts`), die CI prüft das APK; der Hinweis
+  „3D-Körper“ unter Datenquellen entfällt, die Namensnennung bleibt bei den Dateien
+  (`assets/figure/male/source/ATTRIBUTION.md`)
+- Offen: Gerätetest
 
 ## Phase 22 – Markenzeichen und App-Logo (Marke Phase 2) ✅ (Version 0.35.0)
 

@@ -1,13 +1,6 @@
-/* The progress main page: period switch, visible range, the score, then the day calendar. */
+/* The progress main page: period switch, the score with its areas, then the day calendar. */
 .progress {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-}
-
-.range {
-  margin-top: calc(var(--space-2) * -1);
-  font-size: var(--font-size-footnote);
-  font-variant-numeric: tabular-nums;
-  color: var(--color-text-secondary);
+  gap: var(--space-3);
 }

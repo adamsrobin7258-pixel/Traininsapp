@@ -112,6 +112,11 @@ jobs:
             | grep -o "android.permission.health\.[A-Z0-9_]*" | sort -u | tr '\n' ' ')
           echo "Health permissions: $HEALTH"
           test "$HEALTH" = "android.permission.health.READ_ACTIVE_CALORIES_BURNED android.permission.health.READ_DISTANCE android.permission.health.READ_EXERCISE android.permission.health.READ_STEPS android.permission.health.READ_WEIGHT "
+          # The former 3D bodies stay in the repository but are not shipped (vite.config.ts).
+          if unzip -l "$APK" | grep -E '\.glb$'; then
+            echo "The APK must not contain 3D models (.glb)"
+            exit 1
+          fi
           echo "file=$APK" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v5
         with:

@@ -20,7 +20,7 @@ describe('data sources', () => {
     expect(logo.querySelector('[data-brand="wordmark"]')).not.toBeNull();
   });
 
-  it('credits the BLS, Open Food Facts and the 3D body under "About"', async () => {
+  it('credits the BLS and Open Food Facts under "About" – the 3D body is no longer shipped', async () => {
     await renderApp('/settings/app');
     await userEvent.click(await screen.findByRole('button', { name: 'Datenquellen' }));
     const sheet = within(await screen.findByRole('dialog', { name: 'Datenquellen' }));
@@ -33,13 +33,17 @@ describe('data sources', () => {
     expect(sheet.getByText('6 Lebensmittel · importiert am 01.10.2026')).toBeInTheDocument();
     expect(sheet.getByText(/Open Database License \(ODbL\)/)).toBeInTheDocument();
     expect(sheet.getByText(/Gesendet wird ausschließlich der Barcode/)).toBeInTheDocument();
-    // CC BY 4.0: author, title, source, licence and the note that the body was modified.
-    expect(
-      sheet.getByText(
-        /„Proxy Human base Mesh“ von sphere_joe \(sketchfab\.com\/mundane_x\), lizenziert unter CC BY 4\.0/,
-      ),
-    ).toBeInTheDocument();
-    expect(sheet.getByText(/Für Kalethra bearbeitet/)).toBeInTheDocument();
+    expect(sheet.getByText(/Nur lesend: Gewicht, Schritte/)).toBeInTheDocument();
+    // Since 0.36.0 the 3D bodies are not in the app any more (vite.config.ts) – no credit for
+    // content that is not shipped; the attribution stays with the files in the repository.
+    expect(sheet.queryByText('3D-Körper')).not.toBeInTheDocument();
+    expect(sheet.queryByText(/Proxy Human base Mesh|sphere_joe|CC BY/)).not.toBeInTheDocument();
+    expect(sheet.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
+      'Datenquellen',
+      'Bundeslebensmittelschlüssel (BLS)',
+      'Open Food Facts',
+      'Health Connect',
+    ]);
   });
 
   it('says so when no BLS data is bundled', async () => {

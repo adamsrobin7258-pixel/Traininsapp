@@ -371,8 +371,8 @@ Regeln für künftige Bilder (Phase B legt nur die Regeln fest; es wurden keine 
 3. **Muskelkarten** (`src/modules/training/muscleMap/svg/`, seit 0.34.0) für beanspruchte
    Muskeln: eigene Atlas-Zeichnung, Farben aus `--color-anatomy-*`/`--color-muscle-*`. Sie liegen
    beim Trainingsmodul, weil ihre Regionen fachlich an die Muskelgruppen gebunden sind. Die
-   3D-Körper (`public/figure/`) werden seitdem nicht mehr angezeigt; Pfade und Modelle bleiben
-   unverändert.
+   3D-Körper (`public/figure/`) werden seitdem nicht mehr angezeigt und seit 0.36.0 auch nicht
+   mehr ausgeliefert (`vite.config.ts`); Pfade und Modelle bleiben im Repository unverändert.
 
 Keine Stock-Fotos, keine Personenfotos, keine Verläufe, keine dekorativen Bilder ohne Inhalt.
 

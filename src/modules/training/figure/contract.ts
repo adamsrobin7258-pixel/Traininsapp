@@ -24,9 +24,11 @@ export function figureVariantFor(sex: ProfileSex | null): FigureVariant {
 }
 
 /**
- * Bundled body assets (relative to the app's base, never a remote URL – the app works offline).
- * Built by `tools/figures/build.mjs`; `null` would mean "not delivered", and only then – or if an
- * asset cannot be loaded – the code-built fallback body is shown.
+ * Body assets (relative to the app's base, never a remote URL). Built by
+ * `tools/figures/build.mjs`; `null` would mean "not delivered", and only then – or if an asset
+ * cannot be loaded – the code-built fallback body is shown. Since 0.36.0 the files stay in
+ * `public/figure/` but are no longer shipped with the app (`vite.config.ts`, `NOT_SHIPPED`):
+ * nothing in the app shows the 3D body any more – the training views use the 2D muscle maps.
  */
 export const FIGURE_ASSETS: Readonly<Record<FigureVariant, string | null>> = {
   male: 'figure/male/kalethra-male.glb',

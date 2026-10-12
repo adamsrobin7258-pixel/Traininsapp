@@ -17,6 +17,11 @@ interface ScreenProps {
    * content already (no second logo).
    */
   brand?: boolean;
+  /**
+   * Less room between header and content – for an overview that has to fit one screen
+   * (Fortschritt). The header itself is unchanged.
+   */
+  dense?: boolean;
   children: ReactNode;
 }
 
@@ -28,7 +33,15 @@ interface ScreenProps {
  * the title row. It never makes the header taller or wraps into its own line: where the row has
  * too little room (small screen, large system font), the mark is hidden.
  */
-export function Screen({ title, eyebrow, back, action, brand = true, children }: ScreenProps) {
+export function Screen({
+  title,
+  eyebrow,
+  back,
+  action,
+  brand = true,
+  dense = false,
+  children,
+}: ScreenProps) {
   const mark = (
     <span className={styles.mark}>
       <BrandMark />
@@ -36,7 +49,7 @@ export function Screen({ title, eyebrow, back, action, brand = true, children }:
   );
   return (
     <main className={styles.screen}>
-      <header className={styles.header}>
+      <header className={styles.header} data-dense={dense || undefined}>
         {back ? (
           <div className={styles.topRow}>
             <Link to={back.to} className={styles.back}>

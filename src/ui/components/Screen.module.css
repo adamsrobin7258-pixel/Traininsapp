@@ -13,6 +13,10 @@
   container: screen-header / inline-size;
 }
 
+.header[data-dense] {
+  margin-bottom: var(--space-4);
+}
+
 .eyebrow {
   margin-bottom: var(--space-1);
   font-size: var(--font-size-subhead);

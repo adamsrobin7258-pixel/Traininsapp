@@ -1,5 +1,8 @@
 # Gerätetest 3D-Körper (Xiaomi 15 Ultra)
 
+> Historisch: Seit Version 0.36.0 werden die 3D-Körper nicht mehr angezeigt und nicht mehr
+> ausgeliefert; Zeile 24 (Datenquellen) gilt nur bis 0.35.0.
+
 **Status:** 0.29.0 wurde vom Nutzer auf dem Xiaomi 15 Ultra geprüft. Befund: Figur besser als
 zuvor; beim Latzug verformt sich der Rücken sichtbar nach innen; beim Latzug und Bankdrücken
 passen die Hände nicht zur Stange; Finger nicht überzeugend; Highlights aufgesetzt mit kantigen

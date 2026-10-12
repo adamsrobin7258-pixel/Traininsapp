@@ -24,10 +24,13 @@ export function ScoreCard({
   period,
   range,
   previous,
+  rangeLabel,
 }: {
   period: ProgressPeriod;
   range: PeriodRange;
   previous: PeriodRange;
+  /** The period's days ("27.09. – 03.10."), shown small next to the title. */
+  rangeLabel: string;
 }) {
   const { t, locale } = useI18n();
   const state = useScore(range.dates, previous.dates);
@@ -59,6 +62,10 @@ export function ScoreCard({
       >
         <span className={styles.header}>
           <span className={styles.title}>{t('progress.score.title')}</span>
+          {/* Read out separately before the card (ProgressSection); here it is only visual. */}
+          <span className={styles.range} aria-hidden="true">
+            {rangeLabel}
+          </span>
           <Icon name={ICON_FOR.navForward} size={20} className={styles.chevron} />
         </span>
 

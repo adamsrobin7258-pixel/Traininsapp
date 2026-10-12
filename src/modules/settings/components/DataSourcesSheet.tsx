@@ -5,7 +5,11 @@ import { parseLocalDateKey } from '@/shared/lib/date';
 import { formatMediumDate } from '@/shared/lib/format';
 import { Section, Sheet } from '@/ui';
 
-/** Attribution of the food data and the 3D body (required by the BLS, ODbL and CC BY licences). */
+/**
+ * Attribution of the food data (required by the BLS and ODbL licences) and the health data source.
+ * The former 3D body (CC BY 4.0) is no longer shipped since 0.36.0, so it is no longer credited
+ * here; its attribution stays with the files (assets/figure/male/source/ATTRIBUTION.md).
+ */
 export function DataSourcesSheet({ onClose }: { onClose: () => void }) {
   const { t, locale } = useI18n();
   const { services } = useNutrition();
@@ -53,9 +57,6 @@ export function DataSourcesSheet({ onClose }: { onClose: () => void }) {
       </Section>
       <Section title={t('profile.dataSources.healthTitle')}>
         <p>{t('profile.dataSources.healthBody')}</p>
-      </Section>
-      <Section title={t('profile.dataSources.figureTitle')}>
-        <p>{t('profile.dataSources.figureBody')}</p>
       </Section>
     </Sheet>
   );

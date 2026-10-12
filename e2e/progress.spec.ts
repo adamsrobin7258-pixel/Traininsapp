@@ -273,3 +273,90 @@ test('progress over a day: workout and calorie goal in the calendar, day details
   expect((legendBox?.y ?? 0) + (legendBox?.height ?? 0)).toBeLessThanOrEqual(tabBarBox?.y ?? 0);
   expect(await noHorizontalScroll(page)).toBe(true);
 });
+
+/** Bottom of the legend and top of the tab bar, and how far the page could scroll. */
+const fit = (page: Page) =>
+  page.evaluate(() => {
+    const legend = document.querySelector('main ul[aria-label="Legende"]');
+    const nav = document.querySelector('nav[aria-label="Hauptnavigation"]');
+    return {
+      legendBottom: legend?.getBoundingClientRect().bottom ?? Infinity,
+      navTop: nav?.getBoundingClientRect().top ?? 0,
+      scroll: document.documentElement.scrollHeight - window.innerHeight,
+      overflowX: document.documentElement.scrollWidth > window.innerWidth,
+    };
+  });
+
+test('the whole overview fits the screen without scrolling (390 px and Xiaomi 15 Ultra)', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name === 'w320-light', 'Too short for one screen – see next test');
+  await page.goto('/');
+  const main = page.locator('main');
+  await expect(main.locator('[aria-current="date"]')).toBeVisible();
+  await expect(main.locator('[aria-busy]')).toHaveCount(0);
+  // 390 × 844 without system bars: everything above the tab bar, nothing scrolled.
+  let result = await fit(page);
+  expect(result.legendBottom).toBeLessThanOrEqual(result.navTop);
+  expect(result.overflowX).toBe(false);
+
+  // Xiaomi 15 Ultra (412 × 915 CSS px), app edge to edge: status bar 40 px, gesture bar 24 px.
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.addStyleTag({
+    content: 'html { --safe-area-inset-top: 40px; --safe-area-inset-bottom: 24px; }',
+  });
+  result = await fit(page);
+  expect(result.legendBottom).toBeLessThanOrEqual(result.navTop);
+  expect(result.scroll).toBeLessThanOrEqual(0);
+  // Order kept: score, areas, calendar, legend – and every part fully on the screen.
+  for (const part of [
+    main.getByRole('button', { name: /Kalethra-Score/ }),
+    main.getByRole('list', { name: 'Bereiche des Scores' }),
+    main.getByRole('region', { name: 'Letzte 20 Tage' }),
+    main.getByRole('list', { name: 'Legende' }),
+  ]) {
+    await expect(part).toBeInViewport({ ratio: 1 });
+  }
+  for (const target of await main.getByRole('link').all()) {
+    expect((await target.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+  }
+});
+
+test('small screen or large font: the page scrolls instead of cutting anything off', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const main = page.locator('main');
+  await expect(main.locator('[aria-current="date"]')).toBeVisible();
+  // 130 % system font on the Xiaomi does not fit one screen – it must stay complete and usable.
+  await page.addStyleTag({ content: 'html { font-size: 130%; }' });
+  const width = page.viewportSize()?.width ?? 0;
+  expect((await fit(page)).overflowX).toBe(false);
+  const targets = [
+    ...(await main.getByRole('list', { name: 'Bereiche des Scores' }).getByRole('link').all()),
+    ...(await main.getByRole('region', { name: 'Letzte 20 Tage' }).getByRole('button').all()),
+  ];
+  expect(targets).toHaveLength(24);
+  for (const target of targets) {
+    await target.scrollIntoViewIfNeeded();
+    await expect(target).toBeInViewport({ ratio: 1 });
+    const box = await target.boundingBox();
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+  }
+  // The legend is reachable above the tab bar; no text is cut off in the score card.
+  const legend = main.getByRole('list', { name: 'Legende' });
+  await expect(async () => {
+    await page.mouse.wheel(0, 5000);
+    await expect(legend).toBeInViewport({ ratio: 1, timeout: 500 });
+  }).toPass({ timeout: 10_000 });
+  expect(
+    await main
+      .getByRole('region', { name: 'Kalethra-Score' })
+      .evaluate((card) =>
+        [...card.querySelectorAll('span')].every(
+          (span) => span.scrollWidth <= span.clientWidth + 1,
+        ),
+      ),
+  ).toBe(true);
+});

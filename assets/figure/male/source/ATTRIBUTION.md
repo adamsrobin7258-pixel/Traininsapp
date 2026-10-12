@@ -4,9 +4,14 @@ Der produktive männliche Körper (`public/figure/male/kalethra-male.glb`, seit 
 übernimmt seine modellierte Anatomie aus einem fremden 3D-Modell unter **CC BY 4.0**. Die
 Namensnennung ist Lizenzpflicht und muss bei jeder Weitergabe erhalten bleiben. Sie steht:
 
-- in der App unter **Einstellungen → App → Datenquellen → 3D-Körper**,
 - in der GLB selbst (`asset.copyright`, dazu `asset.extras.kalethra.source`),
-- in diesem Dokument.
+- in diesem Dokument,
+- bis Version 0.35.0 auch in der App unter **Einstellungen → App → Datenquellen → 3D-Körper**.
+
+**Seit Version 0.36.0** wird der Körper nicht mehr mit der App ausgeliefert: `public/figure/`
+bleibt im Repository, wird aber beim Build aus der Ausgabe entfernt (`vite.config.ts`,
+`NOT_SHIPPED`; die CI prüft, dass das APK keine `.glb` enthält). Deshalb entfällt der Hinweis in
+der App. Wird der Körper wieder ausgeliefert, muss der unten stehende Wortlaut zurück in die App.
 
 | Feld     | Angabe                                                                                 |
 | -------- | -------------------------------------------------------------------------------------- |
