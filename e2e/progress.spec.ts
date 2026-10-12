@@ -338,7 +338,10 @@ test('small screen or large font: the page scrolls instead of cutting anything o
   ];
   expect(targets).toHaveLength(24);
   for (const target of targets) {
-    await target.scrollIntoViewIfNeeded();
+    // Centred, so no sub-pixel edge and never under the tab bar.
+    await target.evaluate((element) => {
+      element.scrollIntoView({ block: 'center' });
+    });
     await expect(target).toBeInViewport({ ratio: 1 });
     const box = await target.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
