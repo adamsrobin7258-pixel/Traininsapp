@@ -87,6 +87,7 @@ export default tseslint.config(
             'useRecoveryData',
             'useScore',
             'useProgressGoals',
+            'useProgressCalendar',
             'useTargets',
             'useTargetData',
           ],

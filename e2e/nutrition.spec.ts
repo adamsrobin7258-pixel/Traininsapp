@@ -94,14 +94,18 @@ test('log a new food, edit it, water and goals', async ({ page }) => {
   await expect(overview.getByText('370', { exact: true })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Fortschritt (opens on Heute) compares the logged day with its goal.
+  // Fortschritt (opens on Heute): nutrition is a rated score area; today below the goal is still
+  // running – the calendar marks nothing and says so in the day details.
   await page
     .getByRole('navigation', { name: 'Hauptnavigation' })
     .getByRole('link', { name: 'Fortschritt' })
     .click();
-  const card = page.locator('main').getByRole('link', { name: /^Ernährung/ });
-  await expect(card.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
-  await expect(card.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
+  await expect(main.getByRole('link', { name: /^Ernährung: .* – Bereich öffnen$/ })).toBeVisible();
+  await main.getByRole('button', { name: /, heute$/ }).click();
+  await expect(
+    page.getByRole('dialog').getByText('Der Tag läuft noch – noch nicht bewertet'),
+  ).toBeVisible();
+  await page.keyboard.press('Escape');
 });
 
 test('days: back to yesterday, never into the future', async ({ page }) => {

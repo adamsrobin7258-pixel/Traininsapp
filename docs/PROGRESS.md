@@ -1,22 +1,72 @@
-# Fortschritt – die Mainpage (Phase 7 / 7.1, Zielerreichung seit Phase 14)
+# Fortschritt – die Mainpage (Phase 7 / 7.1, Zielerreichung seit Phase 14, kompakt seit Phase 23)
 
 Seit Phase 7.1 ist **„Fortschritt“** die Startseite und der erste Tab (Route `/`, Modul
-`modules/progress`). Die frühere Tagesübersicht „Heute“ ist vollständig entfernt: keine
-Tages-Ernährung, kein Trainingsstatus, keine Mahlzeitenliste, keine Tages-Gesundheitswerte.
-Tageswerte stehen in ihren Bereichen (Ernährungstagebuch, Training, Gesundheit, Training →
-Aktivitäten). Die Seite speichert nichts und hat keine Eingaben – einzige Bedienung ist der
-Zeitraum. Über dem Titel steht klein die Begrüßung (mit dem Namen aus dem Profil).
+`modules/progress`). Tageswerte stehen in ihren Bereichen (Ernährungstagebuch, Training,
+Gesundheit, Training → Aktivitäten). Die Seite speichert nichts und hat keine Eingaben. Über dem
+Titel steht klein die Begrüßung (mit dem Namen aus dem Profil), am Ende der Titelzeile das
+Kalethra-Symbol ([BRAND.md](BRAND.md)).
 
-## Zeitraum
+## Aufbau seit Phase 23 (Version 0.36.0)
 
-**Heute** (seit Phase 17.3 der Standard beim Öffnen; eingeführt in Phase 9) = der aktuelle Tag,
-**7 Tage** = die letzten 7 Tage einschließlich heute, **30 Tage** = die letzten 30 Tage. Ganz oben steht der Kalethra-Score des
-gewählten Zeitraums ([SCORE.md](SCORE.md)); er ist neben der Zeitraumwahl das einzige
-Bedienelement (öffnet die Erklärung).
-Bewusst gleitend statt Kalenderwoche/-monat, damit Montag oder der Monatserste nicht fast leer
-sind. Der Zeitraum steht sichtbar unter der Auswahl („27.09. – 03.10.“).
+Kompakt, in dieser Reihenfolge – darunter folgt nichts mehr:
 
-## Die fünf Bereiche (feste Reihenfolge)
+1. **Zeitraum** (Heute / 7 Tage / 30 Tage) und darunter der Zeitraum als Datum – gilt nur für den
+   Score.
+2. **Kalethra-Score** ([SCORE.md](SCORE.md)): Ring, Zahl, Einordnung, Trend. Antippen öffnet die
+   Erklärung (unverändert). Berechnung unverändert.
+3. **Die vier Score-Bereiche** mit ihrer Bewertung aus dem Score (`–` ohne Bewertung), jede Zeile
+   ein Link (mindestens 44 px hoch) zur bestehenden Seite:
+
+   | Bereich      | Öffnet                                                         |
+   | ------------ | -------------------------------------------------------------- |
+   | Ernährung    | Ernährung (`/nutrition`)                                       |
+   | Training     | Training (`/training`)                                         |
+   | Aktivitäten  | Training → Aktivitäten (`/training/activities`)                |
+   | Regeneration | Gesundheit (`/health`), dort wird die Regeneration eingetragen |
+
+   Zuordnung in `modules/progress/domain/areaLinks.ts`. Keine neuen Kategorien oder Kennzahlen.
+
+4. **Kalender der letzten 20 Tage** (einschließlich heute, unabhängig vom Zeitraum) und darunter
+   die **Legende**.
+
+Entfernt wurden auf dieser Seite nur die fünf Karten Training, Ernährung, Gewicht, Aktivitäten
+und Schritte (und ihre Mini-Diagramme). Module, Daten, Services und Einstiege bleiben; die
+Karten-Werte (`ProgressGoalService.calculate`, `useProgressGoals`, siehe unten) sind unverändert
+vorhanden und getestet, werden auf Fortschritt aber nicht mehr angezeigt.
+
+### Kalender
+
+- **Tage:** `calendarRange` – 20 lokale Kalendertage bis heute (`toLocalDateKey`, keine
+  UTC-Rechnung, also kein Verrutschen um Mitternacht). Sieben Spalten, Woche ab Montag wie überall
+  in Kalethra; leere Zellen vor dem ersten Tag richten ihn unter seinen Wochentag aus
+  (`leadingBlanks`). Heute: dezenter Rahmen und fette Zahl, `aria-current="date"`.
+- **Training** (Trainingssymbol `ICON_FOR.training`): mindestens ein **abgeschlossenes**
+  Kalethra-Training an dem Tag – `WorkoutService.dailyStatsBetween` zählt nur
+  `status = 'completed'` je `local_date`; laufende, verworfene oder geplante Einheiten nie.
+  Mehrere Trainings ergeben ein Symbol (die Anzahl steht in den Tagesdetails).
+- **Kalorienziel** (Ernährungssymbol `ICON_FOR.nutrition`): nur wenn das Ziel nach der
+  bestehenden Regel erreicht wurde – `calorieGoalStatus` nach dem Hauptziel des Tages (Limit,
+  Mindestmenge, Bereich ±5 %), und heute gilt wie im Score: unter dem Ziel ist der Tag noch
+  offen (`calorieGoalScore` = `null`). Keine eigene Schwelle. Logik: `core/progress/calendar.ts`
+  (`progressCalendar`), geladen über `ProgressGoalService.calendar` / `useProgressCalendar`
+  (dieselben Quellen und Aktualisierungen wie der Rest der Seite).
+- **Farbe:** beide Symbole in Waldgrün (`--color-success-mark`: hell `--color-brand-forest`,
+  dunkel das hellere Grün `--color-accent-text`, weil Waldgrün auf dem dunklen Grund zu wenig
+  Kontrast hätte). Beide unabhängig, beide an einem Tag möglich.
+- **Nie negativ:** Tage ohne Erfolg bleiben schlicht – kein Rot, kein Fehlersymbol, keine
+  Markierung für verfehlte Ziele oder fehlende Daten.
+- **Tagesdetails:** Antippen öffnet ein Sheet mit Wochentag und Datum, Training („Training
+  abgeschlossen“, „2 Trainings abgeschlossen“ oder „Kein abgeschlossenes Training erfasst“) und
+  Kalorienziel: erreicht · an diesem Tag nicht erreicht · Tag läuft noch · kein Kalorienziel ·
+  keine Ernährungseinträge – alles in neutralem Grau, nur „erreicht“ grün.
+- **Legende:** dieselben Symbole und Farben – „Training“, „Kalorienziel erreicht“.
+
+## Frühere Karten (bis Version 0.35.0, nicht mehr auf Fortschritt)
+
+Die folgenden Abschnitte beschreiben die fünf Karten, wie sie bis Phase 22 auf Fortschritt
+standen. Die Berechnungen dahinter (`ProgressGoalService.calculate`) bestehen unverändert weiter.
+
+### Die fünf Bereiche (feste Reihenfolge)
 
 Jeder Bereich ist eine eigene Karte; die ganze Karte ist ein Link (mindestens 44 px hoch). Seit
 Phase 14 zeigt jede Karte neben dem erfassten Wert das Ziel aus den Einstellungen (siehe

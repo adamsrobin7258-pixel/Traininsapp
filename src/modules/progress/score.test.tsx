@@ -29,7 +29,8 @@ const PREVIOUS_WEEK = [
 
 const main = () => within(screen.getByRole('main'));
 const scoreButton = () => main().findByRole('button', { name: /Kalethra-Score/ });
-const scoreCard = async () => within(await scoreButton());
+/** The whole score card: the score (one button) and its four areas (links). */
+const scoreCard = async () => within(await main().findByRole('region', { name: 'Kalethra-Score' }));
 /** The total, as the card announces it (the area values may show the same number). */
 async function expectScore(value: number) {
   const button = await scoreButton();
@@ -141,11 +142,13 @@ afterEach(() => {
 });
 
 describe('Kalethra-Score on Fortschritt', () => {
-  it('sits at the very top, above the four progress cards', async () => {
+  it('sits at the very top, above its areas and the calendar', async () => {
     await renderApp('/', { prepare: goodWeek });
     const button = await scoreButton();
-    const list = main().getByRole('list', { name: 'Fortschritt' });
-    expect(button.compareDocumentPosition(list) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const areas = main().getByRole('list', { name: 'Bereiche des Scores' });
+    const calendar = main().getByRole('region', { name: 'Letzte 20 Tage' });
+    expect(button.compareDocumentPosition(areas) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(areas.compareDocumentPosition(calendar) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // Period switch first, then the score.
     const radio = main().getByRole('radio', { name: '7 Tage' });
     expect(radio.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -387,9 +390,9 @@ describe('score ring and area bars (Phase C.1)', () => {
     await showProgressPeriod('7 Tage');
     await expectScore(100);
     expect((await ring()).art.parentElement).toHaveAttribute('data-state', 'final');
-    const button = await scoreButton();
+    const card = await main().findByRole('region', { name: 'Kalethra-Score' });
     // Nutrition and recovery rated (100), training and activity without a target.
-    const fills = [...button.querySelectorAll<HTMLElement>('[style*="--area-ratio"]')];
+    const fills = [...card.querySelectorAll<HTMLElement>('[style*="--area-ratio"]')];
     expect(fills.map((fill) => fill.getAttribute('style'))).toEqual([
       '--area-ratio: 1;',
       '--area-ratio: 1;',
@@ -528,7 +531,9 @@ describe('score details', () => {
     await showProgressPeriod('7 days');
     const button = await main().findByRole('button', { name: /Kalethra score/ });
     expect(await within(button).findByText('Doing very well')).toBeInTheDocument();
-    expect(within(button).getByText('Recovery')).toBeInTheDocument();
+    const card = within(main().getByRole('region', { name: 'Kalethra score' }));
+    expect(card.getByText('Recovery')).toBeInTheDocument();
+    expect(card.getByRole('link', { name: 'Recovery: 100 – open area' })).toBeInTheDocument();
     await userEvent.click(button);
     const sheet = within(await screen.findByRole('dialog', { name: 'Kalethra score' }));
     expect(sheet.getByText('Main goal: Maintain weight')).toBeInTheDocument();

@@ -1,6 +1,19 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
-test('Fortschritt is the read-only main page that opens the areas', async ({ page }) => {
+const noHorizontalScroll = (page: Page) =>
+  page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+
+/** Local day key (YYYY-MM-DD) of today plus `offset` days, in the browser's time zone. */
+const dayKey = (page: Page, offset = 0) =>
+  page.evaluate((days) => {
+    const now = new Date();
+    const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days);
+    return `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+  }, offset);
+
+test('Fortschritt is the compact, read-only main page: score, areas, calendar', async ({
+  page,
+}) => {
   await page.goto('/');
   const main = page.locator('main');
   const nav = page.getByRole('navigation', { name: 'Hauptnavigation' });
@@ -18,60 +31,90 @@ test('Fortschritt is the read-only main page that opens the areas', async ({ pag
     'Einstellungen',
   ]);
   await expect(main.locator('input, textarea, select')).toHaveCount(0);
-  // The only controls: the period and the Kalethra score (opens its explanation).
-  await expect(main.getByRole('button')).toHaveCount(1);
-  await expect(main.getByRole('button')).toHaveAccessibleName(/Details zum Kalethra-Score$/);
+  // Controls: the period, the score (opens its explanation), four areas and 20 days.
   await expect(main.getByRole('radio')).toHaveCount(3);
-  await expect(main.getByText('Noch keine Trainingsdaten.')).toBeVisible();
-  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(
-    true,
-  );
-
-  // The score card (Phase C.1): ring and words stay inside the card, nothing is cut off.
   const score = main.getByRole('button', { name: /Kalethra-Score/ });
+  await expect(score).toHaveAccessibleName(/Details zum Kalethra-Score$/);
+  const areas = main.getByRole('list', { name: 'Bereiche des Scores' }).getByRole('link');
+  await expect(areas).toHaveCount(4);
+  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
+  await expect(calendar.getByRole('button')).toHaveCount(20);
+  await expect(calendar.getByRole('list', { name: 'Legende' })).toContainText(
+    'TrainingKalorienziel erreicht',
+  );
+  // The five former cards are gone.
+  for (const name of [/^Gewicht/, /^Schritte/]) {
+    await expect(main.getByRole('link', { name })).toHaveCount(0);
+  }
+  await expect(main.getByText('Noch keine Trainingsdaten.')).toHaveCount(0);
+  expect(await noHorizontalScroll(page)).toBe(true);
+
+  // Order: score, areas, calendar – the calendar is the last block of the page.
   const scoreBox = await score.boundingBox();
+  const areaBox = await areas.first().boundingBox();
+  const calendarBox = await calendar.boundingBox();
+  expect(scoreBox?.y ?? 0).toBeLessThan(areaBox?.y ?? 0);
+  expect(areaBox?.y ?? 0).toBeLessThan(calendarBox?.y ?? 0);
+
+  // The score card: ring and words stay inside the card, nothing is cut off.
   const ringBox = await score.locator('svg[viewBox="0 0 120 120"]').boundingBox();
   expect(ringBox?.x ?? -1).toBeGreaterThanOrEqual(scoreBox?.x ?? 0);
   expect((ringBox?.x ?? 0) + (ringBox?.width ?? 0)).toBeLessThanOrEqual(
     (scoreBox?.x ?? 0) + (scoreBox?.width ?? 0),
   );
   expect(
-    await score.evaluate((card) =>
-      [...card.querySelectorAll('span')].every((span) => span.scrollWidth <= span.clientWidth + 1),
-    ),
+    await main
+      .getByRole('region', { name: 'Kalethra-Score' })
+      .evaluate((card) =>
+        [...card.querySelectorAll('span')].every(
+          (span) => span.scrollWidth <= span.clientWidth + 1,
+        ),
+      ),
   ).toBe(true);
 
-  // Every card is one large target (at least 44 px high) that opens its area.
-  for (const name of [/^Training/, /^Ernährung/, /^Gewicht/]) {
-    const box = await main.getByRole('link', { name }).boundingBox();
+  // Every area and every day is a comfortable target inside the screen.
+  const width = page.viewportSize()?.width ?? 0;
+  for (const target of [...(await areas.all()), ...(await calendar.getByRole('button').all())]) {
+    const box = await target.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(32);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
   }
 
-  // Weight entered under Health shows up here.
-  await main.getByRole('link', { name: /^Gewicht/ }).click();
+  // Today is marked once; the last cell is today.
+  const today = await dayKey(page);
+  await expect(calendar.locator('[aria-current="date"]')).toHaveCount(1);
+  await expect(calendar.getByRole('button').last()).toHaveAttribute('data-date', today);
+  await expect(calendar.getByRole('button').first()).toHaveAttribute(
+    'data-date',
+    await dayKey(page, -19),
+  );
+
+  // Each area opens its module; back and forward work.
+  for (const [area, url] of [
+    ['Ernährung', /\/nutrition$/],
+    ['Training', /\/training$/],
+    ['Aktivitäten', /\/training\/activities$/],
+    ['Regeneration', /\/health$/],
+  ] as const) {
+    await main.getByRole('link', { name: new RegExp(`^${area}: .* – Bereich öffnen$`) }).click();
+    await expect(page).toHaveURL(url);
+    await page.goBack();
+    await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
+  }
+  await page.goForward();
   await expect(page).toHaveURL(/\/health$/);
+
+  // The modules keep their data: weight entered under Gesundheit stays there.
   await page.getByRole('button', { name: 'Gewicht eintragen' }).click();
   await page.getByLabel('Gewicht in kg').fill('91,8');
   await page.getByRole('button', { name: 'Speichern' }).click();
-  await nav.getByRole('link', { name: 'Fortschritt' }).click();
-  await expect(page).toHaveURL(/\/$/);
-  await expect(main.getByRole('link', { name: /^Gewicht/ }).getByText('91,8 kg')).toBeVisible();
-
-  // Back and forward between the main page and an area.
-  await main.getByRole('link', { name: /^Training/ }).click();
-  await expect(page).toHaveURL(/\/training$/);
-  await page.goBack();
-  await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
-  await page.goForward();
-  await expect(page).toHaveURL(/\/training$/);
-  await page.goBack();
-
-  await main.getByRole('link', { name: /^Ernährung/ }).click();
-  await expect(page).toHaveURL(/\/nutrition$/);
+  await expect(main.getByText('91,8 kg').first()).toBeVisible();
 });
 
-test('progress over a day: food, workout, activity calories and period', async ({ page }) => {
-  // Health Connect stand-in (see healthConnect.spec.ts) with one run that just ended.
+test('progress over a day: workout and calorie goal in the calendar, day details', async ({
+  page,
+}) => {
   await page.addInitScript(() => {
     const now = new Date();
     const midnight = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -109,17 +152,11 @@ test('progress over a day: food, workout, activity calories and period', async (
   const main = page.locator('main');
   const tab = (name: string) =>
     page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('link', { name });
-  const noHorizontalScroll = () =>
-    page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
-  // Open the app on Fortschritt.
-  await page.goto('/');
-  await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
-
-  // Own goals: 2.000 kcal, 120 g protein.
+  // Own goals: 500 kcal (the lowest allowed – one breakfast meets it), 120 g protein.
   await page.goto('/settings/goals');
   for (const [row, value] of [
-    [/^Kalorienziel/, '2000'],
+    [/^Kalorienziel/, '500'],
     [/^Protein/, '120'],
   ] as const) {
     await main.getByRole('button', { name: row }).click();
@@ -132,13 +169,20 @@ test('progress over a day: food, workout, activity calories and period', async (
   await main.getByRole('button', { name: 'Hauptziel und Ernährung speichern' }).click();
   await expect(page.getByText(/Ernährungsprofil gespeichert/)).toBeVisible();
 
-  // 3: log food.
+  // Fortschritt before anything happened: no marks at all, today neutral.
+  await tab('Fortschritt').click();
+  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
+  const today = calendar.locator('[aria-current="date"]');
+  await expect(calendar.getByRole('button')).toHaveCount(20);
+  await expect(calendar.locator('button [data-mark]')).toHaveCount(0);
+
+  // Log 500 kcal: the goal of today is met (no main goal: a range of ±5 %).
   await tab('Ernährung').click();
   await main.getByRole('button', { name: 'Frühstück: hinzufügen' }).click();
   const sheet = page.getByRole('dialog');
   await sheet.getByLabel('Lebensmittel suchen').fill('Porridge');
   await sheet.getByRole('button', { name: 'Neues Lebensmittel anlegen' }).click();
-  await sheet.getByLabel('Kalorien (kcal)').fill('370');
+  await sheet.getByLabel('Kalorien (kcal)').fill('500');
   await sheet.getByLabel('Protein (g)').fill('13,5');
   await sheet.getByLabel('Kohlenhydrate (g)').fill('58,7');
   await sheet.getByLabel('Fett (g)').fill('7');
@@ -146,7 +190,7 @@ test('progress over a day: food, workout, activity calories and period', async (
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
 
-  // 4: a Kalethra workout – start, one set, finish.
+  // A Kalethra workout – start, one set, finish; the summary shows the muscles worked.
   await tab('Training').click();
   await page.getByRole('button', { name: 'Training starten' }).click();
   await page
@@ -164,37 +208,44 @@ test('progress over a day: food, workout, activity calories and period', async (
   await page.getByRole('button', { name: 'Satz 1 abschließen' }).click();
   await page.getByRole('button', { name: 'Training beenden' }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Training beenden' }).click();
-  // The summary shows the volume; "Training ansehen" leads to the finished workout.
   const summary = page.getByRole('dialog', { name: 'Training abgeschlossen' });
   await expect(summary.getByText('600 kg')).toBeVisible();
+  await expect(summary.getByTestId('muscle-map')).toBeVisible();
   await summary.getByRole('button', { name: 'Training ansehen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
-  await expect(page.getByText('600 kg')).toBeVisible();
 
-  // Fortschritt: the workout and the logged day, by period (Heute is the default, Phase 17.3).
+  // Fortschritt: both symbols on today, in green; the legend explains them.
   await tab('Fortschritt').click();
-  const nutrition = main.getByRole('link', { name: /^Ernährung/ });
-  await expect(main.getByRole('radio', { name: 'Heute' })).toHaveAttribute('aria-checked', 'true');
-  await expect(main.getByText('1 Einheit')).toBeVisible();
-  await expect(main.getByText('600 kg Volumen')).toBeVisible();
-  await expect(nutrition.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
-  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
-  await expect(nutrition.getByText(/Tagen erfasst/)).toHaveCount(0);
-  await main.getByRole('radio', { name: '7 Tage' }).click();
-  await expect(nutrition.getByText('Ø 370 von 2.000 kcal')).toBeVisible();
-  await expect(nutrition.getByText('Ø 14 von 120 g Protein')).toBeVisible();
-  await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
-  await main.getByRole('radio', { name: '30 Tage' }).click();
-  await expect(nutrition.getByText('An 1 von 30 Tagen erfasst')).toBeVisible();
-  await expect(main.getByText('1 Einheit')).toBeVisible();
-  await main.getByRole('radio', { name: '7 Tage' }).click();
-  await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
-  // No daily content on the main page.
-  await expect(main.getByText('Training fortsetzen')).toHaveCount(0);
-  await expect(main.getByRole('progressbar')).toHaveCount(0);
-  expect(await noHorizontalScroll()).toBe(true);
+  await expect(today.locator('[data-mark]')).toHaveCount(2);
+  await expect(today).toHaveAccessibleName(/, heute, Training, Kalorienziel erreicht$/);
+  const markColour = await today
+    .locator('[data-mark="training"]')
+    .evaluate((mark) => getComputedStyle(mark).color);
+  const legendColour = await calendar
+    .getByRole('list', { name: 'Legende' })
+    .locator('[data-mark="training"]')
+    .evaluate((mark) => getComputedStyle(mark).color);
+  expect(markColour).toBe(legendColour);
+  // Green, not red: the green channel dominates.
+  const [r = 0, g = 0] = (markColour.match(/\d+/g) ?? []).map(Number);
+  expect(g).toBeGreaterThan(r);
 
-  // Health Connect with a run – shown, kept apart from Kalethra workouts.
+  // Day details.
+  await today.click();
+  const details = page.getByRole('dialog');
+  await expect(details.getByText('Training abgeschlossen')).toBeVisible();
+  await expect(details.getByText('Kalorienziel erreicht')).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+
+  // Yesterday without data: neutral, no symbol, no "missed".
+  await calendar.getByRole('button').nth(18).click();
+  await expect(details.getByText('Kein abgeschlossenes Training erfasst')).toBeVisible();
+  await expect(details.getByText('Keine Ernährungseinträge erfasst')).toBeVisible();
+  await page.keyboard.press('Escape');
+
+  // Health Connect with a run: an activity, never a training mark of its own.
   await tab('Einstellungen').click();
   await main.getByRole('link', { name: /^App/ }).click();
   await main
@@ -208,41 +259,17 @@ test('progress over a day: food, workout, activity calories and period', async (
   await expect(page.getByRole('dialog').getByRole('status')).toContainText('Verbunden');
   await page.keyboard.press('Escape');
   await tab('Fortschritt').click();
-  const activities = main.getByRole('link', { name: /^Aktivitäten/ });
-  await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
-  await expect(main.getByText('1 Einheit')).toBeVisible();
-  // Off (default): the daily goal stays the base goal (Fortschritt opens on Heute again).
-  await expect(nutrition.getByText('370 von 2.000 kcal', { exact: true })).toBeVisible();
-  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
-  await activities.click();
-  await expect(page).toHaveURL(/\/training\/activities$/);
-  await expect(main.getByText('Laufen')).toBeVisible();
+  await expect(today.locator('[data-mark]')).toHaveCount(2);
+  await expect(calendar.locator('button [data-mark="training"]')).toHaveCount(1);
 
-  // Count activity calories → the goal of the logged day grows; the base goal stays.
-  await tab('Einstellungen').click();
-  await main.getByRole('link', { name: /^Ziele/ }).click();
-  await page.getByRole('switch', { name: 'Aktivitätskalorien anrechnen' }).click();
-  await tab('Fortschritt').click();
-  await expect(nutrition.getByText('370 von 2.500 kcal', { exact: true })).toBeVisible();
-  // Protein is never changed by activity calories.
-  await expect(nutrition.getByText('14 von 120 g Protein', { exact: true })).toBeVisible();
-  await tab('Ernährung').click();
-  await expect(main.getByText('Basisziel')).toBeVisible();
-  await expect(main.getByText('+500 kcal')).toBeVisible();
-
-  // Scroll to the very end: the last card is fully reachable above the tab bar.
-  await tab('Fortschritt').click();
-  await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
-  // The cards load one after another and can still grow the page after a single wheel on a slow
-  // runner, so scroll to the end again until the last card has settled.
-  // Since Phase 14 the steps card (Health Connect is connected) is the last one.
-  const last = main.getByRole('link', { name: /^Schritte/ });
+  // Scroll to the very end: the legend is fully reachable above the tab bar.
+  const legend = calendar.getByRole('list', { name: 'Legende' });
   await expect(async () => {
     await page.mouse.wheel(0, 5000);
-    await expect(last).toBeInViewport({ ratio: 1, timeout: 500 });
+    await expect(legend).toBeInViewport({ ratio: 1, timeout: 500 });
   }).toPass({ timeout: 10_000 });
-  const cardBox = await last.boundingBox();
+  const legendBox = await legend.boundingBox();
   const tabBarBox = await page.getByRole('navigation', { name: 'Hauptnavigation' }).boundingBox();
-  expect((cardBox?.y ?? 0) + (cardBox?.height ?? 0)).toBeLessThanOrEqual(tabBarBox?.y ?? 0);
-  expect(await noHorizontalScroll()).toBe(true);
+  expect((legendBox?.y ?? 0) + (legendBox?.height ?? 0)).toBeLessThanOrEqual(tabBarBox?.y ?? 0);
+  expect(await noHorizontalScroll(page)).toBe(true);
 });

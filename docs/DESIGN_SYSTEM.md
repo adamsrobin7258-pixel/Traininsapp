@@ -411,6 +411,11 @@ Regeln, Orte und Plattformdateien in [BRAND.md](BRAND.md). Komponenten `BrandMar
 Elfenbein dunkel; `--color-brand-forest`, `--color-brand-ivory`). Höchstens ein Markenelement je
 Bildschirm; in der App nur auf Fortschritt (Titelzeile) und unter „Über Kalethra“.
 
+Erfolgsmarken (Phase 23): `--color-success-mark` – Waldgrün (`--color-brand-forest`) im hellen,
+das hellere `--color-accent-text` im dunklen Erscheinungsbild. Nur für erreichte Ziele im
+Fortschritts-Kalender; verfehlte Ziele oder fehlende Daten bekommen nie eine Farbe (kein Rot).
+Die Muskelhervorhebung bleibt Koralle (`--color-muscle-*`) und mischt sich nicht damit.
+
 ## Barrierefreiheit
 
 - Semantische Elemente (`main`, `nav`, `section` mit Überschrift, Listen).

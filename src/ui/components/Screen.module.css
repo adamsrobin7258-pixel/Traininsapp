@@ -20,11 +20,21 @@
   color: var(--color-text-secondary);
 }
 
+/* Back link and, at its end, the brand mark – the row is exactly as high as the back link. */
+.topRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin: calc(var(--space-3) * -1) 0 var(--space-2);
+}
+
 .back {
   display: inline-flex;
   align-items: center;
+  min-width: 0;
   min-height: var(--size-tap-target);
-  margin: calc(var(--space-3) * -1) 0 var(--space-2) calc(var(--space-2) * -1);
+  margin-left: calc(var(--space-2) * -1);
   padding-right: var(--space-3);
   font-size: var(--font-size-body);
   color: var(--color-accent-text);
@@ -66,6 +76,11 @@
   flex: none;
   align-items: center;
   height: calc(var(--font-size-large-title) * var(--line-height-tight));
+}
+
+/* In the back row: smaller, never higher than the back link's tap target. */
+.topRow > .mark {
+  height: min(2rem, var(--size-tap-target));
 }
 
 /* With a mark the row never wraps: the mark is hidden below, the title keeps the rest. */

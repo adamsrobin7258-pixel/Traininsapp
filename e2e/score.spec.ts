@@ -22,9 +22,9 @@ test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal 
   await page.goto('/');
   await expect(score).toBeVisible();
   await expect(score).toContainText('Noch keine Daten für diesen Zeitraum.');
-  // It is the first content after the period switch, above the four cards.
+  // It is the first content after the period switch, above its four areas.
   const scoreBox = await score.boundingBox();
-  const trainingBox = await main.getByRole('link', { name: /^Training/ }).boundingBox();
+  const trainingBox = await main.getByRole('link', { name: /^Training: / }).boundingBox();
   expect(scoreBox?.y ?? 0).toBeLessThan(trainingBox?.y ?? 0);
   expect(scoreBox?.height ?? 0).toBeGreaterThanOrEqual(44);
   expect(await noHorizontalScroll()).toBe(true);

@@ -112,12 +112,14 @@ test('manual activity: log, adjust, edit, delete and count towards the daily goa
   await expect(sheet).toHaveCount(0);
   await expect(list.getByRole('button', { name: /Yoga/ })).toContainText('30 min · 300 kcal');
 
-  // 15. The activity card on Fortschritt.
+  // 15. Fortschritt: "Aktivitäten" is a score area with its rating that opens the list.
   await tab('Fortschritt').click();
-  const activities = main.getByRole('link', { name: /^Aktivitäten/ });
-  await expect(activities.getByText('1 Aktivität', { exact: true })).toBeVisible();
-  await expect(activities.getByText('300 aktive kcal')).toBeVisible();
+  const activities = main.getByRole('link', { name: /^Aktivitäten: .* – Bereich öffnen$/ });
+  await expect(activities).toBeVisible();
   expect(await noHorizontalScroll()).toBe(true);
+  await activities.click();
+  await expect(page).toHaveURL(/\/training\/activities$/);
+  await expect(list.getByRole('button', { name: /Yoga/ })).toContainText('30 min · 300 kcal');
 
   // Off (default): information only, the goal stays 2.000 kcal.
   await tab('Ernährung').click();

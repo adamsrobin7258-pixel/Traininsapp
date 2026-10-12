@@ -1,6 +1,15 @@
-/* The Kalethra score: the one big number of the progress page, then its four areas. */
+/*
+ * The Kalethra score: the one big number of the progress page, then its four areas. One card
+ * surface, two kinds of targets: the score (opens the explanation) and one link per area.
+ */
 .wrap {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-raised);
 }
 
 .placeholder {
@@ -10,21 +19,17 @@
   background: var(--color-surface);
 }
 
-/*
- * The whole card is one target that opens the explanation. It is the page's focal point: a
- * little more room and the raised shadow, the area cards below stay flatter.
- */
+/* The score part is one target that opens the explanation – the page's focal point. */
 .card {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
   width: 100%;
   min-height: var(--size-tap-target);
-  padding: var(--space-4) var(--space-5) var(--space-5);
-  border: var(--border-hairline) solid var(--color-card-border);
-  border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: inherit;
   font: inherit;
   text-align: left;
@@ -37,9 +42,10 @@
   background: var(--color-surface-pressed);
 }
 
-.card:focus-visible {
+.card:focus-visible,
+.area:focus-visible {
   outline: var(--focus-ring-width) solid var(--color-focus);
-  outline-offset: var(--focus-ring-offset);
+  outline-offset: calc(var(--focus-ring-width) * -1);
 }
 
 .header {
@@ -181,12 +187,24 @@
   color: var(--color-accent-text);
 }
 
-/* The four areas: name and value, under them a hairline bar of the same value. */
+/*
+ * The four areas, each a link to its area: name, value and chevron, under them a hairline bar of
+ * the same value. Two columns, separated by hairlines – compact, every cell a full tap target.
+ */
 .areas {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-3) var(--space-5);
-  padding-top: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: var(--border-hairline) solid var(--color-separator);
+}
+
+.areas > li:nth-child(odd) {
+  border-right: var(--border-hairline) solid var(--color-separator);
+}
+
+.areas > li:nth-child(n + 3) {
   border-top: var(--border-hairline) solid var(--color-separator);
 }
 
@@ -209,28 +227,51 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .areas {
-    gap: var(--space-2);
+  .areas > li:nth-child(odd) {
+    border-right: 0;
+  }
+
+  .areas > li + li {
+    border-top: var(--border-hairline) solid var(--color-separator);
   }
 }
 
 .area {
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
+  justify-content: center;
+  gap: var(--space-2);
   min-width: 0;
+  min-height: var(--size-tap-target);
+  height: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  color: inherit;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.area:active {
+  background: var(--color-surface-pressed);
 }
 
 .areaLine {
   display: flex;
-  align-items: baseline;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-2);
 }
 
 .areaName {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: var(--font-size-subhead);
   color: var(--color-text-secondary);
+  overflow-wrap: break-word;
+}
+
+.areaChevron {
+  flex: none;
+  color: var(--color-text-tertiary);
 }
 
 .areaValue {

@@ -1,20 +1,19 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { useI18n } from '@/core/i18n';
 import type { MuscleHighlight } from '@/core/training';
 import { useProfile } from '@/core/user';
-import { SegmentedControl, Sheet } from '@/ui';
+import { Sheet } from '@/ui';
 import { figureVariantFor } from '../figure/contract';
-import {
-  MUSCLE_MAP_VARIANTS,
-  MUSCLE_MAP_VIEWS,
-  highlightSvg,
-  type MuscleMapVariant,
-} from './regions';
+import { MUSCLE_MAP_VIEWS, highlightSvg, type MuscleMapVariant } from './regions';
 import { MUSCLE_MAP_SVGS } from './svgs';
 import { useMuscleMapText } from './useMuscleMapText';
 import styles from './MuscleMap.module.css';
 
-/** The body shown first: the profile's sex, as before with the 3D figure. */
+/**
+ * The body of every map: the profile's sex is the one source (Phase 23) – male → male body,
+ * female → female body, "Divers / keine Angabe" or no value → the male body as the fixed fallback
+ * (`figureVariantFor`). There is no second setting and no switch.
+ */
 function useProfileVariant(): MuscleMapVariant {
   return figureVariantFor(useProfile().profile.sex);
 }
@@ -99,10 +98,7 @@ export function MuscleMapPreview({
   );
 }
 
-/**
- * The large view: front and back, a switch between the male and the female body (starting with
- * the profile's) and the worked groups as text.
- */
+/** The large view: front and back of the profile's body and the worked groups as text. */
 export function MuscleMapSheet({
   title,
   highlight,
@@ -113,20 +109,10 @@ export function MuscleMapSheet({
   onClose: () => void;
 }) {
   const { t } = useI18n();
-  const profileVariant = useProfileVariant();
-  const [variant, setVariant] = useState(profileVariant);
+  const variant = useProfileVariant();
   const text = useMuscleMapText(highlight);
   return (
     <Sheet title={title} onClose={onClose} closeLabel={t('common.close')}>
-      <SegmentedControl
-        label={t('training.muscleMap.body')}
-        options={MUSCLE_MAP_VARIANTS.map((value) => ({
-          value,
-          label: t(`training.muscleMap.${value}`),
-        }))}
-        value={variant}
-        onChange={setVariant}
-      />
       <div className={styles.stage}>
         <MuscleMap highlight={highlight} variant={variant} size="large" />
       </div>

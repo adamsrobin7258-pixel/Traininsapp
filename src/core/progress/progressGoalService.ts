@@ -7,6 +7,7 @@ import {
   type TrainingDayStats,
   type TrainingPeriodSummary,
 } from '@/core/training';
+import { progressCalendar, type ProgressCalendarDay } from './calendar';
 import {
   activityGoalProgress,
   stepGoalProgress,
@@ -103,5 +104,26 @@ export class ProgressGoalService {
       nutrition: nutritionGoalProgress(totals, goals, dates, options.today),
       weight: summarizeWeightPeriod(weights, from, to),
     };
+  }
+
+  /**
+   * The day calendar (Phase 23): completed workouts and calorie goal per day – only the three
+   * sources it needs, the same ones `calculate` reads.
+   */
+  async calendar(
+    profileId: string,
+    dates: readonly string[],
+    options: { today: string },
+  ): Promise<ProgressCalendarDay[]> {
+    const from = dates[0];
+    const to = dates.at(-1);
+    if (!from || !to) throw new Error('The calendar needs at least one day');
+    const s = this.sources;
+    const [workouts, totals, goals] = await Promise.all([
+      s.workoutsPerDay(profileId, from, to),
+      s.nutritionTotals(profileId, from, to),
+      s.nutritionGoals(profileId, dates),
+    ]);
+    return progressCalendar(workouts, totals, goals, dates, options.today);
   }
 }

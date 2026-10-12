@@ -134,6 +134,8 @@
   --color-brand-forest: #466a4c;
   --color-brand-ivory: #f3efe6;
   --color-brand-mark: var(--color-brand-forest);
+  /* Met goals in the progress calendar: forest green, never red for anything missed. */
+  --color-success-mark: var(--color-brand-forest);
 
   /*
    * Anatomy (muscle maps): warm ivory muscles with forest-green contours; worked muscles in warm
@@ -225,6 +227,8 @@
   --color-brand-forest: #466a4c;
   --color-brand-ivory: #f3efe6;
   --color-brand-mark: var(--color-brand-ivory);
+  /* Forest is too dark on the night surface: the lighter green of the accent text. */
+  --color-success-mark: var(--color-accent-text);
 
   --color-anatomy-body: #2c352e;
   --color-anatomy-muscle: #3b463e;

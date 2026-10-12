@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test';
 
 /**
- * Phase 14 – goal attainment on Fortschritt: goals are set in Einstellungen, the areas track,
- * Fortschritt compares both. Runs in every project (390 px light/dark, 320 px) with reduced
- * motion, and again with a large system font.
+ * Goals from Einstellungen on the compact Fortschritt (Phase 23): the score rates the areas, the
+ * calendar marks met goals only – a running day or a missed goal is never shown as a failure.
+ * Runs in every project (390 px light/dark, 320 px) with reduced motion, and again with a large
+ * system font.
  */
 test('goals from Einstellungen against tracked values on Fortschritt', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -47,7 +48,8 @@ test('goals from Einstellungen against tracked values on Fortschritt', async ({ 
     page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
   const noFocusedField = () =>
     page.evaluate(() => !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName ?? ''));
-  const card = (name: RegExp) => main.getByRole('link', { name });
+  const area = (name: string) =>
+    main.getByRole('link', { name: new RegExp(`^${name}: .* – Bereich öffnen$`) });
 
   // 1. Einstellungen → Ziele.
   await page.goto('/settings');
@@ -105,82 +107,57 @@ test('goals from Einstellungen against tracked values on Fortschritt', async ({ 
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(sheet).toHaveCount(0);
 
-  // 6. Fortschritt, Heute.
+  // 6. Fortschritt, Heute: the areas carry their ratings.
   await tab('Fortschritt').click();
-  await expect(main.getByRole('button', { name: /Kalethra-Score/ })).toBeVisible();
+  const score = main.getByRole('button', { name: /Kalethra-Score/ });
+  await expect(score).toBeVisible();
   await main.getByRole('radio', { name: 'Heute' }).click();
-
-  // 7. Actual against goal.
-  const training = card(/^Training/);
-  await expect(training.getByText('Ziel: 4 pro Woche')).toBeVisible();
-  // No workout yet today: neutral, no artificial 0 %.
-  await expect(training.getByText('Noch keine Trainingsdaten.')).toBeVisible();
-  await expect(training.getByText(/%/)).toHaveCount(0);
-  const nutrition = card(/^Ernährung/);
-  await expect(nutrition.getByText('2.100 von 2.200 kcal')).toBeVisible();
-  await expect(nutrition.getByText('Innerhalb des Kalorienlimits')).toBeVisible();
-  await expect(nutrition.getByText('150 von 160 g Protein')).toBeVisible();
-  await expect(nutrition.getByText('Proteinziel erreicht')).toBeVisible();
-  const steps = card(/^Schritte/);
-  await expect(steps.getByText('7.842 von 10.000 Schritten')).toBeVisible();
-  await expect(steps.getByText('78 %')).toBeVisible();
-  const activities = card(/^Aktivitäten/);
-  await expect(activities.getByText('Noch keine Aktivitäten.')).toBeVisible();
-  await expect(activities.getByText('Ziel: 180 Min. pro Woche')).toBeVisible();
-  // The bars are decorative; the main page still has no progressbar role.
+  // Steps 7.842 of 10.000 (Health Connect) rate "Aktivitäten"; nutrition is rated.
+  await expect(area('Aktivitäten')).toHaveAccessibleName(/^Aktivitäten: \d+ – /);
+  await expect(area('Ernährung')).toHaveAccessibleName(/^Ernährung: \d+ – /);
+  await expect(area('Training')).toBeVisible();
   await expect(main.getByRole('progressbar')).toHaveCount(0);
   expect(await noHorizontalScroll()).toBe(true);
 
-  // B: a manual activity raises the active minutes.
-  await activities.click();
-  await expect(page).toHaveURL(/\/training\/activities$/);
-  await main.getByRole('button', { name: 'Aktivität erfassen' }).click();
-  await sheet.getByRole('searchbox').fill('yoga');
-  await sheet.getByRole('button', { name: 'Yoga' }).click();
-  await sheet.getByLabel('Dauer (Minuten)').fill('30');
-  await sheet.getByRole('button', { name: 'Speichern' }).click();
+  // 7. Calendar: Abnehmen is a limit – today 2.100 of 2.200 is still running, never a miss.
+  const calendar = main.getByRole('region', { name: 'Letzte 20 Tage' });
+  const today = calendar.locator('[aria-current="date"]');
+  await expect(today.locator('[data-mark]')).toHaveCount(0);
+  await today.click();
+  await expect(sheet.getByText('Der Tag läuft noch – noch nicht bewertet')).toBeVisible();
+  await expect(sheet.getByText('Kein abgeschlossenes Training erfasst')).toBeVisible();
+  expect(await noFocusedField()).toBe(true);
+  await page.keyboard.press('Escape');
   await expect(sheet).toHaveCount(0);
-  await tab('Fortschritt').click();
-  await main.getByRole('radio', { name: 'Heute' }).click();
-  // The weekly goal applies from today: today's share is 180 ÷ 7 ≈ 26 minutes.
-  await expect(activities.getByText('30 von 26 aktiven Min.')).toBeVisible();
-  await expect(activities.getByText('115 %')).toBeVisible();
 
-  // 8. 7 days: averages only over days with data, the missing days stay missing.
-  await main.getByRole('radio', { name: '7 Tage' }).click();
-  await expect(nutrition.getByText('Ø 2.100 von 2.200 kcal')).toBeVisible();
-  await expect(nutrition.getByText('Kalorienlimit eingehalten an 1 von 1 Tagen')).toBeVisible();
-  await expect(nutrition.getByText('An 1 von 7 Tagen erfasst')).toBeVisible();
-  await expect(steps.getByText(/An 2 von 7 Tagen mit Daten/)).toBeVisible();
-  // The goals were set today: the week is compared from today on, it says since when.
-  await expect(activities.getByText(/^Ziel: 180 Min\. pro Woche · gilt seit /)).toBeVisible();
-
-  // 9.–10. 30 days: still no invented zeros.
+  // 8. The period changes the score, the calendar stays the last 20 days.
   await main.getByRole('radio', { name: '30 Tage' }).click();
-  await expect(nutrition.getByText('An 1 von 30 Tagen erfasst')).toBeVisible();
-  await expect(steps.getByText(/An 2 von 30 Tagen mit Daten/)).toBeVisible();
+  await expect(calendar.getByRole('button')).toHaveCount(20);
   await expect(main.getByText(/^0 von/)).toHaveCount(0);
-  expect(await noHorizontalScroll()).toBe(true);
 
-  // 11.–12. A card opens its area, back returns to Fortschritt.
-  await steps.click();
-  await expect(page).toHaveURL(/\/health$/);
+  // 9. An area opens its module, back returns to Fortschritt.
+  await area('Aktivitäten').click();
+  await expect(page).toHaveURL(/\/training\/activities$/);
   await page.goBack();
   await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
-  await card(/^Training/).click();
+  await area('Training').click();
   await expect(page).toHaveURL(/\/training$/);
   await page.goBack();
   await expect(main.getByRole('heading', { level: 1, name: 'Fortschritt' })).toBeVisible();
 
-  // Large system font: nothing overflows, the cards stay tappable.
+  // Large system font: nothing overflows, areas and days stay tappable.
   await page.addStyleTag({ content: 'html { font-size: 130%; }' });
   await main.getByRole('radio', { name: 'Heute' }).click();
-  await expect(steps.getByText('7.842 von 10.000 Schritten')).toBeVisible();
+  await expect(calendar.getByRole('button')).toHaveCount(20);
   expect(await noHorizontalScroll()).toBe(true);
-  for (const name of [/^Training/, /^Ernährung/, /^Gewicht/, /^Aktivitäten/, /^Schritte/]) {
-    const box = await card(name).boundingBox();
+  const width = page.viewportSize()?.width ?? 0;
+  for (const target of [
+    ...(await main.getByRole('list', { name: 'Bereiche des Scores' }).getByRole('link').all()),
+    ...(await calendar.getByRole('button').all()),
+  ]) {
+    const box = await target.boundingBox();
     expect(box?.height ?? 0).toBeGreaterThanOrEqual(44);
-    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(page.viewportSize()?.width ?? 0);
+    expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
   }
   expect(await noFocusedField()).toBe(true);
 });

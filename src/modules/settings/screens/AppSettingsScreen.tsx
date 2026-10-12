@@ -44,6 +44,8 @@ export function AppSettingsScreen() {
     <Screen
       title={t('settings.app.title')}
       back={{ to: ROUTES.settings, label: t('settings.title') }}
+      // "Über Kalethra" shows the full logo already – no second one in the header.
+      brand={false}
     >
       <Section title={t('profile.appearanceTitle')}>
         <SegmentedControl

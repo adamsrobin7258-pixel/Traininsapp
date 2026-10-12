@@ -1,4 +1,4 @@
-import { addDays, startOfDay, toLocalDateKey } from '@/shared/lib/date';
+import { addDays, startOfDay, toLocalDateKey, type Weekday } from '@/shared/lib/date';
 
 /**
  * "Heute", "7 Tage" and "30 Tage" on the progress page: today, or the last 7 or 30 local days
@@ -40,4 +40,20 @@ export function previousPeriodRange(now: Date, period: ProgressPeriod): PeriodRa
 /** Workouts per week over the period, one decimal ("Ø 2,3 pro Woche"). */
 export function perWeek(count: number, period: ProgressPeriod): number {
   return Math.round((count / PERIOD_DAYS[period]) * 7 * 10) / 10;
+}
+
+/** The day calendar under the score: the last 20 local days including today (Phase 23). */
+export const CALENDAR_DAYS = 20;
+
+/** The calendar's days, oldest first – local days, so no UTC shift at midnight. */
+export function calendarRange(now: Date): PeriodRange {
+  return rangeEnding(startOfDay(now), CALENDAR_DAYS);
+}
+
+/**
+ * Empty cells before the first day so every day sits under its weekday (weeks start on
+ * Monday, as everywhere in Kalethra).
+ */
+export function leadingBlanks(firstDay: Date, weekStartsOn: Weekday = 1): number {
+  return (firstDay.getDay() - weekStartsOn + 7) % 7;
 }

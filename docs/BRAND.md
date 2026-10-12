@@ -27,7 +27,8 @@ Schrift-Datei). Ergänzend: steht neben oder unter dem Symbol, nie allein als Lo
 
 | Ort                        | Form                                                                                                                  |
 | -------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Fortschritt (Startseite)   | Symbol am Ende der Titelzeile, eine Titelzeile hoch, dekorativ                                                        |
+| Hauptseiten (5 Tabs)       | Symbol am Ende der Titelzeile, eine Titelzeile hoch, dekorativ (seit Phase 23 auf allen, vorher nur Fortschritt)      |
+| Unterseiten                | Symbol rechts in der Zeile des Zurück-Links, höchstens 2 rem und nie höher als der Link (seit Phase 23)               |
 | Einstellungen → App → Über | Logo (Symbol + Schriftzug), benannt „Kalethra“                                                                        |
 | App-Icon Android           | adaptiv: Elfenbein-Symbol auf Waldgrün, Monochrom-Ebene (Themen-Icons ab 13)                                          |
 | App-Icon iOS               | 1024 px, randlos, ohne Alphakanal (iOS rundet selbst)                                                                 |
@@ -35,12 +36,16 @@ Schrift-Datei). Ergänzend: steht neben oder unter dem Symbol, nie allein als Lo
 | Startbild iOS              | Splash-Bild hell und dunkel (Erscheinungsbild „dark“)                                                                 |
 | Web                        | `favicon.svg`                                                                                                         |
 
-**Fortschritt – Regeln** (aus dem Konzept F1 übernommen): Der Kopfbereich wird nicht höher, die
-Titelzeile bricht nie um, Zeitraumschalter und Score-Karte bleiben an ihrem Platz; ist zu wenig
-Platz (kleines Display, sehr große Systemschrift), wird das Symbol ganz ausgeblendet statt
+**Kopfzeile – Regeln** (aus dem Konzept F1 übernommen, seit Phase 23 für alle normalen Seiten
+über die gemeinsame Komponente `Screen`): Der Kopfbereich wird nicht höher, die Titelzeile bricht
+nie um, Zurück-Link, Titel und Aktionen bleiben an ihrem Platz. Auf Unterseiten steht das Symbol
+oben rechts in der Zeile des Zurück-Links, also nie zwischen Titel und Aktionen – auch nicht im
+laufenden Training, dessen Steuerung („Training beenden“, „Mehr“) unverändert bleibt. Ist zu
+wenig Platz (kleines Display, sehr große Systemschrift), wird das Symbol ganz ausgeblendet statt
 verkleinert (`@container`, gemessen in rem). Kein Link, keine Animation, für Screenreader
-unsichtbar; die Seite heißt weiterhin nur „Fortschritt“. Keine zusätzliche Karte. Sonst zeigt
-kein Bildschirm das Symbol; Score-Karte, Diagramme und Sheets bleiben frei.
+unsichtbar. Kein doppeltes Logo: Einstellungen → App zeigt unter „Über Kalethra“ schon das Logo,
+dort entfällt das Kopfzeilen-Symbol (`brand={false}`). Score-Karte, Diagramme und Sheets bleiben
+frei.
 
 Alle Formen sind inline (SVG im Code) oder Plattformressourcen – keine Bildanfrage, keine
 externen Ressourcen, offline.

@@ -4,7 +4,7 @@ import type { AppServices } from '@/app/services';
 import type { ManualActivityInput } from '@/core/activity';
 import type { HealthWorkout } from '@/core/platform/health';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
-import { showProgressPeriod } from '@/test/progressPeriod';
+import { progressGoalsOver } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -458,7 +458,7 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
   });
 
   it('never changes the protein target (custom 220 g stays 220 g)', async () => {
-    await renderApp('/', {
+    const { services } = await renderApp('/', {
       prepare: async (s, id) => {
         currentProfile = id;
         await withGoal(s, id, 220);
@@ -467,13 +467,13 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
-    await showProgressPeriod('7 Tage');
-    expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Ø [\d.]+ von 220 g Protein$/)).toBeInTheDocument();
+    const { nutrition } = await progressGoalsOver(services, NOW, 7);
+    expect(nutrition.calories?.avgGoalKcal).toBe(2800);
+    expect(nutrition.protein?.avgGoalG).toBe(220);
   });
 
   it('progress: off, the daily goal stays the base goal', async () => {
-    await renderApp('/', {
+    const { services } = await renderApp('/', {
       prepare: async (s, id) => {
         currentProfile = id;
         await withGoal(s, id);
@@ -481,18 +481,26 @@ describe('Aktivitätskalorien mit manuellen Aktivitäten', () => {
         await s.activities.create(id, input({ kcalOverride: 500 }));
       },
     });
-    await showProgressPeriod('7 Tage');
-    expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
+    const { nutrition } = await progressGoalsOver(services, NOW, 7);
+    expect(nutrition.calories?.avgGoalKcal).toBe(2300);
+    expect(nutrition.protein?.avgGoalG).toBe(160);
   });
 });
 
-describe('Fortschritt: Aktivitäten', () => {
-  const main = () => within(screen.getByRole('main'));
-  const findCard = async () => within(await main().findByRole('link', { name: /^Aktivitäten/ }));
+/**
+ * The activity figures of the progress service – both sources, a duplicate counted once. Since
+ * Phase 23 Fortschritt no longer shows them as a card (only the score area "Aktivitäten"); the
+ * calculation is unchanged and checked here directly.
+ */
+describe('Fortschritt: Aktivitäten (progress service)', () => {
+  async function summary(services: AppServices, count: number) {
+    const { activity } = await progressGoalsOver(services, NOW, count);
+    const { count: activities, durationS, activeKcal } = activity.summary;
+    return { activities, durationS, activeKcal };
+  }
 
-  it('shows manual activities without Health Connect', async () => {
-    await renderApp('/', {
+  it('counts manual activities without Health Connect', async () => {
+    const { services } = await renderApp('/', {
       prepare: async (s, id) => {
         currentProfile = id;
         await s.activities.create(
@@ -501,27 +509,26 @@ describe('Fortschritt: Aktivitäten', () => {
         );
       },
     });
-    const card = await findCard();
-    expect(await card.findByText('1 Aktivität')).toBeInTheDocument();
-    expect(card.getByText('45 min')).toBeInTheDocument();
-    expect(card.getByText('120 aktive kcal')).toBeInTheDocument();
+    expect(await summary(services, 1)).toEqual({
+      activities: 1,
+      durationS: 45 * 60,
+      activeKcal: 120,
+    });
   });
 
-  it('shows Health Connect activities alone', async () => {
-    await renderApp('/', {
+  it('counts Health Connect activities alone', async () => {
+    const { services } = await renderApp('/', {
       healthPlatform: platformWith([hcSession('a', [3, 7, 0], 42)]),
       prepare: async (s, id) => {
         currentProfile = id;
         await s.healthSync.connect(id);
       },
     });
-    const card = await findCard();
-    expect(await card.findByText('1 Aktivität')).toBeInTheDocument();
-    expect(card.getByText('386 aktive kcal')).toBeInTheDocument();
+    expect(await summary(services, 1)).toMatchObject({ activities: 1, activeKcal: 386 });
   });
 
   it('adds both sources and counts a duplicate once', async () => {
-    await renderApp('/', {
+    const { services } = await renderApp('/', {
       healthPlatform: platformWith([hcSession('a', [3, 7, 0], 42)]),
       prepare: async (s, id) => {
         currentProfile = id;
@@ -536,15 +543,15 @@ describe('Fortschritt: Aktivitäten', () => {
         );
       },
     });
-    await showProgressPeriod('7 Tage');
-    const card = await findCard();
-    expect(await card.findByText('2 Aktivitäten')).toBeInTheDocument();
-    expect(card.getByText('1 h 12 min')).toBeInTheDocument();
-    expect(card.getByText('486 aktive kcal')).toBeInTheDocument();
+    expect(await summary(services, 7)).toEqual({
+      activities: 2,
+      durationS: 72 * 60,
+      activeKcal: 486,
+    });
   });
 
-  it('switches between week and month', async () => {
-    await renderApp('/', {
+  it('follows the period: week and month', async () => {
+    const { services } = await renderApp('/', {
       prepare: async (s, id) => {
         currentProfile = id;
         await s.activities.create(
@@ -557,18 +564,16 @@ describe('Fortschritt: Aktivitäten', () => {
         );
       },
     });
-    const card = await findCard();
-    expect(await card.findByText('1 Aktivität')).toBeInTheDocument();
-    await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
-    expect(await (await findCard()).findByText('2 Aktivitäten')).toBeInTheDocument();
-    expect((await findCard()).getByText('300 aktive kcal')).toBeInTheDocument();
+    expect(await summary(services, 7)).toMatchObject({ activities: 1 });
+    expect(await summary(services, 30)).toMatchObject({ activities: 2, activeKcal: 300 });
   });
 
-  it('stays hidden without Health Connect and without any activity', async () => {
-    await renderApp('/');
-    await within(await main().findByRole('link', { name: /^Gewicht/ })).findByText(
-      'Noch keine Gewichtsdaten.',
-    );
-    expect(main().queryByRole('link', { name: /^Aktivitäten/ })).not.toBeInTheDocument();
+  it('Fortschritt shows "Aktivitäten" as a score area, never as a card of its own', async () => {
+    const { services } = await renderApp('/');
+    const area = await within(screen.getByRole('main')).findByRole('link', {
+      name: /^Aktivitäten: .* – Bereich öffnen$/,
+    });
+    expect(area).toHaveAttribute('href', '/training/activities');
+    expect(await summary(services, 7)).toEqual({ activities: 0, durationS: 0, activeKcal: null });
   });
 });

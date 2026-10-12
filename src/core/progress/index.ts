@@ -1,3 +1,4 @@
+export * from './calendar';
 export * from './goalProgress';
 export {
   ProgressGoalService,
@@ -6,6 +7,8 @@ export {
 } from './progressGoalService';
 export {
   ProgressGoalsProvider,
+  useProgressCalendar,
   useProgressGoals,
+  type ProgressCalendarLoadState,
   type ProgressGoalsLoadState,
 } from './ProgressGoalsProvider';

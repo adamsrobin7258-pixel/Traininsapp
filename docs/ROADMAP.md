@@ -577,6 +577,22 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 23 – Fortschritt kompakt, Anatomie nach Profil, Logo in der Kopfzeile ✅ (Version 0.36.0)
+
+- Fortschritt: Score, darunter die vier Score-Bereiche mit Bewertung als Links zu ihren Seiten,
+  Kalender der letzten 20 Tage (abgeschlossenes Training, erreichtes Kalorienziel – grün, nie
+  rot) mit Legende und Tagesdetails; die fünf Karten Training, Ernährung, Gewicht, Aktivitäten,
+  Schritte sind von dieser Seite entfernt (Module und Daten bleiben). Details:
+  [PROGRESS.md](PROGRESS.md)
+- Anatomie: Körper nur aus dem Profil (Divers/ohne Angabe → männlich), kein Umschalter mehr
+  ([MUSCLE_MAPS.md](MUSCLE_MAPS.md)); Trainingsabschluss mit Muskelübersicht (seit 0.34.0)
+  zusätzlich getestet: nur abgeschlossene Übungen, primär vor sekundär, einmal gespeichert
+- Kalethra-Symbol oben rechts auf allen normalen Seiten (`Screen`), nicht doppelt
+  ([BRAND.md](BRAND.md))
+- Token `--color-success-mark`
+- Offen: Gerätetest; Hinweis „3D-Körper“ unter Datenquellen bleibt, solange die GLB-Dateien
+  mit der App ausgeliefert werden (CC BY 4.0)
+
 ## Phase 22 – Markenzeichen und App-Logo (Marke Phase 2) ✅ (Version 0.35.0)
 
 Eigenständige visuelle Identität aus einer Vektorquelle. Details: [BRAND.md](BRAND.md):

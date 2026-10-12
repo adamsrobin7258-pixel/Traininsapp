@@ -21,7 +21,7 @@ const levels = (page: Page, testId = 'muscle-map') =>
     return result;
   });
 
-test('muscle map: small in the details, large with body switch and back again', async ({
+test('muscle map: small in the details, large with the profile body and back again', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -54,8 +54,9 @@ test('muscle map: small in the details, large with body switch and back again', 
   await open.click();
   const large = page.getByRole('dialog', { name: 'Langhantel-Bankdrücken' });
   await expect(large.getByRole('img')).toHaveAccessibleName(/Primär: Brust/);
-  await large.getByRole('radio', { name: 'Weiblich' }).click();
-  await expect(large.getByTestId('muscle-map')).toHaveAttribute('data-variant', 'female');
+  // The body comes from the profile (none set: the male fallback) – no switch (Phase 23).
+  await expect(large.getByTestId('muscle-map')).toHaveAttribute('data-variant', 'male');
+  await expect(large.getByRole('radio')).toHaveCount(0);
   expect(await levels(page)).toMatchObject({ 'pectoralis-major': 'primary' });
   expect(await noHorizontalScroll(page)).toBe(true);
 
@@ -108,4 +109,24 @@ test('workout summary: muscles worked open large and return to the summary', asy
   await page.keyboard.press('Escape');
   await expect(summary).toBeVisible();
   await expect(summary.getByRole('region', { name: 'Beanspruchte Muskeln' })).toBeVisible();
+});
+
+test('muscle map follows the profile: "Weiblich" shows the female body everywhere', async ({
+  page,
+}) => {
+  await page.goto('/settings/profile');
+  const main = page.locator('main');
+  await main.getByRole('radio', { name: 'Weiblich' }).click();
+  await main.getByRole('button', { name: 'Persönliche Daten speichern' }).click();
+  await expect(main.getByText(/Gespeichert/)).toBeVisible();
+
+  await openExercise(page, 'langhantel-bankdrücken', /^Langhantel-Bankdrücken/);
+  const section = sheet(page).getByRole('region', { name: 'Beanspruchte Muskeln' });
+  await expect(section.getByTestId('muscle-map')).toHaveAttribute('data-variant', 'female');
+  await section.getByRole('button', { name: 'Muskelkarte vergrößern' }).click();
+  const large = page.getByRole('dialog', { name: 'Langhantel-Bankdrücken' });
+  await expect(large.getByTestId('muscle-map')).toHaveAttribute('data-variant', 'female');
+  await expect(large.getByRole('radio')).toHaveCount(0);
+  expect(await levels(page)).toMatchObject({ 'pectoralis-major': 'primary' });
+  expect(await noHorizontalScroll(page)).toBe(true);
 });

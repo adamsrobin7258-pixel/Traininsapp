@@ -9,15 +9,22 @@ Repository, werden aber nicht mehr angezeigt.
 
 ## Wo
 
-| Ansicht                    | Darstellung                                                                     |
-| -------------------------- | ------------------------------------------------------------------------------- |
-| Übungsdetails              | Abschnitt „Beanspruchte Muskeln“ unter den Fakten – **für jede Übung**          |
-| Trainings-Zusammenfassung  | Abschnitt „Beanspruchte Muskeln“: Karte, darunter Primär/Sekundär als Text      |
-| Große Ansicht (beide Wege) | Antippen der Karte: groß, Umschalter Männlich/Weiblich, Legende mit den Gruppen |
+| Ansicht                    | Darstellung                                                                |
+| -------------------------- | -------------------------------------------------------------------------- |
+| Übungsdetails              | Abschnitt „Beanspruchte Muskeln“ unter den Fakten – **für jede Übung**     |
+| Trainings-Zusammenfassung  | Abschnitt „Beanspruchte Muskeln“: Karte, darunter Primär/Sekundär als Text |
+| Große Ansicht (beide Wege) | Antippen der Karte: groß, Körper aus dem Profil, Legende mit den Gruppen   |
 
-Kein neuer Navigationspunkt, keine Einstellung. Die große Ansicht startet mit dem Körper des
-Profils (`figureVariantFor(profile.sex)`, ohne Angabe männlich – wie bisher bei der 3D-Figur);
-der Umschalter gilt nur für diese Ansicht und wird nicht gespeichert.
+Kein neuer Navigationspunkt, keine Einstellung. Seit Phase 23 bestimmt allein das Profil den
+Körper – in der kleinen wie der großen Ansicht (`figureVariantFor(profile.sex)`); der frühere
+Umschalter Männlich/Weiblich in der großen Ansicht ist entfernt:
+
+| Profil „Geschlecht“          | Körper                         |
+| ---------------------------- | ------------------------------ |
+| Männlich                     | männlich                       |
+| Weiblich                     | weiblich                       |
+| Divers / keine Angabe        | männlich (festgelegter Ersatz) |
+| kein Wert / unbekannter Wert | männlich (gleicher Ersatz)     |
 
 ## Datenfluss (Quelle der Wahrheit)
 
@@ -32,8 +39,10 @@ Exercise (Bibliothek oder eigene Übung)
 - Muskeln kommen ausschließlich aus der Übung; die Karte legt keine eigenen Zuordnungen an.
   Die Unterscheidung primär/sekundär bestand bereits (`MuscleHighlight`) – keine Datenänderung.
 - `fullBody` bedeutet wie bisher: alle Gruppen.
-- Zusammenfassung: Vereinigung der Übungen mit mindestens einem abgeschlossenen Satz; primär
-  schlägt sekundär. Kein Score.
+- Zusammenfassung: Vereinigung der Übungen mit mindestens einem abgeschlossenen Satz (eine Übung
+  ohne abgeschlossenen Satz gilt als nicht gemacht); primär schlägt sekundär, jede Region wird
+  pro Ansicht einmal markiert. Eine Übung ohne Muskelzuordnung trägt nichts bei und blockiert
+  nichts. Die Karte liest nur – der Abschluss speichert genau einmal (getestet). Kein Score.
 - Ungültige oder fehlende Zuordnungen markieren nichts: eine unbekannte Gruppe, eine unbekannte
   Region oder eine leere Liste lassen die Karte neutral (getestet).
 - Katalogprüfung (201 Übungen): keine belegbaren Fehlzuordnungen gefunden, daher keine
@@ -109,7 +118,7 @@ sie als Gruppe (z. B. ist der Serratus keine eigene Gruppe; der Brachialis wird 
 | `tools/muscle-maps/build.mjs`                     | Generator der vier SVGs                                   |
 | `src/modules/training/muscleMap/regions.ts`       | Muskel-IDs → Gruppe, `highlightSvg` (rein, ohne React)    |
 | `src/modules/training/muscleMap/svgs.ts`          | gebündelte SVG-Texte                                      |
-| `src/modules/training/muscleMap/MuscleMap.tsx`    | Karte, kleine Karte (Knopf), große Ansicht mit Umschalter |
+| `src/modules/training/muscleMap/MuscleMap.tsx`    | Karte, kleine Karte (Knopf), große Ansicht (Profilkörper) |
 | `src/modules/training/muscleMap/regions.test.ts`  | IDs, Gleichheit beider Körper, Hervorhebung, Generator    |
 | `src/modules/training/exerciseMuscleMap.test.tsx` | Einbindung in Details und Zusammenfassung                 |
 | `e2e/muscleMap.spec.ts`                           | Produktions-Build in Chromium (390/320 px, hell/dunkel)   |

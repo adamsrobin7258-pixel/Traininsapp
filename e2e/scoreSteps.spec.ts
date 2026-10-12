@@ -91,10 +91,8 @@ const noHorizontalScroll = (page: Page) =>
 
 test('steps inside "Aktivitäten": score, details, periods, large text', async ({ page }) => {
   const { main, sheet, score } = await setUp(page, 10, 30);
-  // The steps card keeps showing the real steps.
-  await expect(
-    main.getByRole('link', { name: /^Schritte/ }).getByText('12.000 von 10.000 Schritten'),
-  ).toBeVisible();
+  // The activity area (steps are part of it) with its rating, opening the activities.
+  await expect(main.getByRole('link', { name: 'Aktivitäten: 100 – Bereich öffnen' })).toBeVisible();
   // Today: 30 min ≥ today's share (≈ 21 min) → 100, steps 12.000 ≥ 10.000 → 100.
   await expect(score).toHaveAccessibleName(/^Kalethra-Score 100 von 100, /);
   await expect(score).toHaveAccessibleName(/Aktivitäten: 100\./);

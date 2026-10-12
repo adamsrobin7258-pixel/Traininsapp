@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event';
 import type { AppServices } from '@/app/services';
 import type { HealthWorkout } from '@/core/platform/health';
 import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
-import { showProgressPeriod } from '@/test/progressPeriod';
+import { progressGoalsOver } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
 // Saturday, 3 October 2026, 10:00 local time.
@@ -323,8 +323,14 @@ describe('Aktivitätskalorien anrechnen', () => {
     expect(overview.queryByText('Basisziel')).not.toBeInTheDocument();
   });
 
-  it('progress main page: on, the daily goal of the same days includes the activity calories', async () => {
-    await renderApp('/', {
+  /** The average day goals of the last 7 days (progress service). */
+  async function weekGoals(services: AppServices) {
+    const { nutrition } = await progressGoalsOver(services, NOW, 7);
+    return { kcal: nutrition.calories?.avgGoalKcal, protein: nutrition.protein?.avgGoalG };
+  }
+
+  it('progress: on, the daily goal of the same days includes the activity calories', async () => {
+    const { services } = await renderApp('/', {
       healthPlatform: platformWith([session('a', [3, 7, 0], 45, { activeKcal: 500 })]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
@@ -333,13 +339,11 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
-    await showProgressPeriod('7 Tage');
-    expect(await screen.findByText(/^Ø [\d.]+ von 2\.800 kcal$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
+    expect(await weekGoals(services)).toEqual({ kcal: 2800, protein: 160 });
   });
 
-  it('progress main page: off, the daily goal stays the base goal', async () => {
-    await renderApp('/', {
+  it('progress: off, the daily goal stays the base goal', async () => {
+    const { services } = await renderApp('/', {
       healthPlatform: platformWith([session('a', [3, 7, 0], 45, { activeKcal: 500 })]),
       prepare: async (services, profileId) => {
         await withGoal(services, profileId);
@@ -347,8 +351,6 @@ describe('Aktivitätskalorien anrechnen', () => {
         await connect(services, profileId);
       },
     });
-    await showProgressPeriod('7 Tage');
-    expect(await screen.findByText(/^Ø [\d.]+ von 2\.300 kcal$/)).toBeInTheDocument();
-    expect(screen.getByText(/^Ø [\d.]+ von 160 g Protein$/)).toBeInTheDocument();
+    expect(await weekGoals(services)).toEqual({ kcal: 2300, protein: 160 });
   });
 });

@@ -1,9 +1,7 @@
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { AppServices } from '@/app/services';
-import type { HealthWorkout } from '@/core/platform/health';
 import { EMPTY_SET_VALUES } from '@/core/training';
-import { FakeHealthPlatform, localIso } from '@/test/fakeHealthPlatform';
 import { showProgressPeriod } from '@/test/progressPeriod';
 import { renderApp } from '@/test/renderApp';
 
@@ -12,15 +10,6 @@ const NOW = new Date(2026, 9, 3, 10);
 
 function main() {
   return within(screen.getByRole('main'));
-}
-
-/** One of the four progress cards (the whole card is one link). */
-function card(name: RegExp) {
-  return within(main().getByRole('link', { name }));
-}
-
-async function findCard(name: RegExp) {
-  return within(await main().findByRole('link', { name }));
 }
 
 /** Completes a workout on a given day (the clock is moved there and back). */
@@ -44,19 +33,6 @@ async function completedWorkout(services: AppServices, profileId: string, day: D
   vi.setSystemTime(new Date(day.getTime() + minutes * 60_000));
   await services.training.workouts.finish(profileId, workout.id);
   vi.setSystemTime(NOW);
-}
-
-function session(id: string, day: number, hour: number, minutes: number, kcal: number | null) {
-  const start = localIso(2026, 10, day, hour);
-  return {
-    id,
-    type: 'strengthTraining',
-    start,
-    end: new Date(Date.parse(start) + minutes * 60_000).toISOString(),
-    activeKcal: kcal,
-    distanceM: null,
-    source: 'Pixel Watch',
-  } satisfies HealthWorkout;
 }
 
 /** A food with 100 kcal and 10 g protein per 100 g, eaten in grams on the given days. */
@@ -86,6 +62,49 @@ async function eat(services: AppServices, profileId: string, days: [string, numb
       unit: 'g',
     });
   }
+}
+
+/** Saves a calorie goal as if it had been chosen on 1 September (goals apply from that day). */
+async function calorieGoal(
+  services: AppServices,
+  profileId: string,
+  energyKcal: number,
+  goalType: 'maintain' | 'lose' | 'gain' = 'maintain',
+) {
+  vi.setSystemTime(new Date(2026, 8, 1, 9));
+  await services.nutrition.goals.save(profileId, {
+    goalType,
+    targets: {
+      energyKcal: { auto: null, manual: energyKcal },
+      proteinG: { auto: null, manual: 160 },
+    },
+  });
+  vi.setSystemTime(NOW);
+}
+
+function calendar() {
+  return within(main().getByRole('region', { name: 'Letzte 20 Tage' }));
+}
+
+/** The calendar cell of a local day (YYYY-MM-DD). */
+function dayCell(date: string): HTMLElement {
+  const cell = screen
+    .getByRole('region', { name: 'Letzte 20 Tage' })
+    .querySelector<HTMLElement>(`button[data-date="${date}"]`);
+  if (!cell) throw new Error(`no cell for ${date}`);
+  return cell;
+}
+
+const marks = (date: string) =>
+  [...dayCell(date).querySelectorAll<HTMLElement>('[data-mark]')].map((mark) => mark.dataset.mark);
+
+/** Waits until the calendar has its data (the cells exist from the start). */
+async function calendarReady() {
+  await waitFor(() => {
+    expect(
+      screen.getByRole('region', { name: 'Letzte 20 Tage' }).querySelector('[aria-busy]'),
+    ).toBeNull();
+  });
 }
 
 describe('Fortschritt – the main page', () => {
@@ -120,7 +139,7 @@ describe('Fortschritt – the main page', () => {
         'aria-current',
         'page',
       );
-      // "Heute" is no tab (Phase 7.1) – since Phase 9 only a period of the score and cards.
+      // "Heute" is no tab (Phase 7.1) – only a period of the score.
       expect(nav.queryByRole('link', { name: /Heute/ })).not.toBeInTheDocument();
     });
 
@@ -136,46 +155,25 @@ describe('Fortschritt – the main page', () => {
       expect(mark?.closest('a, button')).toBeNull();
       expect(main().queryByRole('img', { name: /Kalethra/ })).not.toBeInTheDocument();
       expect(main().getAllByRole('heading', { level: 1 })).toHaveLength(1);
-      // Only on the main page.
+      // Exactly one brand mark on the page.
       expect(document.querySelectorAll('[data-brand]')).toHaveLength(1);
     });
 
-    it('is read-only: no inputs – only the period switch and the score details', async () => {
+    it('is read-only: no inputs – period switch, score details, areas and days', async () => {
       const { container } = await renderApp('/');
-      await main().findByRole('link', { name: /^Training/ });
+      await calendarReady();
       expect(container.querySelectorAll('main input, main textarea, main select')).toHaveLength(0);
-      // The one button opens the explanation of the Kalethra score (Phase 9).
-      const buttons = await main().findAllByRole('button');
-      expect(buttons).toHaveLength(1);
+      // Buttons: the explanation of the Kalethra score and one per calendar day.
+      const buttons = main().getAllByRole('button');
       expect(buttons[0]).toHaveAccessibleName(/Details zum Kalethra-Score$/);
+      expect(buttons.slice(1)).toHaveLength(20);
+      // Links: the four areas of the score.
+      expect(main().getAllByRole('link')).toHaveLength(4);
       expect(
         main()
           .getAllByRole('radio')
           .map((radio) => radio.textContent),
       ).toEqual(['Heute', '7 Tage', '30 Tage']);
-    });
-
-    it.each([
-      [/^Training/, '/training'],
-      [/^Ernährung/, '/nutrition'],
-      [/^Gewicht/, '/health'],
-    ])('the %s card opens its area, and back returns here', async (name, path) => {
-      const { router } = await renderApp('/');
-      await userEvent.click(await main().findByRole('link', { name }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe(path);
-      });
-      await router.navigate(-1);
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/');
-      });
-      expect(
-        await screen.findByRole('heading', { level: 1, name: 'Fortschritt' }),
-      ).toBeInTheDocument();
-      await router.navigate(1);
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe(path);
-      });
     });
 
     it('works in English and dark mode', async () => {
@@ -191,8 +189,10 @@ describe('Fortschritt – the main page', () => {
         await screen.findByRole('heading', { level: 1, name: 'Progress' }),
       ).toBeInTheDocument();
       expect(screen.getByRole('radio', { name: '7 days' })).toHaveAttribute('aria-checked', 'true');
-      expect(await main().findByText('No training data yet.')).toBeInTheDocument();
       expect(await main().findByText('Kalethra score')).toBeInTheDocument();
+      const days = within(main().getByRole('region', { name: 'Last 20 days' }));
+      expect(days.getByText('Workout')).toBeInTheDocument();
+      expect(days.getByText('Calorie goal met')).toBeInTheDocument();
       const nav = within(screen.getByRole('navigation', { name: 'Main navigation' }));
       expect(nav.queryByRole('link', { name: /Today/ })).not.toBeInTheDocument();
     });
@@ -223,621 +223,337 @@ describe('Fortschritt – the main page', () => {
       await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
       expect(main().getByText('03.10.')).toBeInTheDocument();
     });
-  });
 
-  it('shows the four areas in order, with small empty states and no invented zeros', async () => {
-    await renderApp('/', {
-      healthPlatform: new FakeHealthPlatform(),
-      prepare: async (s, profileId) => {
-        await s.healthSync.connect(profileId);
-      },
+    it('changes the score, never the calendar: always the last 20 days', async () => {
+      await renderApp('/');
+      await calendarReady();
+      expect(calendar().getByText('14.09. – 03.10.')).toBeInTheDocument();
+      await showProgressPeriod('30 Tage');
+      expect(calendar().getByText('14.09. – 03.10.')).toBeInTheDocument();
+      expect(calendar().getAllByRole('button')).toHaveLength(20);
     });
-    await showProgressPeriod('7 Tage');
-    const list = await main().findByRole('list', { name: 'Fortschritt' });
-    await within(list).findByText('Noch keine Aktivitäten.');
-    expect(
-      within(list)
-        .getAllByRole('link')
-        .map((link) => link.textContent.split(/(?=Noch)/)[0]),
-    ).toEqual(['Training', 'Ernährung', 'Gewicht', 'Aktivitäten', 'Schritte']);
-    expect(card(/^Training/).getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
-    expect(
-      await (await findCard(/^Ernährung/)).findByText('Noch keine Ernährungsdaten.'),
-    ).toBeInTheDocument();
-    expect(
-      await (await findCard(/^Gewicht/)).findByText('Noch keine Gewichtsdaten.'),
-    ).toBeInTheDocument();
-    // Steps come only from Health Connect: connected without values → no data, never 0 steps.
-    expect(card(/^Schritte/).getByText('Noch keine Schrittdaten.')).toBeInTheDocument();
-    expect(main().queryByRole('img')).not.toBeInTheDocument();
-    expect(main().queryByText(/^0 /)).not.toBeInTheDocument();
   });
 
-  it('keeps areas without values compact and lets areas with values carry the page', async () => {
-    await renderApp('/', {
-      prepare: async (services, profileId) => {
-        await eat(services, profileId, [['2026-10-03', 500]]);
-      },
+  describe('compact layout (Phase 23)', () => {
+    it('shows score, its areas, the calendar and its legend – in this order', async () => {
+      await renderApp('/');
+      await calendarReady();
+      const score = main().getByRole('region', { name: 'Kalethra-Score' });
+      const areas = within(score).getByRole('list', { name: 'Bereiche des Scores' });
+      const days = main().getByRole('region', { name: 'Letzte 20 Tage' });
+      const legend = within(days).getByRole('list', { name: 'Legende' });
+      const order = [score.querySelector('button'), areas, days.querySelector('button'), legend];
+      for (const [index, element] of order.entries()) {
+        const next = order[index + 1];
+        if (!element || !next) continue;
+        expect(
+          element.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING,
+        ).toBeTruthy();
+      }
+      // Nothing comes after the calendar: no further cards or text blocks.
+      expect(days.nextElementSibling).toBeNull();
     });
-    await (await findCard(/^Ernährung/)).findByText('Ø 500 kcal / Tag');
-    const link = (name: RegExp) => main().getByRole('link', { name });
-    expect(link(/^Ernährung/)).not.toHaveAttribute('data-empty');
-    expect(link(/^Training/)).toHaveAttribute('data-empty', 'true');
-    expect(link(/^Gewicht/)).toHaveAttribute('data-empty', 'true');
-    // Compact, but still the whole card is one target of at least 44 px (checked in E2E).
-    expect(card(/^Training/).getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
-  });
 
-  it('no longer shows any daily content', async () => {
-    await renderApp('/', {
-      prepare: async (services, profileId) => {
-        await services.training.exercises.ensureCatalog();
-        // A running workout and food today – both belong to their areas, not to this page.
-        await services.training.workouts.startFree(profileId);
-        await eat(services, profileId, [['2026-10-03', 500]]);
-      },
-    });
-    await (await findCard(/^Ernährung/)).findByText('Ø 500 kcal / Tag');
-    for (const text of [
-      'Laufendes Training',
-      'Training fortsetzen',
-      /Heute (kein|noch kein|abgeschlossen)/,
-      'Noch nichts eingetragen',
-      /Wasser/,
-      'Gesundheit heute',
-      'Aktivitäten heute',
-    ]) {
-      expect(screen.queryByText(text)).not.toBeInTheDocument();
-    }
-    expect(screen.queryByRole('list', { name: 'Mahlzeiten' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-  });
-
-  describe('training', () => {
-    it('counts Kalethra workouts, per week over 30 days and volume – not imported activities', async () => {
-      const platform = new FakeHealthPlatform();
-      // A watch-recorded strength session yesterday: an activity, not a Kalethra workout.
-      platform.workouts = [session('hc', 2, 7, 50, 400)];
-      const { router } = await renderApp('/', {
-        healthPlatform: platform,
+    it('no longer shows the five cards Training, Ernährung, Gewicht, Aktivitäten, Schritte', async () => {
+      await renderApp('/', {
         prepare: async (services, profileId) => {
           await services.training.exercises.ensureCatalog();
-          await completedWorkout(services, profileId, new Date(2026, 8, 10, 18)); // 23 days ago
-          await completedWorkout(services, profileId, new Date(2026, 8, 29, 18)); // 4 days ago
-          await completedWorkout(services, profileId, new Date(2026, 9, 2, 18)); // yesterday
-          await services.healthSync.connect(profileId);
+          await completedWorkout(services, profileId, new Date(2026, 9, 2, 18));
+          await eat(services, profileId, [['2026-10-03', 500]]);
+          await services.weight.save(profileId, '2026-10-03', 80);
+        },
+      });
+      await calendarReady();
+      expect(main().queryByRole('list', { name: 'Fortschritt' })).not.toBeInTheDocument();
+      for (const name of [/^Gewicht/, /^Schritte/]) {
+        expect(main().queryByRole('link', { name })).not.toBeInTheDocument();
+      }
+      for (const text of [
+        /Einheiten?$/,
+        /kcal \/ Tag/,
+        /von .* kcal/,
+        /80,0 kg/,
+        'Noch keine Aktivitäten.',
+        'Noch keine Schrittdaten.',
+      ]) {
+        expect(main().queryByText(text)).not.toBeInTheDocument();
+      }
+      // The area links are the score's own areas (name and rating), not the old cards.
+      expect(
+        main()
+          .getAllByRole('link')
+          .map((link) => link.getAttribute('aria-label')),
+      ).toEqual([
+        expect.stringMatching(/^Ernährung: .* – Bereich öffnen$/),
+        expect.stringMatching(/^Training: .* – Bereich öffnen$/),
+        expect.stringMatching(/^Aktivitäten: .* – Bereich öffnen$/),
+        expect.stringMatching(/^Regeneration: .* – Bereich öffnen$/),
+      ]);
+    });
+
+    it('keeps the areas and their data: the modules still show what was recorded', async () => {
+      const { router } = await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await completedWorkout(services, profileId, new Date(2026, 9, 2, 18));
+          await services.weight.save(profileId, '2026-10-03', 80);
+        },
+      });
+      await calendarReady();
+      await act(() => router.navigate('/training'));
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Training' }),
+      ).toBeInTheDocument();
+      expect(await screen.findByText('Letzte Trainings')).toBeInTheDocument();
+      expect(screen.queryByText('Noch keine abgeschlossenen Trainings.')).not.toBeInTheDocument();
+      await act(() => router.navigate('/health'));
+      expect((await screen.findAllByText(/80,0 kg/)).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('score areas', () => {
+    it.each([
+      ['Ernährung', '/nutrition'],
+      ['Training', '/training'],
+      ['Aktivitäten', '/training/activities'],
+      ['Regeneration', '/health'],
+    ])('"%s" opens its area, and back returns here', async (area, path) => {
+      const { router } = await renderApp('/');
+      await userEvent.click(
+        await main().findByRole('link', { name: new RegExp(`^${area}: .* – Bereich öffnen$`) }),
+      );
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe(path);
+      });
+      await act(() => router.navigate(-1));
+      await waitFor(() => {
+        expect(router.state.location.pathname).toBe('/');
+      });
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Fortschritt' }),
+      ).toBeInTheDocument();
+    });
+
+    it('shows each area with its rating from the score – "–" without one', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await calorieGoal(services, profileId, 2000);
+          await eat(services, profileId, [['2026-10-02', 2000]]);
         },
       });
       await showProgressPeriod('7 Tage');
-      const training = await findCard(/^Training/);
-      expect(await training.findByText('2 Einheiten')).toBeInTheDocument();
-      // Over exactly 7 days the weekly mean is the count itself: not repeated (Phase 17.3).
-      expect(training.queryByText(/pro Woche/)).not.toBeInTheDocument();
-      expect(training.getByText('1.280 kg Volumen')).toBeInTheDocument();
-      expect(
-        training.getByRole('img', { name: 'Trainingstage: an 2 von 7 Tagen trainiert' }),
-      ).toBeInTheDocument();
-      expect(await (await findCard(/^Aktivitäten/)).findByText('1 Aktivität')).toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
-      expect(await card(/^Training/).findByText('3 Einheiten')).toBeInTheDocument();
-      expect(card(/^Training/).getByText('Ø 0,7 pro Woche')).toBeInTheDocument();
-      expect(card(/^Training/).getByText('1.920 kg Volumen')).toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('link', { name: /^Training/ }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/training');
+      const nutrition = await main().findByRole('link', {
+        name: /^Ernährung: \d+ – Bereich öffnen$/,
       });
+      const value = nutrition.getAttribute('aria-label')?.match(/\d+/)?.[0];
+      expect(within(nutrition).getByText(value ?? '')).toBeInTheDocument();
+      const training = main().getByRole('link', {
+        name: 'Training: Ohne Bewertung – Bereich öffnen',
+      });
+      expect(within(training).getByText('–')).toBeInTheDocument();
     });
   });
 
-  describe('nutrition', () => {
-    it('averages logged days only and compares with the goal of the same days', async () => {
-      const { router } = await renderApp('/', {
+  describe('calendar of the last 20 days', () => {
+    it('shows exactly the last 20 local days including today, under their weekdays', async () => {
+      await renderApp('/');
+      await calendarReady();
+      const cells = calendar().getAllByRole('button');
+      expect(cells).toHaveLength(20);
+      expect(cells[0]).toHaveAttribute('data-date', '2026-09-14');
+      expect(cells.at(-1)).toHaveAttribute('data-date', '2026-10-03');
+      // Consecutive days, no gap, no doubles (also across the month).
+      expect(cells.map((cell) => cell.dataset.date)).toEqual(
+        Array.from({ length: 20 }, (_, index) => {
+          const day = new Date(2026, 8, 14 + index);
+          return `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`;
+        }),
+      );
+      // 14 September 2026 is a Monday: first column, no blank before it.
+      const grid = cells[0]?.parentElement;
+      const children = [...(grid?.children ?? [])];
+      expect(children.slice(0, 7).map((cell) => cell.textContent)).toEqual([
+        'Mo',
+        'Di',
+        'Mi',
+        'Do',
+        'Fr',
+        'Sa',
+        'So',
+      ]);
+      expect(children[7]).toBe(cells[0]);
+      expect(cells[0]).toHaveAccessibleName(/^Montag, 14\. September/);
+    });
+
+    it('puts the first day under its weekday when it is not a Monday', async () => {
+      // Monday, 12 October 2026 → the 20 days start on Wednesday, 23 September.
+      vi.setSystemTime(new Date(2026, 9, 12, 9));
+      await renderApp('/');
+      await calendarReady();
+      const cells = calendar().getAllByRole('button');
+      expect(cells[0]).toHaveAttribute('data-date', '2026-09-23');
+      expect(cells[0]).toHaveAccessibleName(/^Mittwoch, 23\. September/);
+      const children = [...(cells[0]?.parentElement?.children ?? [])];
+      // 7 weekday names, 2 empty cells (Mo, Di), then Wednesday.
+      expect(children.indexOf(cells[0] as Element)).toBe(9);
+      expect(cells.at(-1)).toHaveAttribute('data-date', '2026-10-12');
+      // Columns: index modulo 7 is the weekday from Monday on.
+      for (const cell of cells) {
+        const date = new Date(`${cell.dataset.date ?? ''}T12:00:00`);
+        expect((children.indexOf(cell) - 7) % 7).toBe((date.getDay() + 6) % 7);
+      }
+    });
+
+    it('uses local days: a workout at 23:30 and the first minutes of the new day', async () => {
+      // 00:10 on 3 October: the workout from 23:30 to 23:55 belongs to 2 October.
+      vi.setSystemTime(new Date(2026, 9, 3, 0, 10));
+      await renderApp('/', {
         prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await completedWorkout(services, profileId, new Date(2026, 9, 2, 23, 30), 25);
+          vi.setSystemTime(new Date(2026, 9, 3, 0, 10));
+        },
+      });
+      await calendarReady();
+      expect(marks('2026-10-02')).toEqual(['training']);
+      expect(marks('2026-10-03')).toEqual([]);
+      expect(dayCell('2026-10-03')).toHaveAttribute('aria-current', 'date');
+    });
+
+    it('marks today clearly and only today', async () => {
+      await renderApp('/');
+      await calendarReady();
+      const current = calendar()
+        .getAllByRole('button')
+        .filter((cell) => cell.getAttribute('aria-current') === 'date');
+      expect(current).toEqual([dayCell('2026-10-03')]);
+      expect(dayCell('2026-10-03')).toHaveAttribute('data-today', 'true');
+      expect(dayCell('2026-10-03')).toHaveAccessibleName('Samstag, 3. Oktober, heute');
+    });
+
+    it('marks training only for completed workouts – once, however many', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          const workouts = services.training.workouts;
+          await services.training.exercises.ensureCatalog();
+          await completedWorkout(services, profileId, new Date(2026, 9, 1, 8));
+          await completedWorkout(services, profileId, new Date(2026, 9, 1, 18));
+          // Discarded on 30 September: never a workout.
+          vi.setSystemTime(new Date(2026, 8, 30, 18));
+          const discarded = await workouts.startFree(profileId);
+          await workouts.discard(profileId, discarded.id);
+          // Started today and still running: not completed.
+          vi.setSystemTime(NOW);
+          await workouts.startFree(profileId);
+        },
+      });
+      await calendarReady();
+      expect(marks('2026-10-01')).toEqual(['training']);
+      expect(marks('2026-09-30')).toEqual([]);
+      expect(marks('2026-10-03')).toEqual([]);
+      expect(dayCell('2026-10-01')).toHaveAccessibleName('Donnerstag, 1. Oktober, Training');
+    });
+
+    it('marks the calorie goal only when it was met, both symbols on one day', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await calorieGoal(services, profileId, 2000);
+          await eat(services, profileId, [
+            ['2026-09-29', 2000], // in range
+            ['2026-09-30', 2600], // +30 %: not met
+            ['2026-10-01', 1990], // in range, and trained
+          ]);
+          await completedWorkout(services, profileId, new Date(2026, 9, 1, 18));
+        },
+      });
+      await calendarReady();
+      expect(marks('2026-09-29')).toEqual(['calories']);
+      expect(marks('2026-09-30')).toEqual([]);
+      expect(marks('2026-10-01')).toEqual(['training', 'calories']);
+      expect(dayCell('2026-10-01')).toHaveAccessibleName(
+        'Donnerstag, 1. Oktober, Training, Kalorienziel erreicht',
+      );
+    });
+
+    it('never marks a miss: no red, no negative symbol for missed goals or missing data', async () => {
+      const { container } = await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await calorieGoal(services, profileId, 2000);
+          // Not met, and today still below the goal (open).
+          await eat(services, profileId, [
+            ['2026-09-30', 3000],
+            ['2026-10-03', 500],
+          ]);
+        },
+      });
+      await calendarReady();
+      const region = screen.getByRole('region', { name: 'Letzte 20 Tage' });
+      // Only the two symbols of the legend – no day carries any mark.
+      expect(region.querySelectorAll('button [data-mark]')).toHaveLength(0);
+      expect(region.querySelectorAll('[data-mark]')).toHaveLength(2);
+      for (const mark of region.querySelectorAll('[data-mark]')) {
+        expect(['training', 'calories']).toContain((mark as HTMLElement).dataset.mark);
+      }
+      expect(container.querySelector('main [data-mark="missed"], main [data-error]')).toBeNull();
+      expect(within(region).queryByText(/nicht erreicht|verfehlt|fehlt/)).not.toBeInTheDocument();
+    });
+
+    it('explains the green symbols in a legend with the same symbols', async () => {
+      await renderApp('/');
+      await calendarReady();
+      const legend = within(calendar().getByRole('list', { name: 'Legende' }));
+      const items = legend.getAllByRole('listitem');
+      expect(items.map((item) => item.textContent)).toEqual(['Training', 'Kalorienziel erreicht']);
+      expect(items[0]?.querySelector('[data-mark="training"]')).not.toBeNull();
+      expect(items[1]?.querySelector('[data-mark="calories"]')).not.toBeNull();
+    });
+
+    it('opens the details of a day on tap: date, weekday, training, calorie goal', async () => {
+      await renderApp('/', {
+        prepare: async (services, profileId) => {
+          await services.training.exercises.ensureCatalog();
+          await calorieGoal(services, profileId, 2000);
           await eat(services, profileId, [
             ['2026-10-01', 2000],
-            ['2026-10-03', 1200],
+            ['2026-09-30', 2600],
+            ['2026-10-03', 400],
           ]);
-          // A goal applies from the day it is saved: saved on 1 September.
-          vi.setSystemTime(new Date(2026, 8, 1, 9));
-          await services.nutrition.goals.save(profileId, {
-            goalType: 'maintain',
-            targets: {
-              energyKcal: { auto: null, manual: 2300 },
-              proteinG: { auto: null, manual: 160 },
-            },
-          });
-          vi.setSystemTime(NOW);
+          await completedWorkout(services, profileId, new Date(2026, 9, 1, 8));
+          await completedWorkout(services, profileId, new Date(2026, 9, 1, 18));
         },
       });
-      // Heute: the day against its goal – no "1 of 1 days logged" (Phase 17.3).
-      const day = await findCard(/^Ernährung/);
-      expect(await day.findByText('1.200 von 2.300 kcal')).toBeInTheDocument();
-      expect(day.queryByText(/Tagen erfasst/)).not.toBeInTheDocument();
+      await calendarReady();
 
-      await showProgressPeriod('7 Tage');
-      const nutrition = await findCard(/^Ernährung/);
-      // (2.000 + 1.200) / 2 – the five days without entries do not count as 0 – against the
-      // goal of the same days.
-      expect(await nutrition.findByText('Ø 1.600 von 2.300 kcal')).toBeInTheDocument();
-      expect(nutrition.getByText('Ø 160 von 160 g Protein')).toBeInTheDocument();
-      expect(nutrition.getByText('100 %')).toBeInTheDocument();
-      // Gewicht halten: ±5 % range. 1 Oct (−13 %) is below; today (1.200) is still open.
-      expect(nutrition.getByText('Im Kalorien-Zielbereich an 0 von 1 Tagen')).toBeInTheDocument();
-      // Protein: 1 Oct reached (200 g), today (75 %) still open – not a miss.
-      expect(nutrition.getByText('Proteinziel erreicht an 1 von 1 Tagen')).toBeInTheDocument();
-      expect(nutrition.getByText('An 2 von 7 Tagen erfasst')).toBeInTheDocument();
-      // The dashed reference line is named under the chart (Phase C.1).
-      expect(nutrition.getByText('Ø Ziel')).toBeInTheDocument();
+      await userEvent.click(dayCell('2026-10-01'));
+      let sheet = within(await screen.findByRole('dialog', { name: 'Donnerstag, 1. Oktober' }));
+      expect(sheet.getByText('2 Trainings abgeschlossen')).toBeInTheDocument();
+      expect(sheet.getByText('Kalorienziel erreicht')).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
 
-      await userEvent.click(main().getByRole('link', { name: /^Ernährung/ }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/nutrition');
-      });
-    });
+      // A day without data: neutral, never "missed".
+      await userEvent.click(dayCell('2026-09-20'));
+      sheet = within(await screen.findByRole('dialog', { name: 'Sonntag, 20. September' }));
+      expect(sheet.getByText('Kein abgeschlossenes Training erfasst')).toBeInTheDocument();
+      expect(sheet.getByText('Keine Ernährungseinträge erfasst')).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
 
-    it('uses a custom protein target unchanged', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await services.profile.updateBodyData(await services.profile.ensureLocalProfile(), {
-            sex: 'male',
-            birthDate: '1990-05-01',
-            heightCm: 177,
-          });
-          for (const date of ['2026-09-30', '2026-10-01', '2026-10-02', '2026-10-03'])
-            await services.weight.save(profileId, date, 92);
-          await services.nutrition.goals.saveProfile(profileId, {
-            params: {
-              goalType: 'lose',
-              goalLevel: 'moderate',
-              activityLevel: 'moderate',
-              includeTraining: false,
-              targetWeightKg: null,
-            },
-            overrides: {},
-            waterMl: null,
-          });
-          await services.nutrition.goals.setProfileOverride(profileId, 'proteinG', 220);
-          await eat(services, profileId, [['2026-10-03', 1000]]);
-        },
-      });
-      const nutrition = await findCard(/^Ernährung/);
-      expect(await nutrition.findByText(/von 220 g Protein$/)).toBeInTheDocument();
-    });
-  });
+      // A goal not met is said plainly, in neutral grey – no red, no symbol of failure.
+      await userEvent.click(dayCell('2026-09-30'));
+      sheet = within(await screen.findByRole('dialog', { name: 'Mittwoch, 30. September' }));
+      expect(sheet.getByText('Kalorienziel an diesem Tag nicht erreicht')).toBeInTheDocument();
+      expect(screen.getByRole('dialog').querySelector('[data-mark="calories"]')).toHaveAttribute(
+        'data-off',
+        'true',
+      );
+      await userEvent.keyboard('{Escape}');
 
-  describe('weight', () => {
-    it('shows the current weight, the change in the period and a small chart', async () => {
-      const { router } = await renderApp('/', {
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-08-01', 94);
-          await s.weight.save(profileId, '2026-09-10', 93);
-          await s.weight.save(profileId, '2026-10-03', 91.8);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const week = await findCard(/^Gewicht/);
-      expect(await week.findByText('91,8 kg')).toBeInTheDocument();
-      expect(week.getByText('Noch kein Vergleich im Zeitraum')).toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('radio', { name: '30 Tage' }));
-      const month = card(/^Gewicht/);
-      expect(await month.findByText(/^[-−]1,2 kg in 30 Tagen$/)).toBeInTheDocument();
-      expect(
-        month.getByRole('img', {
-          name: 'Gewichtsverlauf von 93,0 kg am 10.09. bis 91,8 kg am 03.10.',
-        }),
-      ).toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('link', { name: /^Gewicht/ }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/health');
-      });
-    });
-
-    it('today: the latest weight with its day – measured today', async () => {
-      await renderApp('/', {
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-09-28', 92.4);
-          await s.weight.save(profileId, '2026-10-03', 91.8);
-        },
-      });
-      const today = await findCard(/^Gewicht/);
-      expect(await today.findByText('91,8 kg')).toBeInTheDocument();
-      expect(today.getByText('heute')).toBeInTheDocument();
-      // One day has nothing to compare: no comparison line, no invented change.
-      expect(today.queryByText('Noch kein Vergleich im Zeitraum')).not.toBeInTheDocument();
-      expect(today.queryByText(/kg heute|→/)).not.toBeInTheDocument();
-      expect(today.queryByRole('img')).not.toBeInTheDocument();
-    });
-
-    it('today: an older latest weight shows its day, never as if measured today', async () => {
-      await renderApp('/', {
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-09-20', 93);
-          await s.weight.save(profileId, '2026-09-28', 92.4);
-        },
-      });
-      const today = await findCard(/^Gewicht/);
-      expect(await today.findByText('92,4 kg')).toBeInTheDocument();
-      expect(today.getByText('vom 28.09.')).toBeInTheDocument();
-      expect(today.queryByText('heute')).not.toBeInTheDocument();
-      expect(today.queryByText('Noch kein Vergleich im Zeitraum')).not.toBeInTheDocument();
-
-      // 7 and 30 days keep the development of the period: the last 7 days hold one value only.
-      await showProgressPeriod('7 Tage');
-      expect(
-        await card(/^Gewicht/).findByText('Noch kein Vergleich im Zeitraum'),
-      ).toBeInTheDocument();
-      await showProgressPeriod('30 Tage');
-      expect(await card(/^Gewicht/).findByText(/^[-−]0,6 kg in 30 Tagen$/)).toBeInTheDocument();
-    });
-
-    it('shows weight in pounds when set', async () => {
-      await renderApp('/', {
-        prepare: async (s, profileId) => {
-          await s.settings.update('weightUnit', 'lb');
-          await s.weight.save(profileId, '2026-10-03', 90);
-        },
-      });
-      expect(await (await findCard(/^Gewicht/)).findByText('198,4 lb')).toBeInTheDocument();
-    });
-
-    it('lets an own entry win over an imported one and shows Health Connect values', async () => {
-      const platform = new FakeHealthPlatform();
-      platform.weights = [
-        { id: 'a', measuredAt: localIso(2026, 10, 3, 7), kg: 95, source: 'Waage' },
-        { id: 'b', measuredAt: localIso(2026, 9, 30, 7), kg: 92.6, source: 'Waage' },
-      ];
-      await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-10-03', 92);
-          await s.healthSync.connect(profileId);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const weight = await findCard(/^Gewicht/);
-      // Today: own 92 kg wins over the imported 95 kg; 30.09. comes from Health Connect.
-      expect(await weight.findByText('92,0 kg')).toBeInTheDocument();
-      expect(weight.getByText(/^[-−]0,6 kg in 7 Tagen$/)).toBeInTheDocument();
-      expect(screen.queryByText('95,0 kg')).not.toBeInTheDocument();
-    });
-
-    it('marks a current value that comes from Health Connect', async () => {
-      const platform = new FakeHealthPlatform();
-      platform.weights = [
-        { id: 'a', measuredAt: localIso(2026, 10, 2, 7), kg: 91.4, source: 'Waage' },
-      ];
-      await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-09-28', 92);
-          await s.healthSync.connect(profileId);
-        },
-      });
-      const weight = await findCard(/^Gewicht/);
-      expect(await weight.findByText('91,4 kg')).toBeInTheDocument();
-      expect(weight.getByText('Wert aus Health Connect')).toBeInTheDocument();
-    });
-  });
-
-  describe('activities', () => {
-    it('appears with imported activities and opens Training → Aktivitäten', async () => {
-      const platform = new FakeHealthPlatform();
-      platform.workouts = [session('a', 3, 7, 42, 386), session('b', 1, 18, 30, 250)];
-      const { router } = await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (s, profileId) => {
-          await s.healthSync.connect(profileId);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const activities = await findCard(/^Aktivitäten/);
-      expect(await activities.findByText('2 Aktivitäten')).toBeInTheDocument();
-      expect(activities.getByText('1 h 12 min')).toBeInTheDocument();
-      expect(activities.getByText('636 aktive kcal')).toBeInTheDocument();
-      // Kept apart: they do not count as Kalethra training.
-      expect(card(/^Training/).getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('link', { name: /^Aktivitäten/ }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/training/activities');
-      });
-    });
-
-    it('appears with an active connection even without activities', async () => {
-      await renderApp('/', {
-        healthPlatform: new FakeHealthPlatform(),
-        prepare: async (s, profileId) => {
-          await s.healthSync.connect(profileId);
-        },
-      });
-      expect(
-        await (await findCard(/^Aktivitäten/)).findByText('Noch keine Aktivitäten.'),
-      ).toBeInTheDocument();
-    });
-
-    it('stays hidden without connection and without activities', async () => {
-      await renderApp('/');
-      await (await findCard(/^Gewicht/)).findByText('Noch keine Gewichtsdaten.');
-      expect(main().queryByRole('link', { name: /^Aktivitäten/ })).not.toBeInTheDocument();
-    });
-
-    it('stays visible for imported activities after disconnecting without deleting', async () => {
-      const platform = new FakeHealthPlatform();
-      platform.workouts = [session('a', 3, 7, 42, 386)];
-      await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (s, profileId) => {
-          await s.healthSync.connect(profileId);
-          await s.healthSync.disconnect(profileId, { deleteImported: false });
-        },
-      });
-      expect(await (await findCard(/^Aktivitäten/)).findByText('1 Aktivität')).toBeInTheDocument();
-    });
-  });
-
-  describe('goal attainment (Phase 14)', () => {
-    /** Sets a target as if it had been chosen on 1 September. */
-    async function target(
-      services: AppServices,
-      profileId: string,
-      kind: 'trainingsPerWeek' | 'activeMinutesPerWeek' | 'stepsPerDay',
-      value: number,
-    ) {
-      vi.setSystemTime(new Date(2026, 8, 1, 9));
-      await services.targets.set(profileId, kind, value);
-      vi.setSystemTime(NOW);
-    }
-
-    it('training: 3 of 4 with the goal from Einstellungen, a quiet bar and the percent', async () => {
-      const { container } = await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await services.training.exercises.ensureCatalog();
-          await target(services, profileId, 'trainingsPerWeek', 4);
-          for (const day of [28, 30, 2])
-            await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const training = await findCard(/^Training/);
-      expect(await training.findByText('3 von 4 Einheiten')).toBeInTheDocument();
-      expect(training.getByText('75 %')).toBeInTheDocument();
-      expect(training.getByText('Ziel: 4 pro Woche')).toBeInTheDocument();
-      // The bar is decorative (aria-hidden) – the text carries the information.
-      const meter = container.querySelector('[aria-hidden="true"] > span[style*="--meter-ratio"]');
-      expect(meter?.getAttribute('style')).toContain('--meter-ratio: 0.75');
-      expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
-    });
-
-    it('training: 5 of 4 keeps the real value and the bar at 100 %', async () => {
-      const { container } = await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await services.training.exercises.ensureCatalog();
-          await target(services, profileId, 'trainingsPerWeek', 4);
-          for (const day of [27, 28, 29, 30, 1])
-            await completedWorkout(services, profileId, new Date(2026, day > 3 ? 8 : 9, day, 18));
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const training = await findCard(/^Training/);
-      expect(await training.findByText('5 von 4 Einheiten')).toBeInTheDocument();
-      expect(training.getByText('125 %')).toBeInTheDocument();
-      const meter = container.querySelector('[aria-hidden="true"] > span[style*="--meter-ratio"]');
-      expect(meter?.getAttribute('style')).toContain('--meter-ratio: 1');
-    });
-
-    it('today: no workout yet is no 0 % – only the weekly goal is shown', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'trainingsPerWeek', 4);
-        },
-      });
-      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
-      const training = card(/^Training/);
-      expect(await training.findByText('Ziel: 4 pro Woche')).toBeInTheDocument();
-      expect(training.getByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
-      expect(training.queryByText(/%/)).not.toBeInTheDocument();
-    });
-
-    it('activities: manual minutes against the weekly goal, shown even without Health Connect', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'activeMinutesPerWeek', 180);
-          for (const [localDate, durationMin] of [
-            ['2026-09-29', 60],
-            ['2026-10-02', 75],
-          ] as const) {
-            await services.activities.create(profileId, {
-              sportId: 'yoga',
-              localDate,
-              startTime: null,
-              durationMin,
-              distanceKm: null,
-              intensity: null,
-              variant: null,
-              kcalOverride: 100,
-            });
-          }
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const activities = await findCard(/^Aktivitäten/);
-      expect(await activities.findByText('135 von 180 aktiven Min.')).toBeInTheDocument();
-      expect(activities.getByText('75 %')).toBeInTheDocument();
-      expect(activities.getByText('Ziel: 180 Min. pro Woche')).toBeInTheDocument();
-      expect(activities.getByText('2 Aktivitäten')).toBeInTheDocument();
-    });
-
-    it('steps: today against the step goal; over the week only days with data, opens Gesundheit', async () => {
-      const platform = new FakeHealthPlatform();
-      platform.steps = [
-        { dayStart: localIso(2026, 10, 1, 0), value: 9_000 },
-        { dayStart: localIso(2026, 10, 3, 0), value: 7_842 },
-      ];
-      const { router } = await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'stepsPerDay', 10_000);
-          await services.healthSync.connect(profileId);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const week = await findCard(/^Schritte/);
-      // (9.000 + 7.842) / 2 – the five days without data are no 0 steps.
-      expect(await week.findByText('Ø 8.421 von 10.000 Schritten')).toBeInTheDocument();
-      expect(
-        week.getByText('An 2 von 7 Tagen mit Daten · Ziel an 0 von 2 Tagen erreicht'),
-      ).toBeInTheDocument();
-      // The goal is already in "von 10.000": no second goal line (Phase 17.3).
-      expect(week.queryByText('Ziel: 10.000 pro Tag')).not.toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('radio', { name: 'Heute' }));
-      expect(await card(/^Schritte/).findByText('7.842 von 10.000 Schritten')).toBeInTheDocument();
-      expect(card(/^Schritte/).getByText('78 %')).toBeInTheDocument();
-      expect(card(/^Schritte/).queryByText('Ziel: 10.000 pro Tag')).not.toBeInTheDocument();
-
-      await userEvent.click(main().getByRole('link', { name: /^Schritte/ }));
-      await waitFor(() => {
-        expect(router.state.location.pathname).toBe('/health');
-      });
-    });
-
-    it('steps: a day without data is "no data", never 0 of 10.000', async () => {
-      await renderApp('/', {
-        healthPlatform: new FakeHealthPlatform(),
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'stepsPerDay', 10_000);
-          await services.healthSync.connect(profileId);
-        },
-      });
-      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
-      const steps = await findCard(/^Schritte/);
-      expect(await steps.findByText('Noch keine Schrittdaten für heute.')).toBeInTheDocument();
-      expect(steps.queryByText(/^0 von/)).not.toBeInTheDocument();
-      // Without a meter the goal is shown once as a note.
-      expect(steps.getByText('Ziel: 10.000 pro Tag')).toBeInTheDocument();
-      expect(steps.queryByText(/%/)).not.toBeInTheDocument();
-    });
-
-    it('steps: the largest importable day (100.000) stays readable text', async () => {
-      // The import keeps at most 100.000 steps a day (plausibility rule of the Health Connect
-      // import); 999.999 can never reach this page – the calculation is tested for it separately.
-      const platform = new FakeHealthPlatform();
-      platform.steps = [{ dayStart: localIso(2026, 10, 3, 0), value: 100_000 }];
-      await renderApp('/', {
-        healthPlatform: platform,
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'stepsPerDay', 10_000);
-          await services.healthSync.connect(profileId);
-        },
-      });
-      await userEvent.click(await main().findByRole('radio', { name: 'Heute' }));
-      const steps = await findCard(/^Schritte/);
-      expect(await steps.findByText('100.000 von 10.000 Schritten')).toBeInTheDocument();
-      // A day counts at most 100 % (Phase 16); the real value stays visible.
-      expect(steps.getByText('100 %')).toBeInTheDocument();
-    });
-
-    it('steps stay hidden without Health Connect and without imported steps', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await target(services, profileId, 'stepsPerDay', 10_000);
-        },
-      });
-      await (await findCard(/^Gewicht/)).findByText('Noch keine Gewichtsdaten.');
-      expect(main().queryByRole('link', { name: /^Schritte/ })).not.toBeInTheDocument();
-    });
-
-    it('nutrition: carbohydrates and fat as plain attainment, at most 100 % – not in the score', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          vi.setSystemTime(new Date(2026, 8, 1, 9));
-          await services.nutrition.goals.save(profileId, {
-            goalType: 'maintain',
-            targets: {
-              energyKcal: { auto: null, manual: 2300 },
-              proteinG: { auto: null, manual: 160 },
-              carbsG: { auto: null, manual: 250 },
-              fatG: { auto: null, manual: 30 },
-            },
-          });
-          vi.setSystemTime(NOW);
-          // Test food per 100 g: 100 kcal, 10 g protein, 10 g carbs, 2 g fat.
-          await eat(services, profileId, [
-            ['2026-10-01', 1800],
-            ['2026-10-02', 1800],
-          ]);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const nutrition = await findCard(/^Ernährung/);
-      expect(await nutrition.findByText('Ø 180 von 250 g Kohlenhydraten')).toBeInTheDocument();
-      expect(nutrition.getByText('72 %')).toBeInTheDocument();
-      // 36 g of 30 g fat: the real value stays, the attainment stops at 100 %.
-      expect(nutrition.getByText('Ø 36 von 30 g Fett')).toBeInTheDocument();
-      expect(nutrition.getAllByText('100 %').length).toBeGreaterThanOrEqual(1);
-      expect(nutrition.queryByText(/gut|schlecht/i)).not.toBeInTheDocument();
-    });
-
-    it('nutrition (Abnehmen): the calorie goal is a limit', async () => {
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          vi.setSystemTime(new Date(2026, 8, 1, 9));
-          await services.nutrition.goals.save(profileId, {
-            goalType: 'lose',
-            targets: {
-              energyKcal: { auto: null, manual: 2200 },
-              proteinG: { auto: null, manual: 160 },
-            },
-          });
-          vi.setSystemTime(NOW);
-          // 2.100 and 2.200 kcal: kept; 2.500 kcal: over the limit.
-          await eat(services, profileId, [
-            ['2026-09-29', 2100],
-            ['2026-09-30', 2200],
-            ['2026-10-01', 2500],
-          ]);
-        },
-      });
-      await showProgressPeriod('7 Tage');
-      const nutrition = await findCard(/^Ernährung/);
-      expect(await nutrition.findByText('Ø 2.267 von 2.200 kcal')).toBeInTheDocument();
-      expect(nutrition.getByText('Kalorienlimit eingehalten an 2 von 3 Tagen')).toBeInTheDocument();
-      expect(nutrition.getByText('An 3 von 7 Tagen erfasst')).toBeInTheDocument();
-    });
-
-    it('weight: only the development in the period – no target weight, no percent', async () => {
-      await renderApp('/', {
-        prepare: async (s, profileId) => {
-          await s.weight.save(profileId, '2026-09-10', 93);
-          await s.weight.save(profileId, '2026-10-03', 91.8);
-        },
-      });
-      await userEvent.click(await main().findByRole('radio', { name: '30 Tage' }));
-      const weight = card(/^Gewicht/);
-      expect(await weight.findByText('93,0 kg → 91,8 kg')).toBeInTheDocument();
-      expect(weight.queryByText(/%/)).not.toBeInTheDocument();
-    });
-
-    it('works in English', async () => {
-      vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['en-US']);
-      await renderApp('/', {
-        prepare: async (services, profileId) => {
-          await services.training.exercises.ensureCatalog();
-          await target(services, profileId, 'trainingsPerWeek', 4);
-          await completedWorkout(services, profileId, new Date(2026, 9, 2, 18));
-        },
-      });
-      await showProgressPeriod('7 days');
-      const training = await within(screen.getByRole('main')).findByRole('link', {
-        name: /^Training/,
-      });
-      expect(await within(training).findByText('1 of 4 workouts')).toBeInTheDocument();
-      expect(within(training).getByText('25%')).toBeInTheDocument();
-      expect(within(training).getByText('Goal: 4 per week')).toBeInTheDocument();
+      // Today below the goal is still running.
+      await userEvent.click(dayCell('2026-10-03'));
+      sheet = within(await screen.findByRole('dialog', { name: 'Samstag, 3. Oktober' }));
+      expect(sheet.getByText('Der Tag läuft noch – noch nicht bewertet')).toBeInTheDocument();
+      await userEvent.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
 });

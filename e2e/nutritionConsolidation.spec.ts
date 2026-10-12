@@ -131,21 +131,16 @@ test('Fortschritt: calories by main goal, protein, carbohydrates and fat', async
 
   await tab('Fortschritt').click();
   await main.getByRole('radio', { name: 'Heute' }).click();
-  const nutrition = main.getByRole('link', { name: /^Ernährung/ });
-  await expect(nutrition.getByText('2.100 von 2.200 kcal')).toBeVisible();
-  await expect(nutrition.getByText('Innerhalb des Kalorienlimits')).toBeVisible();
-  await expect(nutrition.getByText('150 von 160 g Protein')).toBeVisible();
-  await expect(nutrition.getByText('180 von 250 g Kohlenhydraten')).toBeVisible();
-  await expect(nutrition.getByText('72 %')).toBeVisible();
-  await expect(nutrition.getByText('65 von 80 g Fett')).toBeVisible();
-  await expect(nutrition.getByText('81 %')).toBeVisible();
+  // Since Phase 23 the figures live in Ernährung; Fortschritt shows the rated area.
+  const nutrition = main.getByRole('link', { name: /^Ernährung: \d+ – Bereich öffnen$/ });
+  await expect(nutrition).toBeVisible();
   // Still four score areas – carbohydrates and fat are no score area.
   const score = main.getByRole('button', { name: /Kalethra-Score/ });
   await expect(score).toHaveAccessibleName(/Ernährung: .*Training: .*Aktivitäten: .*Regeneration:/);
   await expect(score).not.toHaveAccessibleName(/Kohlenhydrate|Fett/);
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // The card opens the diary; back returns to Fortschritt.
+  // The area opens the diary; back returns to Fortschritt.
   await nutrition.click();
   await expect(page).toHaveURL(/\/nutrition$/);
   await page.goBack();

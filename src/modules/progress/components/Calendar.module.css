@@ -1,0 +1,175 @@
+/*
+ * The day calendar of the progress page: the last 20 days under the weekdays. Quiet by default –
+ * only met goals get a mark, in forest green; nothing is ever red.
+ */
+.calendar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-4) var(--space-3);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+}
+
+.title {
+  font-size: var(--font-size-headline);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-snug);
+}
+
+.range,
+.note {
+  font-size: var(--font-size-footnote);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-secondary);
+}
+
+/* Seven columns, Monday first; every cell at least a tap target high. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-1);
+}
+
+.weekday {
+  padding-bottom: var(--space-1);
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  text-align: center;
+  color: var(--color-text-secondary);
+}
+
+.day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.125rem;
+  min-width: 0;
+  min-height: var(--size-tap-target);
+  padding: var(--space-1) 0;
+  border: var(--border-hairline) solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color var(--duration-fast) var(--ease-standard);
+}
+
+.day:active {
+  background: var(--color-surface-pressed);
+}
+
+.day:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+}
+
+/* Today: a quiet frame and a bold number – clear, without competing with the marks. */
+.day[data-today] {
+  border-color: var(--color-accent);
+  background: var(--color-surface-accent);
+}
+
+.number {
+  font-size: var(--font-size-subhead);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--line-height-snug);
+}
+
+.day[data-today] .number {
+  font-weight: var(--font-weight-bold);
+}
+
+/* Up to two marks side by side; the row keeps its height when a day has none. */
+.marks {
+  display: flex;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 0.875rem;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  color: var(--color-success-mark);
+}
+
+/* In the details: the symbol of a state that is not met stays neutral, never red. */
+.mark[data-off] {
+  color: var(--color-text-tertiary);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
+  margin: 0;
+  padding: var(--space-2) 0 0;
+  list-style: none;
+  border-top: var(--border-hairline) solid var(--color-separator);
+  font-size: var(--font-size-footnote);
+  color: var(--color-text-secondary);
+}
+
+.legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Day details */
+.details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+
+.detail dt {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-semibold);
+}
+
+.detail dd {
+  margin: 0;
+  padding-left: calc(18px + var(--space-2));
+  font-size: var(--font-size-subhead);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}
+
+/* Small phones: tighter cells, the numbers stay readable. */
+@media (max-width: 359px) {
+  .calendar {
+    padding-inline: var(--space-3);
+  }
+
+  .grid {
+    gap: 0.125rem;
+  }
+}

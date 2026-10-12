@@ -218,9 +218,9 @@ test('3 – edit a finished workout later; history and progress follow', async (
   await expect(page.getByText('Korrigiert')).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
-  // Progress uses the corrected workout.
+  // Fortschritt still counts the corrected workout as completed today (calendar).
   await tab(page, 'Fortschritt').click();
-  await expect(page.locator('main').getByText('1.360 kg Volumen')).toBeVisible();
+  await expect(page.locator('main [aria-current="date"] [data-mark="training"]')).toBeVisible();
 });
 
 test('4 – equal sessions lead to a suggestion with more load and fewer reps', async ({ page }) => {

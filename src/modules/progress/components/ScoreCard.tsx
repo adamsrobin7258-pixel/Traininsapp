@@ -1,7 +1,9 @@
 import { useState, type CSSProperties } from 'react';
+import { Link } from 'react-router';
 import { useI18n } from '@/core/i18n';
 import { SCORE_AREAS, useScore, type ScoreResult, type ScoreTrend } from '@/core/score';
 import { Icon, ICON_FOR, type IconName } from '@/ui';
+import { AREA_LINKS } from '../domain/areaLinks';
 import type { PeriodRange, ProgressPeriod } from '../domain/period';
 import { ScoreDetailSheet } from './ScoreDetailSheet';
 import styles from './Score.module.css';
@@ -14,8 +16,9 @@ const TREND_ICON: Record<ScoreTrend, IconName | null> = {
 };
 
 /**
- * The Kalethra score of the chosen period: one big number, its wording, the trend against the
- * period before and the four areas. The whole card opens the explanation.
+ * The Kalethra score of the chosen period: one big number, its wording and the trend against the
+ * period before – this part opens the explanation. Under it the four areas with their own
+ * rating, each a link to its area (Phase 23).
  */
 export function ScoreCard({
   period,
@@ -103,17 +106,26 @@ export function ScoreCard({
             <span className={styles.note}>{t('progress.score.emptyHint')}</span>
           </>
         )}
-
-        <span className={styles.areas}>
-          {SCORE_AREAS.map((area) => {
-            const value = current.areas[area].score;
-            return (
-              <span key={area} className={styles.area}>
+      </button>
+      <ul className={styles.areas} aria-label={t('progress.score.areasLabel')}>
+        {SCORE_AREAS.map((area) => {
+          const value = current.areas[area].score;
+          return (
+            <li key={area}>
+              <Link
+                to={AREA_LINKS[area]}
+                className={styles.area}
+                aria-label={t('progress.score.areaLink', {
+                  area: t(`progress.score.areas.${area}`),
+                  value: value ?? t('progress.score.noRating'),
+                })}
+              >
                 <span className={styles.areaLine}>
                   <span className={styles.areaName}>{t(`progress.score.areas.${area}`)}</span>
                   <span className={styles.areaValue} data-empty={value === null || undefined}>
                     {value ?? '–'}
                   </span>
+                  <Icon name={ICON_FOR.navForward} size={16} className={styles.areaChevron} />
                 </span>
                 {/* Decorative: the number says everything. Without a rating no track – it would read as 0. */}
                 <span
@@ -128,11 +140,11 @@ export function ScoreCard({
                     />
                   ) : null}
                 </span>
-              </span>
-            );
-          })}
-        </span>
-      </button>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
       {open ? (
         <ScoreDetailSheet
           result={current}

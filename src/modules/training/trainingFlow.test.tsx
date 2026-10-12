@@ -112,8 +112,12 @@ describe('training', () => {
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Fortschritt' }),
     ).toBeInTheDocument();
-    // No invented values: no training data, no daily training status on the main page.
-    expect(await screen.findByText('Noch keine Trainingsdaten.')).toBeInTheDocument();
+    // No invented values: training without a rating, no training mark in the calendar, no
+    // daily training status on the main page.
+    expect(
+      await screen.findByRole('link', { name: 'Training: Ohne Bewertung – Bereich öffnen' }),
+    ).toBeInTheDocument();
+    expect(document.querySelectorAll('main button [data-mark="training"]')).toHaveLength(0);
     expect(screen.queryByText('Laufendes Training')).not.toBeInTheDocument();
     expect(screen.queryByText('Nächstes Training')).not.toBeInTheDocument();
   });
