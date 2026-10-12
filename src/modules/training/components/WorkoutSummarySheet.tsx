@@ -3,7 +3,6 @@ import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import {
   aggregateMuscleHighlight,
-  REST_VISUAL,
   doneExercises,
   exerciseDisplayName,
   highlightGroups,
@@ -14,8 +13,8 @@ import {
   type WorkoutSet,
 } from '@/core/training';
 import { Button, Sheet, Stat } from '@/ui';
-import { MuscleFigurePreview, MuscleFigureSheet } from '../figure/MuscleFigure';
-import { useMuscleText } from '../figure/useMuscleText';
+import { MuscleMapPreview, MuscleMapSheet } from '../muscleMap/MuscleMap';
+import { useMuscleMapText } from '../muscleMap/useMuscleMapText';
 import { formatDuration, formatLoad, formatSetShort, trainingTypeLabel } from '../domain/format';
 import styles from './WorkoutSummarySheet.module.css';
 
@@ -39,7 +38,7 @@ function bestSet(sets: readonly WorkoutSet[]): WorkoutSet | null {
  * Shown once right after finishing: name, duration, exercises, completed sets, volume, a short
  * line per exercise and new heaviest weights (only against earlier workouts with data – the
  * first time is no record). Close leads to Training, "Training ansehen" to the full workout.
- * "Beanspruchte Muskeln" pictures the muscle groups of the exercises actually done (at least one
+ * "Beanspruchte Muskeln" maps the muscle groups of the exercises actually done (at least one
  * completed set) – a union of their catalog muscles, no score.
  */
 export function WorkoutSummarySheet({
@@ -81,17 +80,16 @@ export function WorkoutSummarySheet({
         )
       : {};
   const worked = highlightGroups(highlight);
-  const muscleText = useMuscleText(highlight);
-  const [figureOpen, setFigureOpen] = useState(false);
+  const muscleText = useMuscleMapText(highlight);
+  const [mapOpen, setMapOpen] = useState(false);
 
-  if (figureOpen) {
+  if (mapOpen) {
     return (
-      <MuscleFigureSheet
-        title={t('training.figure.summaryTitle')}
-        clip={REST_VISUAL.clip}
+      <MuscleMapSheet
+        title={t('training.muscleMap.title')}
         highlight={highlight}
         onClose={() => {
-          setFigureOpen(false);
+          setMapOpen(false);
         }}
       />
     );
@@ -127,23 +125,21 @@ export function WorkoutSummarySheet({
         </div>
 
         {worked.primary.length + worked.secondary.length > 0 ? (
-          <section aria-label={t('training.figure.summaryTitle')}>
-            <h4 className={styles.heading}>{t('training.figure.summaryTitle')}</h4>
+          <section aria-label={t('training.muscleMap.title')}>
+            <h4 className={styles.heading}>{t('training.muscleMap.title')}</h4>
             <div className={styles.muscles}>
-              <MuscleFigurePreview
-                clip={REST_VISUAL.clip}
+              <MuscleMapPreview
                 highlight={highlight}
-                pair
                 onOpen={() => {
-                  setFigureOpen(true);
+                  setMapOpen(true);
                 }}
               />
               <dl className={styles.muscleList}>
-                <dt>{t('training.figure.primary')}</dt>
+                <dt>{t('training.muscleMap.primary')}</dt>
                 <dd>{muscleText.primary || '–'}</dd>
                 {muscleText.secondary !== '' ? (
                   <>
-                    <dt>{t('training.figure.secondary')}</dt>
+                    <dt>{t('training.muscleMap.secondary')}</dt>
                     <dd>{muscleText.secondary}</dd>
                   </>
                 ) : null}

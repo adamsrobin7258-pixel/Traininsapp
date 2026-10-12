@@ -414,6 +414,20 @@ export const de = {
         'Figur mit hervorgehobenen Muskelgruppen. Primär: {primary}. Sekundär: {secondary}.',
       summaryTitle: 'Beanspruchte Muskeln',
     },
+    muscleMap: {
+      title: 'Beanspruchte Muskeln',
+      open: 'Muskelkarte vergrößern',
+      front: 'Vorne',
+      back: 'Hinten',
+      body: 'Körperdarstellung',
+      male: 'Männlich',
+      female: 'Weiblich',
+      primary: 'Primär',
+      secondary: 'Sekundär',
+      description: 'Muskelkarte, Vorder- und Rückansicht. Primär: {primary}.',
+      descriptionSecondary:
+        'Muskelkarte, Vorder- und Rückansicht. Primär: {primary}. Sekundär: {secondary}.',
+    },
     summary: {
       title: 'Training abgeschlossen',
       exercisesTitle: 'Übungen',

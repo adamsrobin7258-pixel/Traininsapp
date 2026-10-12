@@ -1,5 +1,12 @@
 # 3D-Übungsdarstellung
 
+> **Abgelöst in den Trainingsansichten (Version 0.34.0):** Übungsdetails und
+> Trainings-Zusammenfassung zeigen die Muskeln jetzt als 2D-Muskelkarte
+> ([MUSCLE_MAPS.md](MUSCLE_MAPS.md)). Code (`src/modules/training/figure/`), Pipeline, Modelle und
+> Lizenznachweise bleiben unverändert im Repository und in ihren Tests, werden aber nicht mehr
+> angezeigt; die gebündelten GLBs liegen weiter unter `public/figure/` (Namensnennung unter
+> _Datenquellen_ bleibt deshalb bestehen). Der Rest dieses Dokuments beschreibt den 3D-Stand.
+
 Ziel: **Kalethra-Übung → hochwertiger humanoider Körper → erkennbare anatomische Muskelgruppen →
 dezente Muskelfaserstruktur → Kalethra-Hervorhebung → passende Bewegungsanimation.**
 

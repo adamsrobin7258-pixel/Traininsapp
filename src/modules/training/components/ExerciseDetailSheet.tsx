@@ -2,21 +2,21 @@ import { useState } from 'react';
 import { useI18n } from '@/core/i18n';
 import {
   exerciseDisplayName,
-  exerciseVisual,
+  highlightGroups,
   muscleHighlight,
   useTraining,
   type Exercise,
 } from '@/core/training';
 import { Icon, Sheet } from '@/ui';
-import figureStyles from '../figure/Figure.module.css';
-import { MuscleFigurePreview, MuscleFigureSheet } from '../figure/MuscleFigure';
+import { MuscleMapPreview, MuscleMapSheet } from '../muscleMap/MuscleMap';
 import { ExercisePerformance } from './ExercisePerformance';
 import styles from './ExercisePicker.module.css';
 
 /**
  * Read-only details of an exercise with a favourite toggle and, for weighted exercises, the
- * user's best and latest performance. Exercises with a 3D visual show a small figure beside the
- * facts; tapping it swaps these details for the large 3D view, and closing that returns here.
+ * user's best and latest performance. Below the facts the muscle map shows the exercise's primary
+ * and secondary muscles (front and back); tapping it swaps these details for the large map, and
+ * closing that returns here.
  */
 export function ExerciseDetailSheet({
   exercise,
@@ -34,18 +34,18 @@ export function ExerciseDetailSheet({
   const description = locale === 'de' ? exercise.instructionsDe : exercise.instructionsEn;
   const muscles = (list: Exercise['primaryMuscles']) =>
     list.map((muscle) => t(`training.muscles.${muscle}`)).join(', ');
-  const visual = exerciseVisual(exercise);
-  const [figureOpen, setFigureOpen] = useState(false);
+  const highlight = muscleHighlight(exercise);
+  const groups = highlightGroups(highlight);
+  const hasMap = groups.primary.length + groups.secondary.length > 0;
+  const [mapOpen, setMapOpen] = useState(false);
 
-  if (visual && figureOpen) {
+  if (hasMap && mapOpen) {
     return (
-      <MuscleFigureSheet
+      <MuscleMapSheet
         title={exerciseDisplayName(exercise, locale)}
-        clip={visual.clip}
-        highlight={muscleHighlight(exercise)}
-        side={visual.side}
+        highlight={highlight}
         onClose={() => {
-          setFigureOpen(false);
+          setMapOpen(false);
         }}
       />
     );
@@ -78,51 +78,33 @@ export function ExerciseDetailSheet({
         </button>
       </div>
       {failed ? <p role="alert">{t('training.errors.saveFailed')}</p> : null}
-      {visual ? (
-        <div className={figureStyles.withFigure}>
-          <dl className={styles.facts}>
-            <dt>{t('training.exercises.primaryMuscles')}</dt>
-            <dd>{muscles(exercise.primaryMuscles)}</dd>
-            {exercise.secondaryMuscles.length > 0 ? (
-              <>
-                <dt>{t('training.exercises.secondaryMuscles')}</dt>
-                <dd>{muscles(exercise.secondaryMuscles)}</dd>
-              </>
-            ) : null}
-            <dt>{t('training.exercises.equipment')}</dt>
-            <dd>{t(`training.equipment.${exercise.equipment}`)}</dd>
-            <dt>{t('training.exercises.pattern')}</dt>
-            <dd>{t(`training.patterns.${exercise.movementPattern}`)}</dd>
-            <dt>{t('training.exercises.tracking')}</dt>
-            <dd>{t(`training.exerciseTypes.${exercise.exerciseType}`)}</dd>
-          </dl>
-          <MuscleFigurePreview
-            clip={visual.clip}
-            highlight={muscleHighlight(exercise)}
-            side={visual.side}
+      <dl className={styles.facts}>
+        <dt>{t('training.exercises.primaryMuscles')}</dt>
+        <dd>{muscles(exercise.primaryMuscles)}</dd>
+        {exercise.secondaryMuscles.length > 0 ? (
+          <>
+            <dt>{t('training.exercises.secondaryMuscles')}</dt>
+            <dd>{muscles(exercise.secondaryMuscles)}</dd>
+          </>
+        ) : null}
+        <dt>{t('training.exercises.equipment')}</dt>
+        <dd>{t(`training.equipment.${exercise.equipment}`)}</dd>
+        <dt>{t('training.exercises.pattern')}</dt>
+        <dd>{t(`training.patterns.${exercise.movementPattern}`)}</dd>
+        <dt>{t('training.exercises.tracking')}</dt>
+        <dd>{t(`training.exerciseTypes.${exercise.exerciseType}`)}</dd>
+      </dl>
+      {hasMap ? (
+        <section aria-label={t('training.muscleMap.title')}>
+          <h4 className={styles.listTitle}>{t('training.muscleMap.title')}</h4>
+          <MuscleMapPreview
+            highlight={highlight}
             onOpen={() => {
-              setFigureOpen(true);
+              setMapOpen(true);
             }}
           />
-        </div>
-      ) : (
-        <dl className={styles.facts}>
-          <dt>{t('training.exercises.primaryMuscles')}</dt>
-          <dd>{muscles(exercise.primaryMuscles)}</dd>
-          {exercise.secondaryMuscles.length > 0 ? (
-            <>
-              <dt>{t('training.exercises.secondaryMuscles')}</dt>
-              <dd>{muscles(exercise.secondaryMuscles)}</dd>
-            </>
-          ) : null}
-          <dt>{t('training.exercises.equipment')}</dt>
-          <dd>{t(`training.equipment.${exercise.equipment}`)}</dd>
-          <dt>{t('training.exercises.pattern')}</dt>
-          <dd>{t(`training.patterns.${exercise.movementPattern}`)}</dd>
-          <dt>{t('training.exercises.tracking')}</dt>
-          <dd>{t(`training.exerciseTypes.${exercise.exerciseType}`)}</dd>
-        </dl>
-      )}
+        </section>
+      ) : null}
       {exercise.exerciseType === 'weighted' ? (
         <ExercisePerformance exerciseId={exercise.id} />
       ) : null}

@@ -77,6 +77,22 @@ Ebenen (Hell: Papier → Karte; Dunkel: wird mit jeder Ebene heller):
 | `--color-info` (+ `-subtle`)     | `#2f6489` | `#8dbddc` | Neutrale Information (neu, noch ohne Einsatz)                 |
 | `--color-water` (+ `-subtle`)    | `#30709b` | `#80b7dc` | Ausschließlich Wasser                                         |
 
+Muskelkarten (nur dort, seit 0.34.0; Details [MUSCLE_MAPS.md](MUSCLE_MAPS.md)):
+
+| Token                      | Hell      | Dunkel    | Verwendung                                     |
+| -------------------------- | --------- | --------- | ---------------------------------------------- |
+| `--color-anatomy-body`     | `#e2d8c6` | `#2c352e` | Körperfläche, Fugen zwischen Muskeln           |
+| `--color-anatomy-muscle`   | `#f4eee3` | `#3b463e` | Nicht beanspruchte Muskeln (Elfenbein)         |
+| `--color-anatomy-outline`  | `#3f5444` | `#c3cfc4` | Außenkontur (Waldgrün)                         |
+| `--color-anatomy-stroke`   | `#7b8a7c` | `#8d9b8f` | Muskelgrenzen                                  |
+| `--color-anatomy-detail`   | `#9aa59b` | `#6f7d72` | Feine Linien (Sehnen, Schlüsselbein, Finger)   |
+| `--color-anatomy-hair`     | `#d3c8b4` | `#46524a` | Haar                                           |
+| `--color-muscle-primary`   | `#cf4f36` | `#f27a5e` | Primär beanspruchte Muskeln (warmes Korallrot) |
+| `--color-muscle-secondary` | `#eba08d` | `#a8604f` | Sekundär beanspruchte Muskeln                  |
+
+Korallrot steht ausschließlich für „beansprucht“ in den Muskelkarten – nie für Fehler (dafür
+`--color-critical`) und nie als Dekoration.
+
 Schatten (`--shadow-card`, `--shadow-raised`, `--shadow-sheet`): hell warm getönt und sehr
 leicht; dunkel ist `--shadow-card` = `none` – dort trennen Ebene und Kante.
 
@@ -352,14 +368,18 @@ Regeln für künftige Bilder (Phase B legt nur die Regeln fest; es wurden keine 
 1. **Liniensymbole** (`Icon`) für Navigation, Aktionen, Themen.
 2. **Kategorie-Illustrationen** (`FoodArt`) – Linie auf zarter organischer Fläche in den
    `--tint-*`-Tönen.
-3. **3D-Körper** (`public/figure/`) für Übungen; Pfade und Modelle bleiben unverändert.
+3. **Muskelkarten** (`src/modules/training/muscleMap/svg/`, seit 0.34.0) für beanspruchte
+   Muskeln: eigene Atlas-Zeichnung, Farben aus `--color-anatomy-*`/`--color-muscle-*`. Sie liegen
+   beim Trainingsmodul, weil ihre Regionen fachlich an die Muskelgruppen gebunden sind. Die
+   3D-Körper (`public/figure/`) werden seitdem nicht mehr angezeigt; Pfade und Modelle bleiben
+   unverändert.
 
 Keine Stock-Fotos, keine Personenfotos, keine Verläufe, keine dekorativen Bilder ohne Inhalt.
 
 **Bild oder Icon?** Ein Icon, wenn es eine Aktion oder ein Thema kennzeichnet (klein, neben
 Text). Eine Illustration nur, wenn sie Inhalt unterscheidbar macht (Lebensmittelkategorie) oder
 einen leeren Zustand freundlicher macht – höchstens eine je Bildschirmbereich. 3D nur dort, wo
-Bewegung oder Körperhaltung die Information ist.
+Bewegung oder Körperhaltung die Information ist (derzeit nirgends angezeigt).
 
 **Größen, Radien, Hintergründe:** Illustrationen in Listen 40 px, in Detailansichten 64 px,
 in leeren Zuständen 48 px; Fläche dahinter organisch (`EmptyState`) oder `--radius-control`.

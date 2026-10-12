@@ -577,6 +577,25 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 21 – Anatomische 2D-Muskelkarten (Muskelkarten Phase 1) ✅ (Version 0.34.0)
+
+Die 3D-Figur wird im Trainingskontext durch lokal gebündelte 2D-Muskelkarten im Stil eines
+Anatomieatlas abgelöst. Details: [MUSCLE_MAPS.md](MUSCLE_MAPS.md):
+
+- Vorder- und Rückansicht nebeneinander, männlich und weiblich, eigene SVG-Zeichnung
+  (`tools/muscle-maps/build.mjs`, deterministisch) mit 33 gemeinsamen, dauerhaften Muskel-IDs
+- Hervorhebung aus den vorhandenen Übungsdaten: primär Korallrot, sekundär heller mit
+  Korallkontur, übrige Muskeln Elfenbein mit waldgrüner Kontur; Orientierungsmuskeln ohne Gruppe
+  werden nie markiert
+- Übungsdetails: Karte für **jede** Übung (vorher 3D nur bei Bankdrücken und Latzug);
+  Trainings-Zusammenfassung: Karte und Muskeln als Text; große Ansicht mit Umschalter
+  Männlich/Weiblich (Start: Profil)
+- Tokens `--color-anatomy-*`, `--color-muscle-primary/-secondary` (hell und dunkel)
+- 3D-Code, Modelle, Pipeline und Lizenznachweise unverändert erhalten, nur nicht mehr angezeigt;
+  three.js wird von den Trainingsansichten nicht mehr geladen
+- Katalog geprüft: keine belegbaren Fehlzuordnungen, keine Datenänderung
+- Offen: Gerätetest (Android), Feinzuordnung unterhalb der Gruppen
+
 ## Phase 6.4 – geplant
 
 - Apple Health (HealthKit) auf iOS

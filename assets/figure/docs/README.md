@@ -1,5 +1,9 @@
 # Kalethra-Figuren – Assets
 
+> **Seit 0.34.0 nicht mehr angezeigt:** Die Trainingsansichten nutzen 2D-Muskelkarten
+> ([docs/MUSCLE_MAPS.md](../../../docs/MUSCLE_MAPS.md)). Diese Assets, ihre Quellen und
+> Lizenznachweise bleiben unverändert erhalten (funktional abgelöst, nicht gelöscht).
+
 Zwei Körper in derselben Kalethra-Formensprache: **männlich** und **weiblich**. Gebündelt als
 `public/figure/male/kalethra-male.glb` und `public/figure/female/kalethra-female.glb`; der
 App-Vertrag steht in [`docs/EXERCISE_VISUALS.md`](../../../docs/EXERCISE_VISUALS.md).

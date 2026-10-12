@@ -1,0 +1,167 @@
+/*
+ * Muscle maps: two drawings (front, back) side by side. The SVG carries only shapes and region
+ * ids; every colour comes from the anatomy tokens, so both themes and both bodies look alike.
+ * Line widths do not scale with the drawing – contours stay crisp in the small and large view.
+ */
+.map {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  justify-items: center;
+}
+
+.view {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.drawing {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.drawing :global(svg) {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: 11.5rem;
+  overflow: visible;
+}
+
+.map[data-size='large'] .drawing :global(svg) {
+  height: min(52vh, 28rem);
+}
+
+.caption {
+  font-size: var(--font-size-caption);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+}
+
+.drawing :global(.km-outline) {
+  fill: var(--color-anatomy-body);
+  stroke: var(--color-anatomy-outline);
+  stroke-width: 3px;
+}
+
+.drawing :global(.km-body) {
+  fill: var(--color-anatomy-body);
+}
+
+.drawing :global(.km-hair) {
+  fill: var(--color-anatomy-hair);
+  stroke: var(--color-anatomy-stroke);
+  stroke-width: 0.6px;
+}
+
+.drawing :global(.km-details) {
+  stroke: var(--color-anatomy-detail);
+  stroke-width: 0.6px;
+}
+
+.drawing :global(path) {
+  vector-effect: non-scaling-stroke;
+}
+
+.drawing :global([data-region]) {
+  fill: var(--color-anatomy-muscle);
+  stroke: var(--color-anatomy-stroke);
+  stroke-width: 0.7px;
+  transition:
+    fill var(--duration-base) var(--ease-standard),
+    stroke var(--duration-base) var(--ease-standard);
+}
+
+.drawing :global([data-region][data-level='secondary']) {
+  fill: var(--color-muscle-secondary);
+  stroke: var(--color-muscle-primary);
+}
+
+.drawing :global([data-region][data-level='primary']) {
+  fill: var(--color-muscle-primary);
+  stroke: var(--color-muscle-primary);
+}
+
+.map[data-size='large'] .drawing :global(.km-outline) {
+  stroke-width: 3.6px;
+}
+
+.map[data-size='large'] .drawing :global([data-region]) {
+  stroke-width: 0.9px;
+}
+
+.map[data-size='large'] .drawing :global(.km-details) {
+  stroke-width: 0.8px;
+}
+
+/* The small map: a quiet, full-width card that opens the large view. */
+.preview {
+  display: block;
+  width: 100%;
+  padding: var(--space-3) var(--space-2) var(--space-2);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  color: inherit;
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.preview:active {
+  background: var(--color-surface-pressed);
+}
+
+/* Large view. */
+.stage {
+  padding: var(--space-4) var(--space-2) var(--space-3);
+  border: var(--border-hairline) solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.legend {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  font-size: var(--font-size-subhead);
+}
+
+.legendRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.legendRow dt {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.legendRow dd {
+  margin: 0;
+}
+
+.dot {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: var(--radius-full);
+  background: var(--color-muscle-primary);
+}
+
+.dot[data-level='secondary'] {
+  border: 1.5px solid var(--color-muscle-primary);
+  background: var(--color-muscle-secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawing :global([data-region]) {
+    transition: none;
+  }
+}

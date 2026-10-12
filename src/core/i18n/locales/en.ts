@@ -408,6 +408,20 @@ export const en: TranslationSchema = {
         'Figure with highlighted muscle groups. Primary: {primary}. Secondary: {secondary}.',
       summaryTitle: 'Muscles worked',
     },
+    muscleMap: {
+      title: 'Muscles worked',
+      open: 'Enlarge muscle map',
+      front: 'Front',
+      back: 'Back',
+      body: 'Body',
+      male: 'Male',
+      female: 'Female',
+      primary: 'Primary',
+      secondary: 'Secondary',
+      description: 'Muscle map, front and back. Primary: {primary}.',
+      descriptionSecondary:
+        'Muscle map, front and back. Primary: {primary}. Secondary: {secondary}.',
+    },
     summary: {
       title: 'Workout finished',
       exercisesTitle: 'Exercises',
