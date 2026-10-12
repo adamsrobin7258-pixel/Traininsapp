@@ -10,6 +10,7 @@
 
 .header {
   margin-bottom: var(--space-8);
+  container: screen-header / inline-size;
 }
 
 .eyebrow {
@@ -52,6 +53,30 @@
   overflow-wrap: break-word;
   -webkit-hyphens: auto;
   hyphens: auto;
+}
+
+/*
+ * Brand mark at the end of the title row: exactly one title line high, so the header keeps its
+ * height. Sizes in rem follow the system font size like the title does; when the row is too
+ * narrow for the title (about 10 rem for the main page) plus the mark, the mark is hidden
+ * instead of shrinking it or pushing the title into a second line.
+ */
+.mark {
+  display: flex;
+  flex: none;
+  align-items: center;
+  height: calc(var(--font-size-large-title) * var(--line-height-tight));
+}
+
+/* With a mark the row never wraps: the mark is hidden below, the title keeps the rest. */
+.titleRow:has(> .mark) {
+  flex-wrap: nowrap;
+}
+
+@container screen-header (max-width: 15rem) {
+  .mark {
+    display: none;
+  }
 }
 
 .content {

@@ -124,6 +124,22 @@ describe('Fortschritt – the main page', () => {
       expect(nav.queryByRole('link', { name: /Heute/ })).not.toBeInTheDocument();
     });
 
+    it('carries the Kalethra symbol in the title row – decorative, no extra card', async () => {
+      await renderApp('/');
+      const title = await screen.findByRole('heading', { level: 1, name: 'Fortschritt' });
+      const row = title.parentElement;
+      const mark = row?.querySelector('[data-brand="symbol"]');
+      expect(mark).not.toBeNull();
+      expect(mark).toHaveAttribute('aria-hidden', 'true');
+      expect(mark).toHaveAttribute('focusable', 'false');
+      // Not a control, not a picture with a name: the page still reads "Fortschritt" only.
+      expect(mark?.closest('a, button')).toBeNull();
+      expect(main().queryByRole('img', { name: /Kalethra/ })).not.toBeInTheDocument();
+      expect(main().getAllByRole('heading', { level: 1 })).toHaveLength(1);
+      // Only on the main page.
+      expect(document.querySelectorAll('[data-brand]')).toHaveLength(1);
+    });
+
     it('is read-only: no inputs – only the period switch and the score details', async () => {
       const { container } = await renderApp('/');
       await main().findByRole('link', { name: /^Training/ });

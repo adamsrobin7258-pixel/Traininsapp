@@ -12,6 +12,14 @@ describe('data sources', () => {
     vi.restoreAllMocks();
   });
 
+  it('shows the Kalethra logo (symbol and wordmark) under "About"', async () => {
+    await renderApp('/settings/app');
+    const about = within(await screen.findByRole('region', { name: 'Über Kalethra' }));
+    const logo = about.getByRole('img', { name: 'Kalethra' });
+    expect(logo.querySelector('[data-brand="symbol"]')).not.toBeNull();
+    expect(logo.querySelector('[data-brand="wordmark"]')).not.toBeNull();
+  });
+
   it('credits the BLS, Open Food Facts and the 3D body under "About"', async () => {
     await renderApp('/settings/app');
     await userEvent.click(await screen.findByRole('button', { name: 'Datenquellen' }));

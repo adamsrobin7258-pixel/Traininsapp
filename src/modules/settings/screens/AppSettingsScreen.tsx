@@ -9,12 +9,13 @@ import {
   WEIGHT_UNIT_PREFERENCES,
   useSettings,
 } from '@/core/settings';
-import { List, ListRow, Screen, Section, SegmentedControl } from '@/ui';
+import { BrandLogo, List, ListRow, Screen, Section, SegmentedControl } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { HealthDataSection } from '../components/HealthDataSection';
 import { PrivacySection } from '../components/PrivacySection';
 import { TrainingAppSection } from '../components/TrainingSettingsRows';
 import { WaterQuickAmountsSection } from '../components/WaterQuickAmountsRow';
+import styles from '../components/Settings.module.css';
 
 function reportError(error: unknown) {
   console.error(error);
@@ -93,6 +94,9 @@ export function AppSettingsScreen() {
       <PrivacySection />
 
       <Section title={t('profile.aboutTitle', { appName: t('app.name') })}>
+        <div className={styles.about}>
+          <BrandLogo label={t('app.name')} />
+        </div>
         <List>
           <ListRow title={t('profile.version')} value={__APP_VERSION__} />
           <ListRow

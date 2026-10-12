@@ -1,3 +1,4 @@
+export { BrandLogo, BrandMark, BrandWordmark } from './brand/BrandMark';
 export { Button } from './components/Button';
 export { ConfirmSheet } from './components/ConfirmSheet';
 export { EmptyState } from './components/EmptyState';

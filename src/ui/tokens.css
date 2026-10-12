@@ -128,6 +128,14 @@
   --color-focus: var(--color-accent);
 
   /*
+   * Brand: forest and warm ivory (the symbol's colours on icon and splash). The mark itself is
+   * forest on light surfaces and ivory on dark ones.
+   */
+  --color-brand-forest: #466a4c;
+  --color-brand-ivory: #f3efe6;
+  --color-brand-mark: var(--color-brand-forest);
+
+  /*
    * Anatomy (muscle maps): warm ivory muscles with forest-green contours; worked muscles in warm
    * coral – primary full, secondary lighter with a coral contour. Only for the muscle maps.
    */
@@ -212,6 +220,11 @@
   --color-water-subtle: rgb(128 183 220 / 0.15);
   --color-tab-bar: rgb(16 22 18 / 0.9);
   --color-scrim: rgb(0 0 0 / 0.55);
+
+  /* Brand colours stay the same in both themes; only the mark switches to ivory. */
+  --color-brand-forest: #466a4c;
+  --color-brand-ivory: #f3efe6;
+  --color-brand-mark: var(--color-brand-ivory);
 
   --color-anatomy-body: #2c352e;
   --color-anatomy-muscle: #3b463e;

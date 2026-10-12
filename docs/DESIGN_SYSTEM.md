@@ -403,6 +403,14 @@ mit „nur privat“, ohne Lizenzangabe oder mit KI-Bildern ungeklärter Herkunf
 werden in der App unter Profil → Datenquellen (`DataSourcesSheet`) und in der `ATTRIBUTION.md`
 geführt.
 
+## Marke
+
+Seit 0.35.0: Symbol (abstrahierte Figur, zugleich „K“) als Hauptlogo, Schriftzug ergänzend –
+Regeln, Orte und Plattformdateien in [BRAND.md](BRAND.md). Komponenten `BrandMark`,
+`BrandWordmark`, `BrandLogo` (`src/ui/brand/`), Farbe `--color-brand-mark` (Waldgrün hell,
+Elfenbein dunkel; `--color-brand-forest`, `--color-brand-ivory`). Höchstens ein Markenelement je
+Bildschirm; in der App nur auf Fortschritt (Titelzeile) und unter „Über Kalethra“.
+
 ## Barrierefreiheit
 
 - Semantische Elemente (`main`, `nav`, `section` mit Überschrift, Listen).

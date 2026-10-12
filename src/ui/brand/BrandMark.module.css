@@ -1,0 +1,28 @@
+/* Kalethra brand: symbol and wordmark in the brand colour, sized by their container. */
+.mark {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 100%;
+  color: var(--color-brand-mark);
+}
+
+.wordmark {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 100%;
+  color: var(--color-brand-mark);
+}
+
+/* Logo: symbol at the full height, wordmark at 36 % of it (as in assets/brand/kalethra-logo.svg). */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.15em;
+  height: 3rem;
+}
+
+.logo .wordmark {
+  height: 36%;
+}

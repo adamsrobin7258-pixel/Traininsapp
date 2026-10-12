@@ -577,6 +577,22 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 22 – Markenzeichen und App-Logo (Marke Phase 2) ✅ (Version 0.35.0)
+
+Eigenständige visuelle Identität aus einer Vektorquelle. Details: [BRAND.md](BRAND.md):
+
+- Symbol (Hauptlogo): abstrahierte Figur im Schritt mit greifendem Arm, zugleich das „K“;
+  Schriftzug „Kalethra“ in geometrischen Linienbuchstaben, technisch getrennt
+- Generator `tools/brand/` (Vektoren deterministisch, Rasterbilder aus derselben Geometrie);
+  Assets unter `assets/brand/`
+- Fortschritt: Symbol am Ende der Titelzeile – Kopfbereich nicht höher, bei Platzmangel
+  ausgeblendet; Einstellungen → Über Kalethra: Logo
+- App-Icons Android (adaptiv mit Monochrom-Ebene) und iOS, Startbilder Android (inkl. Android-12-
+  System-Splash) und iOS hell/dunkel, Favicon – ersetzen die Capacitor-Platzhalter
+- Tokens `--color-brand-forest`, `--color-brand-ivory`, `--color-brand-mark`
+- Offen: Gerätetest (Launcher, Splash, Systemschrift); Markenfiguren-Konzept F1 (Büsten, nur auf Branch `claude/brand-figure-f1-concept`) bleibt
+  unabhängig davon ungeplant/offen
+
 ## Phase 21 – Anatomische 2D-Muskelkarten (Muskelkarten Phase 1) ✅ (Version 0.34.0)
 
 Die 3D-Figur wird im Trainingskontext durch lokal gebündelte 2D-Muskelkarten im Stil eines
