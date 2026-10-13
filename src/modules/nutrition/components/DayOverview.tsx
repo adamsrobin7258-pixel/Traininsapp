@@ -2,7 +2,7 @@ import { Link } from 'react-router';
 import { SETTINGS_LINKS } from '@/app/routes';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { goalProgress, type GoalForDay, type Nutrients } from '@/core/nutrition';
-import { Icon, ICON_FOR, Meter } from '@/ui';
+import { Icon, ICON_FOR, Meter, ProgressRing } from '@/ui';
 import { formatGrams, formatKcal } from '../domain/format';
 import { ActivityBudget } from './ActivityBudget';
 import styles from './Nutrition.module.css';
@@ -32,44 +32,53 @@ export function DayOverview({ totals, goal }: { totals: Nutrients; goal: GoalFor
   const eaten = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(
     totals.energyKcal,
   );
+  // Display only: beyond the goal the ring runs a second lap (the meter value stays ≤ 100 %).
+  const ringRatio =
+    energyGoal !== null && energyGoal > 0 ? Math.max(0, totals.energyKcal) / energyGoal : null;
 
   return (
     <section className={styles.overview} aria-label={t('nutrition.overview.title')}>
+      <span className={styles.heroLabel}>
+        <Icon name={ICON_FOR.energy} size={16} className={styles.heroIcon} />
+        {t('nutrition.overview.eaten')}
+      </span>
+      {/*
+       * The day's energy as a ring towards the goal (Phase 26): eaten kcal in the centre, goal
+       * and remaining beside it. Without a goal only the track – nothing is invented.
+       */}
       <div className={styles.hero}>
-        <span className={styles.heroLabel}>
-          <Icon name={ICON_FOR.energy} size={16} className={styles.heroIcon} />
-          {t('nutrition.overview.eaten')}
-        </span>
-        <span className={styles.heroNumber}>
+        <ProgressRing
+          ratio={ringRatio}
+          className={styles.energyRing}
+          {...(energyGoal !== null
+            ? {
+                label: t('nutrition.nutrients.energy'),
+                valueText: t('nutrition.overview.ofGoal', {
+                  value: formatKcal(totals.energyKcal, locale),
+                  goal: formatKcal(energyGoal, locale),
+                }),
+              }
+            : {})}
+        >
           <span className={styles.heroValue}>{eaten}</span>
           <span className={styles.heroUnit}>{t('common.kcal')}</span>
-        </span>
-      </div>
-      <div className={styles.energy}>
-        <Figure
-          label={t('nutrition.overview.goal')}
-          value={energyGoal !== null ? formatKcal(energyGoal, locale) : '–'}
-        />
-        {energy && energy.over > 0 ? (
-          <Figure label={t('nutrition.overview.over')} value={formatKcal(energy.over, locale)} />
-        ) : (
+        </ProgressRing>
+        <div className={styles.energy}>
           <Figure
-            label={t('nutrition.overview.remaining')}
-            value={energy ? formatKcal(energy.remaining, locale) : '–'}
+            label={t('nutrition.overview.goal')}
+            value={energyGoal !== null ? formatKcal(energyGoal, locale) : '–'}
           />
-        )}
+          {energy && energy.over > 0 ? (
+            <Figure label={t('nutrition.overview.over')} value={formatKcal(energy.over, locale)} />
+          ) : (
+            <Figure
+              label={t('nutrition.overview.remaining')}
+              value={energy ? formatKcal(energy.remaining, locale) : '–'}
+            />
+          )}
+        </div>
       </div>
       <ActivityBudget goal={goal} />
-      {energyGoal !== null ? (
-        <Meter
-          ratio={energy?.ratio ?? 0}
-          label={t('nutrition.nutrients.energy')}
-          valueText={t('nutrition.overview.ofGoal', {
-            value: formatKcal(totals.energyKcal, locale),
-            goal: formatKcal(energyGoal, locale),
-          })}
-        />
-      ) : null}
 
       <div className={styles.macros}>
         {MACROS.map(({ key, label }) => {

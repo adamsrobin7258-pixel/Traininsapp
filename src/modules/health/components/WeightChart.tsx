@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import {
   buildChartGeometry,
   formatWeight,
@@ -37,6 +37,12 @@ export function WeightChart({ embedded = false }: { embedded?: boolean }) {
   const first = geometry?.points[0];
   const last = geometry?.points.at(-1);
   const number = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const areaId = `weight-area-${useId().replace(/[^\w-]/g, '')}`;
+  // A soft fill under the line down to the lower grid line – depth for the trend, no data.
+  const area =
+    geometry && first && last
+      ? `${geometry.path} L${String(last.x)} ${String(geometry.yMinPosition)} L${String(first.x)} ${String(geometry.yMinPosition)} Z`
+      : null;
 
   return (
     <div className={styles.panel} data-embedded={embedded || undefined}>
@@ -103,12 +109,20 @@ export function WeightChart({ embedded = false }: { embedded?: boolean }) {
           >
             {shortDate(last.date, locale)}
           </text>
+          <defs>
+            <linearGradient id={areaId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" className={styles.areaTop} />
+              <stop offset="1" className={styles.areaBottom} />
+            </linearGradient>
+          </defs>
+          {area ? <path className={styles.area} d={area} fill={`url(#${areaId})`} /> : null}
           <path className={styles.line} d={geometry.path} />
           {geometry.points.length <= MAX_DOTS
             ? geometry.points.map((point) => (
                 <circle key={point.date} className={styles.dot} cx={point.x} cy={point.y} r={2.5} />
               ))
             : null}
+          <circle className={styles.halo} cx={last.x} cy={last.y} r={8} />
           <circle className={styles.latest} cx={last.x} cy={last.y} r={4} />
         </svg>
       ) : trend.status === 'ready' ? (

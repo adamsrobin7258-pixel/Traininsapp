@@ -1,0 +1,116 @@
+/*
+ * Progress ring (Phase 26): size from --ring-size (set by the user of the ring), every colour from
+ * the ring tokens in tokens.css – the same ring on Fortschritt and Ernährung, light and dark.
+ */
+.ring {
+  --ring-size: 7rem;
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: var(--ring-size);
+  height: var(--ring-size);
+}
+
+.art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.stopLight {
+  stop-color: var(--ring-light);
+}
+
+.stopMid {
+  stop-color: var(--color-accent);
+}
+
+.stopDeep {
+  stop-color: var(--ring-deep);
+}
+
+.trackTop {
+  stop-color: var(--ring-track-top);
+}
+
+.trackBottom {
+  stop-color: var(--ring-track-bottom);
+}
+
+.domeLight {
+  stop-color: var(--ring-dome-light);
+}
+
+.domeEdge {
+  stop-color: var(--ring-dome-edge);
+}
+
+.dome {
+  filter: drop-shadow(var(--ring-dome-shadow));
+}
+
+.track {
+  fill: none;
+}
+
+.arc,
+.sheen,
+.overGap,
+.over {
+  fill: none;
+  stroke-linecap: round;
+  animation: draw var(--duration-ring) var(--ease-soft) both;
+}
+
+.arc {
+  stroke: var(--ring-arc, var(--color-accent));
+  filter: drop-shadow(var(--ring-arc-shadow));
+}
+
+.sheen {
+  stroke: var(--ring-sheen);
+  stroke-width: 1.6;
+}
+
+/*
+ * Beyond the goal: a second, narrower lap in deep forest on a light lane – clearly "more than
+ * the goal", never red: passing a goal is not an error.
+ */
+.overGap {
+  stroke: var(--ring-dome-light);
+  opacity: 0.9;
+}
+
+.over {
+  stroke: var(--ring-deep);
+}
+
+/* Few data: the arc steps back to a quiet grey, no gradient, no light. */
+.ring[data-state='preliminary'] .arc {
+  stroke: var(--color-text-tertiary);
+  filter: none;
+}
+
+.ring[data-state='preliminary'] .sheen {
+  display: none;
+}
+
+.content {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  max-width: calc(var(--ring-size) * 0.66);
+  text-align: center;
+}
+
+@keyframes draw {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}

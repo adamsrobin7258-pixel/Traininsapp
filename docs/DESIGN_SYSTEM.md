@@ -405,6 +405,26 @@ Regeln:
 - **Trainingsabschluss:** ruhige Erfolgs-Plakette (Waldgrün-Scheibe, wenige stehende Punkte) –
   keine Animation, kein Konfetti.
 
+## Ringe, Glanz und Hervorhebung (Phase 26)
+
+- **`ProgressRing`** (`src/ui/components/ProgressRing.tsx`): ein Ring für Kalethra-Score und
+  Kalorienziel. Vertiefte Spur (Verlauf `--ring-track-*`), Bogen im Verlauf `--ring-light` →
+  `--color-accent` → `--ring-deep` mit runden Enden und leichtem Schatten, feine Lichtkante
+  (`--ring-sheen`) außen am Bogen, leicht gewölbte Mitte (`--ring-dome-*`) für die Zahl.
+  Gleichmäßige Strichstärke 11/120. Zustände: Wert (Bogen), 0 und fehlender Wert (nur Spur, nichts
+  erfunden), vorläufig (ruhiges Grau), über dem Ziel (voller Ring plus schmalere zweite Runde in
+  Tiefgrün auf heller Spur, höchstens eine – nie Rot). Mit `label` ist der Ring eine
+  `progressbar` (Wert ≤ 100 %), sonst dekorativ. Zeichnet sich einmal beim Erscheinen
+  (`--duration-ring`, bei „Bewegung reduzieren“ 0), keine Daueranimation.
+- **Primärknopf:** kräftigerer Waldgrün-Verlauf (`#557e5b` → `#466a4c` → `#2f5036`) mit weichem
+  Glanz auf der oberen Hälfte, heller Ober- und dunkler Unterkante; gedrückt tiefer, ohne Glanz und
+  Lift, mit innerem Schatten; deaktiviert flach. Weiß hält ab 30 % Höhe ≥ 4,5 : 1.
+- **Hervorgehobene Karten** (`--gradient-feature`, `--shadow-feature`): nur die führende Karte
+  einer Seite – Kalethra-Score, Tagesübersicht Ernährung, nächstes Training, Kennzahlen des
+  Trainingsabschlusses. Normale Datenkarten bleiben bei `--gradient-surface`.
+- **Gewichtsdiagramm:** weiche Fläche unter der Linie (Akzent 20 % → 0), Hof um den letzten
+  Punkt; Daten und Achsen unverändert.
+
 ## Bilder und Illustrationen
 
 Regeln für Bilder (Phase B, erweitert in Phase 25).
@@ -426,8 +446,8 @@ Regeln für Bilder (Phase B, erweitert in Phase 25).
 Stock-Fotos sind seit Phase 25 erlaubt, wenn sie einen klaren gestalterischen Nutzen haben und
 die Lizenz geprüft ist (z. B. Unsplash- oder Pexels-Lizenz): lokal im Bundle, optimiert
 (WebP/AVIF, passende Auflösung), dokumentiert in `ATTRIBUTION.md` des Ordners – nie aus dem Netz
-zur Laufzeit, nie aus Suchmaschinen. Stand 0.38.0 ist **kein** Foto eingebunden (siehe
-`docs/design-qa/phase-25/README.md`). Keine Bilder hinter Zahlen oder Diagrammen.
+zur Laufzeit, nie aus Suchmaschinen. Stand 0.39.0 ist **kein** Foto eingebunden: Die Bildquellen waren auch in Phase 26 gesperrt
+(siehe `docs/design-qa/phase-26/README.md`). Keine Bilder hinter Zahlen oder Diagrammen.
 
 **Bild oder Icon?** Ein Icon, wenn es eine Aktion oder ein Thema kennzeichnet (klein, neben
 Text). Eine Illustration nur, wenn sie Inhalt unterscheidbar macht (Lebensmittelkategorie) oder

@@ -577,6 +577,18 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 26 – Premium Visual Polish ✅ (Version 0.39.0)
+
+- Ein gemeinsamer Fortschrittsring (`ProgressRing`) für Kalethra-Score und Kalorienziel: vertiefte
+  Spur, Verlauf Salbei → Waldgrün, runde Enden, Lichtkante, gewölbte Mitte; 0, fehlende Werte,
+  vorläufig und über dem Ziel (zweite Runde, nie Rot) definiert; zeichnet sich einmal, nicht bei
+  „Bewegung reduzieren“. Ernährung: Kalorien als Ring statt Linie
+- Primärknöpfe mit kräftigerem Verlauf, Glanz auf der oberen Hälfte und tieferem Druckzustand;
+  führende Karten (Score, Ernährung, nächstes Training, Trainingsabschluss) mit eigener
+  Hervorhebungsfläche; Gewichtsdiagramm mit weicher Fläche
+- Fotos: Unsplash, Pexels, Wikimedia, Openverse und Flickr aus der Build-Umgebung gesperrt (HTTP 403) – weiter die eigenen Vektor-Szenen ([design-qa/phase-26](design-qa/phase-26/README.md))
+- Berechnungen, Ziele, Daten unverändert. Offen: Gerätetest, Fotos nach Netzwerkfreigabe
+
 ## Phase 25 – Natürliches Premium-Design ✅ (Version 0.38.0)
 
 - Designsystem erweitert statt ersetzt: Waldgrün `#466a4c` als Akzent, Karten mit 20 px Rundung,

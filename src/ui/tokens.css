@@ -74,6 +74,7 @@
   --duration-fast: 120ms;
   --duration-base: 200ms;
   --duration-slow: 480ms; /* progress and water level */
+  --duration-ring: 700ms; /* a progress ring draws itself once when it appears */
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-soft: cubic-bezier(0.33, 1, 0.68, 1);
 
@@ -164,13 +165,42 @@
   --shadow-tab-bar: 0 -6px 20px -12px rgb(60 48 28 / 0.18);
   /* A fine light edge along the top of cards and primary buttons (light from above). */
   --highlight-card: inset 0 1px 0 rgb(255 255 255 / 0.85);
-  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.22);
-  /* Primary actions: rich forest, lit from above; pressed a shade deeper, no glow. */
-  --gradient-primary: linear-gradient(180deg, #557a5b 0%, #466a4c 52%, #3d5f43 100%);
-  --gradient-primary-pressed: linear-gradient(180deg, #44664a 0%, #36553b 100%);
-  --shadow-primary: 0 1px 2px rgb(38 61 43 / 0.24), 0 6px 14px -6px rgb(38 61 43 / 0.4);
+  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.32), inset 0 -1px 0 rgb(20 36 24 / 0.18);
+  /*
+   * Primary actions (Phase 26): rich forest from a lighter top to a deep base, with a soft gloss on
+   * the upper half – light on a fine surface, not chrome. Pressed: deeper, gloss and lift gone.
+   * The label sits where the forest is darkest enough for white (≥ 4.5 : 1).
+   */
+  --gradient-primary:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.17) 0%,
+      rgb(255 255 255 / 0.05) 46%,
+      transparent 50%
+    ),
+    linear-gradient(180deg, #557e5b 0%, #466a4c 50%, #2f5036 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #3f6145 0%, #2f5036 100%);
+  --shadow-primary: 0 1px 2px rgb(38 61 43 / 0.28), 0 8px 18px -8px rgb(38 61 43 / 0.55);
   /* Cards: barely lighter at the top – depth without a floating look. */
   --gradient-surface: linear-gradient(180deg, #fffefa 0%, #fffaf2 100%);
+  /*
+   * Feature surfaces (Phase 26): the one leading card of a page (score, the day's nutrition, the
+   * next workout) – warm ivory that turns faintly sage towards the lower edge, with more depth.
+   */
+  --gradient-feature: linear-gradient(165deg, #fffefb 0%, #fbf7ee 55%, #eef1e5 100%);
+  --shadow-feature:
+    0 1px 3px rgb(60 48 28 / 0.07), 0 20px 40px -20px rgb(60 48 28 / 0.34),
+    0 8px 18px -10px rgb(70 106 76 / 0.2);
+  /* Progress rings (ProgressRing): recessed track, sage → forest arc, domed centre, light edge. */
+  --ring-light: #a5c49f;
+  --ring-deep: #2f5036;
+  --ring-track-top: #e2dacb;
+  --ring-track-bottom: #efe9dd;
+  --ring-dome-light: #ffffff;
+  --ring-dome-edge: #f5efe4;
+  --ring-dome-shadow: 0 2px 3px rgb(60 48 28 / 0.12);
+  --ring-arc-shadow: 0 1.5px 1.5px rgb(38 61 43 / 0.3);
+  --ring-sheen: rgb(255 255 255 / 0.6);
   /* Progress fills (bars): sage to forest. Rings use the same two stops. */
   --gradient-progress: linear-gradient(90deg, var(--color-accent-light), var(--color-accent));
   --gradient-page: radial-gradient(120% 22rem at 50% 0%, var(--color-bg-glow) 0%, transparent 100%);
@@ -267,11 +297,29 @@
   --shadow-sheet: 0 -6px 28px rgb(0 0 0 / 0.4);
   --shadow-tab-bar: none;
   --highlight-card: inset 0 1px 0 rgb(255 255 255 / 0.04);
-  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.25);
-  --gradient-primary: linear-gradient(180deg, #a7c6aa 0%, #93b597 100%);
-  --gradient-primary-pressed: linear-gradient(180deg, #86a88a 0%, #7c9e80 100%);
-  --shadow-primary: 0 2px 8px rgb(0 0 0 / 0.3);
+  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.35), inset 0 -1px 0 rgb(0 0 0 / 0.12);
+  --gradient-primary:
+    linear-gradient(
+      180deg,
+      rgb(255 255 255 / 0.22) 0%,
+      rgb(255 255 255 / 0.06) 46%,
+      transparent 50%
+    ),
+    linear-gradient(180deg, #a9c8ac 0%, #93b597 55%, #7fa284 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #86a88a 0%, #779a7b 100%);
+  --shadow-primary: 0 2px 10px rgb(0 0 0 / 0.35);
   --gradient-surface: linear-gradient(180deg, #252f27 0%, #222b24 100%);
+  --gradient-feature: linear-gradient(165deg, #29342b 0%, #232c25 55%, #243228 100%);
+  --shadow-feature: 0 4px 18px rgb(0 0 0 / 0.32);
+  --ring-light: #cfe3d0;
+  --ring-deep: #6f9a74;
+  --ring-track-top: #18201a;
+  --ring-track-bottom: #2b352d;
+  --ring-dome-light: #2e392f;
+  --ring-dome-edge: #232c25;
+  --ring-dome-shadow: 0 2px 4px rgb(0 0 0 / 0.35);
+  --ring-arc-shadow: 0 1px 2px rgb(0 0 0 / 0.45);
+  --ring-sheen: rgb(255 255 255 / 0.35);
   --color-switch-knob: #e4e8e1;
 
   --tint-rose-bg: rgb(224 128 110 / 0.16);
@@ -301,5 +349,6 @@
     --duration-fast: 0ms;
     --duration-base: 0ms;
     --duration-slow: 0ms;
+    --duration-ring: 0ms;
   }
 }

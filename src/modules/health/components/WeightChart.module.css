@@ -38,8 +38,27 @@
   fill: var(--color-text-secondary);
 }
 
+.area {
+  stroke: none;
+}
+
+.areaTop {
+  stop-color: var(--color-accent);
+  stop-opacity: 0.2;
+}
+
+.areaBottom {
+  stop-color: var(--color-accent);
+  stop-opacity: 0;
+}
+
+.halo {
+  fill: var(--color-accent-subtle-strong);
+}
+
 .line {
   fill: none;
+  filter: drop-shadow(0 1px 1px rgb(38 61 43 / 0.2));
   stroke: var(--color-accent);
   stroke-width: 2;
   stroke-linejoin: round;

@@ -1,8 +1,8 @@
-import { useState, type CSSProperties, useId } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '@/core/i18n';
 import { SCORE_AREAS, useScore, type ScoreResult, type ScoreTrend } from '@/core/score';
-import { Icon, ICON_FOR, type IconName } from '@/ui';
+import { Icon, ICON_FOR, ProgressRing, type IconName } from '@/ui';
 import { AREA_LINKS } from '../domain/areaLinks';
 import type { PeriodRange, ProgressPeriod } from '../domain/period';
 import { ScoreDetailSheet } from './ScoreDetailSheet';
@@ -127,25 +127,31 @@ export function ScoreCard({
                   value: value ?? t('progress.score.noRating'),
                 })}
               >
+                {/*
+                 * Name and chevron on top, under them the bar with the value at its end – so a
+                 * long name ("Regeneration") keeps the whole cell width and never breaks.
+                 */}
                 <span className={styles.areaLine}>
                   <span className={styles.areaName}>{t(`progress.score.areas.${area}`)}</span>
+                  <Icon name={ICON_FOR.navForward} size={16} className={styles.areaChevron} />
+                </span>
+                <span className={styles.areaBar}>
+                  {/* Decorative: the number says everything. Without a rating no track – it would read as 0. */}
+                  <span
+                    className={styles.areaTrack}
+                    data-empty={value === null || undefined}
+                    aria-hidden="true"
+                  >
+                    {value !== null ? (
+                      <span
+                        className={styles.areaFill}
+                        style={{ '--area-ratio': value / 100 } as CSSProperties}
+                      />
+                    ) : null}
+                  </span>
                   <span className={styles.areaValue} data-empty={value === null || undefined}>
                     {value ?? '–'}
                   </span>
-                  <Icon name={ICON_FOR.navForward} size={16} className={styles.areaChevron} />
-                </span>
-                {/* Decorative: the number says everything. Without a rating no track – it would read as 0. */}
-                <span
-                  className={styles.areaTrack}
-                  data-empty={value === null || undefined}
-                  aria-hidden="true"
-                >
-                  {value !== null ? (
-                    <span
-                      className={styles.areaFill}
-                      style={{ '--area-ratio': value / 100 } as CSSProperties}
-                    />
-                  ) : null}
                 </span>
               </Link>
             </li>
@@ -181,46 +187,20 @@ function ScoreRing({
   state: 'final' | 'preliminary' | 'empty';
   outOf: string | null;
 }) {
-  const ratio = value === null ? 0 : Math.min(1, Math.max(0, value / 100));
-  // A final score runs from sage to forest along the arc; a preliminary one stays quiet (CSS).
-  const gradientId = `score-ring-${useId().replace(/[^\w-]/g, '')}`;
+  // Decorative: the card's name reads the score out (summary), the ring only shows it.
   return (
-    <span className={styles.ring} data-state={state}>
-      <svg className={styles.ringArt} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id={gradientId} x1="1" y1="0" x2="0" y2="1">
-            <stop offset="0" style={{ stopColor: 'var(--color-accent-light)' }} />
-            <stop offset="1" style={{ stopColor: 'var(--color-accent)' }} />
-          </linearGradient>
-        </defs>
-        <circle className={styles.ringTrack} cx="60" cy="60" r={RING_RADIUS} />
-        {ratio > 0 ? (
-          <circle
-            className={styles.ringArc}
-            cx="60"
-            cy="60"
-            r={RING_RADIUS}
-            pathLength={100}
-            strokeDasharray={`${String(ratio * 100)} 100`}
-            style={state === 'final' ? { stroke: `url(#${gradientId})` } : undefined}
-          />
-        ) : null}
-      </svg>
-      <span className={styles.ringText}>
-        <span
-          className={styles.number}
-          data-empty={state === 'empty' || undefined}
-          data-preliminary={state === 'preliminary' || undefined}
-        >
-          {value ?? '–'}
-        </span>
-        {outOf ? <span className={styles.outOf}>{outOf}</span> : null}
+    <ProgressRing ratio={value === null ? null : value / 100} state={state} className={styles.ring}>
+      <span
+        className={styles.number}
+        data-empty={state === 'empty' || undefined}
+        data-preliminary={state === 'preliminary' || undefined}
+      >
+        {value ?? '–'}
       </span>
-    </span>
+      {outOf ? <span className={styles.outOf}>{outOf}</span> : null}
+    </ProgressRing>
   );
 }
-
-const RING_RADIUS = 52;
 
 /** What a screen reader announces for the card – the same facts as the visual card. */
 function summary(

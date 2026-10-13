@@ -198,14 +198,23 @@
   padding: var(--space-5);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--gradient-surface);
-  box-shadow: var(--shadow-raised), var(--highlight-card);
+  background: var(--gradient-feature);
+  box-shadow: var(--shadow-feature), var(--highlight-card);
 }
 
+/*
+ * Ring and figures side by side; with too little room (320 px, large system font) the figures
+ * move under the ring instead of squeezing it.
+ */
 .hero {
   display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-5);
+}
+
+.hero .energyRing {
+  --ring-size: 8.25rem;
 }
 
 .heroLabel {
@@ -221,31 +230,28 @@
   color: var(--color-accent-text);
 }
 
-.heroNumber {
-  display: flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: var(--space-2);
-}
-
 .heroValue {
-  font-size: var(--font-size-display);
-  font-weight: var(--font-weight-semibold);
+  max-width: 100%;
+  font-size: var(--font-size-metric);
+  font-weight: var(--font-weight-bold);
   line-height: 1;
-  letter-spacing: var(--letter-spacing-display);
+  letter-spacing: var(--letter-spacing-title);
   font-variant-numeric: tabular-nums;
 }
 
 .heroUnit {
-  font-size: var(--font-size-headline);
+  margin-top: var(--space-1);
+  font-size: var(--font-size-caption);
   font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
 .energy {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+  display: flex;
+  flex: 1 1 7rem;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
 }
 
 .figure {

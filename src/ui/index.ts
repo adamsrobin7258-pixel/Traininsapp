@@ -5,6 +5,7 @@ export { EmptyState } from './components/EmptyState';
 export { EmptyValue } from './components/EmptyValue';
 export { List, ListRow } from './components/List';
 export { Meter } from './components/Meter';
+export { ProgressRing, type RingState } from './components/ProgressRing';
 export { Screen } from './components/Screen';
 export { PromptSheet } from './components/PromptSheet';
 export { Sheet } from './components/Sheet';

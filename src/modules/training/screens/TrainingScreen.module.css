@@ -15,8 +15,8 @@
   padding: var(--space-5);
   border: var(--border-hairline) solid var(--color-surface-accent-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface-accent);
-  box-shadow: var(--shadow-raised), var(--highlight-card);
+  background: var(--gradient-feature);
+  box-shadow: var(--shadow-feature), var(--highlight-card);
 }
 
 .next > button {

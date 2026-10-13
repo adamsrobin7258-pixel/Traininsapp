@@ -59,7 +59,13 @@
 
 .primary:active:not(:disabled) {
   background: var(--gradient-primary-pressed);
-  box-shadow: var(--highlight-primary);
+  /* Pressed into the surface: the lift is gone, a soft shade sits at the top edge. */
+  box-shadow: inset 0 2px 5px rgb(10 24 14 / 0.28);
+}
+
+.primary:disabled {
+  background: var(--color-accent);
+  text-shadow: none;
 }
 
 /* Secondary: a warm light surface with a clear edge – reads as a button, never as a card. */
