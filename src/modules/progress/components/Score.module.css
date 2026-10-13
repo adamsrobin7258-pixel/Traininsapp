@@ -89,7 +89,7 @@
 
 .hero .ring {
   /* Phase 26: the shared ProgressRing, a little larger – still the page's one big element. */
-  --ring-size: 7.25rem;
+  --ring-size: 7rem;
 }
 
 .number {
