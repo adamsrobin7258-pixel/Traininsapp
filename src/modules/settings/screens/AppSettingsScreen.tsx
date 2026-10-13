@@ -9,7 +9,7 @@ import {
   WEIGHT_UNIT_PREFERENCES,
   useSettings,
 } from '@/core/settings';
-import { BrandLogo, List, ListRow, Screen, Section, SegmentedControl } from '@/ui';
+import { BrandLogo, List, ListRow, SceneArt, Screen, Section, SegmentedControl } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { HealthDataSection } from '../components/HealthDataSection';
 import { PrivacySection } from '../components/PrivacySection';
@@ -97,7 +97,8 @@ export function AppSettingsScreen() {
 
       <Section title={t('profile.aboutTitle', { appName: t('app.name') })}>
         <div className={styles.about}>
-          <BrandLogo label={t('app.name')} />
+          <SceneArt name="meadow" className={styles.aboutScene} />
+          <BrandLogo label={t('app.name')} className={styles.aboutLogo} />
         </div>
         <List>
           <ListRow title={t('profile.version')} value={__APP_VERSION__} />

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router';
 import { BrandMark } from '../brand/BrandMark';
 import { Icon } from '../icons/Icon';
+import { SceneArt } from '../illustrations/SceneArt';
+import { SCENE_TONE, type SceneName } from '../illustrations/sceneTone';
 import styles from './Screen.module.css';
 
 interface ScreenProps {
@@ -22,6 +24,11 @@ interface ScreenProps {
    * (Fortschritt). The header itself is unchanged.
    */
   dense?: boolean;
+  /**
+   * An atmospheric scene behind the header that fades into the page (Training, Ernährung). The
+   * first content overlaps its lower part; it is decorative and never sits behind numbers.
+   */
+  hero?: SceneName;
   children: ReactNode;
 }
 
@@ -40,15 +47,21 @@ export function Screen({
   action,
   brand = true,
   dense = false,
+  hero,
   children,
 }: ScreenProps) {
   const mark = (
     <span className={styles.mark}>
-      <BrandMark />
+      <BrandMark badge />
     </span>
   );
   return (
-    <main className={styles.screen}>
+    <main className={styles.screen} data-hero={hero ? SCENE_TONE[hero] : undefined}>
+      {hero ? (
+        <div className={styles.hero}>
+          <SceneArt name={hero} className={styles.heroArt} />
+        </div>
+      ) : null}
       <header className={styles.header} data-dense={dense || undefined}>
         {back ? (
           <div className={styles.topRow}>

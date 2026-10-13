@@ -577,6 +577,21 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 25 – Natürliches Premium-Design ✅ (Version 0.38.0)
+
+- Designsystem erweitert statt ersetzt: Waldgrün `#466a4c` als Akzent, Karten mit 20 px Rundung,
+  warmem Oberflächenverlauf, Lichtkante und weicherem Schatten; Primärknöpfe als Waldgrün-Pillen
+  mit dezentem Verlauf; Fokusring mit weichem Schein; warmes Licht oben auf jeder Seite
+  ([DESIGN_SYSTEM.md](DESIGN_SYSTEM.md#tiefe-und-atmosphäre-phase-25))
+- Navigation: aktive Tab-Pille in Waldgrün, passt auch bei 320 px und großer Schrift; Logo oben
+  rechts als runde Waldgrün-Plakette
+- Training und Ernährung mit atmosphärischer Szene oben (eigene Vektorzeichnungen), Über
+  Kalethra mit Wiesen-Szene; Score-Ring im Verlauf; ruhige Erfolgs-Plakette beim
+  Trainingsabschluss
+- Keine Fotos eingebunden: Unsplash/Pexels waren aus der Build-Umgebung nicht erreichbar
+  ([design-qa/phase-25](design-qa/phase-25/README.md)); Funktionen, Daten, Berechnungen unverändert
+- Offen: Gerätetest
+
 ## Phase 24 – Gesundheit vereinfacht, Gewicht nicht mehr im Profil, Kalender in Wochen ✅ (Version 0.37.0)
 
 - Gesundheit: Gewicht in einer Karte – aktueller Wert mit Veränderung, Diagramm (unverändert),

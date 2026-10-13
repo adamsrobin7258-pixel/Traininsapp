@@ -9,6 +9,14 @@ Seit Phase 20 (Version 0.31.0) **„Natürlich & ruhig“**: warme Cremetöne st
 Salbei- und Waldgrün als Markenfarbe, klar abgesetzte Karten mit feiner Linie und sehr leichtem
 Schatten; im Dunkelmodus ein tiefes Graugrün mit deutlich helleren Ebenen statt Schwarz.
 
+Seit Phase 25 (Version 0.38.0) **„Natürliches Premium-Design“**: Waldgrün `#466a4c` führt
+(Akzent, Primäraktionen, aktive Navigation), Salbei bleibt als helles Ende von Verläufen.
+Karten mit größerer Rundung (20 px), warmem Oberflächenverlauf, feiner Lichtkante oben und
+weichem, tieferem Schatten; Primärknöpfe als Pillen in sattem Waldgrün mit dezentem Verlauf und
+Lichtkante; ein warmes Licht oben auf jeder Seite. Training und Ernährung tragen oben eine
+atmosphärische Szene (`SceneArt`), die in die Seite übergeht. Das Logo sitzt oben rechts als
+runde Waldgrün-Plakette. Regeln dazu unten unter „Tiefe und Atmosphäre (Phase 25)“.
+
 Festgelegte Richtung: **A1** Salbeigrün, warm und natürlich · **B2** kleine, erkennbare
 Lebensmittel-Illustrationen · **C1** organische Formen sehr dezent · **D1** die Mainpage
 (seit 7.1 „Fortschritt“) ruhig und minimal, aber visuell angereichert.
@@ -35,8 +43,9 @@ Lebensmittel-Illustrationen · **C1** organische Formen sehr dezent · **D1** di
 8. **Karten nur mit Grund.** Ein Container nur, wenn er gruppiert, antippbar ist oder die
    Hierarchie verbessert; Kennzahlen liegen direkt auf dem Hintergrund.
 
-Ausdrücklich vermeiden: aggressive Fitness-Optik, Neonfarben, große Farbverläufe, Gamification,
-Emojis als Icons, Stock-Fotos, 3D-Icons, Glassmorphism (außer der dezenten Unschärfe der
+Ausdrücklich vermeiden: aggressive Fitness-Optik, Neonfarben, laute oder großflächige
+Farbverläufe (erlaubt sind nur die dezenten Token-Verläufe aus Phase 25), Gamification, Emojis
+als Icons, 3D-Icons, Metall- oder Neon-Glanz, Glassmorphism (außer der dezenten Unschärfe der
 Tab-Leiste), Konfetti, dauerhafte oder pulsierende Animationen, Dekoration ohne Zweck.
 
 ## Tokens
@@ -51,7 +60,7 @@ Ebenen (Hell: Papier → Karte; Dunkel: wird mit jeder Ebene heller):
 | -------------------------------- | --------- | --------- | ------------------------------------------------------------- |
 | `--color-bg`                     | `#f3efe6` | `#101612` | Seitenhintergrund (warme Creme / tiefes Graugrün)             |
 | `--color-surface-dialog`         | `#f8f5ee` | `#19211b` | Sheets und Dialoge (Karten darin bleiben abgesetzt)           |
-| `--color-surface`                | `#fffdf9` | `#222b24` | Karten, Listen, Eingabefelder                                 |
+| `--color-surface`                | `#fffcf6` | `#222b24` | Karten, Listen, Eingabefelder                                 |
 | `--color-surface-elevated`       | `#ffffff` | `#2b352d` | Erhöhte Elemente auf Karten (Popover, schwebende Leisten)     |
 | `--color-surface-muted`          | `#e9e4d8` | `#323d35` | Segment-Spur, Fortschrittsspur, Stepper-Tasten                |
 | `--color-surface-pressed`        | `#ece7dc` | `#2b352d` | Gedrückter Zustand (auf Hintergrund und auf Karte sichtbar)   |
@@ -65,9 +74,9 @@ Ebenen (Hell: Papier → Karte; Dunkel: wird mit jeder Ebene heller):
 | `--color-border`                 | 16 %      | 16 %      | Feldrahmen, Trennlinien                                       |
 | `--color-border-strong`          | 28 %      | 30 %      | Sekundärknopf, Sheet-Griff                                    |
 | `--color-card-border`            | 7 %       | 7 %       | Kante von Karten und Sheets                                   |
-| `--color-accent` (Salbei)        | `#557a5b` | `#93b597` | Primäraktionen, aktive Zustände, Fortschritt                  |
-| `--color-accent-strong`          | `#466a4c` | `#b2d0b5` | Waldgrün: gedrückter/gehoverter Primärknopf                   |
-| `--color-accent-text`            | `#43654a` | `#a9c8ac` | Primary als Text/Icon                                         |
+| `--color-accent` (Waldgrün)      | `#466a4c` | `#93b597` | Primäraktionen, aktive Zustände, Fortschritt                  |
+| `--color-accent-strong`          | `#36553b` | `#b2d0b5` | Gedrückter/gehoverter Primärknopf (dunkler)                   |
+| `--color-accent-text`            | `#3d5e43` | `#a9c8ac` | Primary als Text/Icon                                         |
 | `--color-accent-subtle`          | 12 %      | 15 %      | Icon-Hintergründe, Hinweise                                   |
 | `--color-accent-subtle-strong`   | 20 %      | 24 %      | Aktiver Tab (Pille hinter dem Icon)                           |
 | `--color-on-accent`              | `#ffffff` | `#102014` | Text auf Primary                                              |
@@ -98,8 +107,9 @@ leicht; dunkel ist `--shadow-card` = `none` – dort trennen Ebene und Kante.
 
 Salbeigrün ist gedämpft und natürlich – kein Neon-, kein „Fitness-Grün“. Es färbt nie ganze Karten
 oder Hintergründe. Semantische Farben stehen nur für ihre Bedeutung und konkurrieren nicht mit
-dem Primary; Fortschritt über einem Ziel bleibt neutral (nie rot). Der Akzent `#557a5b` bleibt
-unverändert (Wiedererkennung; Kontrast auf Weiß 4,9 : 1).
+dem Primary; Fortschritt über einem Ziel bleibt neutral (nie rot). Seit Phase 25 ist der
+Akzent das Marken-Waldgrün `#466a4c` (Kontrast zu Weiß 6,1 : 1); Salbei `#557a5b` lebt im
+Verlauf und als `--color-accent-light` weiter.
 
 Gemessene Kontraste (WCAG 2.x; automatisch geprüft in `tests/designTokens.test.ts`):
 
@@ -206,30 +216,32 @@ beim Tippen kurz nach. Keine Dauer-, Puls- oder Bounce-Animationen.
 | `Icon`             | Eigenes 24-px-Liniensymbolset (1,75 px Strich)                                                 |
 
 Die Tab-Leiste (`app/layout/TabBar`) gehört zur App-Shell, nutzt aber dieselben Tokens: inaktiv
-Sekundärtext, aktiv Salbei-Text mit dezenter Pille (`--color-accent-subtle-strong`) hinter dem
-Icon und halbfetter Beschriftung; `aria-current="page"` bleibt.
+Sekundärtext, aktiv eine Waldgrün-Pille (`--gradient-primary`, Lichtkante) mit hellem Icon und
+halbfetter Beschriftung in Waldgrün; `aria-current="page"` bleibt. Die Pille ist nie breiter als
+ihr Tab, so passen fünf Tabs auch bei 320 px und großer Schrift.
 
 ### Knöpfe (`Button`)
 
 | Variante      | Aussehen                                  | Einsatz                                           |
 | ------------- | ----------------------------------------- | ------------------------------------------------- |
-| `primary`     | Salbei gefüllt, Text `on-accent`          | Die eine Hauptaktion eines Bildschirms/Sheets     |
-| `secondary`   | Kontur (`--color-border-strong`), Text    | Weitere Aktionen, „Abbrechen“                     |
+| `primary`     | Waldgrün-Verlauf, Lichtkante, `on-accent` | Die eine Hauptaktion eines Bildschirms/Sheets     |
+| `secondary`   | Warme Fläche, Kontur, Waldgrün-Text       | Weitere Aktionen, „Abbrechen“                     |
 | `tertiary`    | Ohne Fläche, Salbei-Text (Ghost)          | Leise Zusatzaktion, Links innerhalb von Bereichen |
 | `destructive` | Fehlerfarbe auf `--color-critical-subtle` | Löschen, Verwerfen                                |
 
-Größen: `standard` (48 px) und `compact` (36 px sichtbar, 44 px Tippfläche). Zustände: gedrückt
-(Primary → Waldgrün, sonst `pressed`/`subtle`), Hover nur auf Geräten mit Maus, Fokusring über
+Form: Pille (`--radius-button`). Größen: `standard` (48 px) und `compact` (36 px sichtbar, 44 px
+Tippfläche). Zustände: gedrückt (1 px tiefer, minimal kleiner; Primary dunkler ohne Schatten,
+sonst `pressed`/`subtle`), deaktiviert ohne Schatten, Hover nur auf Geräten mit Maus, Fokusring über
 `:focus-visible`, deaktiviert mit `--opacity-disabled`. Standard bleibt `primary`/`standard`,
 `type="button"`; bestehende Aufrufe ändern sich nicht.
 
 ### Formulare und Auswahl
 
 Eingabefelder (`Form.field`, Dialogfelder) einheitlich 48 px hoch, Kartenfläche, 1-px-Rahmen
-`--color-border`, Fokus: Rahmen und Ring in Akzentfarbe, Fehler: Rahmen `--color-critical` plus
+`--color-border`, Fokus: Rahmen in Akzentfarbe plus weicher Ring (`--color-focus-glow`), Fehler: Rahmen `--color-critical` plus
 Text. `TextField` ist eine Listenzeile (Höhe wie `ListRow`). Segmente: gedämpfte Spur, gewähltes
 Segment hebt sich mit `--color-control-selected` und leichtem Schatten ab. Stepper-Tasten 56 px
-rund. Chips/Optionskarten: gewählter Zustand in Salbei.
+rund. Chips: gewählt im Waldgrün-Verlauf; Optionskarten: gewählt mit Akzentrahmen.
 
 ### Sheets und Dialoge
 
@@ -359,9 +371,43 @@ Neue Tokens dafür: `--color-surface-accent` (+ `-border`) für die eine führen
 Bereichs (nur Training nutzt sie bisher), `--color-switch-knob` und `--shadow-knob` für die
 Schalter (vorher Rohwerte in vier Dateien).
 
+## Tiefe und Atmosphäre (Phase 25)
+
+Neue bzw. vereinheitlichte Tokens (`src/ui/tokens.css`, beide Themen):
+
+| Token                                                                                         | Zweck                                                         |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `--color-accent` = `#466a4c`                                                                  | Waldgrün als Akzent (vorher Salbei `#557a5b`)                 |
+| `--color-accent-light`                                                                        | Salbei, helles Ende von Verläufen und Score-Ring              |
+| `--color-bg-glow`, `--gradient-page`                                                          | Warmes Licht oben auf jeder Seite (`body`, statisch)          |
+| `--gradient-surface`, `--highlight-card`                                                      | Kartenfläche (oben minimal heller) und feine Lichtkante       |
+| `--shadow-card`, `--shadow-raised`                                                            | Weicher, tieferer Schatten (dunkel: unsichtbar, Kante trennt) |
+| `--gradient-primary`, `--gradient-primary-pressed`, `--shadow-primary`, `--highlight-primary` | Primärknopf, aktive Tab-Pille, gewählte Chips, Logo-Plakette  |
+| `--gradient-progress`                                                                         | Füllung von Fortschrittsbalken (Salbei → Waldgrün)            |
+| `--color-focus-glow`                                                                          | Weicher Fokusring um Eingabefelder                            |
+| `--radius-card` = 20 px, `--radius-button`, `--radius-badge`                                  | Karten, Pillenknöpfe, runde Plaketten                         |
+| `--shadow-tab-bar`                                                                            | Tab-Leiste hebt sich weich vom Inhalt ab                      |
+
+Regeln:
+
+- Verläufe nur über diese Tokens und nur auf Knöpfen, aktiven Zuständen, Fortschritt und der
+  Logo-Plakette – nie auf großen Inhaltsflächen.
+- **Szenen** (`SceneArt`, `src/ui/illustrations/`): `mountains` (Training), `harvest`
+  (Ernährung), `meadow` (Einstellungen → App → Über Kalethra). Eigene Vektorzeichnungen, keine
+  Fotos; `Screen hero="…"` legt sie hinter die Kopfzeile und lässt sie per Maske in die Seite
+  übergehen. Dunkle Szenen bekommen Elfenbein-Titel mit leichtem Schatten, helle bleiben bei der
+  Textfarbe; im Dunkelmodus werden Szenen abgedunkelt. Nie hinter Zahlen oder Diagrammen, nie
+  in aktiven Trainingsansichten, nie auf Gesundheit.
+- **Logo-Plakette:** `BrandMark badge` – Elfenbein-Symbol auf Waldgrün-Scheibe mit hellem Rand,
+  in beiden Themen gleich; Größe und Ausblenden bei Platzmangel wie bisher (`Screen`).
+- **Score-Ring:** Bogen im Verlauf Salbei → Waldgrün mit leichtem Schatten; vorläufig weiter
+  ruhig grau. Berechnung unverändert.
+- **Trainingsabschluss:** ruhige Erfolgs-Plakette (Waldgrün-Scheibe, wenige stehende Punkte) –
+  keine Animation, kein Konfetti.
+
 ## Bilder und Illustrationen
 
-Regeln für künftige Bilder (Phase B legt nur die Regeln fest; es wurden keine Bilder ergänzt).
+Regeln für Bilder (Phase B, erweitert in Phase 25).
 
 **Stile – nur diese drei:**
 
@@ -374,7 +420,14 @@ Regeln für künftige Bilder (Phase B legt nur die Regeln fest; es wurden keine 
    3D-Körper (`public/figure/`) werden seitdem nicht mehr angezeigt und seit 0.36.0 auch nicht
    mehr ausgeliefert (`vite.config.ts`); Pfade und Modelle bleiben im Repository unverändert.
 
-Keine Stock-Fotos, keine Personenfotos, keine Verläufe, keine dekorativen Bilder ohne Inhalt.
+4. **Szenen** (`SceneArt`, seit 0.38.0) – atmosphärische Vektorbilder oben auf Training und
+   Ernährung und im Markenbereich (siehe „Tiefe und Atmosphäre“).
+
+Stock-Fotos sind seit Phase 25 erlaubt, wenn sie einen klaren gestalterischen Nutzen haben und
+die Lizenz geprüft ist (z. B. Unsplash- oder Pexels-Lizenz): lokal im Bundle, optimiert
+(WebP/AVIF, passende Auflösung), dokumentiert in `ATTRIBUTION.md` des Ordners – nie aus dem Netz
+zur Laufzeit, nie aus Suchmaschinen. Stand 0.38.0 ist **kein** Foto eingebunden (siehe
+`docs/design-qa/phase-25/README.md`). Keine Bilder hinter Zahlen oder Diagrammen.
 
 **Bild oder Icon?** Ein Icon, wenn es eine Aktion oder ein Thema kennzeichnet (klein, neben
 Text). Eine Illustration nur, wenn sie Inhalt unterscheidbar macht (Lebensmittelkategorie) oder
@@ -409,7 +462,8 @@ Seit 0.35.0: Symbol (abstrahierte Figur, zugleich „K“) als Hauptlogo, Schrif
 Regeln, Orte und Plattformdateien in [BRAND.md](BRAND.md). Komponenten `BrandMark`,
 `BrandWordmark`, `BrandLogo` (`src/ui/brand/`), Farbe `--color-brand-mark` (Waldgrün hell,
 Elfenbein dunkel; `--color-brand-forest`, `--color-brand-ivory`). Höchstens ein Markenelement je
-Bildschirm; in der App nur auf Fortschritt (Titelzeile) und unter „Über Kalethra“.
+Bildschirm; seit Phase 23 oben rechts in der Kopfzeile jeder normalen Seite (seit Phase 25 als
+runde Plakette) und unter „Über Kalethra“ (Elfenbein auf der Wiesen-Szene).
 
 Erfolgsmarken (Phase 23): `--color-success-mark` – Waldgrün (`--color-brand-forest`) im hellen,
 das hellere `--color-accent-text` im dunklen Erscheinungsbild. Nur für erreichte Ziele im

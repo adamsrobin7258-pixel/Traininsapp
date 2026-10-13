@@ -7,6 +7,16 @@
   color: var(--color-brand-mark);
 }
 
+/* Header badge: the ivory symbol on its own forest disc (both themes). */
+.badge {
+  display: block;
+  flex: none;
+  width: auto;
+  height: 100%;
+  color: var(--color-brand-ivory);
+  filter: drop-shadow(0 2px 3px rgb(38 61 43 / 0.22));
+}
+
 .wordmark {
   display: block;
   flex: none;

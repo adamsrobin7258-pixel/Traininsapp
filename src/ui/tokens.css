@@ -44,8 +44,10 @@
   --radius-lg: 1rem;
   --radius-xl: 1.5rem;
   --radius-full: 999px;
-  --radius-control: var(--radius-md); /* buttons, fields, segmented tracks */
-  --radius-card: var(--radius-lg); /* cards, grouped lists */
+  --radius-control: var(--radius-md); /* fields, segmented tracks, small tiles */
+  --radius-button: var(--radius-full); /* buttons: soft pills (Phase 25) */
+  --radius-card: 1.25rem; /* cards, grouped lists */
+  --radius-badge: var(--radius-full); /* round icon discs (brand mark, list icons) */
   --radius-sheet: var(--radius-xl); /* top corners of sheets and dialogs */
 
   /* Sizes */
@@ -86,8 +88,10 @@
    * Levels: bg (page) < dialog (sheets) < surface (cards) – cards are separated by a fine border
    * and a soft shadow, not by color alone.
    */
-  --color-bg: #f3efe6;
-  --color-surface: #fffdf9;
+  --color-bg: #f3efe6; /* brand ivory – also the splash and the browser theme colour */
+  /* Warm light at the top of every page – atmosphere, never behind numbers. */
+  --color-bg-glow: #fbf8f1;
+  --color-surface: #fffcf6;
   --color-surface-elevated: #ffffff;
   --color-surface-dialog: #f8f5ee;
   --color-surface-muted: #e9e4d8;
@@ -106,11 +110,13 @@
   --color-border-strong: rgb(28 33 29 / 0.28); /* field outlines, secondary buttons */
   --color-card-border: rgb(28 33 29 / 0.07);
   /* Primary (sage): active states, primary actions, progress. Never whole surfaces. */
-  --color-accent: #557a5b;
-  --color-accent-strong: #466a4c; /* forest: pressed primary */
-  --color-accent-text: #43654a;
-  --color-accent-subtle: rgb(85 122 91 / 0.12);
-  --color-accent-subtle-strong: rgb(85 122 91 / 0.2);
+  /* Phase 25: forest (#466a4c) leads; sage stays as the light end of gradients. */
+  --color-accent: #466a4c;
+  --color-accent-strong: #36553b; /* pressed primary */
+  --color-accent-text: #3d5e43;
+  --color-accent-light: #6e9473; /* light end of gradients and rings */
+  --color-accent-subtle: rgb(70 106 76 / 0.11);
+  --color-accent-subtle-strong: rgb(70 106 76 / 0.18);
   --color-on-accent: #ffffff;
   /* Semantic colors – each only for its meaning, never decoration. */
   --color-positive: #23795a;
@@ -123,7 +129,8 @@
   --color-info-subtle: rgb(47 100 137 / 0.1);
   --color-water: #30709b;
   --color-water-subtle: rgb(48 112 155 / 0.12);
-  --color-tab-bar: rgb(243 239 230 / 0.9);
+  --color-tab-bar: rgb(250 247 240 / 0.92);
+  --color-focus-glow: rgb(70 106 76 / 0.2);
   --color-scrim: rgb(28 33 29 / 0.32);
   --color-focus: var(--color-accent);
 
@@ -151,9 +158,22 @@
   --color-muscle-secondary: #eba08d;
 
   /* Elevation – light: soft, warm shadows; dark: borders instead (see below). */
-  --shadow-card: 0 1px 2px rgb(52 44 28 / 0.05), 0 2px 8px rgb(52 44 28 / 0.04);
-  --shadow-raised: 0 1px 2px rgb(52 44 28 / 0.08), 0 4px 14px rgb(52 44 28 / 0.08);
-  --shadow-sheet: 0 -4px 24px rgb(52 44 28 / 0.1);
+  --shadow-card: 0 1px 2px rgb(60 48 28 / 0.04), 0 8px 20px -10px rgb(60 48 28 / 0.14);
+  --shadow-raised: 0 1px 3px rgb(60 48 28 / 0.06), 0 14px 32px -14px rgb(60 48 28 / 0.24);
+  --shadow-sheet: 0 -8px 32px rgb(60 48 28 / 0.12);
+  --shadow-tab-bar: 0 -6px 20px -12px rgb(60 48 28 / 0.18);
+  /* A fine light edge along the top of cards and primary buttons (light from above). */
+  --highlight-card: inset 0 1px 0 rgb(255 255 255 / 0.85);
+  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.22);
+  /* Primary actions: rich forest, lit from above; pressed a shade deeper, no glow. */
+  --gradient-primary: linear-gradient(180deg, #557a5b 0%, #466a4c 52%, #3d5f43 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #44664a 0%, #36553b 100%);
+  --shadow-primary: 0 1px 2px rgb(38 61 43 / 0.24), 0 6px 14px -6px rgb(38 61 43 / 0.4);
+  /* Cards: barely lighter at the top – depth without a floating look. */
+  --gradient-surface: linear-gradient(180deg, #fffefa 0%, #fffaf2 100%);
+  /* Progress fills (bars): sage to forest. Rings use the same two stops. */
+  --gradient-progress: linear-gradient(90deg, var(--color-accent-light), var(--color-accent));
+  --gradient-page: radial-gradient(120% 22rem at 50% 0%, var(--color-bg-glow) 0%, transparent 100%);
   /* Switch knob: always light, with a small lift (both themes). */
   --color-switch-knob: #ffffff;
   --shadow-knob: 0 1px 2px rgb(0 0 0 / 0.25);
@@ -207,6 +227,7 @@
   --color-accent: #93b597;
   --color-accent-strong: #b2d0b5;
   --color-accent-text: #a9c8ac;
+  --color-accent-light: #b8d4ba;
   --color-accent-subtle: rgb(147 181 151 / 0.15);
   --color-accent-subtle-strong: rgb(147 181 151 / 0.24);
   --color-on-accent: #102014;
@@ -220,7 +241,9 @@
   --color-info-subtle: rgb(141 189 220 / 0.14);
   --color-water: #80b7dc;
   --color-water-subtle: rgb(128 183 220 / 0.15);
-  --color-tab-bar: rgb(16 22 18 / 0.9);
+  --color-tab-bar: rgb(20 27 22 / 0.92);
+  --color-focus-glow: rgb(147 181 151 / 0.25);
+  --color-bg-glow: #18211b;
   --color-scrim: rgb(0 0 0 / 0.55);
 
   /* Brand colours stay the same in both themes; only the mark switches to ivory. */
@@ -239,9 +262,16 @@
   --color-muscle-primary: #f27a5e;
   --color-muscle-secondary: #a8604f;
 
-  --shadow-card: none;
+  --shadow-card: 0 0 0 transparent; /* borders carry the edge in the dark */
   --shadow-raised: 0 2px 10px rgb(0 0 0 / 0.3);
   --shadow-sheet: 0 -6px 28px rgb(0 0 0 / 0.4);
+  --shadow-tab-bar: none;
+  --highlight-card: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  --highlight-primary: inset 0 1px 0 rgb(255 255 255 / 0.25);
+  --gradient-primary: linear-gradient(180deg, #a7c6aa 0%, #93b597 100%);
+  --gradient-primary-pressed: linear-gradient(180deg, #86a88a 0%, #7c9e80 100%);
+  --shadow-primary: 0 2px 8px rgb(0 0 0 / 0.3);
+  --gradient-surface: linear-gradient(180deg, #252f27 0%, #222b24 100%);
   --color-switch-knob: #e4e8e1;
 
   --tint-rose-bg: rgb(224 128 110 / 0.16);

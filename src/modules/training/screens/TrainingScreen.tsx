@@ -43,7 +43,7 @@ export function TrainingScreen() {
   const data = overview.status === 'ready' ? overview.data : null;
 
   return (
-    <Screen title={t('training.title')}>
+    <Screen title={t('training.title')} hero="mountains">
       {overview.status === 'error' ? <p role="alert">{t('training.errors.loadFailed')}</p> : null}
 
       {data?.active ? (

@@ -4,9 +4,52 @@
   gap: var(--space-4);
 }
 
+/* Completion badge (decorative): forest disc with the training symbol, still sparks around. */
+.done {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 5.5rem;
+}
+
+.doneDisc {
+  display: grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--radius-full);
+  color: var(--color-on-accent);
+  background: var(--gradient-primary);
+  box-shadow:
+    var(--shadow-primary),
+    var(--highlight-primary),
+    0 0 0 0.5rem var(--color-accent-subtle);
+}
+
+.sparks {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 9rem;
+  background:
+    radial-gradient(circle, var(--color-accent-light) 0 2.5px, transparent 3px) 8% 30% / 10px 10px
+      no-repeat,
+    radial-gradient(circle, var(--color-accent) 0 2px, transparent 2.5px) 20% 82% / 10px 10px
+      no-repeat,
+    radial-gradient(circle, var(--color-accent-light) 0 2px, transparent 2.5px) 88% 22% / 10px 10px
+      no-repeat,
+    radial-gradient(circle, var(--color-accent) 0 2.5px, transparent 3px) 94% 74% / 10px 10px
+      no-repeat,
+    radial-gradient(circle, var(--color-warning) 0 1.5px, transparent 2px) 74% 4% / 10px 10px
+      no-repeat,
+    radial-gradient(circle, var(--color-warning) 0 1.5px, transparent 2px) 30% 2% / 10px 10px
+      no-repeat;
+}
+
 .name {
   font-size: var(--font-size-title);
   font-weight: var(--font-weight-semibold);
+  text-align: center;
   overflow-wrap: break-word;
 }
 
@@ -17,8 +60,8 @@
   padding: var(--space-4);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .heading {
@@ -34,8 +77,8 @@
   list-style: none;
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .row {

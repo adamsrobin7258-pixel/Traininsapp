@@ -17,7 +17,10 @@ body {
   font-size: var(--font-size-body);
   line-height: var(--line-height-body);
   color: var(--color-text);
-  background: var(--color-bg);
+  /* Warm light at the top that fades into the ivory page (static, no repaint on scroll). */
+  background:
+    var(--gradient-page) no-repeat,
+    var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;

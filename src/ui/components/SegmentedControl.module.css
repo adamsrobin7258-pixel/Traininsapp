@@ -34,7 +34,7 @@
   font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   background: var(--color-control-selected);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .segment:focus-visible {

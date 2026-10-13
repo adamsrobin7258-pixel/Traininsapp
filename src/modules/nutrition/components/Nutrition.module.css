@@ -28,7 +28,9 @@
 .field:focus-visible {
   outline: none;
   border-color: var(--color-focus);
-  box-shadow: 0 0 0 1px var(--color-focus);
+  box-shadow:
+    0 0 0 1px var(--color-focus),
+    0 0 0 4px var(--color-focus-glow);
 }
 
 .field[aria-invalid='true'] {
@@ -117,8 +119,8 @@
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-full);
   color: var(--color-accent-text);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
   cursor: pointer;
 }
 
@@ -181,8 +183,8 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 /*
@@ -196,8 +198,8 @@
   padding: var(--space-5);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-raised);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-raised), var(--highlight-card);
 }
 
 .hero {
@@ -321,8 +323,8 @@
   padding: var(--space-1);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .mealRows {
@@ -521,8 +523,8 @@
   padding: var(--space-4) var(--space-5) var(--space-5);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .waterHead {
@@ -673,7 +675,9 @@
 .search:focus-visible {
   outline: none;
   border-color: var(--color-focus);
-  box-shadow: 0 0 0 1px var(--color-focus);
+  box-shadow:
+    0 0 0 1px var(--color-focus),
+    0 0 0 4px var(--color-focus-glow);
 }
 
 /* The search is the first step: a full-width field with the scanner at its end. */

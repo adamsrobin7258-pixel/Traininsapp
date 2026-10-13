@@ -47,6 +47,12 @@ unsichtbar. Kein doppeltes Logo: Einstellungen → App zeigt unter „Über Kale
 dort entfällt das Kopfzeilen-Symbol (`brand={false}`). Score-Karte, Diagramme und Sheets bleiben
 frei.
 
+**Plakette (seit Phase 25, 0.38.0):** In der Kopfzeile erscheint das Symbol als runde Plakette –
+Elfenbein auf einer Waldgrün-Scheibe (`#557a5b` → `#3d5f43`, oben eine feine Lichtkante, ein
+heller Rand), in beiden Erscheinungsbildern gleich (`BrandMark badge`). So bleibt es auch auf den
+Szenen von Training und Ernährung klar abgesetzt. Größe und Ausblenden folgen den Regeln oben.
+Unter „Über Kalethra“ steht das Logo in Elfenbein auf der Wiesen-Szene.
+
 Alle Formen sind inline (SVG im Code) oder Plattformressourcen – keine Bildanfrage, keine
 externen Ressourcen, offline.
 

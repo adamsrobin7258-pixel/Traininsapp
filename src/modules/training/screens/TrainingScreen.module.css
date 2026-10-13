@@ -16,7 +16,7 @@
   border: var(--border-hairline) solid var(--color-surface-accent-border);
   border-radius: var(--radius-card);
   background: var(--color-surface-accent);
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-raised), var(--highlight-card);
 }
 
 .next > button {

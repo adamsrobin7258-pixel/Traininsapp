@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, useId } from 'react';
 import { Link } from 'react-router';
 import { useI18n } from '@/core/i18n';
 import { SCORE_AREAS, useScore, type ScoreResult, type ScoreTrend } from '@/core/score';
@@ -182,9 +182,17 @@ function ScoreRing({
   outOf: string | null;
 }) {
   const ratio = value === null ? 0 : Math.min(1, Math.max(0, value / 100));
+  // A final score runs from sage to forest along the arc; a preliminary one stays quiet (CSS).
+  const gradientId = `score-ring-${useId().replace(/[^\w-]/g, '')}`;
   return (
     <span className={styles.ring} data-state={state}>
       <svg className={styles.ringArt} viewBox="0 0 120 120" aria-hidden="true" focusable="false">
+        <defs>
+          <linearGradient id={gradientId} x1="1" y1="0" x2="0" y2="1">
+            <stop offset="0" style={{ stopColor: 'var(--color-accent-light)' }} />
+            <stop offset="1" style={{ stopColor: 'var(--color-accent)' }} />
+          </linearGradient>
+        </defs>
         <circle className={styles.ringTrack} cx="60" cy="60" r={RING_RADIUS} />
         {ratio > 0 ? (
           <circle
@@ -194,6 +202,7 @@ function ScoreRing({
             r={RING_RADIUS}
             pathLength={100}
             strokeDasharray={`${String(ratio * 100)} 100`}
+            style={state === 'final' ? { stroke: `url(#${gradientId})` } : undefined}
           />
         ) : null}
       </svg>

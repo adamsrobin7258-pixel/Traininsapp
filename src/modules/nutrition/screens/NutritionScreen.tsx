@@ -83,7 +83,7 @@ export function NutritionScreen() {
       : null;
 
   return (
-    <Screen title={t('nutrition.title')}>
+    <Screen title={t('nutrition.title')} hero="harvest">
       <DayNavigator day={day} today={today} onChange={changeDay} />
       {data.status === 'error' ? (
         <p className={styles.error} role="alert">

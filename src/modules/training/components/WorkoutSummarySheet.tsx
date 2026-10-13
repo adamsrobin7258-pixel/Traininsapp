@@ -12,7 +12,7 @@ import {
   type WorkoutDetail,
   type WorkoutSet,
 } from '@/core/training';
-import { Button, Sheet, Stat } from '@/ui';
+import { Button, Icon, ICON_FOR, Sheet, Stat } from '@/ui';
 import { MuscleMapPreview, MuscleMapSheet } from '../muscleMap/MuscleMap';
 import { useMuscleMapText } from '../muscleMap/useMuscleMapText';
 import { formatDuration, formatLoad, formatSetShort, trainingTypeLabel } from '../domain/format';
@@ -100,6 +100,13 @@ export function WorkoutSummarySheet({
   return (
     <Sheet title={t('training.summary.title')} onClose={onView} closeLabel={t('common.close')}>
       <div className={styles.summary}>
+        {/* A calm moment of success: the training symbol on a forest disc, a few still sparks. */}
+        <div className={styles.done} aria-hidden="true">
+          <span className={styles.sparks} />
+          <span className={styles.doneDisc}>
+            <Icon name={ICON_FOR.training} size={32} />
+          </span>
+        </div>
         <h3 className={styles.name}>{name}</h3>
         <div className={styles.stats}>
           <Stat

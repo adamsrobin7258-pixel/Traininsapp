@@ -32,7 +32,9 @@
 
 .inputRow:focus-within {
   border-color: var(--color-focus);
-  box-shadow: 0 0 0 1px var(--color-focus);
+  box-shadow:
+    0 0 0 1px var(--color-focus),
+    0 0 0 4px var(--color-focus-glow);
 }
 
 .inputRow[data-invalid='true'] {

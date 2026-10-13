@@ -9,13 +9,14 @@
   padding-left: var(--safe-left);
   border-top: var(--border-hairline) solid var(--color-separator);
   background: var(--color-tab-bar);
+  box-shadow: var(--shadow-tab-bar);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
   backdrop-filter: saturate(180%) blur(20px);
 }
 
 .items {
   display: grid;
-  grid-template-columns: repeat(var(--tab-count, 5), 1fr);
+  grid-template-columns: repeat(var(--tab-count, 5), minmax(0, 1fr));
   max-width: var(--layout-max-width);
   height: var(--size-tab-bar);
   margin: 0 auto;
@@ -25,6 +26,7 @@
 
 .item {
   display: flex;
+  min-width: 0;
 }
 
 .link {
@@ -39,14 +41,20 @@
   transition: color var(--duration-fast) var(--ease-standard);
 }
 
-/* Active tab: a restrained sage pill behind the icon, label in the accent text color. */
+/*
+ * Active tab: a forest pill behind the icon with a fine light edge, label in forest and bold –
+ * clearly marked by shape, weight and colour together (never colour alone).
+ */
 .indicator {
   display: inline-grid;
   place-items: center;
-  width: 3.5rem;
+  /* Never wider than its tab: with a large system font five tabs still fit 320 px. */
+  width: min(3.5rem, calc(100% - var(--space-1)));
   height: 1.875rem;
   border-radius: var(--radius-full);
-  transition: background-color var(--duration-fast) var(--ease-standard);
+  transition:
+    background-color var(--duration-fast) var(--ease-standard),
+    transform var(--duration-fast) var(--ease-standard);
 }
 
 .link:global(.active) {
@@ -54,7 +62,13 @@
 }
 
 .link:global(.active) .indicator {
-  background: var(--color-accent-subtle-strong);
+  color: var(--color-on-accent);
+  background: var(--gradient-primary);
+  box-shadow: var(--highlight-primary);
+}
+
+.link:active .indicator {
+  transform: scale(0.94);
 }
 
 .link:global(.active) .label {

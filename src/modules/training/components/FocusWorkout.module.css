@@ -12,9 +12,9 @@
   padding: var(--space-4);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
+  background: var(--gradient-surface);
   /* The one card that matters during the workout. */
-  box-shadow: var(--shadow-raised);
+  box-shadow: var(--shadow-raised), var(--highlight-card);
 }
 
 .header {

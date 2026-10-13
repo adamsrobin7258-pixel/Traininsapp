@@ -60,8 +60,8 @@
   height: min(58vh, 30rem);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
   touch-action: pan-y;
 }
 

@@ -132,8 +132,9 @@ describe('design tokens', () => {
     expect(root).toContain('--size-tap-target: 2.75rem;');
   });
 
-  it('uses the muted sage as primary – no neon, no former accent', () => {
-    expect(block(':root')).toContain('--color-accent: #557a5b;');
+  it('uses the brand forest as primary (Phase 25) – no neon, no former accent', () => {
+    expect(block(':root')).toContain('--color-accent: #466a4c;');
+    expect(block(':root')).toContain('--color-brand-forest: #466a4c;');
     expect(tokens).not.toContain('#cc431c');
   });
 
@@ -213,7 +214,8 @@ describe('dark theme levels', () => {
   });
 
   it('replaces card shadows by borders', () => {
-    expect(declarations(THEMES.dark).get('--shadow-card')).toBe('none');
+    // An invisible shadow instead of `none`, so cards can add their light edge after it.
+    expect(declarations(THEMES.dark).get('--shadow-card')).toBe('0 0 0 transparent');
   });
 });
 

@@ -6,8 +6,8 @@
   padding: var(--space-4) var(--space-5);
   border: var(--border-hairline) solid var(--color-card-border);
   border-radius: var(--radius-card);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-card);
+  background: var(--gradient-surface);
+  box-shadow: var(--shadow-card), var(--highlight-card);
 }
 
 .avatar {
@@ -19,8 +19,9 @@
   border-radius: var(--radius-full);
   font-size: var(--font-size-headline);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-accent-text);
-  background: var(--color-accent-subtle);
+  color: var(--color-on-accent);
+  background: var(--gradient-primary);
+  box-shadow: var(--shadow-primary), var(--highlight-primary);
 }
 
 .text {
