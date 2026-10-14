@@ -15,8 +15,8 @@ import type { MeasureUnit } from '../units';
  * "Open Food Facts" wherever it is shown (see docs/OPEN_FOOD_FACTS.md).
  *
  * Kalethra uses it as barcode fallback (a product is looked up when its barcode is not known on
- * the device) and – since Phase 27 – as optional online extension of the search: only when the
- * user taps "Weitere Produkte online suchen", never while typing.
+ * the device) and as online extension of the search: since Phase 28 automatically after a pause
+ * in typing (debounced, never per keystroke – see `FoodLookupService.onlineProducts`).
  *
  * Endpoints (official documentation):
  * - Product by barcode: GET https://world.openfoodfacts.org/api/v2/product/{barcode}?fields=…
@@ -24,8 +24,9 @@ import type { MeasureUnit } from '../units';
  *   GET https://search.openfoodfacts.org/search?q=…&langs=…&page_size=…&fields=…
  *
  * Rules of the service: a custom User-Agent, at most 15 product and 10 search requests per
- * minute per user, no search-as-you-type – the app asks only on an explicit action, never
- * retries on its own and throttles searches itself (`FoodLookupService.searchOnline`).
+ * minute per user, no request per keystroke – the app waits for a pause in typing, never
+ * retries on its own, remembers answers and throttles searches itself
+ * (`FoodLookupService.onlineProducts`).
  */
 export const OPEN_FOOD_FACTS = {
   id: 'openfoodfacts',
@@ -34,8 +35,19 @@ export const OPEN_FOOD_FACTS = {
   searchUrl: 'https://search.openfoodfacts.org/search',
   /** Product names in these languages are searched (app languages). */
   searchLanguages: 'de,en',
-  /** The search also asks for the shops – to rank "Quark Lidl" on the device. */
-  searchExtraFields: ['stores'],
+  /**
+   * The search also asks for the shops (to rank "Quark Lidl"), the categories (what kind of
+   * food a product is) and the provider's quality indicators (Phase 28). The barcode lookup
+   * keeps its own, unchanged field list.
+   */
+  searchExtraFields: [
+    'stores',
+    'categories_tags',
+    'completeness',
+    'data_quality_errors_tags',
+    'data_quality_warnings_tags',
+    'states_tags',
+  ],
   minQueryLength: 2,
   maxSearchResults: 30,
   /** Only what the app maps – keeps responses small on mobile connections. */
@@ -127,9 +139,11 @@ export class OpenFoodFactsProvider implements FoodDataProvider {
     // Search-a-licious answers `hits`; older search answers used `products`.
     const hits = isRecord(data) ? (data.hits ?? data.products) : undefined;
     if (!Array.isArray(hits)) throw new FoodProviderError('invalid-response');
-    return hits
-      .map((hit) => mapOpenFoodFactsProduct(hit, 'de'))
-      .filter((product): product is ExternalProduct => product !== null && product.name !== '');
+    return hits.flatMap((hit) => {
+      const product = mapOpenFoodFactsProduct(hit, 'de');
+      if (!product || product.name === '' || !isRecord(hit)) return [];
+      return [{ ...product, ...searchDetails(hit) }];
+    });
   }
 
   /** Open Food Facts identifies products by their barcode. */
@@ -251,6 +265,61 @@ function servings(product: Record<string, unknown>, unit: MeasureUnit): FoodServ
       label: text(product.serving_size)?.slice(0, 40) ?? null,
     },
   ];
+}
+
+/** "en:fresh-cheeses" → "fresh cheeses"; language prefixes and hyphens removed. */
+function categoryWords(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const tag = text(item);
+    if (!tag) return [];
+    const words = tag
+      .replace(/^[a-z]{2}:/, '')
+      .replace(/[-_]+/g, ' ')
+      .trim();
+    return words === '' ? [] : [words.slice(0, 80)];
+  });
+}
+
+function tagList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    const tag = text(item);
+    return tag ? [tag.slice(0, 120)] : [];
+  });
+}
+
+/** Completeness as Open Food Facts states it: 0–1. */
+function completeness(value: unknown): number | null {
+  const number = amount(value);
+  return number !== null && number <= 1 ? number : null;
+}
+
+/** Whether the states say the nutrition facts are completed; `null` when not stated. */
+function nutritionComplete(value: unknown): boolean | null {
+  const states = tagList(value);
+  if (states.includes('en:nutrition-facts-completed')) return true;
+  if (states.includes('en:nutrition-facts-to-be-completed')) return false;
+  return null;
+}
+
+/**
+ * What the search needs beyond the stored product (Phase 28): kind, package size and the
+ * provider's quality indicators. Never stored – the review form only takes the product data.
+ */
+function searchDetails(
+  raw: Record<string, unknown>,
+): Pick<ExternalProduct, 'categories' | 'packageSize' | 'qualitySignals'> {
+  return {
+    categories: categoryWords(raw.categories_tags),
+    packageSize: text(raw.quantity)?.slice(0, 40) ?? null,
+    qualitySignals: {
+      completeness: completeness(raw.completeness),
+      errors: tagList(raw.data_quality_errors_tags),
+      warnings: tagList(raw.data_quality_warnings_tags),
+      nutritionComplete: nutritionComplete(raw.states_tags),
+    },
+  };
 }
 
 /**

@@ -1,5 +1,7 @@
 import {
   CONNECTOR_WORDS,
+  isFalseCompound,
+  kindMembersOf,
   NEGATION_WORDS,
   RAW_WORDS,
   RETAILER_NAMES,
@@ -23,6 +25,10 @@ import { normalizeSearchText, searchWords } from './search';
  *   only raise matching products – they never hide other foods.
  * - Personal use and own foods add a **bounded** bonus (see `usageBonus`), never more than the
  *   gap between two match levels.
+ * - Phase 28: every source – own foods, saved products, the BLS and Open Food Facts – is ranked
+ *   by this one function. A known kind counts ("Gouda" is a cheese, as is a product in the Open
+ *   Food Facts category "cheeses"), and a product that carries the brand *and* the kind asked
+ *   for gets an extra bonus. The source itself is at most a small bonus (`RankCandidate.bonus`).
  *
  * Scores are plain numbers (higher is better) so the ordering stays explainable and testable.
  */
@@ -145,6 +151,10 @@ const MATCH = {
   typingStart: 65,
   /** Somewhere inside a word: "R|ei|s". */
   inside: 12,
+  /** A well-known name of the kind asked for: "Gouda" for "Käse" (Phase 28). */
+  kind: 78,
+  /** The product's category names the kind, its name does not (Open Food Facts, Phase 28). */
+  category: 70,
 } as const;
 
 /**
@@ -198,6 +208,7 @@ function wordMatch(nameWord: string, queryWord: string): number {
   const consider = (target: string, factor: number) => {
     let points = 0;
     if (nameWord === target) points = MATCH.exact;
+    else if (isFalseCompound(target, nameWord)) points = MATCH.inside;
     else if (
       nameWord.endsWith(target) &&
       (target.length >= 4 || endsWordPart(nameWord.slice(0, -target.length)))
@@ -211,7 +222,34 @@ function wordMatch(nameWord: string, queryWord: string): number {
   };
   consider(queryWord, 1);
   for (const synonym of synonymsOf(queryWord)) consider(synonym, MATCH.synonym / MATCH.exact);
+  // "Gouda" or "Goudascheiben" for "Käse": a member of the kind, below the kind's own name.
+  if (
+    best < MATCH.kind &&
+    kindMembersOf(queryWord).some((member) => nameWord === member || nameWord.startsWith(member))
+  ) {
+    best = MATCH.kind;
+  }
   return best;
+}
+
+/** Plural and compound endings a category may add: "cheeses", "eggs", "speisequark". */
+function categoryNames(word: string, target: string): boolean {
+  if (word === target) return true;
+  if ([`${target}s`, `${target}es`, `${target}n`, `${target}en`].includes(word)) return true;
+  return target.length >= 4 && word.endsWith(target);
+}
+
+/**
+ * Points of a query word in the categories of a product. Only the last word of a category
+ * counts – it names the kind ("fresh cheeses" are cheeses, "egg pasta" is pasta).
+ */
+function categoryScore(categories: readonly string[], queryWord: string): number {
+  const targets = [queryWord, ...synonymsOf(queryWord)];
+  for (const category of categories) {
+    const last = category.split(' ').pop() ?? '';
+    if (targets.some((target) => categoryNames(last, target))) return MATCH.category;
+  }
+  return 0;
 }
 
 /** Weight of a match by its place in the name. */
@@ -259,16 +297,29 @@ function nameWordScore(name: PreparedName, queryWord: string): number {
   return best;
 }
 
-/** Score of a name for the food words; `null` when a word is missing entirely. */
-export function nameScore(name: PreparedName, foodWords: readonly string[]): number | null {
+/**
+ * Score of a name for the food words; `null` when a word is missing entirely. `categories`:
+ * the kind of a product (Open Food Facts) – it can stand in for a word the name lacks.
+ * `phrase`: whether the whole query is the food words (no brand) – only then does a name that
+ * *is* the query get the full-name bonus ("Käse" is no answer to "Milbona Käse").
+ */
+export function nameScore(
+  name: PreparedName,
+  foodWords: readonly string[],
+  {
+    categories = [],
+    phrase: wholeQuery = true,
+  }: { categories?: readonly string[]; phrase?: boolean } = {},
+): number | null {
   if (foodWords.length === 0) return 0;
   let sum = 0;
   for (const word of foodWords) {
-    const points = nameWordScore(name, word);
+    const points = Math.max(nameWordScore(name, word), categoryScore(categories, word));
     if (points === 0) return null;
     sum += points;
   }
   let score = sum / foodWords.length;
+  if (!wholeQuery) return score;
   const phrase = foodWords.join(' ');
   if (name.text === phrase || name.compact === foodWords.join('')) score += 60;
   else if (name.lang === 'de' && name.text.startsWith(`${phrase} `)) score += 15;
@@ -280,7 +331,17 @@ export const BONUS = {
   /** A brand or retailer in the query that the product carries. */
   brand: 40,
   /** A brand or retailer in the query that the product does not carry – it stays listed. */
-  otherBrand: -30,
+  otherBrand: -40,
+  /**
+   * The product carries the brand *and* clearly is the food asked for ("Milbona Käse" →
+   * "Milbona Gouda") – both parts of the query are met together (Phase 28).
+   */
+  brandAndKind: 20,
+  /**
+   * A product without a stated brand whose name starts with the brand ("Milbona Gouda"). Half
+   * the brand bonus: the name alone is weaker evidence than the brand field.
+   */
+  brandInName: 20,
   /** A dish or recipe (BLS X/Y) after the plain food. */
   dish: -40,
   raw: 4,
@@ -308,6 +369,8 @@ export interface RankCandidate {
   names: readonly PreparedName[];
   /** Brand and stores, normalised (`normalizeSearchText`). */
   brands?: readonly string[];
+  /** Categories of a product, normalised ("fresh cheeses") – Open Food Facts only. */
+  categories?: readonly string[];
   dish?: boolean;
   /** Own food, saved product and personal use – see `BONUS`, `usageBonus`. */
   bonus?: number;
@@ -330,15 +393,28 @@ export function relevance(candidate: RankCandidate, query: QueryAnalysis): numbe
     brands.some((brand) =>
       query.brandTargets.some((target) => ` ${brand} `.includes(` ${target} `)),
     );
+  // Without a stated brand, the start of the name may carry it – never its later words, which
+  // describe or list ingredients ("Quarkspeise mit Milbona Quark" is no Milbona product).
+  const first = candidate.names[0];
+  const brandInName =
+    !brandHit &&
+    brands.length === 0 &&
+    query.brandWords.length > 0 &&
+    first !== undefined &&
+    query.brandTargets.some((target) => first.text.startsWith(`${target} `));
 
   let score = -Infinity;
   if (query.foodWords.length === 0) {
     // Only a brand or retailer ("Milbona", "Lidl"): its products, nothing else.
-    if (!brandHit) return null;
+    if (!brandHit && !brandInName) return null;
     score = 50;
   } else {
+    const options = {
+      categories: candidate.categories ?? [],
+      phrase: query.brandWords.length === 0,
+    };
     for (const [index, name] of candidate.names.entries()) {
-      const value = nameScore(name, query.foodWords);
+      const value = nameScore(name, query.foodWords, options);
       if (value === null) continue;
       score = Math.max(score, index === 0 ? value : value * FURTHER_NAME);
     }
@@ -346,7 +422,13 @@ export function relevance(candidate: RankCandidate, query: QueryAnalysis): numbe
   }
 
   let total = score;
-  if (query.brandWords.length > 0) total += brandHit ? BONUS.brand : BONUS.otherBrand;
+  if (query.brandWords.length > 0) {
+    total += brandHit ? BONUS.brand : brandInName ? BONUS.brandInName : BONUS.otherBrand;
+    // Brand and kind together: the product is what the whole query asks for.
+    if ((brandHit || brandInName) && query.foodWords.length > 0 && score >= STRONG_MATCH) {
+      total += BONUS.brandAndKind;
+    }
+  }
   if (candidate.dish) total += BONUS.dish;
   if (candidate.names[0]?.raw) total += BONUS.raw;
   total += candidate.bonus ?? 0;

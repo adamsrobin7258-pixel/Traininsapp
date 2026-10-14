@@ -105,9 +105,9 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     });
   });
 
-  it('searches own foods and the BLS offline – never Open Food Facts – and labels the source', async () => {
+  it('searches own foods and the BLS at once, Open Food Facts after a pause, and labels the source', async () => {
     const provider = new FakeFoodProvider();
-    provider.products = [externalProduct({ name: 'Haferflocken Online' })];
+    provider.products = [externalProduct({ name: 'Haferflocken Online', brand: 'Marke' })];
     await renderApp('/nutrition', { prepare: withFoods, foodProvider: provider });
     await openAdd();
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'hafer');
@@ -120,17 +120,16 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
         'Neues Lebensmittel anlegen',
       ]);
     });
+    // After a pause in typing, Open Food Facts joins the same list – one request, the text only.
+    expect(
+      await results.findByRole('button', { name: /Haferflocken Online/ }, { timeout: 3000 }),
+    ).toBeInTheDocument();
+    expect(provider.calls).toEqual([{ method: 'search', value: 'hafer', limit: 24 }]);
     expect(
       dialog().getByText(
         /Max Rubner-Institut \(2025\): Bundeslebensmittelschlüssel \(BLS\), Version 4\.0\. Karlsruhe\./,
       ),
     ).toBeInTheDocument();
-    // The online search is offered, but nothing is sent until it is tapped (Phase 27).
-    expect(
-      dialog().getByRole('button', { name: 'Weitere Produkte online suchen' }),
-    ).toBeInTheDocument();
-    expect(dialog().queryByText('Haferflocken Online')).not.toBeInTheDocument();
-    expect(provider.calls).toEqual([]);
     // Illustrations: the BLS food shows its family (from the code), the own food the neutral
     // symbol – a family is never guessed.
     const [own, bls] = results.getAllByRole('button');
@@ -168,7 +167,8 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
         energy_kcal: 110,
       },
     ]);
-    expect(provider.calls).toEqual([]);
+    // Offline: the online search may have been tried (only the text) – nothing else was sent.
+    expect(provider.calls.filter((call) => call.method !== 'search')).toEqual([]);
 
     // Used once, it is offered under "recently used" – as the same food, without a duplicate.
     await openAdd();
@@ -350,7 +350,7 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
   });
 });
 
-describe('optional online search (Phase 27)', () => {
+describe('automatic online search (Phase 28)', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['Date'] });
     vi.setSystemTime(NOW);
@@ -362,7 +362,7 @@ describe('optional online search (Phase 27)', () => {
     vi.restoreAllMocks();
   });
 
-  it('asks only on tap, sends the text alone, reviews the product before it is stored', async () => {
+  it('asks once after a pause, ranks the product with the rest, reviews it before storing', async () => {
     const provider = new FakeFoodProvider();
     provider.searchResults = [
       externalProduct({ name: 'Magerquark', brand: 'Milbona', stores: ['Lidl'] }),
@@ -370,17 +370,24 @@ describe('optional online search (Phase 27)', () => {
     const { db } = await renderApp('/nutrition', { foodProvider: provider });
     await openAdd();
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Quark Lidl');
-    const online = await dialog().findByRole('button', { name: 'Weitere Produkte online suchen' });
-    expect(dialog().getByText(/Gesendet wird nur dein Suchbegriff/)).toBeInTheDocument();
+    // Typing sends nothing; the local results are there at once.
     expect(provider.calls).toEqual([]);
+    const results = within(await screen.findByRole('list', { name: 'Suchergebnisse' }));
+    expect(dialog().getByText(/Gesendet wird nur dein Suchbegriff/)).toBeInTheDocument();
 
-    await userEvent.click(online);
-    const found = within(await screen.findByRole('list', { name: 'Online gefunden' }));
+    // The best match comes first, whatever its source – here the product found online.
+    await waitFor(
+      () => {
+        expect(results.getAllByRole('button')[0]).toHaveTextContent(/^Magerquark.*Milbona/);
+      },
+      { timeout: 3000 },
+    );
+    // One request for the whole text – not one per keystroke.
     expect(provider.calls).toEqual([{ method: 'search', value: 'Quark Lidl', limit: 24 }]);
     expect(
       dialog().getByText(/Open Food Facts \(openfoodfacts\.org\), Lizenz ODbL/),
     ).toBeInTheDocument();
-    await userEvent.click(found.getByRole('button', { name: /Magerquark.*Milbona/ }));
+    await userEvent.click(results.getByRole('button', { name: /Magerquark.*Milbona/ }));
 
     // The same review as after a scan: nothing is stored before "Speichern".
     expect(await screen.findByRole('dialog', { name: 'Produkt prüfen' })).toBeInTheDocument();
@@ -392,18 +399,55 @@ describe('optional online search (Phase 27)', () => {
     ]);
   });
 
-  it('offline: a clear message, the local results stay usable', async () => {
+  it('short texts stay local; a repeated text is answered from memory', async () => {
+    const provider = new FakeFoodProvider();
+    await renderApp('/nutrition', { foodProvider: provider });
+    await openAdd();
+    const field = dialog().getByLabelText('Lebensmittel suchen');
+    await userEvent.type(field, 'Ei');
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(provider.calls).toEqual([]);
+    await userEvent.type(field, 'er');
+    await waitFor(
+      () => {
+        expect(provider.calls).toHaveLength(1);
+      },
+      { timeout: 3000 },
+    );
+    await userEvent.clear(field);
+    await userEvent.type(field, 'Eier');
+    await new Promise((resolve) => setTimeout(resolve, 900));
+    expect(provider.calls).toEqual([{ method: 'search', value: 'Eier', limit: 24 }]);
+  });
+
+  it('offline: a quiet note, nothing blocks – the local results stay usable', async () => {
     const provider = new FakeFoodProvider();
     provider.failWith = 'offline';
     await renderApp('/nutrition', { prepare: withFoods, foodProvider: provider });
     await openAdd();
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Haferflocken');
-    await userEvent.click(
-      await dialog().findByRole('button', { name: 'Weitere Produkte online suchen' }),
-    );
-    expect(await dialog().findByText(/Keine Verbindung zu Open Food Facts/)).toBeInTheDocument();
+    expect(
+      await dialog().findByText(/Offline – du siehst die Ergebnisse auf deinem Gerät/, undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(dialog().queryByRole('alert')).not.toBeInTheDocument();
     const results = within(screen.getByRole('list', { name: 'Suchergebnisse' }));
     expect(results.getAllByRole('button', { name: /^Haferflocken/ }).length).toBeGreaterThan(0);
+  });
+
+  it('provider trouble (timeout, server): the same quiet note', async () => {
+    const provider = new FakeFoodProvider();
+    provider.failWith = 'timeout';
+    await renderApp('/nutrition', { prepare: withFoods, foodProvider: provider });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Haferflocken');
+    expect(
+      await dialog().findByText(/Open Food Facts ist gerade nicht erreichbar/, undefined, {
+        timeout: 3000,
+      }),
+    ).toBeInTheDocument();
+    expect(dialog().queryByRole('alert')).not.toBeInTheDocument();
   });
 
   it('shows clear matches apart from weaker ones', async () => {

@@ -4,8 +4,15 @@ import { externalProduct, FakeFoodProvider } from '@/test/fakeFoodProvider';
 import { createBlsCatalog } from './bls';
 import { blsCategory } from './category';
 import type { FoodSearchResult } from './foodLookupService';
-import { ONLINE_SEARCH } from './foodLookupService';
-import { analyzeQuery, prepareName, relevance, usageBonus, BONUS } from './foodRanking';
+import { ONLINE_SEARCH, SEARCH_RESULTS_LIMIT } from './foodLookupService';
+import {
+  analyzeQuery,
+  prepareName,
+  relevance,
+  usageBonus,
+  BONUS,
+  STRONG_MATCH,
+} from './foodRanking';
 import type { Nutrients } from './nutrients';
 import { FoodProviderError, type ExternalProduct } from './provider';
 
@@ -42,7 +49,11 @@ async function setup() {
 }
 
 const nameOf = (result: FoodSearchResult) =>
-  result.kind === 'food' ? result.food.name : result.reference.name;
+  result.kind === 'food'
+    ? result.food.name
+    : result.kind === 'reference'
+      ? result.reference.name
+      : result.product.name;
 const groupOf = (result: FoodSearchResult) =>
   result.kind === 'reference' ? blsCategory(result.reference.code) : null;
 
@@ -233,7 +244,7 @@ describe('brands, retailers and personal use', () => {
   });
 });
 
-describe('online extension (optional, explicit)', () => {
+describe('automatic online search, one ranking for all sources (Phase 28)', () => {
   const lidlQuark = externalProduct({
     externalId: '4056489000002',
     barcode: '4056489000002',
@@ -247,73 +258,298 @@ describe('online extension (optional, explicit)', () => {
     name: 'Quarkcreme Vanille',
     brand: 'Andere Marke',
   });
+  const milbonaGouda = externalProduct({
+    externalId: '4056489000010',
+    barcode: '4056489000010',
+    name: 'Gouda jung',
+    brand: 'Milbona',
+    categories: ['dairies', 'cheeses', 'gouda'],
+    nutrients: {
+      ...externalProduct().nutrients,
+      energyKcal: 356,
+      proteinG: 24,
+      carbsG: 0,
+      fatG: 29,
+    },
+  });
 
-  it('the local search never asks the provider – online only on request', async () => {
+  it('the local search alone never asks the provider', async () => {
     const { n, provider, profileId } = await setup();
     await n.lookup.search(profileId, 'Quark Lidl');
     expect(provider.calls).toEqual([]);
     expect(n.lookup.canSearchOnline).toBe(true);
   });
 
-  it('sends only the search text, ranks retailer matches first', async () => {
-    const { n, provider, profileId } = await setup();
-    provider.searchResults = [otherQuark, lidlQuark];
-    const results = await n.lookup.searchOnline(profileId, ' Quark Lidl ');
+  it('sends only the search text; repeats from memory; throttles before the provider limit', async () => {
+    const { n, provider } = await setup();
+    provider.searchResults = [lidlQuark];
+    expect(await n.lookup.onlineProducts(' Quark Lidl ')).toEqual([lidlQuark]);
     expect(provider.calls).toEqual([
       { method: 'search', value: 'Quark Lidl', limit: ONLINE_SEARCH.limit },
     ]);
-    expect(results[0]).toMatchObject({ kind: 'product', strong: true });
-    expect(results.map((r) => (r.kind === 'product' ? r.product.name : r.food.name))).toEqual([
-      'Speisequark Magerstufe',
-      'Quarkcreme Vanille',
-    ]);
-  });
-
-  it('repeats a search from memory, throttles before the provider limit', async () => {
-    const { n, provider, profileId } = await setup();
-    provider.searchResults = [lidlQuark];
-    await n.lookup.searchOnline(profileId, 'Quark');
-    await n.lookup.searchOnline(profileId, 'quark');
+    await n.lookup.onlineProducts('quark lidl');
     expect(provider.calls).toHaveLength(1);
+    expect(n.lookup.cachedOnlineProducts('Quark Lidl')).toEqual([lidlQuark]);
     for (let i = 1; i < ONLINE_SEARCH.perMinute; i += 1) {
-      await n.lookup.searchOnline(profileId, `Quark ${String(i)}`);
+      await n.lookup.onlineProducts(`Quark ${String(i)}`);
     }
     expect(provider.calls).toHaveLength(ONLINE_SEARCH.perMinute);
-    await expect(n.lookup.searchOnline(profileId, 'Joghurt')).rejects.toEqual(
+    await expect(n.lookup.onlineProducts('Joghurt')).rejects.toEqual(
       new FoodProviderError('rate-limited'),
     );
     expect(provider.calls).toHaveLength(ONLINE_SEARCH.perMinute);
+    // A minute later the next search is sent again.
+    now = new Date(now.getTime() + 61_000);
+    await n.lookup.onlineProducts('Joghurt');
+    expect(provider.calls).toHaveLength(ONLINE_SEARCH.perMinute + 1);
   });
 
-  it('offline: the online search fails clearly, the local search works on', async () => {
+  it('remembered answers expire; nothing is sent for a text that is too short', async () => {
+    const { n, provider } = await setup();
+    provider.searchResults = [lidlQuark];
+    await n.lookup.onlineProducts('Quark');
+    now = new Date(now.getTime() + ONLINE_SEARCH.cacheMs + 1000);
+    expect(n.lookup.cachedOnlineProducts('Quark')).toBeNull();
+    await n.lookup.onlineProducts('Quark');
+    expect(provider.calls).toHaveLength(2);
+    expect(await n.lookup.onlineProducts('ei')).toEqual([]);
+    expect(provider.calls).toHaveLength(2);
+  });
+
+  it.each(['offline', 'timeout', 'unavailable', 'invalid-response'] as const)(
+    'provider error "%s": passed on, the local search works on',
+    async (code) => {
+      const { n, provider, profileId } = await setup();
+      provider.failWith = code;
+      await expect(n.lookup.onlineProducts('Quark')).rejects.toEqual(new FoodProviderError(code));
+      expect((await n.lookup.search(profileId, 'Quark')).length).toBeGreaterThan(0);
+    },
+  );
+
+  it('offline, a search answered before still comes from memory', async () => {
     const { n, provider, profileId } = await setup();
+    provider.searchResults = [lidlQuark];
+    const products = await n.lookup.onlineProducts('Quark Lidl');
     provider.failWith = 'offline';
-    await expect(n.lookup.searchOnline(profileId, 'Quark')).rejects.toEqual(
-      new FoodProviderError('offline'),
-    );
-    expect((await n.lookup.search(profileId, 'Quark')).length).toBeGreaterThan(0);
+    expect(await n.lookup.onlineProducts('Quark Lidl')).toEqual(products);
+    const results = await n.lookup.search(profileId, 'Quark Lidl', { online: products });
+    expect(results[0]).toMatchObject({
+      kind: 'product',
+      product: { name: 'Speisequark Magerstufe' },
+    });
   });
 
-  it('a product saved before comes back as the stored food (no duplicate)', async () => {
+  it('an online product can rank first – the match decides, not the source', async () => {
     const { n, provider, profileId } = await setup();
+    // An own food that only shares the word "Käse", used often.
+    await n.foods.create(profileId, {
+      name: 'Käse',
+      reference: { amount: 100, unit: 'g' },
+      nutrients: { ...complete(milbonaGouda) },
+    });
+    provider.searchResults = [milbonaGouda];
+    const online = await n.lookup.onlineProducts('Milbona Käse');
+    const results = await n.lookup.search(profileId, 'Milbona Käse', { online });
+    expect(results[0]).toMatchObject({ kind: 'product', product: { name: 'Gouda jung' } });
+    const own = results.find((r) => r.kind === 'food' && r.food.name === 'Käse');
+    expect((results[0]?.score ?? 0) - (own?.score ?? 0)).toBeGreaterThanOrEqual(25);
+  });
+
+  it('a poor online match never pushes a clear local match down', async () => {
+    const { n, provider, profileId } = await setup();
+    provider.searchResults = [otherQuark];
+    const online = await n.lookup.onlineProducts('Quark');
+    const results = await n.lookup.search(profileId, 'Quark', { online });
+    expect(nameOf(results[0] as FoodSearchResult)).toMatch(/^Speisequark/);
+    const creme = results.findIndex((r) => r.kind === 'product');
+    expect(creme).toBeGreaterThan(4);
+    // A product without any relation to the query is left out entirely.
+    const unrelated = externalProduct({
+      externalId: '4000000000099',
+      barcode: '4000000000099',
+      name: 'Cola Zero',
+    });
+    const mixed = await n.lookup.search(profileId, 'Quark', { online: [unrelated] });
+    expect(mixed.some((r) => r.kind === 'product')).toBe(false);
+  });
+
+  it('retailer matches rank first among the online products', async () => {
+    const { n, profileId } = await setup();
+    const results = await n.lookup.search(profileId, 'Quark Lidl', {
+      online: [otherQuark, lidlQuark],
+    });
+    expect(results[0]).toMatchObject({
+      kind: 'product',
+      product: { name: 'Speisequark Magerstufe' },
+    });
+    const creme = results.findIndex(
+      (r) => r.kind === 'product' && r.product.name === 'Quarkcreme Vanille',
+    );
+    expect(creme).toBeGreaterThan(0);
+  });
+
+  it('a saved product appears once, as the stored food (same record or same barcode)', async () => {
+    const { n, profileId } = await setup();
     const saved = await n.foods.saveImported(
       profileId,
       { provider: lidlQuark.provider, externalId: lidlQuark.externalId },
       { ...lidlQuark, nutrients: complete(lidlQuark) },
     );
-    provider.searchResults = [lidlQuark];
-    const [result] = await n.lookup.searchOnline(profileId, 'Quark');
-    expect(result).toMatchObject({ kind: 'saved', food: { id: saved.id } });
-    // Saved, it is found offline afterwards.
-    provider.failWith = 'offline';
-    const local = await n.lookup.search(profileId, 'Speisequark Magerstufe');
-    expect(local.some((r) => r.kind === 'food' && r.food.id === saved.id)).toBe(true);
+    const twin = { ...lidlQuark, externalId: 'other-record' };
+    const results = await n.lookup.search(profileId, 'Speisequark Magerstufe', {
+      online: [lidlQuark, twin],
+    });
+    expect(results.filter((r) => r.kind === 'product')).toEqual([]);
+    expect(results.filter((r) => r.kind === 'food' && r.food.id === saved.id)).toHaveLength(1);
   });
 
-  it('nothing is sent for a text that is too short', async () => {
-    const { n, provider, profileId } = await setup();
-    expect(await n.lookup.searchOnline(profileId, 'e')).toEqual([]);
-    expect(provider.calls).toEqual([]);
+  it('poor records are hidden, limited ones rank behind good ones of the same relevance', async () => {
+    const { n, profileId } = await setup();
+    const good = externalProduct({ externalId: '1', barcode: '40000001', name: 'Skyr Natur' });
+    const limited = externalProduct({
+      externalId: '2',
+      barcode: '40000002',
+      name: 'Skyr Natur',
+      nutrients: { ...good.nutrients, fatG: null },
+      missing: ['fatG'],
+    });
+    const poor = externalProduct({
+      externalId: '3',
+      barcode: '40000003',
+      name: 'Skyr Natur',
+      nutrients: { ...good.nutrients, energyKcal: null },
+      missing: ['energyKcal'],
+    });
+    const results = (
+      await n.lookup.search(profileId, 'Skyr Natur', { online: [limited, poor, good] })
+    ).flatMap((r) => (r.kind === 'product' ? [r.product.externalId] : []));
+    expect(results).toEqual(['1', '2']);
+  });
+
+  it('results stay bounded across all sources', async () => {
+    const { n, profileId } = await setup();
+    const many = Array.from({ length: 30 }, (_, i) =>
+      externalProduct({
+        externalId: `x${String(i)}`,
+        barcode: `4000000001${String(i).padStart(3, '0')}`,
+        name: `Eier Bio ${String(i)}`,
+      }),
+    );
+    const results = await n.lookup.search(profileId, 'Eier', { online: many });
+    expect(results).toHaveLength(SEARCH_RESULTS_LIMIT);
+    // Products named "Eier …" are eggs as well: they compete with the BLS eggs on equal terms.
+    expect(results.slice(0, 20).every((r) => r.kind === 'product' || groupOf(r) === 'egg')).toBe(
+      true,
+    );
+  });
+});
+
+describe('ranking rules (Phase 28)', () => {
+  const rank = (
+    name: string,
+    query: string,
+    extra: Partial<Parameters<typeof relevance>[0]> = {},
+  ) => relevance({ names: [prepareName(name)], ...extra }, analyzeQuery(query)) ?? -Infinity;
+
+  it('exact name, word start, word boundaries and parts of words in that order', () => {
+    expect(rank('Quark', 'Quark')).toBeGreaterThan(rank('Quark mager', 'Quark'));
+    expect(rank('Quark mager', 'Quark')).toBeGreaterThan(rank('Magerquark', 'Quark') - 30);
+    expect(rank('Magerquark', 'Quark')).toBeGreaterThan(rank('Quarkkuchen', 'Quark'));
+    expect(rank('Quarkkuchen', 'Quark')).toBeGreaterThan(rank('Kuchen mit Quark', 'Quark'));
+    expect(rank('Hähnchenbrust', 'Hähnchen')).toBeGreaterThan(
+      rank('Reis mit Hähnchen', 'Hähnchen'),
+    );
+  });
+
+  it('several words are judged together – all must match', () => {
+    expect(rank('Eier gekocht', 'Eier gekocht')).toBeGreaterThan(rank('Eier roh', 'Eier gekocht'));
+    expect(rank('Eier roh', 'Eier gekocht')).toBe(-Infinity);
+  });
+
+  it('brand plus kind: "Milbona Gouda" clearly before "Gouda Käse" and an unbranded "Käse"', () => {
+    const query = analyzeQuery('Milbona Käse');
+    const score = (name: string, brands: string[] = [], bonus = 0) =>
+      relevance({ names: [prepareName(name)], brands, bonus }, query) ?? -Infinity;
+    const milbona = score('Milbona Gouda', ['milbona']);
+    expect(milbona).toBeGreaterThan(STRONG_MATCH);
+    expect(milbona - score('Gouda Käse', ['andere'])).toBeGreaterThanOrEqual(40);
+    // An own "Käse", used very often, stays clearly behind.
+    expect(milbona - score('Käse', [], BONUS.custom + BONUS.usageMax)).toBeGreaterThanOrEqual(25);
+    // Käse only as an ingredient: far behind.
+    expect(score('Nudeln mit Käse')).toBeLessThan(score('Gouda Käse', ['andere']));
+  });
+
+  it('a brand only mentioned later in the name is no brand match', () => {
+    const query = analyzeQuery('Milbona Quark');
+    const real = relevance({ names: [prepareName('Milbona Magerquark')] }, query) ?? 0;
+    const mention =
+      relevance({ names: [prepareName('Quarkspeise mit Milbona Quark')] }, query) ?? 0;
+    expect(real).toBeGreaterThan(mention + 40);
+  });
+
+  it('the kind of a product counts from its category', () => {
+    const query = analyzeQuery('Käse');
+    const withCategory = relevance(
+      { names: [prepareName('Le Rustique')], categories: ['fresh cheeses', 'cheeses'] },
+      query,
+    );
+    expect(withCategory).toBeGreaterThan(STRONG_MATCH);
+    // Only the last word names the kind: "egg pasta" is pasta, not an egg.
+    expect(
+      relevance({ names: [prepareName('Spätzle')], categories: ['egg pasta'] }, analyzeQuery('Ei')),
+    ).toBeNull();
+  });
+
+  it('typing slips are found, but below the correct spelling', () => {
+    expect(rank('Banane roh', 'Bananne')).toBeGreaterThan(0);
+    expect(rank('Banane roh', 'Banane')).toBeGreaterThan(rank('Banane roh', 'Bananne'));
+  });
+
+  it('the source is a small factor only: a clear match from any source beats a weak own food', () => {
+    const query = analyzeQuery('Quark');
+    const weakOwn = relevance(
+      { names: [prepareName('Kuchen mit Quark')], bonus: BONUS.custom + BONUS.usageMax },
+      query,
+    );
+    const clearOnline = relevance({ names: [prepareName('Speisequark')] }, query);
+    expect(clearOnline ?? 0).toBeGreaterThan(weakOwn ?? 0);
+  });
+});
+
+describe('Phase 28 target queries – real BLS data', () => {
+  it('"Eier": egg products before dishes and compounds such as "Eierlikör"', async () => {
+    const results = await search('Eier');
+    expect(results.slice(0, 10).every((r) => groupOf(r) === 'egg')).toBe(true);
+    const names = results.map(nameOf);
+    const liqueur = names.findIndex((name) => name.startsWith('Eierlikör'));
+    expect(liqueur === -1 || liqueur > 10).toBe(true);
+  });
+
+  it('"Hähnchen": chicken itself before dishes that only contain chicken', async () => {
+    const results = await search('Hähnchen');
+    const firstDish = results.findIndex((r) => groupOf(r) === 'dishes');
+    const lastPoultry = results.map(groupOf).lastIndexOf('poultry');
+    expect(firstDish === -1 || firstDish > 10).toBe(true);
+    expect(results.slice(0, 10).every((r) => groupOf(r) === 'poultry')).toBe(true);
+    expect(lastPoultry).toBeGreaterThan(-1);
+  });
+
+  it('"Magerquark": the plain lean quark before herb quark and quark dishes', async () => {
+    const names = (await search('Magerquark')).map(nameOf);
+    expect(names[0]).toMatch(/Magerquark|Magerstufe/);
+    const herb = names.findIndex((name) => /Kräuter/.test(name));
+    expect(herb === -1 || herb > 0).toBe(true);
+  });
+
+  it('"Käse" lists cheese – Gouda counts as one, Leberkäse does not', async () => {
+    const results = await search('Käse');
+    expect(results.filter((r) => r.strong).length).toBeGreaterThan(5);
+    expect(results.slice(0, 20).some((r) => /^(Leber|Fleisch)käse/.test(nameOf(r)))).toBe(false);
+    const query = analyzeQuery('Käse');
+    expect(
+      relevance({ names: [prepareName('Gouda mind. 40 % Fett i. Tr.')] }, query),
+    ).toBeGreaterThan(STRONG_MATCH);
+    expect(relevance({ names: [prepareName('Leberkäse')] }, query) ?? 0).toBeLessThan(STRONG_MATCH);
   });
 });
 

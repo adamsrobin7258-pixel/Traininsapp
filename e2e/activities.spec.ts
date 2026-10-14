@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('manual activity: log, adjust, edit, delete and count towards the daily goal', async ({
   page,

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Goals from Einstellungen on the compact Fortschritt (Phase 23): the score rates the areas, the

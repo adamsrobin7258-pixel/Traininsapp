@@ -41,6 +41,31 @@ export interface ExternalProduct {
    * "Lidl"). Used to rank "Quark Lidl"; never stored.
    */
   stores?: string[];
+  /**
+   * Search only (Phase 28), never stored: the provider's categories, normalised to plain words
+   * ("fresh cheeses") – they tell the ranking what kind of food a product is.
+   */
+  categories?: string[];
+  /** Search only: the stated package size, normalised ("500 g"); tells variants apart. */
+  packageSize?: string | null;
+  /** Search only: what the provider itself says about the quality of its record. */
+  qualitySignals?: ProductQualitySignals;
+}
+
+/**
+ * Quality indicators a provider states for a record (Open Food Facts: completeness, quality
+ * errors and warnings, states). Indicators only – they say nothing about whether the values
+ * are *correct*, and the app never presents a product as verified because of them.
+ */
+export interface ProductQualitySignals {
+  /** 0–1, how many of the provider's fields are filled; `null` when not stated. */
+  completeness: number | null;
+  /** Errors the provider detected in the record (e.g. energy does not match the nutrients). */
+  errors: string[];
+  /** Warnings the provider detected (only those about nutrition values matter here). */
+  warnings: string[];
+  /** The provider marks the nutrition facts as completed; `null` when not stated. */
+  nutritionComplete: boolean | null;
 }
 
 export type FoodProviderErrorCode =

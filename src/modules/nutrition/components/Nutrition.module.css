@@ -1065,17 +1065,14 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-/* ── Optional online search (Phase 27) ───────────────────────── */
+/* ── Automatic online search (Phase 28) ──────────────────────── */
 
-.onlineSearch {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-4);
-}
-
-.onlineHint {
-  padding: 0 var(--space-1);
+/* The state of the online search at the end of the results. It sits below the list and keeps
+   at least two lines, so a changing state never moves a result. */
+.onlineStatus {
+  min-block-size: calc(2 * var(--line-height-snug) * var(--font-size-footnote));
+  margin: var(--space-3) 0 0;
+  padding: 0 var(--space-4);
   font-size: var(--font-size-footnote);
   line-height: var(--line-height-snug);
   color: var(--color-text-secondary);

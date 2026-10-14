@@ -223,13 +223,69 @@ describe('OpenFoodFactsProvider', () => {
     );
   });
 
+  it('reads kind, package size and quality indicators for the search (Phase 28)', async () => {
+    const gouda = {
+      code: '4056489000010',
+      product_name: 'Gouda jung',
+      brands: 'Milbona',
+      quantity: '400 g',
+      categories_tags: ['en:dairies', 'en:fresh-cheeses', 'de:gouda'],
+      completeness: 0.7875,
+      data_quality_errors_tags: [],
+      data_quality_warnings_tags: ['en:nutrition-value-very-high-for-category-fat'],
+      states_tags: ['en:nutrition-facts-completed', 'en:photos-uploaded'],
+      nutriments: {
+        'energy-kcal_100g': 356,
+        proteins_100g: 24,
+        carbohydrates_100g: 0,
+        fat_100g: 29,
+      },
+    };
+    const { http, requests } = client(ok({ hits: [gouda] }));
+    const provider = new OpenFoodFactsProvider(http, UA);
+    const [product] = await provider.searchProducts('Milbona Käse', { limit: 10 });
+    expect(requests[0]?.url.searchParams.get('fields')?.split(',')).toEqual(
+      expect.arrayContaining([
+        'categories_tags',
+        'completeness',
+        'data_quality_errors_tags',
+        'data_quality_warnings_tags',
+        'states_tags',
+      ]),
+    );
+    expect(product).toMatchObject({
+      categories: ['dairies', 'fresh cheeses', 'gouda'],
+      packageSize: '400 g',
+      qualitySignals: {
+        completeness: 0.79,
+        errors: [],
+        warnings: ['en:nutrition-value-very-high-for-category-fat'],
+        nutritionComplete: true,
+      },
+    });
+    // Without the indicators nothing is invented.
+    const bare = await new OpenFoodFactsProvider(
+      client(ok({ hits: [{ code: '4056489000011', product_name: 'Gouda' }] })).http,
+      UA,
+    ).searchProducts('Gouda', { limit: 10 });
+    expect(bare[0]?.qualitySignals).toEqual({
+      completeness: null,
+      errors: [],
+      warnings: [],
+      nutritionComplete: null,
+    });
+  });
+
   it('keeps the barcode request unchanged: no shops, no search (barcode guard)', async () => {
     const { http, requests } = client(ok({ status: 1, product: NUTELLA }));
     const provider = new OpenFoodFactsProvider(http, UA);
     const product = await provider.lookupBarcode('3017624010701');
     expect(requests[0]?.url.pathname).toBe('/api/v2/product/3017624010701');
     expect(requests[0]?.url.searchParams.get('fields')).not.toContain('stores');
+    expect(requests[0]?.url.searchParams.get('fields')).not.toContain('categories');
+    expect(requests[0]?.url.searchParams.get('fields')).not.toContain('completeness');
     expect(product).not.toHaveProperty('stores');
+    expect(product).not.toHaveProperty('qualitySignals');
   });
 
   const failures: [Reply, string][] = [

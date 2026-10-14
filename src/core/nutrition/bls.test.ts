@@ -39,7 +39,11 @@ async function setup() {
 
 const names = (results: FoodSearchResult[]) =>
   results.map((r) =>
-    r.kind === 'food' ? `${r.food.source}:${r.food.name}` : `bls:${r.reference.name}`,
+    r.kind === 'food'
+      ? `${r.food.source}:${r.food.name}`
+      : r.kind === 'reference'
+        ? `bls:${r.reference.name}`
+        : `off:${r.product.name}`,
   );
 
 const own = {

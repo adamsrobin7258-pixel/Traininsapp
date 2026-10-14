@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * Regression sweep (phase 12) over every main page and Einstellungen page, in each project

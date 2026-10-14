@@ -184,9 +184,7 @@ describe('importing', () => {
     );
     provider.failWith = 'offline';
     const results = await n.lookup.search(profileId, 'skyr');
-    expect(results.map((r) => (r.kind === 'food' ? r.food.name : r.reference.name))).toEqual([
-      'Skyr Natur',
-    ]);
+    expect(results.map((r) => (r.kind === 'food' ? r.food.name : r.kind))).toEqual(['Skyr Natur']);
     expect(provider.calls).toEqual([]);
   });
 

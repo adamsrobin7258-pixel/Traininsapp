@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * Health Connect exists only on Android devices. The web build reads a fake health store from

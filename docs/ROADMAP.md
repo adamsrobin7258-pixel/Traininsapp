@@ -577,6 +577,24 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 28 – Ein Ranking für alle Quellen, Open-Food-Facts-Qualität, automatische Online-Suche ✅ (Version 0.41.0)
+
+- Eigene Lebensmittel, gespeicherte Produkte, BLS und Open Food Facts in **einer** Liste, sortiert
+  nach Übereinstimmung; die Quelle nur als kleiner Bonus (+8/+6/0/0); kein Online-Block mehr
+- Produktart: bekannte Vertreter („Gouda“ → Käse) und Open-Food-Facts-Kategorien; „Leberkäse“ ist
+  kein Käse; Marke + Produktart zusammen mit Extra-Bonus („Milbona Käse“ → „Milbona Gouda“ vor
+  „Gouda Käse“ und einem eigenen „Käse“); Marke nur aus dem Markenfeld bzw. Namensanfang
+- Open-Food-Facts-Qualität A/B/C (Name, kcal, Makros, Stimmigkeit, Marke, OFF-Fehler/-Warnungen,
+  Vollständigkeit als ein Hinweis von mehreren); B rankt etwas niedriger, C wird ausgeblendet; nie
+  „verifiziert“
+- Duplikate: gleicher Barcode → besserer Datensatz; sonst nur bei gleicher Marke, Name,
+  Packungsgröße und Energie; Varianten (250 g / 500 g) bleiben
+- Online-Suche automatisch: 700 ms Tipppause, ab 3 Zeichen, Abbruch bei neuer Eingabe,
+  Sitzungs-Speicher, 6/min; ruhige Statuszeile unter der Liste statt Fehlermeldung
+- Barcode-Ablauf unverändert; Berechnungen, Ziele, Einträge und Score unverändert
+- E2E: Open Food Facts in allen Tests standardmäßig blockiert (`e2e/fixtures.ts`)
+- Offen: Gerätetest inkl. Live-Test der automatischen Online-Suche
+
 ## Phase 27 – Ernährungssuche nach Bedeutung, Hybrid-Suche vorbereitet ✅ (Version 0.40.0)
 
 - Analyse der bisherigen Suche und Bewertung der Datenquellen (BLS, Open Food Facts, USDA, BLV,

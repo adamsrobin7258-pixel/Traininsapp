@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /** Height of the title row and of the title itself on the main page. */
 const header = (page: Page) =>

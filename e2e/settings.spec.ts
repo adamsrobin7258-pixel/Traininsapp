@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('Einstellungen: profile, goals, content and app – each in one place', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });

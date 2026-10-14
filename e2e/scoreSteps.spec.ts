@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * Phase 14 follow-up: steps are a second signal inside the score's "Aktivitäten" (no area of

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Gesundheit → Gewicht in one card (Phase 24): value, chart, "Gewicht eintragen" and the entries

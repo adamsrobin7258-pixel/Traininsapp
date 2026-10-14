@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /**
  * Phase 15: food management with barcode under Einstellungen → Meine Inhalte, and the nutrition

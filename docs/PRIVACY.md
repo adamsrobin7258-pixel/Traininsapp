@@ -8,16 +8,16 @@ Kennzeichnung: ✅ umgesetzt · 🟡 vorbereitet (Struktur vorhanden) · ⏳ gep
 
 ## Grundsätze
 
-| Grundsatz                     | Bedeutung                                                                                                                                                                                                                                                                                                                                                                                         | Status |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| **Local-first**               | Alle Nutzerdaten entstehen und liegen in der lokalen SQLite-Datenbank auf dem Gerät.                                                                                                                                                                                                                                                                                                              | ✅     |
-| **Offline nutzbar**           | Jede Funktion funktioniert ohne Internet und ohne Konto.                                                                                                                                                                                                                                                                                                                                          | ✅     |
-| **Cloud optional**            | Synchronisierung nur nach Registrierung und ausdrücklicher Zustimmung. Aktuell gibt es keine Cloud-Anbindung (`LocalOnlySyncService`).                                                                                                                                                                                                                                                            | 🟡     |
-| **Datenminimierung**          | Es werden nur Daten erfasst, die eine Funktion tatsächlich braucht.                                                                                                                                                                                                                                                                                                                               | ✅     |
-| **Keine Weitergabe**          | Die App enthält keine Analytics-, Tracking-, Crash-Reporting- oder Werbe-SDKs und sendet keine persönlichen Daten an Dritte. Einzige Netzwerkverbindungen: die Barcode-Abfrage bei Open Food Facts für lokal unbekannte Barcodes (nur der Barcode) und – nur auf Tippen – die Online-Produktsuche (nur der Suchtext), siehe unten. Die Lebensmittelsuche selbst ist offline (BLS 4.0 in der App). | ✅     |
-| **Keine Werbung**             | Keine Werbung, keine Werbe-IDs.                                                                                                                                                                                                                                                                                                                                                                   | ✅     |
-| **Keine KI**                  | Keine KI-Funktionen, keine Übermittlung an KI-Dienste.                                                                                                                                                                                                                                                                                                                                            | ✅     |
-| **Kein automatisches Backup** | Android-Auto-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet (siehe unten).                                                                                                                                                                                                                                                                                                     | ✅     |
+| Grundsatz                     | Bedeutung                                                                                                                                                                                                                                                                                                                                                                                                                                | Status |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| **Local-first**               | Alle Nutzerdaten entstehen und liegen in der lokalen SQLite-Datenbank auf dem Gerät.                                                                                                                                                                                                                                                                                                                                                     | ✅     |
+| **Offline nutzbar**           | Jede Funktion funktioniert ohne Internet und ohne Konto.                                                                                                                                                                                                                                                                                                                                                                                 | ✅     |
+| **Cloud optional**            | Synchronisierung nur nach Registrierung und ausdrücklicher Zustimmung. Aktuell gibt es keine Cloud-Anbindung (`LocalOnlySyncService`).                                                                                                                                                                                                                                                                                                   | 🟡     |
+| **Datenminimierung**          | Es werden nur Daten erfasst, die eine Funktion tatsächlich braucht.                                                                                                                                                                                                                                                                                                                                                                      | ✅     |
+| **Keine Weitergabe**          | Die App enthält keine Analytics-, Tracking-, Crash-Reporting- oder Werbe-SDKs und sendet keine persönlichen Daten an Dritte. Einzige Netzwerkverbindungen: die Barcode-Abfrage bei Open Food Facts für lokal unbekannte Barcodes (nur der Barcode) und – seit Phase 28 automatisch nach einer Tipppause – die Online-Produktsuche (nur der Suchtext), siehe unten. Die Lebensmittelsuche funktioniert auch offline (BLS 4.0 in der App). | ✅     |
+| **Keine Werbung**             | Keine Werbung, keine Werbe-IDs.                                                                                                                                                                                                                                                                                                                                                                                                          | ✅     |
+| **Keine KI**                  | Keine KI-Funktionen, keine Übermittlung an KI-Dienste.                                                                                                                                                                                                                                                                                                                                                                                   | ✅     |
+| **Kein automatisches Backup** | Android-Auto-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet (siehe unten).                                                                                                                                                                                                                                                                                                                                            | ✅     |
 
 Neue Abhängigkeiten, die Netzwerkzugriff haben (SDKs, Plugins), brauchen eine Begründung im
 Pull Request und einen Eintrag in diesem Dokument.
@@ -251,9 +251,9 @@ synchronisiert sind – ohne Konto sofort.
 
 Profil → Datenschutz & Sicherheit sagt seit Phase 4.5 statt „sendet keine Daten an Dritte“:
 „Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche
-läuft offline. Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts gesendet,
-und nur wenn du „Weitere Produkte online suchen“ tippst, dein Suchbegriff – Tagebuch, Gewicht und
-Ziele nie.“ (Wortlaut seit Phase 27.) Das deckt sich mit Profil → Über Kalethra → Datenquellen.
+funktioniert auch offline. An Open Food Facts gehen nur ein unbekannter Barcode und – ab 3
+Zeichen, nach einer kurzen Tipppause – dein Suchbegriff, nie Tagebuch, Gewicht, Ziele oder deine
+eigenen Lebensmittel.“ (Wortlaut seit Phase 28.) Das deckt sich mit Profil → Über Kalethra → Datenquellen.
 
 ## Lebensmittelsuche (Phase 4.4): offline
 
@@ -262,15 +262,22 @@ Produkte und der in der App enthaltene Bundeslebensmittelschlüssel (BLS 4.0, De
 [BLS.md](BLS.md)). Suchbegriffe verlassen das Gerät nie; ein Test prüft, dass dabei keine Anfrage
 an Open Food Facts gestellt wird.
 
-## Online-Produktsuche (Phase 27): nur auf Wunsch
+## Online-Produktsuche (Phase 28): automatisch, nur der Suchtext
 
-Unter den Suchergebnissen bietet „Weitere Produkte online suchen“ eine Suche bei Open Food Facts
-an. Sie startet **nur durch Tippen** (nie beim Tippen ins Suchfeld) und sendet **nur den
-Suchtext** sowie technische Parameter (Sprachen `de,en`, Anzahl, Feldliste). Höchstens 6 Suchen
-pro Minute, keine automatischen Wiederholungen. Treffer liegen 30 Minuten nur im Arbeitsspeicher;
-gespeichert wird ein Produkt erst nach Prüfung im Formular. Die persönliche Häufigkeit für die
-Sortierung wird lokal aus dem Tagebuch gelesen und nie gesendet. Details:
-[FOOD_SEARCH.md](FOOD_SEARCH.md).
+Seit Phase 28 fragt die Lebensmittelsuche Open Food Facts **automatisch**, sobald der Suchtext
+mindestens 3 Zeichen hat und 700 ms nicht geändert wurde – nie pro Tastendruck. Gesendet werden
+**nur der Suchtext** sowie technische Parameter (Sprachen `de,en`, Anzahl, Feldliste) und der
+User-Agent. Höchstens 6 Suchen pro Minute, keine automatischen Wiederholungen. Treffer liegen 30
+Minuten nur im Arbeitsspeicher; gespeichert wird ein Produkt erst nach Prüfung im Formular.
+
+Nie gesendet: Ernährungstagebuch, persönliche Häufigkeiten, eigene oder gespeicherte
+Lebensmittel, Suchverlauf, Profil-, Gesundheits- oder Trainingsdaten, IDs. Ranking, Qualitäts-
+bewertung und Duplikaterkennung laufen auf dem Gerät. Hinweis in der App unter den Ergebnissen:
+„Ab 3 Zeichen sucht Kalethra auch bei Open Food Facts. Gesendet wird nur dein Suchbegriff –
+nichts über dich.“ Ohne Internet bleibt die Suche voll nutzbar (BLS, eigene und gespeicherte
+Lebensmittel). Details: [FOOD_SEARCH.md](FOOD_SEARCH.md).
+
+Phase 27 (0.40.0) hatte die Online-Suche nur auf ausdrückliches Tippen gestartet.
 
 ## Open Food Facts (Phase 4.3, seit 4.4 nur Barcode)
 
@@ -279,10 +286,11 @@ dem Gerät unbekannt ist. Details in [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 
 | Wird gesendet                                        | Wird **nie** gesendet                                               |
 | ---------------------------------------------------- | ------------------------------------------------------------------- |
-| Barcode (nur wenn er lokal unbekannt ist)            | Suchtext beim normalen Tippen (nur nach Tippen auf „online suchen“) |
+| Barcode (nur wenn er lokal unbekannt ist)            | Suchtext vor der Tipppause oder unter 3 Zeichen; Suchverlauf        |
 | Produkt-ID (= Barcode)                               | Körpergewicht, Größe, Alter/Geburtsdatum, Geschlecht, Wunschgewicht |
 | technisch: App-Name/Version/Plattform als User-Agent | Kalorien-, Protein- und Makroziele, Wasserziel                      |
-|                                                      | Ernährungstagebuch, gegessene Lebensmittel, Mahlzeiten, Vorlagen    |
+| Suchtext (ab 3 Zeichen, nach 700 ms Tipppause)       | Ernährungstagebuch, gegessene Lebensmittel, Mahlzeiten, Vorlagen    |
+|                                                      | persönliche Häufigkeiten, eigene und gespeicherte Lebensmittel      |
 |                                                      | Trainingsdaten, Profil-ID, Nutzer- oder Tracking-ID, Name           |
 
 - Die Provider-Schnittstelle nimmt nur Barcode bzw. Produkt-ID entgegen – andere Daten können
@@ -298,7 +306,7 @@ dem Gerät unbekannt ist. Details in [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 
 | Berechtigung                  | Status                                                                                                                                                                                                                            |
 | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Internet (Android `INTERNET`) | Nur für Open Food Facts: Barcode-Abfrage (lokal unbekannter Barcode) und die optionale Online-Produktsuche auf Tippen. Die Lebensmittelsuche selbst braucht kein Internet. Sonst keine Verbindungen.                              |
+| Internet (Android `INTERNET`) | Nur für Open Food Facts: Barcode-Abfrage (lokal unbekannter Barcode) und die automatische Online-Produktsuche (nur der Suchtext). Die Lebensmittelsuche funktioniert auch ohne Internet. Sonst keine Verbindungen.                |
 | Standort                      | nicht angefragt ⏳ (siehe [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))                                                                                                                                                             |
 | Health Connect (Android)      | Nur nach Einschalten durch den Nutzer: Leserechte für Gewicht, Schritte, aktive Kalorien, Trainings (Aktivitäten) und Distanz. Keine Schreib-, Verlaufs- oder Hintergrundrechte. Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md). |
 | HealthKit (iOS)               | nicht angefragt ⏳                                                                                                                                                                                                                |

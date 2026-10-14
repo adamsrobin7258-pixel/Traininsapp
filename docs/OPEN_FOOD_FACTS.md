@@ -2,9 +2,13 @@
 
 ## Überblick
 
-> **Seit Phase 27 (0.40.0):** zusätzlich optionale Produktsuche über Search-a-licious – nur wenn
-> der Nutzer „Weitere Produkte online suchen“ tippt, nur der Suchtext, höchstens 6 Suchen pro
-> Minute. Details, Datenquellen-Bewertung und Ranking in [FOOD_SEARCH.md](FOOD_SEARCH.md).
+> **Seit Phase 28 (0.41.0):** Die Produktsuche über Search-a-licious läuft **automatisch** nach
+> einer Tipppause (700 ms, ab 3 Zeichen, nie pro Tastendruck), nur mit dem Suchtext, höchstens 6
+> Suchen pro Minute. Die Produkte werden nach Datenqualität (A/B/C) gefiltert, Duplikate
+> zusammengefasst und **gemeinsam** mit eigenen Lebensmitteln und BLS gerankt. Details in
+> [FOOD_SEARCH.md](FOOD_SEARCH.md).
+>
+> **Phase 27 (0.40.0):** optionale Produktsuche über Search-a-licious, nur auf Tippen.
 >
 > **Seit Phase 4.4 ist Open Food Facts nur noch Barcode-Fallback.** Die normale Suche ist offline
 > (eigene Lebensmittel, gespeicherte Produkte, BLS 4.0 – siehe [BLS.md](BLS.md)). Die frühere
@@ -37,15 +41,15 @@ Stand Oktober 2026).
 > offiziellen Dokumentation entnommen, nicht live abgefragt. Der Parser ist bewusst tolerant
 > (z. B. `brands` als Text oder Liste, `hits` oder `products`, Zahlen als Text).
 
-| Zweck                                      | Endpunkt                                                       | Parameter                                        |
-| ------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------ |
-| Produkt per Code                           | `GET https://world.openfoodfacts.org/api/v2/product/{barcode}` | `fields`                                         |
-| Produktsuche (seit 0.40.0, nur auf Tippen) | `GET https://search.openfoodfacts.org/search`                  | `q`, `langs`, `page_size`, `fields` (+ `stores`) |
+| Zweck                                               | Endpunkt                                                       | Parameter                                                                                                                                                    |
+| --------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Produkt per Code                                    | `GET https://world.openfoodfacts.org/api/v2/product/{barcode}` | `fields`                                                                                                                                                     |
+| Produktsuche (seit 0.40.0, automatisch seit 0.41.0) | `GET https://search.openfoodfacts.org/search`                  | `q`, `langs`, `page_size`, `fields` (+ `stores`, `categories_tags`, `completeness`, `data_quality_errors_tags`, `data_quality_warnings_tags`, `states_tags`) |
 
 - **API v2** für Produkte. Antwort: `status` (1 = gefunden, 0 = unbekannt; bei unbekannten
   Codes teils mit HTTP 404) und `product`.
-- Eine Volltextsuche wird seit Phase 4.4 nicht mehr verwendet (`FoodDataProvider` hat keine
-  `search`-Methode mehr; ein Test stellt das sicher).
+- Die Volltextsuche der Product-Opener-API wird nicht verwendet; die Produktsuche läuft über
+  Search-a-licious (`FoodDataProvider.searchProducts`, seit Phase 27).
 - `fields` beschränkt die Antwort auf die genutzten Felder: `code`, `product_name`,
   `product_name_de`, `product_name_en`, `generic_name`, `brands`, `quantity`,
   `product_quantity_unit`, `serving_size`, `serving_quantity`, `serving_quantity_unit`,

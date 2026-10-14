@@ -8,10 +8,17 @@ export {
   FoodLookupService,
   ONLINE_SEARCH,
   REFERENCE_RESULTS_LIMIT,
+  SEARCH_RESULTS_LIMIT,
+  SOURCE_BONUS,
   type BarcodeLookup,
   type FoodSearchResult,
-  type OnlineSearchResult,
 } from './foodLookupService';
+export {
+  assessProductQuality,
+  dedupeProducts,
+  QUALITY_PENALTY,
+  type ProductQuality,
+} from './productQuality';
 export {
   analyzeQuery,
   prepareName,

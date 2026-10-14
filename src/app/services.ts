@@ -327,7 +327,7 @@ function createNutritionServices(
   const foods = new FoodService(store, clock);
   return {
     foods,
-    lookup: new FoodLookupService(foods, provider, reference),
+    lookup: new FoodLookupService(foods, provider, reference, () => clock().getTime()),
     meals: new MealService(store, clock),
     diary: new DiaryService(store, clock),
     recipes: new RecipeService(store, clock),

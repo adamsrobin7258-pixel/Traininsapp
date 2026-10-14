@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 /**
  * Phase 25 – natural premium design: scenes and depth stay local and never cost layout. Every

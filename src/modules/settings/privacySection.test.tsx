@@ -20,11 +20,15 @@ describe('privacy and security section', () => {
     expect(section.getByText('Nur dieses Gerät')).toBeInTheDocument();
     expect(section.getByText('Aktiv')).toBeInTheDocument();
     expect(section.getByText(/verschlüsselt und nur auf diesem Gerät/)).toBeVisible();
-    // Honest about the one external request: an unknown barcode, nothing personal.
+    // Honest about the external requests: an unknown barcode and the search text, nothing personal.
     expect(
-      section.getByText(/Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts/),
+      section.getByText(
+        /An Open Food Facts gehen nur ein unbekannter Barcode und .* dein Suchbegriff/,
+      ),
     ).toBeVisible();
-    expect(section.getByText(/Tagebuch, Gewicht und Ziele nie/)).toBeVisible();
+    expect(
+      section.getByText(/nie Tagebuch, Gewicht, Ziele oder deine eigenen Lebensmittel/),
+    ).toBeVisible();
   });
 
   it('runs the storage check and lists every result', async () => {

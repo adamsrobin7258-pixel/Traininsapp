@@ -937,12 +937,12 @@ export const en: TranslationSchema = {
       results: 'Search results',
       bestMatches: 'Best matches',
       moreMatches: 'More matches',
-      searchOnline: 'Search more products online',
-      searchOnlineHint:
-        'Searches Open Food Facts. Only your search text is sent – nothing about you.',
-      onlineTitle: 'Found online',
-      onlineSearching: 'Searching Open Food Facts …',
-      onlineEmpty: 'No matching products were found online.',
+      onlineHint:
+        'From 3 characters on, Kalethra also searches Open Food Facts. Only your search text is sent – nothing about you.',
+      onlineSearching: 'Also searching Open Food Facts …',
+      onlineOffline: 'Offline – you see the results on your device.',
+      onlineUnavailable:
+        'Open Food Facts cannot be reached right now – you see the results on your device.',
       scan: 'Scan barcode',
       enterBarcode: 'Enter barcode',
       barcodeTitle: 'Enter barcode',
@@ -1505,7 +1505,7 @@ export const en: TranslationSchema = {
       encryptionOn: 'On',
       encryptionOff: 'Off',
       footerEncrypted:
-        'Your data is encrypted and stored only on this device. The food search works offline. Only for an unknown barcode is that barcode sent to Open Food Facts, and only when you tap “Search more products online” your search text – never your diary, weight or goals. Kalethra reads values from Health Connect only if you turn it on; they stay encrypted on this device.',
+        'Your data is encrypted and stored only on this device. The food search also works offline. Open Food Facts only receives an unknown barcode and – from 3 characters on, after a short pause in typing – your search text, never your diary, weight, goals or your own foods. Kalethra reads values from Health Connect only if you turn it on; they stay encrypted on this device.',
       footerDevelopment:
         'Browser development mode: data is stored unencrypted in the browser. The Android and iOS apps always encrypt.',
       runCheck: 'Check storage',
@@ -1535,7 +1535,7 @@ export const en: TranslationSchema = {
       blsMissing: 'This version does not contain BLS data yet.',
       offTitle: 'Open Food Facts',
       offBody:
-        'For barcodes that are unknown on your device and – only when you ask – for searching more products. Nothing but the barcode or your search text is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
+        'For barcodes that are unknown on your device and – from 3 characters on, after a short pause in typing – for searching more products. Nothing but the barcode or your search text is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
       healthTitle: 'Health Connect',
       healthBody:
         'Optional, only after you turn it on (Profile → Health data). Read-only: weight, steps, active calories and activities (with distance) of the last 30 days, stored encrypted on this device. Nothing is written to Health Connect or sent to a server.',

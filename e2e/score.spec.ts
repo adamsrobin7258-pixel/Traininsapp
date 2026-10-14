@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './fixtures';
 
 test('Kalethra score: top of Fortschritt, periods, recovery, targets, main goal and details', async ({
   page,

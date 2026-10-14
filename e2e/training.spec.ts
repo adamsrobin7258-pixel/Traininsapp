@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 function tab(page: Page, name: string) {
   return page.getByRole('navigation', { name: 'Hauptnavigation' }).getByRole('link', { name });

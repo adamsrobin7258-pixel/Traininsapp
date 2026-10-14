@@ -953,12 +953,12 @@ export const de = {
       results: 'Suchergebnisse',
       bestMatches: 'Passende Lebensmittel',
       moreMatches: 'Weitere Treffer',
-      searchOnline: 'Weitere Produkte online suchen',
-      searchOnlineHint:
-        'Sucht bei Open Food Facts. Gesendet wird nur dein Suchbegriff – nichts über dich.',
-      onlineTitle: 'Online gefunden',
-      onlineSearching: 'Suche bei Open Food Facts …',
-      onlineEmpty: 'Online wurden keine passenden Produkte gefunden.',
+      onlineHint:
+        'Ab 3 Zeichen sucht Kalethra auch bei Open Food Facts. Gesendet wird nur dein Suchbegriff – nichts über dich.',
+      onlineSearching: 'Suche auch bei Open Food Facts …',
+      onlineOffline: 'Offline – du siehst die Ergebnisse auf deinem Gerät.',
+      onlineUnavailable:
+        'Open Food Facts ist gerade nicht erreichbar – du siehst die Ergebnisse auf deinem Gerät.',
       scan: 'Barcode scannen',
       enterBarcode: 'Barcode eingeben',
       barcodeTitle: 'Barcode eingeben',
@@ -1529,7 +1529,7 @@ export const de = {
       encryptionOn: 'Aktiv',
       encryptionOff: 'Nicht aktiv',
       footerEncrypted:
-        'Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche läuft offline. Nur bei einem unbekannten Barcode wird dieser Barcode an Open Food Facts gesendet, und nur wenn du „Weitere Produkte online suchen“ tippst, dein Suchbegriff – Tagebuch, Gewicht und Ziele nie. Werte aus Health Connect liest Kalethra nur, wenn du es einschaltest; sie bleiben verschlüsselt auf diesem Gerät.',
+        'Deine Daten werden verschlüsselt und nur auf diesem Gerät gespeichert. Die Lebensmittelsuche funktioniert auch offline. An Open Food Facts gehen nur ein unbekannter Barcode und – ab 3 Zeichen, nach einer kurzen Tipppause – dein Suchbegriff, nie Tagebuch, Gewicht, Ziele oder deine eigenen Lebensmittel. Werte aus Health Connect liest Kalethra nur, wenn du es einschaltest; sie bleiben verschlüsselt auf diesem Gerät.',
       footerDevelopment:
         'Browser-Entwicklungsmodus: Daten liegen unverschlüsselt im Browser. Die Android- und iOS-App speichern immer verschlüsselt.',
       runCheck: 'Speicher prüfen',
@@ -1559,7 +1559,7 @@ export const de = {
       blsMissing: 'In dieser Version sind noch keine BLS-Daten enthalten.',
       offTitle: 'Open Food Facts',
       offBody:
-        'Für Barcodes, die auf deinem Gerät unbekannt sind, und – nur auf deinen Wunsch – für die Suche nach weiteren Produkten. Gesendet wird ausschließlich der Barcode bzw. dein Suchbegriff. Daten: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
+        'Für Barcodes, die auf deinem Gerät unbekannt sind, und – ab 3 Zeichen, nach einer kurzen Tipppause – für die Suche nach weiteren Produkten. Gesendet wird ausschließlich der Barcode bzw. dein Suchbegriff. Daten: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
       healthTitle: 'Health Connect',
       healthBody:
         'Optional, erst nachdem du es einschaltest (Profil → Gesundheitsdaten). Nur lesend: Gewicht, Schritte, aktive Kalorien und Aktivitäten (mit Distanz) der letzten 30 Tage, verschlüsselt auf diesem Gerät gespeichert. Nichts wird in Health Connect geschrieben oder an einen Server gesendet.',

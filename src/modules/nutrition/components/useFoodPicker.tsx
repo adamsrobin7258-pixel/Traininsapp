@@ -1,15 +1,16 @@
 import { useDeferredValue, useEffect, useId, useState, type ReactNode } from 'react';
 import { useI18n, type TranslateFn } from '@/core/i18n';
 import {
+  FoodProviderError,
+  ONLINE_SEARCH,
   useNutrition,
   useNutritionData,
   type ExternalProduct,
   type Food,
   type FoodSearchResult,
-  type OnlineSearchResult,
   type ReferenceFood,
 } from '@/core/nutrition';
-import { Button, dismissKeyboard, EmptyState, FoodArt, Icon, List, ListRow } from '@/ui';
+import { dismissKeyboard, EmptyState, FoodArt, Icon, List, ListRow } from '@/ui';
 import { describeNutritionError, foodSourceLabel, formatQuantity } from '../domain/format';
 import { useBarcodeFlow } from './useBarcodeFlow';
 import { FoodFormSheet } from './FoodFormSheet';
@@ -22,11 +23,14 @@ type Step =
   /** A product found online: reviewed in the food form before it is stored (as barcode). */
   | { kind: 'import'; product: ExternalProduct };
 
-/** The optional online search for one query (Phase 27). */
+/** The automatic online search for one query (Phase 28). */
 type Online =
   | { query: string; status: 'loading' }
-  | { query: string; status: 'ready'; results: OnlineSearchResult[] }
-  | { query: string; status: 'error'; message: string };
+  | { query: string; status: 'ready'; products: ExternalProduct[] }
+  | { query: string; status: 'failed'; offline: boolean };
+
+/** No online products (stable, so the search does not run again for nothing). */
+const NO_PRODUCTS: ExternalProduct[] = [];
 
 /** How many recently used foods the search shows before the full list. */
 const RECENT_SHOWN = 8;
@@ -58,16 +62,17 @@ export interface FoodPicker {
  * The one food selection of the nutrition area – used when logging (add sheet) and when
  * putting together recipes and templates. The search comes first (scanning sits in the field),
  * then quick access (recently used, favourites) and the remaining saved foods – each food once.
- * Typing a barcode is a quiet action next to "new food". The search is offline: own foods, saved
- * products and the BLS, ranked together by meaning (Phase 27) – clear matches first, the rest
- * under "Weitere Treffer". Open Food Facts is asked for an unknown barcode and, only when the
- * user taps "Weitere Produkte online suchen", for more products (nothing but the search text).
- * A BLS food is stored on first use; a new food is created with the shared `FoodFormSheet`.
- * Every picked food reaches `onPicked` as a stored food.
+ * Typing a barcode is a quiet action next to "new food". The search ranks all sources in one
+ * list (Phase 28): own foods, saved products and the BLS appear at once, offline; after a pause
+ * in typing Open Food Facts is asked for products (nothing but the search text) and they join
+ * the same ranking – clear matches first, the rest under "Weitere Treffer". The list updates in
+ * place: the previous results stay until the new ones are ready, the status line at its end
+ * keeps its height. A BLS food is stored on first use, an online product after review in the
+ * shared `FoodFormSheet`. Every picked food reaches `onPicked` as a stored food.
  */
 export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }): FoodPicker {
   const { t, locale } = useI18n();
-  const { services, mutate, profileId } = useNutrition();
+  const { services, mutate } = useNutrition();
   const lang = locale.startsWith('en') ? 'en' : 'de';
   // Prepares the bundled BLS data while the picker opens, so the first search is instant.
   useEffect(() => {
@@ -88,9 +93,45 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
   );
   // Searching is local and fast; deferring keeps typing smooth on slower phones.
   const searchQuery = useDeferredValue(query.trim());
+  const canSearchOnline =
+    services.lookup.canSearchOnline && searchQuery.length >= ONLINE_SEARCH.minQueryLength;
+
+  // The online search starts after a pause in typing – never per keystroke. A newer query
+  // cancels the waiting or running one; a repeated query is answered from memory at once.
+  useEffect(() => {
+    if (!canSearchOnline) return;
+    const controller = new AbortController();
+    const run = () => {
+      if (!services.lookup.cachedOnlineProducts(searchQuery)) {
+        setOnline({ query: searchQuery, status: 'loading' });
+      }
+      services.lookup.onlineProducts(searchQuery, { signal: controller.signal }).then(
+        (products) => {
+          if (!controller.signal.aborted) {
+            setOnline({ query: searchQuery, status: 'ready', products });
+          }
+        },
+        (error: unknown) => {
+          if (controller.signal.aborted) return;
+          const offline = error instanceof FoodProviderError && error.code === 'offline';
+          setOnline({ query: searchQuery, status: 'failed', offline });
+        },
+      );
+    };
+    const cached = services.lookup.cachedOnlineProducts(searchQuery) !== null;
+    const timer = window.setTimeout(run, cached ? 0 : ONLINE_SEARCH.debounceMs);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [services, searchQuery, canSearchOnline]);
+
+  // Online products belong to the query they were asked for; a new query starts without them.
+  const onlineNow = canSearchOnline && online?.query === searchQuery ? online : null;
+  const onlineProducts = onlineNow?.status === 'ready' ? onlineNow.products : NO_PRODUCTS;
   const results = useNutritionData(
-    (s, id) => s.lookup.search(id, searchQuery, { lang }),
-    [searchQuery, lang],
+    (s, id) => s.lookup.search(id, searchQuery, { lang, online: onlineProducts }),
+    [searchQuery, lang, onlineProducts],
   );
   const back = () => {
     setStep({ kind: 'search' });
@@ -124,27 +165,6 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
     createName: () => query.trim(),
   });
 
-  /** The second level: more products online – only on this explicit tap, never while typing. */
-  function searchOnline() {
-    const text = query.trim();
-    dismissKeyboard();
-    setOnline({ query: text, status: 'loading' });
-    services.lookup.searchOnline(profileId, text).then(
-      (found) => {
-        setOnline((current) =>
-          current?.query === text ? { query: text, status: 'ready', results: found } : current,
-        );
-      },
-      (error: unknown) => {
-        setOnline((current) =>
-          current?.query === text
-            ? { query: text, status: 'error', message: describeNutritionError(error, t) }
-            : current,
-        );
-      },
-    );
-  }
-
   const overlay: ReactNode =
     step.kind === 'create' ? (
       <FoodFormSheet initialName={step.name} onSaved={picked} onClose={back} />
@@ -159,10 +179,18 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
   const matches: FoodSearchResult[] = searching && results.status === 'ready' ? results.data : [];
   const strongMatches = matches.filter((match) => match.strong);
   const weakMatches = matches.filter((match) => !match.strong);
-  // Online results belong to the query they were asked for; a new query starts over.
-  const onlineNow = online && online.query === query.trim() ? online : null;
-  const canSearchOnline =
-    searching && services.lookup.canSearchOnline && query.trim().length >= 2 && onlineNow === null;
+  const showsProducts = matches.some((match) => match.kind === 'product');
+  const onlineStatus = !canSearchOnline
+    ? null
+    : onlineNow?.status === 'loading'
+      ? t('nutrition.lookup.onlineSearching')
+      : onlineNow?.status === 'failed'
+        ? t(
+            onlineNow.offline
+              ? 'nutrition.lookup.onlineOffline'
+              : 'nutrition.lookup.onlineUnavailable',
+          )
+        : t('nutrition.lookup.onlineHint');
   const referenceVersion = matches.find((r) => r.kind === 'reference')?.reference.version;
   // Each food once: recent first, then favourites not among them, then all the others.
   const recentIds = new Set(ready?.recent.map((food) => food.id) ?? []);
@@ -207,32 +235,33 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
     />
   );
 
-  const resultRow = (result: FoodSearchResult) =>
-    result.kind === 'food' ? foodRow(result.food, result.food.id) : referenceRow(result.reference);
+  /** A product found online: reviewed in the food form, then stored like a scanned one. */
+  const productRow = (product: ExternalProduct) => (
+    <ListRow
+      key={`off-${product.provider}-${product.externalId}`}
+      title={product.name}
+      subtitle={[
+        product.brand,
+        'Open Food Facts',
+        product.missing.length > 0
+          ? t('nutrition.lookup.incomplete')
+          : per100(product.nutrients, product.reference, t, locale),
+      ]
+        .filter(Boolean)
+        .join(' · ')}
+      leading={<FoodThumb food={{ origin: null }} />}
+      onPress={() => {
+        setStep({ kind: 'import', product });
+      }}
+    />
+  );
 
-  const onlineRow = (result: OnlineSearchResult) => {
-    if (result.kind === 'saved') return foodRow(result.food, `online-${result.food.id}`);
-    const { product } = result;
-    return (
-      <ListRow
-        key={`online-${product.externalId}`}
-        title={product.name}
-        subtitle={[
-          product.brand,
-          'Open Food Facts',
-          product.missing.length > 0
-            ? t('nutrition.lookup.incomplete')
-            : per100(product.nutrients, product.reference, t, locale),
-        ]
-          .filter(Boolean)
-          .join(' · ')}
-        leading={<FoodThumb food={{ origin: null }} />}
-        onPress={() => {
-          setStep({ kind: 'import', product });
-        }}
-      />
-    );
-  };
+  const resultRow = (result: FoodSearchResult) =>
+    result.kind === 'food'
+      ? foodRow(result.food, result.food.id)
+      : result.kind === 'reference'
+        ? referenceRow(result.reference)
+        : productRow(result.product);
 
   const createRow = (
     <ListRow
@@ -330,55 +359,30 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
               ) : null}
             </section>
 
-            {/* The optional online level: one deliberate tap, the text alone is sent. */}
-            {canSearchOnline ? (
-              <div className={styles.onlineSearch}>
-                <Button variant="secondary" fullWidth onClick={searchOnline}>
-                  <Icon name="search" size={18} />
-                  {t('nutrition.lookup.searchOnline')}
-                </Button>
-                <p className={styles.onlineHint}>{t('nutrition.lookup.searchOnlineHint')}</p>
-              </div>
-            ) : null}
-            {onlineNow ? (
-              <section
-                aria-label={t('nutrition.lookup.onlineTitle')}
-                aria-busy={onlineNow.status === 'loading'}
-              >
-                <h3 className={styles.listTitle}>{t('nutrition.lookup.onlineTitle')}</h3>
-                {onlineNow.status === 'loading' ? (
-                  <p className={styles.onlineHint} role="status">
-                    {t('nutrition.lookup.onlineSearching')}
-                  </p>
-                ) : onlineNow.status === 'error' ? (
-                  <p className={styles.error} role="alert">
-                    {onlineNow.message}
-                  </p>
-                ) : onlineNow.results.length === 0 ? (
-                  <p className={styles.onlineHint} role="status">
-                    {t('nutrition.lookup.onlineEmpty')}
-                  </p>
-                ) : (
-                  <>
-                    <List label={t('nutrition.lookup.onlineTitle')}>
-                      {onlineNow.results.map(onlineRow)}
-                    </List>
-                    <p className={styles.empty}>{t('nutrition.lookup.attribution')}</p>
-                  </>
-                )}
-              </section>
-            ) : null}
-
             {weakMatches.length > 0 ? (
               <section aria-label={t('nutrition.lookup.moreMatches')}>
                 <h3 className={styles.listTitle}>{t('nutrition.lookup.moreMatches')}</h3>
                 <List label={t('nutrition.lookup.moreMatches')}>{weakMatches.map(resultRow)}</List>
               </section>
             ) : null}
+            {/* One line at the end, always the same height: loading never moves the list. */}
+            {onlineStatus ? (
+              <p
+                className={styles.onlineStatus}
+                role="status"
+                aria-busy={onlineNow?.status === 'loading'}
+                data-testid="online-status"
+              >
+                {onlineStatus}
+              </p>
+            ) : null}
             {referenceVersion ? (
               <p className={styles.empty}>
                 {t('nutrition.sources.blsAttribution', { version: referenceVersion })}
               </p>
+            ) : null}
+            {showsProducts ? (
+              <p className={styles.empty}>{t('nutrition.lookup.attribution')}</p>
             ) : null}
           </>
         ) : (

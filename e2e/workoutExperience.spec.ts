@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Page } from './fixtures';
 
 /** Phase 13: next workout, last values, suggestions, rest timer, replace, summary, editing. */
 
