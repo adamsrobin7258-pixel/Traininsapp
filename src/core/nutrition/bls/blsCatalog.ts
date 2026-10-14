@@ -1,7 +1,20 @@
 import { NutritionError } from '../errors';
 import { areValidNutrients, type Nutrients } from '../nutrients';
-import type { ReferenceCatalog, ReferenceDatasetInfo, ReferenceFood } from '../reference';
-import { bestScore, compareMatches, searchKey, searchWords, type SearchKey } from '../search';
+import { blsCategory } from '../category';
+import {
+  analyzeQuery,
+  compareRanked,
+  prepareName,
+  relevance,
+  type PreparedName,
+  type QueryAnalysis,
+} from '../foodRanking';
+import type {
+  RankedReference,
+  ReferenceCatalog,
+  ReferenceDatasetInfo,
+  ReferenceFood,
+} from '../reference';
 
 export const BLS_DATASET_ID = 'bls';
 
@@ -35,8 +48,11 @@ const FIELDS = [
 
 interface Entry {
   food: ReferenceFood;
-  /** German name, plus the English one when the dataset has it. */
-  keys: SearchKey[];
+  /** German name and, when the dataset has it, the English one – prepared for ranking. */
+  de: PreparedName;
+  en: PreparedName | null;
+  /** BLS main groups X and Y: dishes and recipes, ranked after the plain food. */
+  dish: boolean;
 }
 
 interface Loaded {
@@ -79,7 +95,9 @@ export function parseBlsData(data: BlsDataFile): Loaded {
     byCode.set(code, food);
     entries.push({
       food,
-      keys: food.nameEn ? [searchKey(name), searchKey(food.nameEn)] : [searchKey(name)],
+      de: prepareName(name, 'de'),
+      en: food.nameEn ? prepareName(food.nameEn, 'en') : null,
+      dish: blsCategory(code) === 'dishes',
     });
   }
   const info: ReferenceDatasetInfo | null =
@@ -125,17 +143,35 @@ export class BlsCatalog implements ReferenceCatalog {
   }
 
   async search(query: string, limit: number): Promise<ReferenceFood[]> {
-    const words = searchWords(query);
-    if (words.length === 0) return [];
-    const matches: { score: number; name: string; food: ReferenceFood }[] = [];
-    for (const { food, keys } of (await this.data()).entries) {
-      const score = bestScore(keys, words);
-      if (score !== null) matches.push({ score, name: food.name, food });
+    return (await this.rank(analyzeQuery(query), limit)).map((match) => match.reference);
+  }
+
+  /**
+   * Relevance ranking over all entries (Phase 27, `foodRanking.ts`): the meaning of the name
+   * counts, not just any text match. The BLS has no brands – a brand-only query finds nothing
+   * here, a query with a retailer ("Quark Lidl") still finds the plain food.
+   */
+  async rank(
+    query: QueryAnalysis,
+    limit: number,
+    { lang = 'de' }: { lang?: 'de' | 'en' } = {},
+  ): Promise<RankedReference[]> {
+    if (query.words.length === 0) return [];
+    const matches: { score: number; name: string; reference: ReferenceFood }[] = [];
+    for (const entry of (await this.data()).entries) {
+      const names =
+        lang === 'en' && entry.en
+          ? [entry.en, entry.de]
+          : entry.en
+            ? [entry.de, entry.en]
+            : [entry.de];
+      const score = relevance({ names, dish: entry.dish }, query);
+      if (score !== null) matches.push({ score, name: entry.food.name, reference: entry.food });
     }
     return matches
-      .sort(compareMatches)
+      .sort(compareRanked)
       .slice(0, limit)
-      .map((m) => m.food);
+      .map(({ reference, score }) => ({ reference, score }));
   }
 
   async get(code: string): Promise<ReferenceFood | null> {

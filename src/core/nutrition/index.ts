@@ -6,10 +6,20 @@ export * from './food';
 export { FoodService, type FoodInput } from './foodService';
 export {
   FoodLookupService,
+  ONLINE_SEARCH,
   REFERENCE_RESULTS_LIMIT,
   type BarcodeLookup,
   type FoodSearchResult,
+  type OnlineSearchResult,
 } from './foodLookupService';
+export {
+  analyzeQuery,
+  prepareName,
+  relevance,
+  STRONG_MATCH,
+  usageBonus,
+  type QueryAnalysis,
+} from './foodRanking';
 export * from './barcode';
 export {
   mapOpenFoodFactsProduct,

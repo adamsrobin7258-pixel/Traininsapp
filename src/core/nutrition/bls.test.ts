@@ -186,7 +186,7 @@ describe('BLS catalog', () => {
 });
 
 describe('food search with BLS', () => {
-  it('lists own foods, then saved products, then BLS – offline and without requests', async () => {
+  it('ranks all sources together by meaning – offline and without requests (Phase 27)', async () => {
     const { n, provider, profileId } = await setup();
     provider.failWith = 'offline';
     await n.foods.create(profileId, { ...own, name: 'Apfelkuchen von Oma' });
@@ -195,11 +195,13 @@ describe('food search with BLS', () => {
       { provider: 'openfoodfacts', externalId: '4001' },
       { ...own, name: 'Apfelmus', brand: 'Marke', barcode: '4000000000015' },
     );
+    // The apple itself first, then the compound that is an apple ("Brat|äpfel"), then foods
+    // that only start with "Apfel" – own foods no longer jump ahead of a better match.
     expect(names(await n.lookup.search(profileId, 'apfel'))).toEqual([
-      'custom:Apfelkuchen von Oma',
-      'external:Apfelmus',
       'bls:Apfel, roh',
       'bls:Bratäpfel, gegart',
+      'custom:Apfelkuchen von Oma',
+      'external:Apfelmus',
     ]);
     expect(provider.calls).toEqual([]);
     expect(await n.lookup.search(profileId, '  ')).toEqual([]);

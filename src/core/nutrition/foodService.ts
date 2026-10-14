@@ -1,4 +1,5 @@
 import type { Clock } from '@/shared/lib/clock';
+import { toLocalDateKey } from '@/shared/lib/date';
 import { createId } from '@/shared/lib/id';
 import { NutritionError } from './errors';
 import {
@@ -16,6 +17,9 @@ import { barcodeVariants, normalizeBarcode } from './barcode';
 import type { ExternalFood } from './provider';
 import type { ReferenceFood } from './reference';
 import { isQuantityUnit } from './units';
+
+/** Personal use counts for the search over this many days – older habits fade out. */
+export const USAGE_WINDOW_DAYS = 180;
 
 export interface FoodInput {
   name: string;
@@ -67,6 +71,15 @@ export class FoodService {
   /** Recently used foods, newest use first (see FoodRepository.listRecent). */
   recent(profileId: string, limit: number = RECENT_FOODS_LIMIT): Promise<Food[]> {
     return this.store.repos.foods.listRecent(profileId, limit);
+  }
+
+  /**
+   * How often each food was logged in the last `USAGE_WINDOW_DAYS` days (food id → uses). Only
+   * read locally for the search ranking; it never leaves the device.
+   */
+  usageCounts(profileId: string): Promise<Map<string, number>> {
+    const from = new Date(this.clock().getTime() - USAGE_WINDOW_DAYS * 86_400_000);
+    return this.store.repos.foods.usageCounts(profileId, toLocalDateKey(from));
   }
 
   /** A product already imported from this provider, if any. */

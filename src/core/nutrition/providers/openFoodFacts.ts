@@ -14,19 +14,30 @@ import type { MeasureUnit } from '../units';
  * Data licence: Open Database License (ODbL); product data must be attributed to
  * "Open Food Facts" wherever it is shown (see docs/OPEN_FOOD_FACTS.md).
  *
- * Kalethra uses it only as barcode fallback: a product is looked up when its barcode is not
- * known on the device. The normal food search never asks Open Food Facts (it is offline, BLS).
+ * Kalethra uses it as barcode fallback (a product is looked up when its barcode is not known on
+ * the device) and – since Phase 27 – as optional online extension of the search: only when the
+ * user taps "Weitere Produkte online suchen", never while typing.
  *
- * Endpoint (checked against the official documentation, API v2):
+ * Endpoints (official documentation):
  * - Product by barcode: GET https://world.openfoodfacts.org/api/v2/product/{barcode}?fields=…
+ * - Product search (Search-a-licious, the official search service):
+ *   GET https://search.openfoodfacts.org/search?q=…&langs=…&page_size=…&fields=…
  *
- * Rules of the service: a custom User-Agent, at most 15 product requests per minute per user –
- * the app only asks on an explicit scan or entry and never retries on its own.
+ * Rules of the service: a custom User-Agent, at most 15 product and 10 search requests per
+ * minute per user, no search-as-you-type – the app asks only on an explicit action, never
+ * retries on its own and throttles searches itself (`FoodLookupService.searchOnline`).
  */
 export const OPEN_FOOD_FACTS = {
   id: 'openfoodfacts',
   displayName: 'Open Food Facts',
   productUrl: 'https://world.openfoodfacts.org/api/v2/product/',
+  searchUrl: 'https://search.openfoodfacts.org/search',
+  /** Product names in these languages are searched (app languages). */
+  searchLanguages: 'de,en',
+  /** The search also asks for the shops – to rank "Quark Lidl" on the device. */
+  searchExtraFields: ['stores'],
+  minQueryLength: 2,
+  maxSearchResults: 30,
   /** Only what the app maps – keeps responses small on mobile connections. */
   fields: [
     'code',
@@ -89,6 +100,38 @@ export class OpenFoodFactsProvider implements FoodDataProvider {
     return mapOpenFoodFactsProduct({ code, ...data.product }, 'de');
   }
 
+  /**
+   * Product search for the optional online extension. Sends the search text and technical
+   * parameters only (languages, page size, field list) – nothing about the user.
+   */
+  async searchProducts(
+    query: string,
+    options: { limit: number; signal?: AbortSignal },
+  ): Promise<ExternalProduct[]> {
+    const text = query.trim();
+    if (text.length < OPEN_FOOD_FACTS.minQueryLength) return [];
+    const limit = Math.min(
+      Math.max(1, Math.round(options.limit)),
+      OPEN_FOOD_FACTS.maxSearchResults,
+    );
+    const params = new URLSearchParams({
+      q: text,
+      langs: OPEN_FOOD_FACTS.searchLanguages,
+      page_size: String(limit),
+      fields: [...OPEN_FOOD_FACTS.fields, ...OPEN_FOOD_FACTS.searchExtraFields].join(','),
+    });
+    const data = await this.get(
+      `${OPEN_FOOD_FACTS.searchUrl}?${params.toString()}`,
+      options.signal,
+    );
+    // Search-a-licious answers `hits`; older search answers used `products`.
+    const hits = isRecord(data) ? (data.hits ?? data.products) : undefined;
+    if (!Array.isArray(hits)) throw new FoodProviderError('invalid-response');
+    return hits
+      .map((hit) => mapOpenFoodFactsProduct(hit, 'de'))
+      .filter((product): product is ExternalProduct => product !== null && product.name !== '');
+  }
+
   /** Open Food Facts identifies products by their barcode. */
   getProduct(externalId: string, options?: { signal?: AbortSignal }) {
     return this.lookupBarcode(externalId, options);
@@ -147,6 +190,16 @@ function text(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.replace(/\s+/g, ' ').trim();
   return trimmed === '' ? null : trimmed;
+}
+
+/** Shops as text ("Lidl, Penny") or list; only present when the request asked for them. */
+function storeList(value: unknown): string[] | null {
+  const list = Array.isArray(value) ? value : typeof value === 'string' ? value.split(',') : null;
+  if (!list) return null;
+  return list.flatMap((item) => {
+    const store = text(item);
+    return store ? [store.slice(0, 60)] : [];
+  });
 }
 
 function firstBrand(value: unknown): string | null {
@@ -232,5 +285,6 @@ export function mapOpenFoodFactsProduct(raw: unknown, locale: string): ExternalP
     nutrients: values,
     servings: servings(raw, unit),
     missing,
+    ...(storeList(raw.stores) ? { stores: storeList(raw.stores) ?? [] } : {}),
   };
 }

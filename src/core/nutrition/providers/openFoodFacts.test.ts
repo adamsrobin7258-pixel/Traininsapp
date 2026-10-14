@@ -177,10 +177,59 @@ describe('OpenFoodFactsProvider', () => {
     expect(requests).toHaveLength(0);
   });
 
-  it('offers no full-text search – Open Food Facts is only the barcode fallback', () => {
-    const { http } = client();
+  it('searches products only with the text and technical parameters (Phase 27)', async () => {
+    const quark = {
+      code: '4056489123456',
+      product_name: 'Magerquark',
+      brands: ['Milbona'],
+      stores: 'Lidl, Lidl Plus',
+      nutriments: {
+        'energy-kcal_100g': 67,
+        proteins_100g: 12,
+        carbohydrates_100g: 4,
+        fat_100g: 0.2,
+      },
+    };
+    const { http, requests } = client(ok({ hits: [quark, { code: '123', product_name: '' }] }));
     const provider = new OpenFoodFactsProvider(http, UA);
-    expect('search' in provider).toBe(false);
+    const products = await provider.searchProducts('Quark Lidl', { limit: 99 });
+    const request = requests[0];
+    expect(request?.url.href.split('?')[0]).toBe('https://search.openfoodfacts.org/search');
+    // Only the search text, the languages, the page size (capped) and the field list.
+    expect(Object.fromEntries(request?.url.searchParams ?? [])).toEqual({
+      q: 'Quark Lidl',
+      langs: 'de,en',
+      page_size: '30',
+      fields: expect.stringContaining('stores') as string,
+    });
+    expect(request?.headers).toEqual({ 'User-Agent': UA });
+    // Entries without a name or a usable barcode are skipped; the shops come along.
+    expect(products).toHaveLength(1);
+    expect(products[0]).toMatchObject({
+      name: 'Magerquark',
+      brand: 'Milbona',
+      stores: ['Lidl', 'Lidl Plus'],
+      missing: [],
+    });
+  });
+
+  it('sends nothing for a too short search and fails clearly on a strange answer', async () => {
+    const { http, requests } = client(ok({ unexpected: true }));
+    const provider = new OpenFoodFactsProvider(http, UA);
+    expect(await provider.searchProducts(' e ', { limit: 10 })).toEqual([]);
+    expect(requests).toHaveLength(0);
+    await expect(provider.searchProducts('quark', { limit: 10 })).rejects.toEqual(
+      new FoodProviderError('invalid-response'),
+    );
+  });
+
+  it('keeps the barcode request unchanged: no shops, no search (barcode guard)', async () => {
+    const { http, requests } = client(ok({ status: 1, product: NUTELLA }));
+    const provider = new OpenFoodFactsProvider(http, UA);
+    const product = await provider.lookupBarcode('3017624010701');
+    expect(requests[0]?.url.pathname).toBe('/api/v2/product/3017624010701');
+    expect(requests[0]?.url.searchParams.get('fields')).not.toContain('stores');
+    expect(product).not.toHaveProperty('stores');
   });
 
   const failures: [Reply, string][] = [

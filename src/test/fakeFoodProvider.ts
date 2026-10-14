@@ -12,8 +12,11 @@ import {
 export class FakeFoodProvider implements FoodDataProvider {
   readonly id = 'openfoodfacts';
   readonly displayName = 'Open Food Facts';
-  readonly calls: { method: 'barcode' | 'product'; value: string }[] = [];
+  readonly calls: { method: 'barcode' | 'product' | 'search'; value: string; limit?: number }[] =
+    [];
   products: ExternalProduct[] = [];
+  /** Answers of the product search (online extension); `products` when not set. */
+  searchResults: ExternalProduct[] | null = null;
   /** Makes every request fail with this error. */
   failWith: FoodProviderErrorCode | null = null;
 
@@ -21,6 +24,12 @@ export class FakeFoodProvider implements FoodDataProvider {
     this.calls.push({ method: 'barcode', value: barcode });
     if (this.failWith) return Promise.reject(new FoodProviderError(this.failWith));
     return Promise.resolve(this.products.find((p) => p.barcode === barcode) ?? null);
+  }
+
+  searchProducts(query: string, options: { limit: number }): Promise<ExternalProduct[]> {
+    this.calls.push({ method: 'search', value: query, limit: options.limit });
+    if (this.failWith) return Promise.reject(new FoodProviderError(this.failWith));
+    return Promise.resolve(this.searchResults ?? this.products);
   }
 
   getProduct(externalId: string): Promise<ExternalProduct | null> {

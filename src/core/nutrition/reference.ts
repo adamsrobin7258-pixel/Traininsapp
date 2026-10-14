@@ -1,3 +1,4 @@
+import type { QueryAnalysis } from './foodRanking';
 import type { Nutrients } from './nutrients';
 
 /**
@@ -36,5 +37,20 @@ export interface ReferenceCatalog {
   info(): Promise<ReferenceDatasetInfo | null>;
   /** Best matches first; an empty query returns []. */
   search(query: string, limit: number): Promise<ReferenceFood[]>;
+  /**
+   * The `limit` most relevant foods for an analysed query with their relevance (see
+   * `foodRanking.ts`). `lang` decides which name counts as the main one.
+   */
+  rank(
+    query: QueryAnalysis,
+    limit: number,
+    options?: { lang?: 'de' | 'en' },
+  ): Promise<RankedReference[]>;
   get(code: string): Promise<ReferenceFood | null>;
+}
+
+/** A reference food with its relevance for a search (higher is better). */
+export interface RankedReference {
+  reference: ReferenceFood;
+  score: number;
 }

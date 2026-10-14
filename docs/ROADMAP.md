@@ -577,6 +577,20 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 27 – Ernährungssuche nach Bedeutung, Hybrid-Suche vorbereitet ✅ (Version 0.40.0)
+
+- Analyse der bisherigen Suche und Bewertung der Datenquellen (BLS, Open Food Facts, USDA, BLV,
+  GS1, fddb) in [FOOD_SEARCH.md](FOOD_SEARCH.md); keine Quelle ersetzt
+- Neues Ranking (`foodRanking.ts`): Kopf des Namens, zusammengesetzte Wörter („Hühner|ei“),
+  Gerichte (BLS X/Y) nach dem Lebensmittel, kleine Synonymliste, Tippfehler, englische Namen,
+  Händler/Eigenmarken („Quark Lidl“ → Milbona); alle Quellen gemeinsam sortiert
+- Persönliche Häufigkeit aus dem Tagebuch (180 Tage, lokal), begrenzter Bonus
+- „Passende Lebensmittel“ und „Weitere Treffer“ getrennt
+- Optionale Online-Suche bei Open Food Facts nur auf Tippen: nur der Suchtext, Drossel 6/min,
+  Sitzungs-Speicher, Übernahme nach Prüfung wie beim Barcode; Datenschutztexte angepasst
+- Barcode unverändert; Kalorien-/Makroberechnung, gespeicherte Einträge und Score unverändert
+- Offen: Gerätetest inkl. Live-Test der Online-Suche (aus der Build-Umgebung gesperrt)
+
 ## Phase 26 – Premium Visual Polish ✅ (Version 0.39.0)
 
 - Ein gemeinsamer Fortschrittsring (`ProgressRing`) für Kalethra-Score und Kalorienziel: vertiefte

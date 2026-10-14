@@ -93,14 +93,15 @@ test('the food search is offline and never asks Open Food Facts', async ({ page 
   await sheet.getByLabel('Lebensmittel suchen').press('Enter');
   const results = sheet.getByRole('list', { name: 'Suchergebnisse' });
   // Real BLS 4.0 data, bundled with the app: the raw apple comes first.
-  await expect(results.getByRole('button').nth(1)).toContainText('Apfel roh');
-  await expect(results.getByRole('button').nth(1)).toContainText('BLS 4.0');
+  await expect(results.getByRole('button').first()).toContainText('Apfel roh');
+  await expect(results.getByRole('button').first()).toContainText('BLS 4.0');
   await expect(sheet.getByText(/Max Rubner-Institut \(2025\)/)).toBeVisible();
-  await expect(sheet.getByText(/Online suchen/)).toHaveCount(0);
+  // The online extension is only offered – nothing is sent without a tap (Phase 27).
+  await expect(sheet.getByRole('button', { name: 'Weitere Produkte online suchen' })).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
 
   // Using it stores the reference once and logs it like any food.
-  await results.getByRole('button').nth(1).click();
+  await results.getByRole('button').first().click();
   await sheet.getByLabel('Menge', { exact: true }).fill('150');
   await sheet.getByRole('button', { name: 'Eintragen' }).click();
   await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -121,4 +122,89 @@ test('unknown barcode typed by hand leads to creating the food', async ({ page }
   await expect(sheet.getByText('Produkt nicht gefunden.')).toBeVisible();
   await sheet.getByRole('button', { name: 'Eigenes Lebensmittel anlegen' }).click();
   await expect(sheet.getByLabel('Barcode (optional)')).toHaveValue('4009999999999');
+});
+
+/** Phase 27: the search ranks by meaning – real BLS 4.0 data of the production build. */
+test('meaningful ranking: eggs for "Ei", plain quark for "Quark", the raw salmon for "Lachs"', async ({
+  page,
+}) => {
+  const requests = await mockOpenFoodFacts(page);
+  await page.goto('/nutrition');
+  await page.locator('main').getByRole('button', { name: 'Snacks: hinzufügen' }).click();
+  const sheet = page.getByRole('dialog');
+  const field = sheet.getByLabel('Lebensmittel suchen');
+  const first = sheet.getByRole('list', { name: 'Suchergebnisse' }).getByRole('button').first();
+  for (const [query, expected] of [
+    ['Ei', 'Hühnerei roh'],
+    ['Quark', 'Speisequark'],
+    ['Lachs', 'Lachs roh'],
+    ['Banane', 'Banane roh'],
+  ] as const) {
+    await field.fill(query);
+    await expect(first).toContainText(expected);
+  }
+  // A dish that only contains an egg is no clear match for "Ei".
+  await field.fill('Ei');
+  await expect(sheet.getByRole('heading', { name: 'Passende Lebensmittel' })).toBeVisible();
+  await expect(
+    sheet.getByRole('list', { name: 'Suchergebnisse' }).getByText('Kalbshirn gebraten mit Ei'),
+  ).toHaveCount(0);
+  expect(await noHorizontalScroll(page)).toBe(true);
+  expect(requests).toEqual([]);
+});
+
+test('online extension: only on tap, only the text, reviewed before saving', async ({ page }) => {
+  const requests: URL[] = [];
+  await page.route(/openfoodfacts\.org/, async (route) => {
+    const url = new URL(route.request().url());
+    requests.push(url);
+    if (url.hostname === 'search.openfoodfacts.org') {
+      await route.fulfill({
+        json: { hits: [{ ...SKYR, product_name: 'Magerquark', stores: 'Lidl', fat_100g: 0.2 }] },
+      });
+    } else await route.abort();
+  });
+  await page.goto('/nutrition');
+  await page.locator('main').getByRole('button', { name: 'Frühstück: hinzufügen' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Lebensmittel suchen').fill('Quark Lidl');
+  await expect(sheet.getByText(/Gesendet wird nur dein Suchbegriff/)).toBeVisible();
+  expect(requests).toEqual([]);
+
+  await sheet.getByRole('button', { name: 'Weitere Produkte online suchen' }).click();
+  const online = sheet.getByRole('list', { name: 'Online gefunden' });
+  await expect(online.getByRole('button', { name: /Magerquark/ })).toBeVisible();
+  expect(requests).toHaveLength(1);
+  // Nothing but the search text and technical parameters leaves the device.
+  expect([...(requests[0]?.searchParams.keys() ?? [])].sort()).toEqual([
+    'fields',
+    'langs',
+    'page_size',
+    'q',
+  ]);
+  expect(requests[0]?.searchParams.get('q')).toBe('Quark Lidl');
+
+  await online.getByRole('button', { name: /Magerquark/ }).click();
+  await expect(page.getByRole('dialog', { name: 'Produkt prüfen' })).toBeVisible();
+  expect(await noHorizontalScroll(page)).toBe(true);
+});
+
+test('online extension offline: a clear message, the local search keeps working', async ({
+  page,
+}) => {
+  await page.route(/openfoodfacts\.org/, (route) => route.abort('internetdisconnected'));
+  await page.goto('/nutrition');
+  await page.locator('main').getByRole('button', { name: 'Frühstück: hinzufügen' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Lebensmittel suchen').fill('Quark');
+  await sheet.getByRole('button', { name: 'Weitere Produkte online suchen' }).click();
+  await expect(sheet.getByRole('alert')).toBeVisible();
+  await expect(
+    sheet.getByRole('list', { name: 'Suchergebnisse' }).getByRole('button').first(),
+  ).toContainText('Speisequark');
+  // The local search still answers new queries.
+  await sheet.getByLabel('Lebensmittel suchen').fill('Banane');
+  await expect(
+    sheet.getByRole('list', { name: 'Suchergebnisse' }).getByRole('button').first(),
+  ).toContainText('Banane roh');
 });

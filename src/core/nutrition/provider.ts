@@ -36,6 +36,11 @@ export interface ExternalProduct {
   servings: FoodServing[];
   /** Main values the provider does not state. */
   missing: MainNutrient[];
+  /**
+   * Shops the product is sold in, when the provider states them (online search only, e.g.
+   * "Lidl"). Used to rank "Quark Lidl"; never stored.
+   */
+  stores?: string[];
 }
 
 export type FoodProviderErrorCode =
@@ -58,13 +63,14 @@ export class FoodProviderError extends Error {
 }
 
 /**
- * Contract for an external food data source (barcode and product lookup). The rest of the
- * nutrition module never depends on a concrete provider. There is deliberately no full-text
- * search: the normal search is offline (own foods and the bundled BLS).
+ * Contract for an external food data source (barcode and product lookup, optionally a product
+ * search). The rest of the nutrition module never depends on a concrete provider. The normal
+ * search stays offline (own foods, saved products and the bundled BLS); `searchProducts` is
+ * only used when the user explicitly asks for more products online (Phase 27).
  *
- * Privacy rule: a provider receives only the barcode or the product id – never diary entries,
- * goals, weight, profile or training data. The method signatures make anything else
- * impossible to pass.
+ * Privacy rule: a provider receives only the barcode, the product id or the search text –
+ * never diary entries, goals, weight, profile, usage or training data. The method signatures
+ * make anything else impossible to pass.
  */
 export interface FoodDataProvider {
   readonly id: string;
@@ -79,4 +85,12 @@ export interface FoodDataProvider {
     externalId: string,
     options?: { signal?: AbortSignal },
   ): Promise<ExternalProduct | null>;
+  /**
+   * Products for a search text, best matches of the provider first. Optional: a provider
+   * without a search simply has no online extension.
+   */
+  searchProducts?(
+    query: string,
+    options: { limit: number; signal?: AbortSignal },
+  ): Promise<ExternalProduct[]>;
 }

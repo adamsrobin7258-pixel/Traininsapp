@@ -237,6 +237,20 @@ export class FoodRepository {
     return this.withServings(rows);
   }
 
+  /**
+   * How often each food was logged since `fromDate` (local day, YYYY-MM-DD) – the personal
+   * signal of the search ranking. Derived from the diary on demand, nothing extra is stored.
+   */
+  async usageCounts(profileId: string, fromDate: string): Promise<Map<string, number>> {
+    const rows = await this.db.query<{ food_id: string; uses: number }>(
+      `SELECT food_id, COUNT(*) AS uses FROM food_entries
+       WHERE profile_id = ? AND food_id IS NOT NULL AND local_date >= ?
+       GROUP BY food_id`,
+      [profileId, fromDate],
+    );
+    return new Map(rows.map((row) => [row.food_id, row.uses]));
+  }
+
   /** True when a diary entry, saved meal or recipe refers to the food. */
   async isReferenced(id: string): Promise<boolean> {
     const rows = await this.db.query<{ used: number }>(

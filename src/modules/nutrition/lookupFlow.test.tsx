@@ -113,10 +113,11 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'hafer');
     const results = within(await screen.findByRole('list', { name: 'Suchergebnisse' }));
     await waitFor(() => {
+      // Clear matches first (own food and BLS ranked together), then "new food" (Phase 27).
       expect(results.getAllByRole('button').map((b) => b.textContent)).toEqual([
-        'Neues Lebensmittel anlegen',
         'HaferflockenEigenes · 370 kcal pro 100 g',
         'HaferflockenBLS 4.0 · 370 kcal pro 100 g',
+        'Neues Lebensmittel anlegen',
       ]);
     });
     expect(
@@ -124,12 +125,15 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
         /Max Rubner-Institut \(2025\): Bundeslebensmittelschlüssel \(BLS\), Version 4\.0\. Karlsruhe\./,
       ),
     ).toBeInTheDocument();
-    expect(dialog().queryByText(/Online suchen/)).not.toBeInTheDocument();
+    // The online search is offered, but nothing is sent until it is tapped (Phase 27).
+    expect(
+      dialog().getByRole('button', { name: 'Weitere Produkte online suchen' }),
+    ).toBeInTheDocument();
     expect(dialog().queryByText('Haferflocken Online')).not.toBeInTheDocument();
     expect(provider.calls).toEqual([]);
     // Illustrations: the BLS food shows its family (from the code), the own food the neutral
     // symbol – a family is never guessed.
-    const [, own, bls] = results.getAllByRole('button');
+    const [own, bls] = results.getAllByRole('button');
     expect(own?.querySelector('svg[data-tint]')).toHaveAttribute('data-tint', 'sage');
     expect(bls?.querySelector('svg[data-tint]')).toHaveAttribute('data-tint', 'sea');
   });
@@ -343,5 +347,73 @@ describe('adding foods: quick access, offline search (BLS) and barcode', () => {
     await renderApp('/settings/content/foods', { prepare: withFoods });
     const favorites = within(await screen.findByRole('list', { name: 'Favoriten' }));
     expect(favorites.getByText('Milch')).toBeInTheDocument();
+  });
+});
+
+describe('optional online search (Phase 27)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(NOW);
+    vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['de-DE']);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.restoreAllMocks();
+  });
+
+  it('asks only on tap, sends the text alone, reviews the product before it is stored', async () => {
+    const provider = new FakeFoodProvider();
+    provider.searchResults = [
+      externalProduct({ name: 'Magerquark', brand: 'Milbona', stores: ['Lidl'] }),
+    ];
+    const { db } = await renderApp('/nutrition', { foodProvider: provider });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Quark Lidl');
+    const online = await dialog().findByRole('button', { name: 'Weitere Produkte online suchen' });
+    expect(dialog().getByText(/Gesendet wird nur dein Suchbegriff/)).toBeInTheDocument();
+    expect(provider.calls).toEqual([]);
+
+    await userEvent.click(online);
+    const found = within(await screen.findByRole('list', { name: 'Online gefunden' }));
+    expect(provider.calls).toEqual([{ method: 'search', value: 'Quark Lidl', limit: 24 }]);
+    expect(
+      dialog().getByText(/Open Food Facts \(openfoodfacts\.org\), Lizenz ODbL/),
+    ).toBeInTheDocument();
+    await userEvent.click(found.getByRole('button', { name: /Magerquark.*Milbona/ }));
+
+    // The same review as after a scan: nothing is stored before "Speichern".
+    expect(await screen.findByRole('dialog', { name: 'Produkt prüfen' })).toBeInTheDocument();
+    expect(await db.query('SELECT name FROM foods')).toEqual([]);
+    await userEvent.click(dialog().getByRole('button', { name: 'Speichern' }));
+    expect(await screen.findByLabelText('Menge')).toBeInTheDocument();
+    expect(await db.query('SELECT name, brand, source FROM foods')).toEqual([
+      { name: 'Magerquark', brand: 'Milbona', source: 'external' },
+    ]);
+  });
+
+  it('offline: a clear message, the local results stay usable', async () => {
+    const provider = new FakeFoodProvider();
+    provider.failWith = 'offline';
+    await renderApp('/nutrition', { prepare: withFoods, foodProvider: provider });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Haferflocken');
+    await userEvent.click(
+      await dialog().findByRole('button', { name: 'Weitere Produkte online suchen' }),
+    );
+    expect(await dialog().findByText(/Keine Verbindung zu Open Food Facts/)).toBeInTheDocument();
+    const results = within(screen.getByRole('list', { name: 'Suchergebnisse' }));
+    expect(results.getAllByRole('button', { name: /^Haferflocken/ }).length).toBeGreaterThan(0);
+  });
+
+  it('shows clear matches apart from weaker ones', async () => {
+    await renderApp('/nutrition', { prepare: withFoods });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Milch');
+    expect(
+      await dialog().findByRole('heading', { name: 'Passende Lebensmittel' }),
+    ).toBeInTheDocument();
+    const clear = within(screen.getByRole('list', { name: 'Suchergebnisse' }));
+    expect(clear.getAllByRole('button')[0]).toHaveTextContent(/^Milch/);
   });
 });

@@ -935,6 +935,14 @@ export const en: TranslationSchema = {
       allFoods: 'Saved foods',
       otherFoods: 'More foods',
       results: 'Search results',
+      bestMatches: 'Best matches',
+      moreMatches: 'More matches',
+      searchOnline: 'Search more products online',
+      searchOnlineHint:
+        'Searches Open Food Facts. Only your search text is sent – nothing about you.',
+      onlineTitle: 'Found online',
+      onlineSearching: 'Searching Open Food Facts …',
+      onlineEmpty: 'No matching products were found online.',
       scan: 'Scan barcode',
       enterBarcode: 'Enter barcode',
       barcodeTitle: 'Enter barcode',
@@ -1497,7 +1505,7 @@ export const en: TranslationSchema = {
       encryptionOn: 'On',
       encryptionOff: 'Off',
       footerEncrypted:
-        'Your data is encrypted and stored only on this device. The food search works offline. Only for an unknown barcode is that barcode sent to Open Food Facts – never your diary, weight or goals. Kalethra reads values from Health Connect only if you turn it on; they stay encrypted on this device.',
+        'Your data is encrypted and stored only on this device. The food search works offline. Only for an unknown barcode is that barcode sent to Open Food Facts, and only when you tap “Search more products online” your search text – never your diary, weight or goals. Kalethra reads values from Health Connect only if you turn it on; they stay encrypted on this device.',
       footerDevelopment:
         'Browser development mode: data is stored unencrypted in the browser. The Android and iOS apps always encrypt.',
       runCheck: 'Check storage',
@@ -1527,7 +1535,7 @@ export const en: TranslationSchema = {
       blsMissing: 'This version does not contain BLS data yet.',
       offTitle: 'Open Food Facts',
       offBody:
-        'Only for barcodes that are unknown on your device. Nothing but the barcode is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
+        'For barcodes that are unknown on your device and – only when you ask – for searching more products. Nothing but the barcode or your search text is sent. Data: Open Food Facts (openfoodfacts.org), Open Database License (ODbL).',
       healthTitle: 'Health Connect',
       healthBody:
         'Optional, only after you turn it on (Profile → Health data). Read-only: weight, steps, active calories and activities (with distance) of the last 30 days, stored encrypted on this device. Nothing is written to Health Connect or sent to a server.',
