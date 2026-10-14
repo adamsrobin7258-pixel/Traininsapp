@@ -937,6 +937,8 @@ export const en: TranslationSchema = {
       results: 'Search results',
       bestMatches: 'Best matches',
       moreMatches: 'More matches',
+      noExactMatch:
+        'Nothing matches your search exactly. “More matches” lists similar foods – or create your own.',
       onlineHint:
         'From 3 characters on, Kalethra also searches Open Food Facts. Only your search text is sent – nothing about you.',
       onlineSearching: 'Also searching Open Food Facts …',

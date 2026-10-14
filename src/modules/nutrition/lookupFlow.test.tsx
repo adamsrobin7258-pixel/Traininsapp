@@ -450,6 +450,22 @@ describe('automatic online search (Phase 28)', () => {
     expect(dialog().queryByRole('alert')).not.toBeInTheDocument();
   });
 
+  it('only partial matches: a quiet note, nothing is called passend (Phase 29)', async () => {
+    await renderApp('/nutrition', { prepare: withFoods });
+    await openAdd();
+    await userEvent.type(dialog().getByLabelText('Lebensmittel suchen'), 'Haferflockn');
+    expect(await dialog().findByTestId('no-exact-match')).toHaveTextContent(
+      /Nichts passt genau zu deiner Suche/,
+    );
+    expect(dialog().queryByRole('heading', { name: 'Passende Lebensmittel' })).toBeNull();
+    const more = within(screen.getByRole('list', { name: 'Weitere Treffer' }));
+    expect(more.getAllByRole('button', { name: /^Haferflocken/ }).length).toBeGreaterThan(0);
+    // Creating a food stays possible.
+    expect(
+      dialog().getByRole('button', { name: 'Neues Lebensmittel anlegen' }),
+    ).toBeInTheDocument();
+  });
+
   it('shows clear matches apart from weaker ones', async () => {
     await renderApp('/nutrition', { prepare: withFoods });
     await openAdd();

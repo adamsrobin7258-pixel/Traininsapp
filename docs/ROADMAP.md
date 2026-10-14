@@ -577,6 +577,20 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 29 – Anfrage verstehen, Eignung prüfen, dann sortieren ✅ (Version 0.42.0)
+
+- Ursache des „Burger“-Treffers bei „Milbona Käse“ behoben: Punkte konnten fehlende
+  Anforderungen ausgleichen, Kategorien und englische Namen („Cheese Burger“) zählten wie der Name
+- Anfrageanalyse: Marke (auch mehrteilig, „Coca Cola“), Händler, Art, Variante, Menge, Hinweise
+- Lokale, versionierte Taxonomie (`foodTaxonomy.ts`): Arten mit Vertretern, andere Produkte
+  (Burger, Pudding, Kuchen …), falsche Freunde (Leberkäse, Seelachs), Varianten
+- Eignungsprüfung vor dem Ranking: match / partial / weak / excluded; Marke und Art müssen
+  gemeinsam erfüllt sein; der Name bestimmt die Art, Kategorie nur bestätigend
+- Sortierung lexikografisch (Entscheidung → Stufe → Punkte): Nutzung und Quelle kreuzen keine Stufe
+- Hinweis „Nichts passt genau …“, wenn es nur Teiltreffer gibt; interne Diagnose (`diagnose`)
+- Qualitätsklassen, Duplikatregeln, Online-Suche, Barcode, Berechnungen unverändert
+- Offen: Gerätetest mit echten Open-Food-Facts-Daten
+
 ## Phase 28 – Ein Ranking für alle Quellen, Open-Food-Facts-Qualität, automatische Online-Suche ✅ (Version 0.41.0)
 
 - Eigene Lebensmittel, gespeicherte Produkte, BLS und Open Food Facts in **einer** Liste, sortiert

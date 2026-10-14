@@ -1,3 +1,4 @@
+import { isFalseFriendOf, membersOfTerm } from './foodTaxonomy';
 import { normalizeSearchText } from './search';
 
 /**
@@ -61,63 +62,14 @@ const RETAILERS: Readonly<Record<string, readonly string[]>> = {
   dm: ['dmbio'],
 };
 
-/**
- * Kinds of food and well-known names of that kind that do not contain the word itself
- * (Phase 28): "Milbona Gouda" is a cheese although "Käse" is not in its name. Only clear,
- * common members – the name of the kind itself always ranks higher (see `foodRanking.ts`).
- */
-const KIND_GROUPS: Readonly<Record<string, readonly string[]>> = {
-  kase: [
-    'gouda',
-    'edamer',
-    'emmentaler',
-    'mozzarella',
-    'camembert',
-    'brie',
-    'feta',
-    'parmesan',
-    'cheddar',
-    'tilsiter',
-    'leerdammer',
-    'maasdamer',
-    'appenzeller',
-    'gruyere',
-    'halloumi',
-    'mascarpone',
-    'ricotta',
-    'gorgonzola',
-    'raclette',
-    'manchego',
-    'pecorino',
-  ],
-  nudeln: ['spaghetti', 'penne', 'fusilli', 'farfalle', 'tagliatelle', 'makkaroni', 'rigatoni'],
-  wurst: ['salami', 'mortadella', 'cervelat', 'lyoner'],
-  fisch: ['lachs', 'forelle', 'kabeljau', 'seelachs', 'hering', 'makrele', 'sardine'],
-};
-
-const KINDS = new Map<string, readonly string[]>();
-for (const [kind, members] of Object.entries(KIND_GROUPS)) {
-  const normalised = members.map(normalizeSearchText);
-  KINDS.set(kind, normalised);
-  for (const synonym of synonymsOf(kind)) KINDS.set(synonym, normalised);
-}
-
-/** Names of the kind a query word asks for ("kase" → "gouda", …); empty when none is known. */
+/** Well-known names of the kind a query word names ("kase" → "gouda", …) – see `foodTaxonomy.ts`. */
 export function kindMembersOf(word: string): readonly string[] {
-  return KINDS.get(word) ?? [];
+  return membersOfTerm(word);
 }
-
-/**
- * Compounds that end with a food word but are something else: "Leberkäse" and "Fleischkäse"
- * are meat loaf, not cheese; "Eierlikör" is already caught by the compound rule (Phase 28).
- */
-const FALSE_COMPOUNDS: Readonly<Record<string, readonly string[]>> = {
-  kase: ['leberkase', 'fleischkase', 'schweinskase', 'kalbskase'],
-};
 
 /** Whether a name word only *looks* like a compound of the query word ("Leberkäse" ≠ Käse). */
 export function isFalseCompound(word: string, nameWord: string): boolean {
-  return (FALSE_COMPOUNDS[word] ?? []).some((compound) => nameWord.endsWith(compound));
+  return isFalseFriendOf(word, nameWord);
 }
 
 /** Normalised retailer names, e.g. "lidl". */

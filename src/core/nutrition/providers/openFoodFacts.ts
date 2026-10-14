@@ -309,9 +309,10 @@ function nutritionComplete(value: unknown): boolean | null {
  */
 function searchDetails(
   raw: Record<string, unknown>,
-): Pick<ExternalProduct, 'categories' | 'packageSize' | 'qualitySignals'> {
+): Pick<ExternalProduct, 'categories' | 'packageSize' | 'qualitySignals' | 'description'> {
   return {
     categories: categoryWords(raw.categories_tags),
+    description: text(raw.generic_name)?.slice(0, 160) ?? null,
     packageSize: text(raw.quantity)?.slice(0, 40) ?? null,
     qualitySignals: {
       completeness: completeness(raw.completeness),

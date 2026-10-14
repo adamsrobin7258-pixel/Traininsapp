@@ -46,6 +46,12 @@ export interface ExternalProduct {
    * ("fresh cheeses") – they tell the ranking what kind of food a product is.
    */
   categories?: string[];
+  /**
+   * Search only (Phase 29): a further description of the product (Open Food Facts
+   * `generic_name`). Never evidence for brand or kind – a brand or food mentioned only there
+   * does not make a match.
+   */
+  description?: string | null;
   /** Search only: the stated package size, normalised ("500 g"); tells variants apart. */
   packageSize?: string | null;
   /** Search only: what the provider itself says about the quality of its record. */

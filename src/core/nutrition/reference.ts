@@ -1,4 +1,4 @@
-import type { QueryAnalysis } from './foodRanking';
+import type { MatchAssessment, QueryAnalysis } from './foodRanking';
 import type { Nutrients } from './nutrients';
 
 /**
@@ -53,4 +53,6 @@ export interface ReferenceCatalog {
 export interface RankedReference {
   reference: ReferenceFood;
   score: number;
+  /** The decision behind the score (Phase 29): match, partial or weak, with its diagnosis. */
+  match: MatchAssessment;
 }

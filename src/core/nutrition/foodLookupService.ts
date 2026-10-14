@@ -4,12 +4,15 @@ import { NutritionError } from './errors';
 import type { Food } from './food';
 import {
   analyzeQuery,
+  assessMatch,
   BONUS,
   compareRanked,
   prepareName,
-  relevance,
-  STRONG_MATCH,
   usageBonus,
+  type MatchAssessment,
+  type MatchDecision,
+  type MatchDiagnosis,
+  type QueryAnalysis,
 } from './foodRanking';
 import type { FoodService } from './foodService';
 import { assessProductQuality, dedupeProducts, QUALITY_PENALTY } from './productQuality';
@@ -29,13 +32,49 @@ export type BarcodeLookup =
  * relevance (`foodRanking.ts`, higher is better); `strong`: a clear match – the UI lists these
  * as "Passende Lebensmittel" and the rest as "Weitere Treffer".
  */
-export type FoodSearchResult =
-  /** A food stored on this device (own, saved product or a reference food used before). */
-  | { kind: 'food'; food: Food; score: number; strong: boolean }
-  /** A reference food (BLS) not used yet; it is stored on first use. */
-  | { kind: 'reference'; reference: ReferenceFood; score: number; strong: boolean }
+export type FoodSearchResult = (
+  | /** A food stored on this device (own, saved product or a reference food used before). */
+    { kind: 'food'; food: Food }
+    /** A reference food (BLS) not used yet; it is stored on first use. */
+  | { kind: 'reference'; reference: ReferenceFood }
   /** A product of the online search, not saved yet; the user reviews it before it is stored. */
-  | { kind: 'product'; product: ExternalProduct; score: number; strong: boolean };
+  | { kind: 'product'; product: ExternalProduct }
+) & {
+  score: number;
+  /** Every requirement of the query is met – "Passende Lebensmittel" (Phase 29: `decision`). */
+  strong: boolean;
+  /** Match, partial (e.g. brand without the kind) or weak (e.g. only in an addition). */
+  decision: ShownDecision;
+};
+
+/** Decisions that are shown; excluded candidates never reach the list. */
+export type ShownDecision = Exclude<MatchDecision, 'excluded'>;
+
+export interface SearchOptions {
+  referenceLimit?: number;
+  lang?: 'de' | 'en';
+  online?: readonly ExternalProduct[];
+}
+
+/** One judged candidate of a search, shown or not. */
+interface Judged extends MatchAssessment {
+  name: string;
+  source: Food['source'] | 'reference' | 'online';
+  result: FoodSearchResult | null;
+}
+
+/** The decisions of one search – internal, for tests and debugging (`diagnose`). */
+export interface SearchDiagnosis {
+  query: QueryAnalysis;
+  candidates: {
+    name: string;
+    source: Judged['source'];
+    shown: boolean;
+    level: number;
+    score: number;
+    diagnosis: MatchDiagnosis;
+  }[];
+}
 
 /** How many reference foods enter the ranking at most. */
 export const REFERENCE_RESULTS_LIMIT = 50;
@@ -120,26 +159,62 @@ export class FoodLookupService {
   }
 
   /**
-   * The search over all sources, ranked together. `online`: products of the online search for
-   * this query (`onlineProducts`) – without them the search is purely local. Each food appears
-   * once: a reference food or online product that is already stored appears as the stored
-   * food; online records of poor quality (C) are left out, limited ones (B) rank a little
-   * lower. `lang` decides which name of a reference food counts as main.
+   * The search over all sources, ranked together (Phase 28) in two steps (Phase 29): every
+   * candidate is first judged against the analysed query (`assessMatch`: match, partial,
+   * weak or excluded), then the remaining ones are sorted (`compareRanked`). `online`:
+   * products of the online search for this query (`onlineProducts`) – without them the search
+   * is purely local. Each food appears once: a reference food or online product that is
+   * already stored appears as the stored food; online records of poor quality (C) and online
+   * products that match only weakly are left out. `lang` decides which name of a reference food
+   * counts as main.
    */
   async search(
     profileId: string,
     query: string,
-    {
-      referenceLimit = REFERENCE_RESULTS_LIMIT,
-      lang = 'de',
-      online = [],
-    }: {
-      referenceLimit?: number;
-      lang?: 'de' | 'en';
-      online?: readonly ExternalProduct[];
-    } = {},
+    options: SearchOptions = {},
   ): Promise<FoodSearchResult[]> {
-    if (query.trim() === '') return [];
+    const { candidates } = await this.judge(profileId, query, options);
+    return candidates
+      .filter(
+        (candidate): candidate is Judged & { result: FoodSearchResult } =>
+          candidate.result !== null,
+      )
+      .sort(compareRanked)
+      .slice(0, SEARCH_RESULTS_LIMIT)
+      .map((candidate) => candidate.result);
+  }
+
+  /**
+   * The search's decisions, for tests and debugging (Phase 29): the analysed query and, for
+   * every candidate considered – shown or not – its decision with the reasons. Nothing is
+   * stored or sent; it describes this one search only.
+   */
+  async diagnose(
+    profileId: string,
+    query: string,
+    options: SearchOptions = {},
+  ): Promise<SearchDiagnosis> {
+    const { analysis, candidates } = await this.judge(profileId, query, options);
+    return {
+      query: analysis,
+      candidates: candidates.sort(compareRanked).map((candidate) => ({
+        name: candidate.name,
+        source: candidate.source,
+        shown: candidate.result !== null,
+        level: candidate.level,
+        score: candidate.score,
+        diagnosis: candidate.diagnosis,
+      })),
+    };
+  }
+
+  private async judge(
+    profileId: string,
+    query: string,
+    { referenceLimit = REFERENCE_RESULTS_LIMIT, lang = 'de', online = [] }: SearchOptions,
+  ): Promise<{ analysis: QueryAnalysis; candidates: Judged[] }> {
+    const empty = analyzeQuery('');
+    if (query.trim() === '') return { analysis: empty, candidates: [] };
     const [stored, usage] = await Promise.all([
       this.foods.list(profileId),
       this.foods.usageCounts(profileId).catch(() => new Map<string, number>()),
@@ -148,15 +223,27 @@ export class FoodLookupService {
       ...stored.flatMap((food) => (food.brand ? [food.brand] : [])),
       ...online.flatMap((product) => (product.brand ? [product.brand] : [])),
     ]);
-    if (analysis.words.length === 0) return [];
+    if (analysis.words.length === 0) return { analysis, candidates: [] };
     // Stored foods must stay searchable even if the reference data cannot be read.
     const references = await this.reference
       .rank(analysis, referenceLimit, { lang })
       .catch(() => []);
 
-    const ranked: { score: number; name: string; result: FoodSearchResult }[] = [];
-    const add = (score: number, name: string, result: FoodSearchResult) => {
-      ranked.push({ score, name, result });
+    const candidates: Judged[] = [];
+    const add = (
+      name: string,
+      source: Judged['source'],
+      match: MatchAssessment,
+      result: (strong: boolean, decision: ShownDecision) => FoodSearchResult,
+      show = true,
+    ) => {
+      const shown = show && match.decision !== 'excluded';
+      candidates.push({
+        name,
+        source,
+        ...match,
+        result: shown ? result(match.decision === 'match', match.decision as ShownDecision) : null,
+      });
     };
     const storedCodes = new Set<string>();
     const storedProducts = new Set<string>();
@@ -166,7 +253,7 @@ export class FoodLookupService {
       if (food.provider && food.externalId)
         storedProducts.add(`${food.provider}:${food.externalId}`);
       if (food.barcode) storedBarcodes.add(food.barcode);
-      const score = relevance(
+      const match = assessMatch(
         {
           names: [prepareName(food.name)],
           brands: food.brand ? [normalizeSearchText(food.brand)] : [],
@@ -175,43 +262,57 @@ export class FoodLookupService {
         },
         analysis,
       );
-      if (score === null) continue;
-      add(score, food.name, { kind: 'food', food, score, strong: score >= STRONG_MATCH });
+      add(food.name, food.source, match, (strong, decision) => ({
+        kind: 'food',
+        food,
+        score: match.score,
+        strong,
+        decision,
+      }));
     }
-    for (const { reference, score } of references) {
+    for (const { reference, match } of references) {
       if (storedCodes.has(`${reference.dataset}:${reference.code}`)) continue;
-      add(score, reference.name, {
+      add(reference.name, 'reference', match, (strong, decision) => ({
         kind: 'reference',
         reference,
-        score,
-        strong: score >= STRONG_MATCH,
-      });
+        score: match.score,
+        strong,
+        decision,
+      }));
     }
     for (const product of dedupeProducts(online)) {
       // Saved before (same record or same barcode): it is already listed as the stored food.
       if (storedProducts.has(`${product.provider}:${product.externalId}`)) continue;
       if (product.barcode && storedBarcodes.has(product.barcode)) continue;
       const quality = assessProductQuality(product);
-      if (quality === 'C') continue;
-      const score = relevance(
+      const match = assessMatch(
         {
           names: [prepareName(product.name)],
-          brands: [product.brand, ...(product.stores ?? [])].flatMap((value) =>
-            value ? [normalizeSearchText(value)] : [],
-          ),
+          brands: product.brand ? [normalizeSearchText(product.brand)] : [],
+          stores: (product.stores ?? []).map(normalizeSearchText),
           categories: (product.categories ?? []).map(normalizeSearchText),
-          bonus: SOURCE_BONUS.online + QUALITY_PENALTY[quality],
+          packageSize: product.packageSize ?? null,
+          quality,
+          bonus: SOURCE_BONUS.online + (quality === 'C' ? 0 : QUALITY_PENALTY[quality]),
         },
         analysis,
       );
-      // The provider's own match (a word we do not know) is not enough: no clear relation.
-      if (score === null) continue;
-      add(score, product.name, { kind: 'product', product, score, strong: score >= STRONG_MATCH });
+      // Online, a weak relation is noise: only clear and partial matches are shown.
+      add(
+        product.name,
+        'online',
+        match,
+        (strong, decision) => ({
+          kind: 'product',
+          product,
+          score: match.score,
+          strong,
+          decision,
+        }),
+        match.decision !== 'weak',
+      );
     }
-    return ranked
-      .sort(compareRanked)
-      .slice(0, SEARCH_RESULTS_LIMIT)
-      .map((entry) => entry.result);
+    return { analysis, candidates };
   }
 
   /**

@@ -231,6 +231,64 @@ test('automatic online search: one request after the pause, the best match first
   expect(await noHorizontalScroll(page)).toBe(true);
 });
 
+/** Phase 29: brand and kind together – what only half fits is never "passend". */
+test('"Milbona Käse": cheese of the brand passend; burger, pudding and dishes are not', async ({
+  page,
+}) => {
+  const values = (kcal: number, protein: number, carbs: number, fat: number) => ({
+    'energy-kcal_100g': kcal,
+    proteins_100g: protein,
+    carbohydrates_100g: carbs,
+    fat_100g: fat,
+  });
+  await mockSearch(page, [
+    MILBONA_GOUDA,
+    { ...MILBONA_GOUDA, code: '4056489000030', product_name: 'Edamer am Stück' },
+    { ...MILBONA_GOUDA, code: '4056489000031', product_name: 'Scheibenkäse Butterkäse' },
+    {
+      code: '4000000000032',
+      product_name: 'Burger',
+      brands: 'Grillmeister',
+      categories_tags: ['en:cheeses'],
+      nutriments: values(250, 13, 22, 12),
+    },
+    {
+      code: '4056489000033',
+      product_name: 'Pudding Vanille',
+      brands: 'Milbona',
+      nutriments: values(110, 3, 17, 3),
+    },
+    {
+      code: '4000000000034',
+      product_name: 'Nudeln mit Käse',
+      brands: 'Chef Select',
+      nutriments: values(160, 7, 22, 5),
+    },
+  ]);
+  await page.goto('/nutrition');
+  await page.locator('main').getByRole('button', { name: 'Frühstück: hinzufügen' }).click();
+  const sheet = page.getByRole('dialog');
+  await sheet.getByLabel('Lebensmittel suchen').pressSequentially('Milbona Käse', { delay: 30 });
+  const passend = sheet.getByRole('list', { name: 'Suchergebnisse' });
+  await expect(passend.getByRole('button', { name: /Gouda jung/ })).toBeVisible();
+  await expect(sheet.getByRole('heading', { name: 'Passende Lebensmittel' })).toBeVisible();
+  for (const name of ['Edamer am Stück', 'Scheibenkäse Butterkäse']) {
+    await expect(passend.getByRole('button', { name: new RegExp(name) })).toBeVisible();
+  }
+  // Exactly the three cheeses of the brand, then "new food".
+  await expect(passend.getByRole('button')).toHaveCount(4);
+  for (const name of ['Burger', 'Pudding Vanille', 'Nudeln mit Käse']) {
+    await expect(passend.getByRole('button', { name: new RegExp(name) })).toHaveCount(0);
+  }
+  // Further results: the plain cheeses of other sources first (kind met, brand not); a
+  // Milbona pudding could only follow them. The burger and the dish are not shown at all.
+  const more = sheet.getByRole('list', { name: 'Weitere Treffer' });
+  await expect(more.getByRole('button').first()).toContainText(/Käse|Gouda|Edamer|käse/);
+  await expect(sheet.getByRole('button', { name: /^Burger/ })).toHaveCount(0);
+  await expect(sheet.getByRole('button', { name: /Nudeln mit Käse/ })).toHaveCount(0);
+  expect(await noHorizontalScroll(page)).toBe(true);
+});
+
 test('online search offline: a quiet note, the local search keeps working', async ({ page }) => {
   await page.route(/openfoodfacts\.org/, (route) => route.abort('internetdisconnected'));
   await page.goto('/nutrition');

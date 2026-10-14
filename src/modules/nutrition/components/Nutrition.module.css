@@ -1077,3 +1077,12 @@
   line-height: var(--line-height-snug);
   color: var(--color-text-secondary);
 }
+
+/* Phase 29: only partial matches – a quiet note under the list of passende Lebensmittel. */
+.noExactMatch {
+  margin: 0 0 var(--space-2);
+  padding: 0 var(--space-4);
+  font-size: var(--font-size-footnote);
+  line-height: var(--line-height-snug);
+  color: var(--color-text-secondary);
+}

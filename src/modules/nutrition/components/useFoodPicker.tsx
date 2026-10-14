@@ -350,6 +350,12 @@ export function useFoodPicker({ onPicked }: { onPicked: (food: Food) => void }):
                 {strongMatches.map(resultRow)}
                 {createRow}
               </List>
+              {/* Phase 29: only partial matches – say so, never call them passend. */}
+              {results.status === 'ready' && matches.length > 0 && strongMatches.length === 0 ? (
+                <p className={styles.noExactMatch} role="status" data-testid="no-exact-match">
+                  {t('nutrition.lookup.noExactMatch')}
+                </p>
+              ) : null}
               {results.status === 'ready' && matches.length === 0 ? (
                 <EmptyState
                   art={<FoodArt name="food" size={48} />}

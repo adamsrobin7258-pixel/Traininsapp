@@ -12,6 +12,9 @@ export {
   SOURCE_BONUS,
   type BarcodeLookup,
   type FoodSearchResult,
+  type SearchDiagnosis,
+  type SearchOptions,
+  type ShownDecision,
 } from './foodLookupService';
 export {
   assessProductQuality,
@@ -21,12 +24,17 @@ export {
 } from './productQuality';
 export {
   analyzeQuery,
+  assessMatch,
   prepareName,
   relevance,
   STRONG_MATCH,
   usageBonus,
+  type MatchAssessment,
+  type MatchDecision,
+  type MatchDiagnosis,
   type QueryAnalysis,
 } from './foodRanking';
+export { TAXONOMY_VERSION } from './foodTaxonomy';
 export * from './barcode';
 export {
   mapOpenFoodFactsProduct,

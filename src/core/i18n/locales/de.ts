@@ -953,6 +953,8 @@ export const de = {
       results: 'Suchergebnisse',
       bestMatches: 'Passende Lebensmittel',
       moreMatches: 'Weitere Treffer',
+      noExactMatch:
+        'Nichts passt genau zu deiner Suche. Unter „Weitere Treffer“ findest du ähnliche Lebensmittel – oder lege ein eigenes an.',
       onlineHint:
         'Ab 3 Zeichen sucht Kalethra auch bei Open Food Facts. Gesendet wird nur dein Suchbegriff – nichts über dich.',
       onlineSearching: 'Suche auch bei Open Food Facts …',

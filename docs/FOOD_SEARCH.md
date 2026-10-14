@@ -17,6 +17,131 @@ Suchfeld (useFoodPicker)
 Barcode (useBarcodeFlow)               unverändert, eigener Weg
 ```
 
+## 00. Phase 29: erst verstehen, dann ausschließen, dann sortieren
+
+Anlass: Bei „Milbona Käse“ stand ein **Burger** oben. Ursache: Phase 28 addierte Punkte – eine
+Open-Food-Facts-Kategorie „cheeses“ (70) plus Marke (+40) plus „Marke + Art“ (+20) reichte für
+einen Platz neben echtem Käse; ein englischer Name „Cheese Burger“ bekam für „cheese“ sogar die
+Punkte eines Synonyms am Namensanfang. Punkte konnten fehlende Anforderungen ausgleichen. Phase
+29 trennt deshalb **Eignung** und **Reihenfolge**.
+
+```
+analyzeQuery (foodRanking.ts + foodTaxonomy.ts)    Marke · Händler · Art · Variante · Menge · Hinweise
+  → assessMatch je Kandidat                        match | partial | weak | excluded + Diagnose
+  → compareRanked                                  Entscheidung → Stufe → Punkte → Name
+```
+
+### Anfrageanalyse (`analyzeQuery`)
+
+| Anfrage            | Ergebnis                                                   |
+| ------------------ | ---------------------------------------------------------- |
+| Milbona Käse       | Marke `milbona` + Art `cheese`                             |
+| Milbona            | nur Marke (zeigt nur Produkte dieser Marke)                |
+| Lidl Quark         | Händler `lidl` (→ Eigenmarken, Läden) + Art `quark`        |
+| Milbona Magerquark | Marke + Art `quark`, Variante `mager`                      |
+| Coca Cola Zero     | Marke `coca cola` (Phrase) + Variante `zero`               |
+| Barilla Spaghetti  | Marke `barilla` + Art `pasta` (Wort „spaghetti“ gefordert) |
+| Ei                 | Art `egg`                                                  |
+| Hähnchenbrust      | Art `poultry`, Variante `brust`                            |
+
+- Marken: bekannte Marken (`KNOWN_BRANDS`, auch mehrteilig wie „coca cola“), Eigenmarken der
+  Händler, Marken gespeicherter und online gefundener Produkte. Ein Wort, das nur _Teil_ einer
+  Marke ist („cola“), wird nur in längeren Anfragen und mit Hinweis (`notes`) als Marke gelesen.
+  Ein Wort, das Marke _und_ Lebensmittel sein kann, bleibt beides (konservativ).
+- Mengen („500 g“, „1,5 l“) werden erkannt, sind nie Pflicht, bevorzugen nur die passende
+  Packungsgröße (+5).
+- Deterministisch, lokal, ohne Netz und ohne KI-Dienst.
+
+### Lokale Taxonomie (`foodTaxonomy.ts`, Version `TAXONOMY_VERSION` = 1)
+
+- **Arten** mit Begriffen und bekannten Vertretern: Käse (Gouda, Edamer, Emmentaler, Mozzarella …,
+  Scheibenkäse als Kompositum), Quark (Speisequark, Topfen), Joghurt, Skyr, Milch,
+  Pflanzendrinks, Eier (Hühnerei, Spiegelei, Eigelb …), Haferflocken, Reis, Nudeln (Spaghetti,
+  Penne …), Geflügel (Hähnchenbrust …), Fisch (Lachs, Forelle …), Obst (Banane, Apfel …), Brot.
+- **Andere Produkte** (nur zur Abgrenzung): Burger, Pudding, Pizza, Kuchen, Torte, Auflauf,
+  Suppe, Soße, Riegel, Kekse, Schokolade, Chips, Salat, Creme, Likör … – „Cheeseburger“ ist ein
+  Burger, „Käsekuchen“ ein Kuchen, „Bananenchips“ sind Chips.
+- **Falsche Freunde:** Leberkäse, Fleischkäse, Schweinskäse, Kalbskäse sind kein Käse;
+  Seelachs und Lachsschinken sind kein Lachs.
+- **Varianten:** Zero, Light, Protein, Mager/Magerstufe, Laktosefrei, Vegan, Natur, Vollkorn,
+  Brust, Filet, Schenkel, Keule. „Magerquark“ wird als Quark + mager zerlegt und findet auch
+  „Speisequark Magerstufe“; „Hähnchenbrust“ findet „Hähnchen Brustfilet“. Ein Filet ändert das
+  Lebensmittel nicht: „Lachsfilet“ findet „Lachs roh“ (knapp passend).
+- Keine pauschalen Teilstring-Regeln: Vertreter zählen nur als ganzes Wort oder Wortende ab 4
+  Buchstaben, nie als Wortanfang.
+
+### Eignungsprüfung (`assessMatch`) – Stufe A
+
+Was ein Produkt **ist**, bestimmt sein Name: das letzte Wort des Namenskopfs mit bekannter Art
+(„Milbona Gouda jung“ → Käse, „Cheese Burger“ → Burger, „Nudeln mit Käse“ → Nudeln).
+Reihenfolge der Aussagekraft: Name → Markenfeld → Variante → Kategorie → Beschreibung (nie) →
+Zutaten (nie).
+
+| Entscheidung | Wann                                                                                            | Anzeige                                        |
+| ------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| **match**    | alle Lebensmittelwörter klar im Namen (≥ 60), keine Artkonflikt, Marke erfüllt (falls gefragt)  | „Passende Lebensmittel“                        |
+| **partial**  | nur Marke, nur Art, Art nur als Zusatz/Modifier mit Konflikt, Art nur aus der Kategorie         | „Weitere Treffer“                              |
+| **weak**     | Wort nur schwach im Namen (in „… mit …“, Tippfehler, Wortanfang)                                | „Weitere Treffer“, unten; online nicht gezeigt |
+| **excluded** | kein Wort im Namen und Marke nicht erfüllt · Kategorie widerspricht dem Namen · Datenqualität C | nie                                            |
+
+- **Marke:** Markenfeld, bei Händlern auch die Läden des Produkts; fehlt das Markenfeld, zählt
+  der Namensanfang (halb). Steht im Markenfeld eine _andere_ Marke, ist die Marke nicht erfüllt –
+  auch wenn sie im Namen steht. Beschreibung und Zutaten zählen nie.
+- **Kategorie:** bestätigt höchstens. Ohne Hinweis im Namen bleibt ein Produkt „partial“; widerspricht
+  der Name („Burger“), wird die Kategorie ignoriert.
+- **Gerichte** (BLS X/Y) bleiben „match“, wenn sie beim Namen gesucht werden, stehen aber eine
+  Stufe tiefer (−40).
+
+### Sortierung (`compareRanked`) – Stufe B
+
+Lexikografisch statt Punktesumme: **Entscheidung** (match → partial → weak), dann **Stufe** des
+Namenstreffers (ganzer Name ≥ 150 · klares Wort/Synonym/Kompositum ≥ 80 · klar genug ≥ 60 ·
+schwach), dann **Punkte** (Name, Marke +40/+20, Marke+Art +20, Packungsgröße +5, Quelle +8/+6/0,
+Datenqualität B −12, persönliche Nutzung bis +30), dann kürzerer Name, dann A–Z. Nutzung und
+Quelle verschieben nur innerhalb einer Stufe – ein häufig genutzter, aber unpassender Treffer
+kann nie über einen passenden steigen.
+
+### Ergebnisgruppen
+
+- „Passende Lebensmittel“ = nur `match`. Gibt es keinen, lautet die Überschrift „Suchergebnisse“
+  und ein ruhiger Hinweis erklärt: „Nichts passt genau zu deiner Suche …“ – „Neues Lebensmittel
+  anlegen“ und die Online-Suche bleiben.
+- „Weitere Treffer“ = `partial`, dann `weak`. Online-Produkte nur `match` und `partial`.
+
+### Beispiel „Milbona Käse“ (Tests `foodMatch.test.ts`, E2E `foodLookup.spec.ts`)
+
+| Kandidat                                           | Entscheidung | Grund                                         |
+| -------------------------------------------------- | ------------ | --------------------------------------------- |
+| Gouda jung · Marke Milbona                         | match        | Marke (Feld) + Gouda = Käse                   |
+| Edamer am Stück · Milbona                          | match        | Marke + Edamer = Käse                         |
+| Scheibenkäse Butterkäse · Milbona                  | match        | Marke + Käse am Wortende                      |
+| eigenes „Käse“, sehr oft genutzt                   | partial      | Marke fehlt – bleibt unter allen „match“      |
+| BLS „Gouda 48 % Fett i. Tr.“                       | partial      | Art ja, Marke nein                            |
+| Cheeseburger · Milbona                             | partial      | Name = Burger (Konflikt), nur die Marke passt |
+| Pudding Vanille · Milbona                          | partial      | nur die Marke                                 |
+| Burger · andere Marke · Kategorie Käse             | excluded     | Kategorie widerspricht dem Namen, Marke fehlt |
+| Nudeln mit Käse · andere Marke                     | weak         | Käse nur als Zusatz – online nicht gezeigt    |
+| Snack Mix · „mit Milbona Käse“ in der Beschreibung | excluded     | Beschreibung zählt nie                        |
+
+### Diagnose (`FoodLookupService.diagnose`, `MatchDiagnosis`)
+
+Für Tests und Fehlersuche, keine Oberfläche: erkannte Anfrage (Marken, Arten, Varianten, Menge,
+Hinweise, Taxonomie-Version) und je Kandidat – gezeigt oder nicht – Marke (gefragt, Quelle,
+erfüllt), Art (gefragt, laut Name, Konflikt, nur Kategorie, erfüllt), Variante, erfüllte und
+fehlende Anforderungen, Qualitätsklasse, Entscheidung und Gründe. Nichts wird gespeichert oder
+gesendet; Tagebuch und Nutzung erscheinen darin nicht (nur ihr Bonus in der Punktzahl).
+
+### Grenzen der Erkennung
+
+- Die Taxonomie ist bewusst klein; unbekannte Marken werden erst erkannt, wenn ein Produkt dieser
+  Marke gespeichert ist oder online gefunden wurde. Unbekannte Arten werden nicht auf Konflikte
+  geprüft (konservativ: dann entscheidet der Name allein).
+- Produktnamen ohne erkennbare Art (z. B. Fantasienamen wie „Le Rustique“) bleiben bei einer
+  Artsuche „partial“, auch wenn die Kategorie stimmt.
+- Zutatenlisten werden nicht abgefragt und nie bewertet.
+- „Lidl“ allein macht kein Produkt zu Milbona: Händlertreffer zählen über Eigenmarken oder die
+  von Open Food Facts genannten Läden.
+
 ## 0. Phase 28 im Überblick
 
 | Thema               | Umsetzung                                                                                                                                                                                                                                          |

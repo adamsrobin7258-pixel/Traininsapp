@@ -7,6 +7,8 @@ import type { FoodSearchResult } from './foodLookupService';
 import { ONLINE_SEARCH, SEARCH_RESULTS_LIMIT } from './foodLookupService';
 import {
   analyzeQuery,
+  assessMatch,
+  compareRanked,
   prepareName,
   relevance,
   usageBonus,
@@ -352,7 +354,9 @@ describe('automatic online search, one ranking for all sources (Phase 28)', () =
     const results = await n.lookup.search(profileId, 'Milbona Käse', { online });
     expect(results[0]).toMatchObject({ kind: 'product', product: { name: 'Gouda jung' } });
     const own = results.find((r) => r.kind === 'food' && r.food.name === 'Käse');
-    expect((results[0]?.score ?? 0) - (own?.score ?? 0)).toBeGreaterThanOrEqual(25);
+    // Phase 29: the own "Käse" lacks the brand – a partial match, below every full match.
+    expect(results[0]?.decision).toBe('match');
+    expect(own?.decision).toBe('partial');
   });
 
   it('a poor online match never pushes a clear local match down', async () => {
@@ -466,34 +470,40 @@ describe('ranking rules (Phase 28)', () => {
     expect(rank('Eier roh', 'Eier gekocht')).toBe(-Infinity);
   });
 
-  it('brand plus kind: "Milbona Gouda" clearly before "Gouda Käse" and an unbranded "Käse"', () => {
+  it('brand plus kind: "Milbona Gouda" is a match, "Gouda Käse" and an own "Käse" are not', () => {
     const query = analyzeQuery('Milbona Käse');
-    const score = (name: string, brands: string[] = [], bonus = 0) =>
-      relevance({ names: [prepareName(name)], brands, bonus }, query) ?? -Infinity;
-    const milbona = score('Milbona Gouda', ['milbona']);
-    expect(milbona).toBeGreaterThan(STRONG_MATCH);
-    expect(milbona - score('Gouda Käse', ['andere'])).toBeGreaterThanOrEqual(40);
-    // An own "Käse", used very often, stays clearly behind.
-    expect(milbona - score('Käse', [], BONUS.custom + BONUS.usageMax)).toBeGreaterThanOrEqual(25);
-    // Käse only as an ingredient: far behind.
-    expect(score('Nudeln mit Käse')).toBeLessThan(score('Gouda Käse', ['andere']));
+    const judge = (name: string, brands: string[] = [], bonus = 0) =>
+      assessMatch({ names: [prepareName(name)], brands, bonus }, query);
+    const milbona = judge('Milbona Gouda', ['milbona']);
+    expect(milbona.decision).toBe('match');
+    // Only the kind, another brand: partial – whatever its score.
+    expect(judge('Gouda Käse', ['andere']).decision).toBe('partial');
+    // An own "Käse", used very often: partial, ranked below every match.
+    const own = judge('Käse', [], BONUS.custom + BONUS.usageMax);
+    expect(own.decision).toBe('partial');
+    expect(compareRanked({ ...milbona, name: 'a' }, { ...own, name: 'b' })).toBeLessThan(0);
+    // Käse only as an ingredient of a dish: weak at most.
+    expect(judge('Nudeln mit Käse').decision).toBe('weak');
   });
 
   it('a brand only mentioned later in the name is no brand match', () => {
     const query = analyzeQuery('Milbona Quark');
-    const real = relevance({ names: [prepareName('Milbona Magerquark')] }, query) ?? 0;
-    const mention =
-      relevance({ names: [prepareName('Quarkspeise mit Milbona Quark')] }, query) ?? 0;
-    expect(real).toBeGreaterThan(mention + 40);
+    const real = assessMatch({ names: [prepareName('Milbona Magerquark')] }, query);
+    const mention = assessMatch({ names: [prepareName('Quarkspeise mit Milbona Quark')] }, query);
+    expect(real.decision).toBe('match');
+    expect(real.diagnosis.brand.source).toBe('name');
+    expect(mention.decision).not.toBe('match');
+    expect(mention.diagnosis.brand.met).toBe(false);
   });
 
-  it('the kind of a product counts from its category', () => {
+  it('a category only hints at the kind – never a match on its own', () => {
     const query = analyzeQuery('Käse');
-    const withCategory = relevance(
+    const withCategory = assessMatch(
       { names: [prepareName('Le Rustique')], categories: ['fresh cheeses', 'cheeses'] },
       query,
     );
-    expect(withCategory).toBeGreaterThan(STRONG_MATCH);
+    expect(withCategory.decision).toBe('partial');
+    expect(withCategory.diagnosis.kind.categoryOnly).toBe(true);
     // Only the last word names the kind: "egg pasta" is pasta, not an egg.
     expect(
       relevance({ names: [prepareName('Spätzle')], categories: ['egg pasta'] }, analyzeQuery('Ei')),

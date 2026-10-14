@@ -200,12 +200,13 @@ describe('food search with BLS', () => {
       { ...own, name: 'Apfelmus', brand: 'Marke', barcode: '4000000000015' },
     );
     // The apple itself first, then the compound that is an apple ("Brat|äpfel"), then foods
-    // that only start with "Apfel" – own foods no longer jump ahead of a better match.
+    // that only start with "Apfel" – own foods no longer jump ahead of a better match. A cake
+    // is no apple (Phase 29): "Apfelkuchen" is only a partial match and comes last.
     expect(names(await n.lookup.search(profileId, 'apfel'))).toEqual([
       'bls:Apfel, roh',
       'bls:Bratäpfel, gegart',
-      'custom:Apfelkuchen von Oma',
       'external:Apfelmus',
+      'custom:Apfelkuchen von Oma',
     ]);
     expect(provider.calls).toEqual([]);
     expect(await n.lookup.search(profileId, '  ')).toEqual([]);

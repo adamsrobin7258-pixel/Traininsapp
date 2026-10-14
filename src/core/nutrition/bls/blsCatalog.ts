@@ -3,9 +3,10 @@ import { areValidNutrients, type Nutrients } from '../nutrients';
 import { blsCategory } from '../category';
 import {
   analyzeQuery,
+  assessMatch,
   compareRanked,
   prepareName,
-  relevance,
+  type MatchAssessment,
   type PreparedName,
   type QueryAnalysis,
 } from '../foodRanking';
@@ -157,7 +158,7 @@ export class BlsCatalog implements ReferenceCatalog {
     { lang = 'de' }: { lang?: 'de' | 'en' } = {},
   ): Promise<RankedReference[]> {
     if (query.words.length === 0) return [];
-    const matches: { score: number; name: string; reference: ReferenceFood }[] = [];
+    const matches: (MatchAssessment & { name: string; reference: ReferenceFood })[] = [];
     for (const entry of (await this.data()).entries) {
       const names =
         lang === 'en' && entry.en
@@ -165,13 +166,19 @@ export class BlsCatalog implements ReferenceCatalog {
           : entry.en
             ? [entry.de, entry.en]
             : [entry.de];
-      const score = relevance({ names, dish: entry.dish }, query);
-      if (score !== null) matches.push({ score, name: entry.food.name, reference: entry.food });
+      const match = assessMatch({ names, dish: entry.dish }, query);
+      if (match.decision !== 'excluded') {
+        matches.push({ ...match, name: entry.food.name, reference: entry.food });
+      }
     }
     return matches
       .sort(compareRanked)
       .slice(0, limit)
-      .map(({ reference, score }) => ({ reference, score }));
+      .map(({ reference, decision, level, score, diagnosis }) => ({
+        reference,
+        score,
+        match: { decision, level, score, diagnosis },
+      }));
   }
 
   async get(code: string): Promise<ReferenceFood | null> {

@@ -1,4 +1,14 @@
 import {
+  decomposeQueryWord,
+  kindOfNameWord,
+  PLAIN_CUTS,
+  kindOfQueryWord,
+  KNOWN_BRANDS,
+  TAXONOMY_VERSION,
+  VARIANT_WORDS,
+  type Decomposition,
+} from './foodTaxonomy';
+import {
   CONNECTOR_WORDS,
   isFalseCompound,
   kindMembersOf,
@@ -8,6 +18,7 @@ import {
   retailerBrands,
   synonymsOf,
 } from './foodVocabulary';
+import type { ProductQuality } from './productQuality';
 import { normalizeSearchText, searchWords } from './search';
 
 /**
@@ -29,6 +40,20 @@ import { normalizeSearchText, searchWords } from './search';
  *   by this one function. A known kind counts ("Gouda" is a cheese, as is a product in the Open
  *   Food Facts category "cheeses"), and a product that carries the brand *and* the kind asked
  *   for gets an extra bonus. The source itself is at most a small bonus (`RankCandidate.bonus`).
+ *
+ * Phase 29 – understand first, then filter, then sort:
+ *
+ * 1. `analyzeQuery` reads the query with the local taxonomy (`foodTaxonomy.ts`): brand or
+ *    retailer, kind ("Käse"), variant ("Zero", "Mager|quark"), quantity.
+ * 2. `assessMatch` decides per candidate – *before* any sorting – whether it is a **match**
+ *    (every requirement met: brand and kind together), a **partial** match (only the brand,
+ *    only the kind, or the kind only as a modifier: "Cheeseburger"), a **weak** match (the
+ *    word only in an addition, a slip of the pen) or **excluded**. What a product *is* comes
+ *    from its name; a category only confirms and never overrules a name ("Burger" in the
+ *    category cheeses stays a burger). Every decision carries a diagnosis with its reasons.
+ * 3. `compareRanked` sorts lexicographically: decision, then the level of the name match, then
+ *    the score. Personal use and the source only move a food within its level – they can
+ *    never lift a weaker match above a clearer one.
  *
  * Scores are plain numbers (higher is better) so the ordering stays explainable and testable.
  */
@@ -78,62 +103,151 @@ export function prepareName(name: string, lang: 'de' | 'en' = 'de'): PreparedNam
   };
 }
 
-/** What a query asks for: food words and brand or retailer words. */
+/** One food word of a query, as the taxonomy understands it. */
+export interface QueryKind {
+  word: string;
+  /** Kind of food ("cheese"), `null` when the taxonomy does not know the word. */
+  kind: string | null;
+  /** Variant inside the word ("mager" in "magerquark"), else `null`. */
+  variant: string | null;
+}
+
+/** What a query asks for – the requirements a match has to meet (Phase 29). */
 export interface QueryAnalysis {
   words: string[];
-  /** Words that must be found in the food's name. */
+  /** Words that must be found in the food's name (kind, variant, description). */
   foodWords: string[];
-  /** Words recognised as retailer or brand ("lidl", "milbona"). */
+  /** Words recognised as retailer or brand ("lidl", "milbona", "coca", "cola"). */
   brandWords: string[];
   /** Normalised brand texts that satisfy the brand words (retailer → its own brands). */
   brandTargets: string[];
+  /** The recognised brands and retailers as phrases ("coca cola", "lidl"). */
+  brands: string[];
+  /** Retailers among them ("lidl") – also met by the shops a product is sold in. */
+  retailers: string[];
+  /** Kind and variant of each food word. */
+  kinds: QueryKind[];
+  /** Variant words ("zero", "light", "mager") – they narrow, they never name the food. */
+  variants: string[];
+  /** A quantity or package size in the query ("500 g"); never a requirement. */
+  quantity: string | null;
+  /** Interpretations that are not certain – kept conservative, listed for the diagnosis. */
+  notes: string[];
+  /** Version of the taxonomy that read the query. */
+  taxonomy: number;
+}
+
+const QUANTITY = /^(\d+(?:[.,]\d+)?)(g|kg|ml|l|cl)?$/;
+const UNITS = new Set(['g', 'kg', 'ml', 'l', 'cl']);
+
+/** Finds a brand phrase ("coca cola") at `index` of the query words; longest first. */
+function brandAt(words: readonly string[], index: number, brands: readonly string[]) {
+  let best: string | null = null;
+  for (const brand of brands) {
+    const parts = brand.split(' ');
+    if (parts.every((part, offset) => words[index + offset] === part)) {
+      if (!best || parts.length > best.split(' ').length) best = brand;
+    }
+  }
+  return best;
 }
 
 /**
- * Recognises retailer and brand words. `knownBrands`: brands of foods stored on this device
- * (e.g. "Milbona" after a product was saved), so "Milbona" alone finds them.
+ * Reads a query: retailer and brand words (well-known brands, the retailers' own brands and
+ * the brands of foods on this device or found online – `knownBrands`), a quantity, and the
+ * food words with their kind and variant. Deterministic and local; when a word could be
+ * brand *or* food, it stays a food word as well (conservative, noted in `notes`).
  */
 export function analyzeQuery(query: string, knownBrands: Iterable<string> = []): QueryAnalysis {
-  const words = searchWords(query);
-  const brands = new Set<string>();
+  const allWords = searchWords(query);
+  const brandSet = new Set<string>(KNOWN_BRANDS);
   for (const brand of knownBrands) {
     const normalised = normalizeSearchText(brand);
-    if (normalised !== '') brands.add(normalised);
+    if (normalised !== '') brandSet.add(normalised);
   }
   for (const retailer of RETAILER_NAMES)
-    for (const own of retailerBrands(retailer)) brands.add(own);
+    for (const own of retailerBrands(retailer)) brandSet.add(own);
+  const brandList = [...brandSet];
+  const notes: string[] = [];
+
+  // A quantity ("500 g", "500g", "1,5 l") narrows nothing – it only prefers that size.
+  let quantity: string | null = null;
+  const words: string[] = [];
+  allWords.forEach((word, index) => {
+    const match = QUANTITY.exec(word);
+    const unit = allWords[index + 1];
+    if (match && (match[2] || (unit !== undefined && UNITS.has(unit)))) {
+      quantity = `${match[1] ?? ''}${match[2] ?? unit ?? ''}`;
+      return;
+    }
+    if (UNITS.has(word) && index > 0 && QUANTITY.test(allWords[index - 1] ?? '')) return;
+    words.push(word);
+  });
 
   const foodWords: string[] = [];
   const brandWords: string[] = [];
   const brandTargets = new Set<string>();
-  for (const word of words) {
+  const brands: string[] = [];
+  const retailers: string[] = [];
+  for (let index = 0; index < words.length; index += 1) {
+    const word = words[index] ?? '';
     if (RETAILER_NAMES.includes(word)) {
       brandWords.push(word);
+      brands.push(word);
+      retailers.push(word);
       brandTargets.add(word);
       for (const own of retailerBrands(word)) brandTargets.add(own);
       continue;
     }
-    // A brand word only when it names a brand as a whole word – "milbona", not "milch".
-    const matching = [...brands].filter((brand) => brand.split(' ').includes(word));
-    if (word.length >= 3 && matching.length > 0 && words.length > 1) {
-      brandWords.push(word);
-      matching.forEach((brand) => brandTargets.add(brand));
+    // A brand phrase as a whole ("coca cola", "milbona").
+    const phrase = word.length >= 3 ? brandAt(words, index, brandList) : null;
+    if (phrase) {
+      const length = phrase.split(' ').length;
+      for (let offset = 0; offset < length; offset += 1)
+        brandWords.push(words[index + offset] ?? '');
+      brands.push(phrase);
+      brandTargets.add(phrase);
+      if (words.length === length && kindOfQueryWord(word) !== null) {
+        // "Leerdammer" alone: a brand and a cheese – both readings stay.
+        notes.push(`"${phrase}" may be a brand or a food`);
+        foodWords.push(word);
+      }
+      index += length - 1;
       continue;
     }
-    if (word.length >= 3 && matching.length > 0 && words.length === 1) {
-      // A single word that is a brand ("Milbona") – but may also be a food ("Pilos"?): both.
+    // Part of a known brand ("cola" of "coca cola") – only in a longer query, and uncertain.
+    const partOf = word.length >= 3 ? brandList.filter((b) => b.split(' ').includes(word)) : [];
+    if (partOf.length > 0 && words.length > 1 && kindOfQueryWord(word) === null) {
       brandWords.push(word);
-      matching.forEach((brand) => brandTargets.add(brand));
+      partOf.forEach((brand) => brandTargets.add(brand));
+      brands.push(word);
+      notes.push(`"${word}" read as part of a brand`);
+      continue;
     }
     foodWords.push(word);
   }
-  // "milbona" alone is a brand search: the food words are only an alternative.
-  const brandOnly = words.length === 1 && brandWords.length === 1;
+  const kinds = foodWords.map((word): QueryKind => {
+    const parts = decomposeQueryWord(word);
+    return { word, kind: kindOfQueryWord(word), variant: parts?.variant ?? null };
+  });
+  const variants = [
+    ...foodWords.filter((word) => VARIANT_WORDS.has(word)),
+    ...kinds.flatMap((kind) => (kind.variant ? [kind.variant] : [])),
+  ];
+  // Only a brand ("Milbona"): its products – the food words are only an alternative.
+  const brandOnly = brandWords.length > 0 && foodWords.length === 0;
   return {
     words,
     foodWords: brandOnly ? [] : foodWords,
     brandWords,
     brandTargets: [...brandTargets],
+    brands,
+    retailers,
+    kinds,
+    variants,
+    quantity,
+    notes,
+    taxonomy: TAXONOMY_VERSION,
   };
 }
 
@@ -153,8 +267,6 @@ const MATCH = {
   inside: 12,
   /** A well-known name of the kind asked for: "Gouda" for "Käse" (Phase 28). */
   kind: 78,
-  /** The product's category names the kind, its name does not (Open Food Facts, Phase 28). */
-  category: 70,
 } as const;
 
 /**
@@ -222,34 +334,17 @@ function wordMatch(nameWord: string, queryWord: string): number {
   };
   consider(queryWord, 1);
   for (const synonym of synonymsOf(queryWord)) consider(synonym, MATCH.synonym / MATCH.exact);
-  // "Gouda" or "Goudascheiben" for "Käse": a member of the kind, below the kind's own name.
+  // "Gouda" or "Bergkäse"-like compounds of a member for "Käse": a member of the kind, below
+  // the kind's own name. Whole word or compound end only – never the start of a word.
   if (
     best < MATCH.kind &&
-    kindMembersOf(queryWord).some((member) => nameWord === member || nameWord.startsWith(member))
+    kindMembersOf(queryWord).some(
+      (member) => nameWord === member || (member.length >= 4 && nameWord.endsWith(member)),
+    )
   ) {
     best = MATCH.kind;
   }
   return best;
-}
-
-/** Plural and compound endings a category may add: "cheeses", "eggs", "speisequark". */
-function categoryNames(word: string, target: string): boolean {
-  if (word === target) return true;
-  if ([`${target}s`, `${target}es`, `${target}n`, `${target}en`].includes(word)) return true;
-  return target.length >= 4 && word.endsWith(target);
-}
-
-/**
- * Points of a query word in the categories of a product. Only the last word of a category
- * counts – it names the kind ("fresh cheeses" are cheeses, "egg pasta" is pasta).
- */
-function categoryScore(categories: readonly string[], queryWord: string): number {
-  const targets = [queryWord, ...synonymsOf(queryWord)];
-  for (const category of categories) {
-    const last = category.split(' ').pop() ?? '';
-    if (targets.some((target) => categoryNames(last, target))) return MATCH.category;
-  }
-  return 0;
 }
 
 /** Weight of a match by its place in the name. */
@@ -294,27 +389,39 @@ function nameWordScore(name: PreparedName, queryWord: string): number {
   if (best === 0 && queryWord.length >= 6 && headCompact.includes(queryWord)) {
     best = headCompact.startsWith(queryWord) ? MATCH.exact * PLACE.first : MATCH.compoundEnd;
   }
+  // "Magerquark" in "Speisequark Magerstufe", "Hähnchenbrust" in "Hähnchen Brustfilet": the
+  // kind and the variant both in the name, before any addition.
+  const parts = best < MATCH.compoundEnd ? decomposeQueryWord(queryWord) : null;
+  if (parts) best = Math.max(best, variantScore(name, parts));
   return best;
 }
 
+/** Just clear enough: the food of a plain cut without the cut ("Lachs roh" for "Lachsfilet"). */
+const PLAIN_CUT = 62;
+
+function variantScore(name: PreparedName, parts: Decomposition): number {
+  const before = name.words.slice(0, Math.min(name.additionFrom, name.negatedFrom));
+  const kind = before.some((word) => wordMatch(word, parts.base) >= MATCH.compoundEnd);
+  if (!kind) return 0;
+  if (before.some((word) => word.startsWith(parts.variant))) return MATCH.compoundEnd;
+  return PLAIN_CUTS.has(parts.variant) ? PLAIN_CUT : 0;
+}
+
 /**
- * Score of a name for the food words; `null` when a word is missing entirely. `categories`:
- * the kind of a product (Open Food Facts) – it can stand in for a word the name lacks.
- * `phrase`: whether the whole query is the food words (no brand) – only then does a name that
- * *is* the query get the full-name bonus ("Käse" is no answer to "Milbona Käse").
+ * Score of a name for the food words; `null` when a word is missing entirely. `phrase`:
+ * whether the whole query is the food words (no brand) – only then does a name that *is* the
+ * query get the full-name bonus ("Käse" is no answer to "Milbona Käse"). Categories never
+ * count here – what a product is comes from its name (Phase 29, see `assessMatch`).
  */
 export function nameScore(
   name: PreparedName,
   foodWords: readonly string[],
-  {
-    categories = [],
-    phrase: wholeQuery = true,
-  }: { categories?: readonly string[]; phrase?: boolean } = {},
+  { phrase: wholeQuery = true }: { phrase?: boolean } = {},
 ): number | null {
   if (foodWords.length === 0) return 0;
   let sum = 0;
   for (const word of foodWords) {
-    const points = Math.max(nameWordScore(name, word), categoryScore(categories, word));
+    const points = nameWordScore(name, word);
     if (points === 0) return null;
     sum += points;
   }
@@ -328,20 +435,17 @@ export function nameScore(
 
 /** Points of the extras a food can have. */
 export const BONUS = {
-  /** A brand or retailer in the query that the product carries. */
+  /** The brand or retailer asked for is the product's brand (or a shop it is sold in). */
   brand: 40,
-  /** A brand or retailer in the query that the product does not carry – it stays listed. */
-  otherBrand: -40,
-  /**
-   * The product carries the brand *and* clearly is the food asked for ("Milbona Käse" →
-   * "Milbona Gouda") – both parts of the query are met together (Phase 28).
-   */
-  brandAndKind: 20,
   /**
    * A product without a stated brand whose name starts with the brand ("Milbona Gouda"). Half
    * the brand bonus: the name alone is weaker evidence than the brand field.
    */
   brandInName: 20,
+  /** Brand and kind together – the product is what the whole query asks for. */
+  brandAndKind: 20,
+  /** The package size asked for ("Magerquark 500 g"). */
+  quantity: 5,
   /** A dish or recipe (BLS X/Y) after the plain food. */
   dish: -40,
   raw: 4,
@@ -349,7 +453,7 @@ export const BONUS = {
   custom: 8,
   /** A product the user deliberately saved (barcode or online). */
   saved: 6,
-  /** Personal use: at most this much – less than the gap between two match levels. */
+  /** Personal use: at most this much – it never crosses a match level (`compareRanked`). */
   usageMax: 30,
 } as const;
 
@@ -369,76 +473,282 @@ export interface RankCandidate {
   names: readonly PreparedName[];
   /** Brand and stores, normalised (`normalizeSearchText`). */
   brands?: readonly string[];
+  /** Shops the product is sold in, normalised – they count for a retailer only. */
+  stores?: readonly string[];
   /** Categories of a product, normalised ("fresh cheeses") – Open Food Facts only. */
   categories?: readonly string[];
+  /** Stated package size ("500 g"). */
+  packageSize?: string | null;
+  /** Data quality of an online product; C is never shown. */
+  quality?: ProductQuality;
   dish?: boolean;
-  /** Own food, saved product and personal use – see `BONUS`, `usageBonus`. */
+  /** Own food, saved product, personal use and data quality – see `BONUS`, `usageBonus`. */
   bonus?: number;
 }
 
 /** A further name (e.g. English in a German app) ranks clearly after the main name. */
 const FURTHER_NAME = 0.6;
 
-/** From this score on a result is a clear match ("Passende Lebensmittel"). */
+/** From this name score on, the food words are clearly met (a "Passendes Lebensmittel"). */
 export const STRONG_MATCH = 60;
 
+/** Core score of a product whose kind is known only from its category (never a match). */
+const CATEGORY_ONLY = 50;
+
 /**
- * Relevance of a food for an analysed query, or `null` when it does not match. Every food word
- * must appear in a name; brand words only raise or lower a product.
+ * Levels of the name match, from the core score (name, dish, raw – no brand, source or use):
+ * the whole name ≥ 150, a clear word, synonym or compound ≥ 80, clear enough ≥ 60, else weak.
+ * Sorting compares levels before scores, so no bonus crosses a level.
  */
-export function relevance(candidate: RankCandidate, query: QueryAnalysis): number | null {
-  const brands = candidate.brands ?? [];
-  const brandHit =
-    query.brandWords.length > 0 &&
-    brands.some((brand) =>
-      query.brandTargets.some((target) => ` ${brand} `.includes(` ${target} `)),
-    );
-  // Without a stated brand, the start of the name may carry it – never its later words, which
-  // describe or list ingredients ("Quarkspeise mit Milbona Quark" is no Milbona product).
-  const first = candidate.names[0];
-  const brandInName =
-    !brandHit &&
-    brands.length === 0 &&
-    query.brandWords.length > 0 &&
-    first !== undefined &&
-    query.brandTargets.some((target) => first.text.startsWith(`${target} `));
+const LEVELS = [60, 80, 150] as const;
 
-  let score = -Infinity;
-  if (query.foodWords.length === 0) {
-    // Only a brand or retailer ("Milbona", "Lidl"): its products, nothing else.
-    if (!brandHit && !brandInName) return null;
-    score = 50;
-  } else {
-    const options = {
-      categories: candidate.categories ?? [],
-      phrase: query.brandWords.length === 0,
-    };
-    for (const [index, name] of candidate.names.entries()) {
-      const value = nameScore(name, query.foodWords, options);
-      if (value === null) continue;
-      score = Math.max(score, index === 0 ? value : value * FURTHER_NAME);
-    }
-    if (score === -Infinity) return null;
-  }
-
-  let total = score;
-  if (query.brandWords.length > 0) {
-    total += brandHit ? BONUS.brand : brandInName ? BONUS.brandInName : BONUS.otherBrand;
-    // Brand and kind together: the product is what the whole query asks for.
-    if ((brandHit || brandInName) && query.foodWords.length > 0 && score >= STRONG_MATCH) {
-      total += BONUS.brandAndKind;
-    }
-  }
-  if (candidate.dish) total += BONUS.dish;
-  if (candidate.names[0]?.raw) total += BONUS.raw;
-  total += candidate.bonus ?? 0;
-  return Math.round(total * 10) / 10;
+function levelOf(core: number): number {
+  return LEVELS.filter((threshold) => core >= threshold).length;
 }
 
-/** Orders ranked foods: higher score, then the shorter (more general) name, then A–Z. */
+export type MatchDecision = 'match' | 'partial' | 'weak' | 'excluded';
+
+/** Why a candidate was judged as it was – for tests and debugging, never shown to users. */
+export interface MatchDiagnosis {
+  brand: {
+    asked: string[];
+    /** Where the brand was found: brand field, shops (retailer), start of the name. */
+    source: 'field' | 'store' | 'name' | null;
+    met: boolean | null;
+  };
+  kind: {
+    asked: (string | null)[];
+    /** What the name says the product is ("cheese", "other:burger"); `null` when unknown. */
+    product: string | null;
+    /** The product is another kind than asked ("other:burger" for cheese). */
+    conflict: string | null;
+    /** The asked kind only appears in the category, not in the name. */
+    categoryOnly: boolean;
+    met: boolean | null;
+  };
+  variant: { asked: string[]; met: boolean | null };
+  met: string[];
+  missing: string[];
+  quality: ProductQuality | null;
+  decision: MatchDecision;
+  reasons: string[];
+}
+
+export interface MatchAssessment {
+  decision: MatchDecision;
+  /** Level of the name match (`LEVELS`). */
+  level: number;
+  /** Score within the level: name, brand, source, use, quality (higher is better). */
+  score: number;
+  diagnosis: MatchDiagnosis;
+}
+
+/** What the name says the product is: the last word of the head with a known kind. */
+function productKindOf(name: PreparedName | undefined): string | null {
+  if (!name) return null;
+  for (let index = Math.min(name.head, name.words.length) - 1; index >= 0; index -= 1) {
+    const kind = kindOfNameWord(name.words[index] ?? '');
+    if (kind) return kind;
+  }
+  return null;
+}
+
+/** Plural and compound endings a category may add: "cheeses", "eggs", "speisequark". */
+function categoryNames(word: string, target: string): boolean {
+  if (word === target) return true;
+  if ([`${target}s`, `${target}es`, `${target}n`, `${target}en`].includes(word)) return true;
+  return target.length >= 4 && word.endsWith(target);
+}
+
+/** Whether a category names the word's kind – only the last word of a category counts. */
+function categoryHas(categories: readonly string[], queryWord: string): boolean {
+  const targets = [queryWord, ...synonymsOf(queryWord)];
+  return categories.some((category) => {
+    const last = category.split(' ').pop() ?? '';
+    return targets.some((target) => categoryNames(last, target));
+  });
+}
+
+/**
+ * Step A of the search: is this candidate what the query asks for? Requirements are the brand
+ * (brand field, shops for a retailer, or – without a brand field – the start of the name) and
+ * the food words (in the *name*). Brand and kind must be met together for a match.
+ */
+export function assessMatch(candidate: RankCandidate, query: QueryAnalysis): MatchAssessment {
+  const reasons: string[] = [];
+  const met: string[] = [];
+  const missing: string[] = [];
+  const brands = candidate.brands ?? [];
+  const stores = candidate.stores ?? [];
+  const first = candidate.names[0];
+  const brandAsked = query.brandWords.length > 0;
+  // "Coca-Cola" is normalised to "cocacola": compare without spaces as well.
+  const has = (list: readonly string[], target: string) =>
+    list.some(
+      (value) =>
+        ` ${value} `.includes(` ${target} `) ||
+        value.replace(/ /g, '') === target.replace(/ /g, ''),
+    );
+  const brandSource: MatchDiagnosis['brand']['source'] = !brandAsked
+    ? null
+    : query.brandTargets.some((target) => has(brands, target))
+      ? 'field'
+      : query.retailers.some((retailer) => has(stores, retailer))
+        ? 'store'
+        : brands.length === 0 &&
+            first !== undefined &&
+            query.brandTargets.some(
+              (target) =>
+                first.text.startsWith(`${target} `) || first.words[0] === target.replace(/ /g, ''),
+            )
+          ? 'name'
+          : null;
+  const brandMet = brandAsked ? brandSource !== null : null;
+  if (brandAsked) {
+    (brandMet ? met : missing).push(`brand ${query.brands.join(' / ')}`);
+    if (brandSource === 'name') reasons.push('brand only at the start of the name');
+    if (!brandMet && brands.length > 0) reasons.push('another brand in the brand field');
+  }
+
+  const productKind = productKindOf(first);
+  const askedKinds = query.kinds.map((kind) => kind.kind);
+  const knownAsked = askedKinds.filter((kind): kind is string => kind !== null);
+  const conflict =
+    productKind !== null && knownAsked.length > 0 && !knownAsked.includes(productKind)
+      ? productKind
+      : null;
+
+  let core: number | null;
+  let categoryOnly = false;
+  if (query.foodWords.length === 0) {
+    core = brandMet ? 50 : null;
+  } else {
+    core = null;
+    const phrase = !brandAsked;
+    for (const [index, name] of candidate.names.entries()) {
+      const value = nameScore(name, query.foodWords, { phrase });
+      if (value === null) continue;
+      core = Math.max(core ?? -Infinity, index === 0 ? value : value * FURTHER_NAME);
+    }
+    if (core === null && conflict === null && candidate.categories?.length) {
+      // The name lacks a word, the category names it: a hint, never a match.
+      const covered = query.foodWords.every(
+        (word) =>
+          (first !== undefined && nameScore(first, [word]) !== null) ||
+          categoryHas(candidate.categories ?? [], word),
+      );
+      if (covered) {
+        core = CATEGORY_ONLY;
+        categoryOnly = true;
+        reasons.push('kind only from the category');
+      }
+    }
+  }
+
+  let foodMet = false;
+  const diagnosis = (decision: MatchDecision): MatchDiagnosis => ({
+    brand: { asked: query.brands, source: brandSource, met: brandMet },
+    kind: {
+      asked: askedKinds,
+      product: productKind,
+      conflict,
+      categoryOnly,
+      met: query.foodWords.length === 0 ? null : foodMet,
+    },
+    variant: { asked: query.variants, met: query.variants.length === 0 ? null : foodMet },
+    met,
+    missing,
+    quality: candidate.quality ?? null,
+    decision,
+    reasons,
+  });
+
+  if (candidate.quality === 'C') {
+    reasons.push('data quality C');
+    return { decision: 'excluded', level: 0, score: -Infinity, diagnosis: diagnosis('excluded') };
+  }
+  if (core === null && brandMet === true && query.foodWords.length > 0) {
+    // The brand asked for, but not the food: a further result ("Milbona Pudding").
+    core = 0;
+    reasons.push('only the brand – the food is not in the name');
+  }
+  if (core === null) {
+    reasons.push(
+      query.foodWords.length === 0 ? 'brand not met' : 'a word of the query is not in the name',
+    );
+    if (query.foodWords.length > 0) missing.push(`food ${query.foodWords.join(' ')}`);
+    return { decision: 'excluded', level: 0, score: -Infinity, diagnosis: diagnosis('excluded') };
+  }
+
+  if (candidate.dish) {
+    core += BONUS.dish;
+    reasons.push('dish');
+  }
+  if (first?.raw) core += BONUS.raw;
+  foodMet =
+    query.foodWords.length === 0 || (core >= STRONG_MATCH && !categoryOnly && conflict === null);
+  if (query.foodWords.length > 0) {
+    (foodMet ? met : missing).push(`food ${query.foodWords.join(' ')}`);
+    if (conflict) reasons.push(`the name is ${conflict}, not ${knownAsked.join('/')}`);
+    else if (!foodMet && !categoryOnly) reasons.push('the food words only weakly in the name');
+  }
+
+  let decision: MatchDecision;
+  if (foodMet && brandMet !== false) decision = 'match';
+  else if (foodMet || brandMet === true || core >= STRONG_MATCH || categoryOnly) {
+    decision = 'partial';
+  } else decision = 'weak';
+  // A different product that only carries the asked kind as a modifier, with nothing else
+  // asked for met, is not shown at all ("Burger" in the category cheeses).
+  if (conflict && categoryOnly && brandMet !== true) decision = 'excluded';
+
+  let score = core;
+  if (brandSource === 'field' || brandSource === 'store') score += BONUS.brand;
+  if (brandSource === 'name') score += BONUS.brandInName;
+  if (decision === 'match' && brandAsked && query.foodWords.length > 0) {
+    score += BONUS.brandAndKind;
+  }
+  const size = normalizeSearchText(candidate.packageSize ?? '').replace(/ /g, '');
+  if (query.quantity && size === query.quantity.replace(',', '.').replace(',', '')) {
+    score += BONUS.quantity;
+  }
+  score += candidate.bonus ?? 0;
+  reasons.unshift(`decision: ${decision}`);
+  return {
+    decision,
+    level: decision === 'excluded' ? 0 : levelOf(core),
+    score: Math.round(score * 10) / 10,
+    diagnosis: diagnosis(decision),
+  };
+}
+
+/** Relevance of a food (`assessMatch`), or `null` when it is excluded. */
+export function relevance(candidate: RankCandidate, query: QueryAnalysis): number | null {
+  const assessment = assessMatch(candidate, query);
+  return assessment.decision === 'excluded' ? null : assessment.score;
+}
+
+const DECISION_ORDER: Record<MatchDecision, number> = {
+  match: 3,
+  partial: 2,
+  weak: 1,
+  excluded: 0,
+};
+
+/**
+ * Step B: orders ranked foods lexicographically – decision (match, partial, weak), level of
+ * the name match, score, then the shorter (more general) name, then A–Z. Without a decision
+ * or level (old callers) only the score counts.
+ */
 export function compareRanked(
-  a: { score: number; name: string },
-  b: { score: number; name: string },
+  a: { score: number; name: string; decision?: MatchDecision; level?: number },
+  b: { score: number; name: string; decision?: MatchDecision; level?: number },
 ): number {
-  return b.score - a.score || a.name.length - b.name.length || a.name.localeCompare(b.name, 'de');
+  return (
+    DECISION_ORDER[b.decision ?? 'match'] - DECISION_ORDER[a.decision ?? 'match'] ||
+    (b.level ?? 0) - (a.level ?? 0) ||
+    b.score - a.score ||
+    a.name.length - b.name.length ||
+    a.name.localeCompare(b.name, 'de')
+  );
 }
