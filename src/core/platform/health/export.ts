@@ -11,7 +11,8 @@ import type { HealthAvailability } from './types';
  *                                                                            (android/app:
  *                                                                            HealthExportPlugin.kt)
  *
- * Only the type and the times of a session are written – no title, notes or calories.
+ * Written are the type and times of a session and – where Kalethra has a real value – the active
+ * calories and the distance of the same time span. Never a title, notes, sets or a route.
  */
 
 /**
@@ -74,6 +75,36 @@ export interface HealthExportSession {
   end: string;
 }
 
+/** One amount over the time span of a session: active calories or a distance. */
+interface HealthExportAmount {
+  /** Stable ID per Kalethra record and data type ("kalethra:activity:<id>:calories"). */
+  clientRecordId: string;
+  clientRecordVersion: number;
+  start: string;
+  end: string;
+}
+
+/** Active energy (without resting energy) in kilocalories. */
+export interface HealthExportCalories extends HealthExportAmount {
+  kcal: number;
+}
+
+/** A distance really logged in Kalethra, in metres. */
+export interface HealthExportDistance extends HealthExportAmount {
+  meters: number;
+}
+
+/** The record types Kalethra may write – one write permission each. */
+export const HEALTH_WRITE_TYPES = ['exercise', 'activeCalories', 'distance'] as const;
+export type HealthWriteType = (typeof HEALTH_WRITE_TYPES)[number];
+/** Which write permissions Health Connect granted right now. */
+export type HealthWriteAccess = Readonly<Record<HealthWriteType, boolean>>;
+export const NO_WRITE_ACCESS: HealthWriteAccess = {
+  exercise: false,
+  activeCalories: false,
+  distance: false,
+};
+
 export type HealthExportErrorCode =
   /** The health store is not available (anymore). */
   | 'unavailable'
@@ -93,19 +124,37 @@ export class HealthExportError extends Error {
 
 export interface HealthExportPlatform {
   availability(): Promise<HealthAvailability>;
-  /** Whether Kalethra may write exercise sessions, without asking. */
-  checkWriteAccess(): Promise<boolean>;
-  /** Shows the platform's permission dialog for writing exercise sessions; the result is checked again. */
-  requestWriteAccess(): Promise<boolean>;
+  /** Which record types Kalethra may write, without asking. */
+  checkWriteAccess(): Promise<HealthWriteAccess>;
+  /**
+   * Shows the platform's permission dialog for the write permissions not granted yet; the
+   * result is checked again.
+   */
+  requestWriteAccess(): Promise<HealthWriteAccess>;
   /** Writes (inserts or updates) one session; throws `HealthExportError`. */
   writeExerciseSession(session: HealthExportSession): Promise<void>;
+  /** Writes (inserts or updates) the active calories of a session; throws `HealthExportError`. */
+  writeActiveCalories(record: HealthExportCalories): Promise<void>;
+  /** Writes (inserts or updates) the distance of a session; throws `HealthExportError`. */
+  writeDistance(record: HealthExportDistance): Promise<void>;
+  /**
+   * Deletes one of Kalethra's own amount records by its client record ID (a value that was
+   * removed in Kalethra). Never touches records of other apps; a missing record is no error.
+   */
+  deleteAmount(type: 'activeCalories' | 'distance', clientRecordId: string): Promise<void>;
 }
 
 interface NativeExportPlugin {
   availability(): Promise<{ status: 'available' | 'needsInstall' | 'unsupported' }>;
-  checkWriteAccess(): Promise<{ granted: boolean }>;
-  requestWriteAccess(): Promise<{ granted: boolean }>;
+  checkWriteAccess(): Promise<Partial<Record<HealthWriteType, boolean>>>;
+  requestWriteAccess(): Promise<Partial<Record<HealthWriteType, boolean>>>;
   writeExerciseSession(session: HealthExportSession): Promise<{ written: boolean }>;
+  writeActiveCalories(record: HealthExportCalories): Promise<{ written: boolean }>;
+  writeDistance(record: HealthExportDistance): Promise<{ written: boolean }>;
+  deleteAmount(options: {
+    type: 'activeCalories' | 'distance';
+    clientRecordId: string;
+  }): Promise<{ deleted: boolean }>;
 }
 
 const CODES: readonly HealthExportErrorCode[] = ['unavailable', 'permission', 'invalid', 'failed'];
@@ -114,6 +163,23 @@ function toExportError(error: unknown): HealthExportError {
   if (error instanceof HealthExportError) return error;
   const code = (error as { code?: unknown } | null)?.code;
   return new HealthExportError(CODES.find((known) => known === code) ?? 'failed');
+}
+
+/** Only an explicit `true` counts as granted. */
+function toWriteAccess(raw: Partial<Record<HealthWriteType, boolean>>): HealthWriteAccess {
+  return {
+    exercise: raw.exercise === true,
+    activeCalories: raw.activeCalories === true,
+    distance: raw.distance === true,
+  };
+}
+
+async function settle(work: () => Promise<unknown>): Promise<void> {
+  try {
+    await work();
+  } catch (error) {
+    throw toExportError(error);
+  }
 }
 
 function createAndroidExportPlatform(): HealthExportPlatform {
@@ -130,25 +196,23 @@ function createAndroidExportPlatform(): HealthExportPlatform {
     },
     async checkWriteAccess() {
       try {
-        return (await plugin.checkWriteAccess()).granted;
+        return toWriteAccess(await plugin.checkWriteAccess());
       } catch {
-        return false;
+        return NO_WRITE_ACCESS;
       }
     },
     async requestWriteAccess() {
       try {
-        return (await plugin.requestWriteAccess()).granted;
+        return toWriteAccess(await plugin.requestWriteAccess());
       } catch {
-        return false;
+        return NO_WRITE_ACCESS;
       }
     },
-    async writeExerciseSession(session) {
-      try {
-        await plugin.writeExerciseSession(session);
-      } catch (error) {
-        throw toExportError(error);
-      }
-    },
+    writeExerciseSession: (session) => settle(() => plugin.writeExerciseSession(session)),
+    writeActiveCalories: (record) => settle(() => plugin.writeActiveCalories(record)),
+    writeDistance: (record) => settle(() => plugin.writeDistance(record)),
+    deleteAmount: (type, clientRecordId) =>
+      settle(() => plugin.deleteAmount({ type, clientRecordId })),
   };
 }
 
@@ -166,9 +230,12 @@ export function createUnavailableExportPlatform(): HealthExportPlatform {
   if (hook) return hook;
   return {
     availability: () => Promise.resolve({ kind: 'unsupported' }),
-    checkWriteAccess: () => Promise.resolve(false),
-    requestWriteAccess: () => Promise.resolve(false),
+    checkWriteAccess: () => Promise.resolve(NO_WRITE_ACCESS),
+    requestWriteAccess: () => Promise.resolve(NO_WRITE_ACCESS),
     writeExerciseSession: () => Promise.reject(new HealthExportError('unavailable')),
+    writeActiveCalories: () => Promise.reject(new HealthExportError('unavailable')),
+    writeDistance: () => Promise.reject(new HealthExportError('unavailable')),
+    deleteAmount: () => Promise.reject(new HealthExportError('unavailable')),
   };
 }
 

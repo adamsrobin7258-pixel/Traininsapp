@@ -63,6 +63,16 @@ export class ManualActivityRepository {
     return rows.map(toActivity);
   }
 
+  /** IDs of every activity of the profile, oldest day first (Health Connect history export). */
+  async ids(profileId: string): Promise<string[]> {
+    const rows = await this.db.query<{ id: string }>(
+      `SELECT id FROM manual_activities WHERE profile_id = ?
+       ORDER BY local_date, COALESCE(started_at, ''), created_at`,
+      [profileId],
+    );
+    return rows.map((row) => row.id);
+  }
+
   async recent(profileId: string, limit: number): Promise<ManualActivity[]> {
     const rows = await this.db.query<Row>(
       `SELECT * FROM manual_activities WHERE profile_id = ?

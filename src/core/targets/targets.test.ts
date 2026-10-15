@@ -391,7 +391,7 @@ describe('migration 15 – "Aktivitätskalorien anrechnen" becomes a versioned t
 
   it('takes over "on" for every profile from the first day, keeps every row, removes the key', async () => {
     const db = await migratedFrom14('true', ['a', 'b']);
-    expect(await migrate(db, migrations)).toEqual([15, 16]);
+    expect(await migrate(db, migrations)).toEqual([15, 16, 17]);
     expect(
       await db.query(
         `SELECT profile_id, kind, effective_from, value FROM goal_targets

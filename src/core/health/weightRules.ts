@@ -11,7 +11,8 @@
  * 3. Activity calories (MET estimate of a manual activity) – the most recent value on or before
  *    the day: the own entry, or a Health Connect value if that is newer (the own entry wins on
  *    the same day), imported values at most `ACTIVITY_WEIGHT_WINDOW_DAYS` old
- *    (`pickActivityWeight`, below). Stored with the activity as a snapshot.
+ *    (`pickActivityWeight`, below). Stored with the activity as a snapshot. The Health Connect
+ *    export uses the same rule for the active calories of a Kalethra workout on its day.
  *
  * Pure. Every module reads weight through these functions (or `weightTrend` for rule 1); none
  * repeats the rules.

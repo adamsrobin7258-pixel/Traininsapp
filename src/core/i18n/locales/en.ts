@@ -1293,18 +1293,22 @@ export const en: TranslationSchema = {
     toggle: 'Sync with Health Connect',
     description: 'Sync workouts and activities from Kalethra with Health Connect.',
     footer:
-      'Optional and off by default. Only the type, start and end of your workouts and logged activities are shared – no calories, no notes. Turning it off deletes nothing, neither in Kalethra nor in Health Connect.',
+      'Optional and off by default. Shared are the type, start and end of your workouts and logged activities, plus active calories and distance where Kalethra has a value – no notes, no sets. Turning it off deletes nothing, neither in Kalethra nor in Health Connect.',
     statusLabel: 'Status',
     status: {
       connected: 'Connected',
+      partial: 'Connected – without calories or distance',
       permissionRequired: 'Permission required',
       needsInstall: 'Health Connect not installed',
       unavailable: 'Not available',
     },
     grant: 'Grant permission',
     manage: 'Manage Health Connect permissions',
+    grantMore: 'Allow calories and distance',
     onNote:
-      'New workouts and activities are shared after saving. When turned on, the last 30 days were added.',
+      'New workouts and activities are shared after saving. When turned on, all earlier ones were added once.',
+    historyNote:
+      'Earlier workouts and activities are being shared in the background. You can use Kalethra as usual.',
     offNote: 'Off: Kalethra shares nothing with Health Connect.',
     denied:
       'Without permission Kalethra cannot share anything. Kalethra keeps working as usual – you can try again any time.',

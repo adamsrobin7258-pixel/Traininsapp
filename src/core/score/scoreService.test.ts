@@ -513,7 +513,7 @@ describe('migration 13', () => {
           78.5, 1, '{"x":1}');
     `);
     const before = await db.query('SELECT * FROM nutrition_goals');
-    expect(await migrate(db, migrations)).toEqual([13, 14, 15, 16]);
+    expect(await migrate(db, migrations)).toEqual([13, 14, 15, 16, 17]);
     expect(await db.query('SELECT * FROM nutrition_goals')).toEqual(before);
     // The new goal type is accepted, an unknown one still is not.
     await db.run(

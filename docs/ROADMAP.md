@@ -577,6 +577,21 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 31 – Health-Connect-Export: Kalorien, Distanz, ganze Historie ✅ (Version 0.44.0)
+
+- Zusätzlich zur Trainingseinheit je eigener Datensatz für aktive Kalorien
+  (`ActiveCaloriesBurnedRecord`) und Distanz (`DistanceRecord`), über denselben Zeitraum, mit
+  eigener Client-ID (`…:calories`, `…:distance`); die Sitzungs-ID bleibt unverändert
+- Kalorien nur mit echtem Kalethra-Wert: manuelle Aktivitäten (berechnet oder eigener Wert),
+  Trainings nach Kalethras Trainingsformel mit dem Gewicht des Trainingstags; Distanz nur bei
+  manuell erfassten Aktivitäten; nichts geschätzt, keine Nullwerte
+- Neue Schreibrechte `WRITE_ACTIVE_CALORIES_BURNED`, `WRITE_DISTANCE` (Manifest, Laufzeit, CI);
+  ohne sie laufen Sitzungen weiter („Verbunden – ohne Kalorien oder Distanz“)
+- Entfernte Werte: nur Kalethras eigener Datensatz wird gelöscht; Fehler je Datentyp getrennt
+- Beim Einschalten einmal die ganze Historie in Paketen zu 25, im Hintergrund, fortgesetzt nach
+  Neustart; nach dem Update einmal für Kalorien und Distanz bisheriger Einträge (Migration 17)
+- Offen: Gerätetest, nativer Build in der CI
+
 ## Phase 30 – Trainings und Aktivitäten an Health Connect übertragen ✅ (Version 0.43.0)
 
 - Einstellungen → App → Health Connect: Schalter „Trainings und Aktivitäten aus Kalethra mit
@@ -589,7 +604,7 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Beim Einschalten einmal die letzten 30 Tage, danach nach jedem Speichern; wartende Einträge
   bei Start/Vordergrund; keine Duplikate (ID + `health_connect_exports`, Migration 16)
 - Fehler blockieren nie einen Trainingsabschluss; Aus löscht nichts; iOS unverändert
-- Offen: Gerätetest, nativer Build in der CI (lokal kein Android-SDK)
+- Nativer Build in der CI grün (Lauf 91); offen: Gerätetest
 
 ## Phase 29 – Anfrage verstehen, Eignung prüfen, dann sortieren ✅ (Version 0.42.0)
 

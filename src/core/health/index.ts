@@ -59,8 +59,8 @@ export {
   type HealthExportSetting,
 } from './healthExportRepository';
 export {
-  EXPORT_CATCH_UP_DAYS,
   HealthExportService,
+  HISTORY_BATCH,
   type EnableResult,
   type ExportOptions,
   type ExportOutcome,

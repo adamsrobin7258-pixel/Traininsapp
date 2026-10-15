@@ -130,9 +130,12 @@ export function createServices(
     db,
     {
       workout: (profileId, id) => training.workouts.find(profileId, id),
-      workoutsSince: (profileId, from) => training.workouts.completedSince(profileId, from),
+      completedWorkoutIds: (profileId) => training.workouts.completedIds(profileId),
       activity: (profileId, id) => activities.find(profileId, id),
-      activitiesBetween: (profileId, from, to) => activities.listBetween(profileId, from, to),
+      activityIds: (profileId) => activities.ids(profileId),
+      // Workout calories use the weight of the workout's day – weight rule 3, like activities.
+      weightKgOn: async (profileId, localDate) =>
+        (await activityWeight.weightOn(profileId, localDate))?.kg ?? null,
     },
     clock,
   );

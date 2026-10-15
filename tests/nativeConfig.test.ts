@@ -120,10 +120,14 @@ describe('Android privacy configuration', () => {
       'android.permission.health.READ_EXERCISE',
       'android.permission.health.READ_STEPS',
       'android.permission.health.READ_WEIGHT',
-      // Export (Settings → App → Health Connect): exercise sessions only, never calories.
+      // Export (Settings → App → Health Connect): sessions, their active calories and distance.
+      'android.permission.health.WRITE_ACTIVE_CALORIES_BURNED',
+      'android.permission.health.WRITE_DISTANCE',
       'android.permission.health.WRITE_EXERCISE',
     ]);
     expect(kept.filter((name) => name?.includes('.WRITE_'))).toEqual([
+      'android.permission.health.WRITE_ACTIVE_CALORIES_BURNED',
+      'android.permission.health.WRITE_DISTANCE',
       'android.permission.health.WRITE_EXERCISE',
     ]);
     expect(manifest).not.toMatch(/READ_HEALTH_DATA_(HISTORY|IN_BACKGROUND)/);
@@ -153,10 +157,23 @@ describe('Android privacy configuration', () => {
     const activity = read('android/app/src/main/java/com/kalethra/app/MainActivity.java');
     expect(activity).toContain('registerPlugin(HealthExportPlugin.class)');
     const plugin = read('android/app/src/main/java/com/kalethra/app/HealthExportPlugin.kt');
-    // One permission, one record type, no reading through this plugin.
-    expect(plugin).toContain('HealthPermission.getWritePermission(ExerciseSessionRecord::class)');
-    expect(plugin).not.toMatch(/getReadPermission|readRecords|ActiveCaloriesBurnedRecord/);
+    // Three write permissions – sessions, active calories, distance – and no reading at all.
+    const permissions = [
+      ...plugin.matchAll(/HealthPermission\.get(\w+)Permission\((\w+)::class\)/g),
+    ]
+      .map((m) => `${m[1] ?? ''} ${m[2] ?? ''}`)
+      .sort();
+    expect(permissions).toEqual([
+      'Write ActiveCaloriesBurnedRecord',
+      'Write DistanceRecord',
+      'Write ExerciseSessionRecord',
+    ]);
+    expect(plugin).not.toMatch(/getReadPermission|readRecords|aggregate|TotalCaloriesBurned/);
     expect(plugin).toContain('clientRecordId = clientRecordId');
+    // The only delete: Kalethra's own records, by client record ID, never by Health Connect ID.
+    expect(plugin.match(/deleteRecords\(/g)).toHaveLength(1);
+    expect(plugin).toContain('recordIdsList = emptyList()');
+    expect(plugin).toContain('clientRecordId.startsWith("kalethra:")');
     // Nothing of it in the iOS project.
     expect(read('ios/App/App.xcodeproj/project.pbxproj')).not.toMatch(/HealthExport|HealthConnect/);
   });

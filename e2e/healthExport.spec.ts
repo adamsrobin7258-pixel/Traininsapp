@@ -8,29 +8,47 @@ import { expect, test, type Page } from './fixtures';
  */
 async function installFakeExport(page: Page, { grant = true } = {}) {
   await page.addInitScript((grantOnRequest) => {
-    // Like the real store, permission and sessions outlive a reload of the app.
-    const load = () =>
-      JSON.parse(localStorage.getItem('fakeHealthExport') ?? '{"granted":false,"sessions":{}}') as {
-        granted: boolean;
-        sessions: Record<string, unknown>;
-      };
-    const save = (state: ReturnType<typeof load>) => {
+    // Like the real store, permission and records outlive a reload of the app.
+    type Stored = {
+      granted: boolean;
+      sessions: Record<string, unknown>;
+      amounts: Partial<Record<string, unknown>>;
+    };
+    const load = (): Stored => ({
+      granted: false,
+      sessions: {},
+      amounts: {},
+      ...(JSON.parse(localStorage.getItem('fakeHealthExport') ?? '{}') as Partial<Stored>),
+    });
+    const save = (state: Stored) => {
       localStorage.setItem('fakeHealthExport', JSON.stringify(state));
+    };
+    const access = (on: boolean) => ({ exercise: on, activeCalories: on, distance: on });
+    const write = (key: 'sessions' | 'amounts', record: { clientRecordId: string }) => {
+      const state = load();
+      if (!state.granted) {
+        return Promise.reject(Object.assign(new Error('x'), { code: 'permission' }));
+      }
+      state[key][record.clientRecordId] = record;
+      save(state);
+      return Promise.resolve();
     };
     const store = {
       count: () => Object.keys(load().sessions).length,
       availability: () => Promise.resolve({ kind: 'available', platform: 'healthConnect' }),
-      checkWriteAccess: () => Promise.resolve(load().granted),
+      checkWriteAccess: () => Promise.resolve(access(load().granted)),
       requestWriteAccess: () => {
         save({ ...load(), granted: grantOnRequest });
-        return Promise.resolve(grantOnRequest);
+        return Promise.resolve(access(grantOnRequest));
       },
-      writeExerciseSession: (session: { clientRecordId: string }) => {
+      writeExerciseSession: (session: { clientRecordId: string }) => write('sessions', session),
+      writeActiveCalories: (record: { clientRecordId: string }) => write('amounts', record),
+      writeDistance: (record: { clientRecordId: string }) => write('amounts', record),
+      deleteAmount: (_type: string, clientRecordId: string) => {
         const state = load();
-        if (!state.granted) {
-          return Promise.reject(Object.assign(new Error('x'), { code: 'permission' }));
-        }
-        state.sessions[session.clientRecordId] = session;
+        state.amounts = Object.fromEntries(
+          Object.entries(state.amounts).filter(([id]) => id !== clientRecordId),
+        );
         save(state);
         return Promise.resolve();
       },

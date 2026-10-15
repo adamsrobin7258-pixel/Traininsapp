@@ -596,7 +596,7 @@ Details: [PRIVACY.md](PRIVACY.md). Kurzfassung für Entwickler:
   Community). Erst danach wurde `LOCAL_DATABASE_ENCRYPTED` aktiviert und `weight_entries` angelegt.
 - Android-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet.
 
-## Health-Connect-Export (Migration 16, Phase 30)
+## Health-Connect-Export (Migrationen 16 und 17, Phasen 30 und 31)
 
 `health_connect_exports` – Buchführung des optionalen Exports eigener Trainings
 (`source_kind = workout`) und manueller Aktivitäten (`activity`) nach Health Connect. Eine Zeile je
@@ -605,3 +605,11 @@ Health Connect, `exported_version` der zuletzt geschriebene Stand (`updated_at` 
 `pending` · `exported` · `failed` · `skipped`, `last_error` nur ein Code. Rein additiv:
 `workouts` und `manual_activities` bleiben unverändert. Zugriff nur über
 `HealthExportRepository`; die Einstellung liegt in `app_settings` (`healthConnectExport`).
+
+**Migration 17 (Phase 31):** Tabelle neu aufgebaut (SQLite ändert keine CHECK-Constraints),
+alle Zeilen unverändert als `record_type = 'session'` übernommen. Seitdem eine Zeile je
+Kalethra-Datensatz **und Datentyp** (`record_type` `session` · `calories` · `distance`, eindeutig
+je Profil, Art, ID, Typ); `exported_value` ist die zuletzt geschriebene Menge (kcal bzw. m, `NULL`
+bei Sitzungen und nach dem Löschen), neuer Status `removed` (eigener Datensatz in Health Connect
+gelöscht, weil der Wert wegfiel). Die Einstellung trägt zusätzlich `historyDoneAt` (einmaliger
+Durchlauf über die Historie abgeschlossen; fehlt er, läuft der Durchlauf beim nächsten Start).

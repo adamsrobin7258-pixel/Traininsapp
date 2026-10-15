@@ -1311,18 +1311,22 @@ export const de = {
     toggle: 'Mit Health Connect synchronisieren',
     description: 'Trainings und Aktivitäten aus Kalethra mit Health Connect synchronisieren.',
     footer:
-      'Optional und standardmäßig aus. Übertragen werden nur Art, Beginn und Ende deiner Trainings und erfassten Aktivitäten – keine Kalorien, keine Notizen. Ausschalten löscht nichts, weder in Kalethra noch in Health Connect.',
+      'Optional und standardmäßig aus. Übertragen werden Art, Beginn und Ende deiner Trainings und erfassten Aktivitäten, dazu aktive Kalorien und Distanz, wo Kalethra einen Wert hat – keine Notizen, keine Sätze. Ausschalten löscht nichts, weder in Kalethra noch in Health Connect.',
     statusLabel: 'Status',
     status: {
       connected: 'Verbunden',
+      partial: 'Verbunden – ohne Kalorien oder Distanz',
       permissionRequired: 'Berechtigung erforderlich',
       needsInstall: 'Health Connect nicht installiert',
       unavailable: 'Nicht verfügbar',
     },
     grant: 'Berechtigung erteilen',
     manage: 'Health-Connect-Berechtigungen verwalten',
+    grantMore: 'Kalorien und Distanz erlauben',
     onNote:
-      'Neue Trainings und Aktivitäten werden nach dem Speichern übertragen. Beim Einschalten wurden die letzten 30 Tage übernommen.',
+      'Neue Trainings und Aktivitäten werden nach dem Speichern übertragen. Beim Einschalten wurden alle bisherigen einmal übernommen.',
+    historyNote:
+      'Bisherige Trainings und Aktivitäten werden im Hintergrund übertragen. Du kannst Kalethra dabei normal nutzen.',
     offNote: 'Aus: Kalethra überträgt nichts an Health Connect.',
     denied:
       'Ohne Berechtigung kann Kalethra nichts übertragen. Kalethra funktioniert normal weiter – du kannst es jederzeit erneut versuchen.',

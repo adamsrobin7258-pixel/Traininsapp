@@ -64,6 +64,20 @@ export interface TrainingEstimate {
 }
 
 /**
+ * Energy of one logged workout above rest (active kcal, not rounded): (MET − 1) × kg × hours,
+ * the session capped at `TRAINING.maxMinutesPerSession`. 0 for an empty or broken length. The
+ * one definition – `trainingEnergy` sums it, the Health Connect export writes it per workout.
+ */
+export function sessionEnergyKcal(
+  session: Pick<TrainingSession, 'durationMinutes' | 'category'>,
+  weightKg: number,
+): number {
+  const length = Math.min(Math.max(0, session.durationMinutes), TRAINING.maxMinutesPerSession);
+  if (!Number.isFinite(length) || length === 0) return 0;
+  return (TRAINING_MET[session.category] - 1) * weightKg * (length / 60);
+}
+
+/**
  * Energy of logged workouts above rest, averaged over the window: Σ (MET − 1) × kg × hours ÷
  * days. Sessions are capped in length and the daily result is capped, so long or forgotten
  * timers cannot inflate the target.
@@ -79,7 +93,7 @@ export function trainingEnergy(
     const length = Math.min(Math.max(0, session.durationMinutes), TRAINING.maxMinutesPerSession);
     if (!Number.isFinite(length) || length === 0) continue;
     minutes += length;
-    kcal += (TRAINING_MET[session.category] - 1) * weightKg * (length / 60);
+    kcal += sessionEnergyKcal(session, weightKg);
     if (session.category === 'strength') strengthSessions += 1;
   }
   return {

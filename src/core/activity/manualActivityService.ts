@@ -63,6 +63,11 @@ export class ManualActivityService {
     return this.repository.listBetween(profileId, from, to);
   }
 
+  /** IDs of every logged activity – the whole history. */
+  ids(profileId: string): Promise<string[]> {
+    return this.repository.ids(profileId);
+  }
+
   recent(profileId: string, limit = 100): Promise<ManualActivity[]> {
     return this.repository.recent(profileId, limit);
   }

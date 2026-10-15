@@ -120,6 +120,11 @@ export class WorkoutService {
   }
 
   /** Completed workouts started on or after a local day, oldest first (no sets). */
+  /** IDs of every completed workout – the whole history. */
+  completedIds(profileId: string): Promise<string[]> {
+    return this.store.repos.workouts.completedIds(profileId);
+  }
+
   async completedSince(profileId: string, fromLocalDate: string): Promise<Workout[]> {
     return this.store.repos.workouts.completedSince(profileId, fromLocalDate);
   }

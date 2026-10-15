@@ -7,7 +7,8 @@ import styles from './HealthData.module.css';
 
 /**
  * Einstellungen → App → Health Connect: the optional export of Kalethra's own workouts and
- * activities. Off by default; on only after Health Connect granted the write permission. Shown
+ * activities (sessions, plus active calories and distance where Kalethra has a value). Off by
+ * default; on only after Health Connect granted at least the permission for sessions. Shown
  * only where Health Connect exists (Android) – never on iOS or the web.
  */
 export function HealthExportSection() {
@@ -47,11 +48,13 @@ export function HealthExportSection() {
     ? null
     : state.access === 'granted'
       ? t('healthExport.status.connected')
-      : state.access === 'missing'
-        ? t('healthExport.status.permissionRequired')
-        : state.access === 'needsInstall'
-          ? t('healthExport.status.needsInstall')
-          : t('healthExport.status.unavailable');
+      : state.access === 'partial'
+        ? t('healthExport.status.partial')
+        : state.access === 'missing'
+          ? t('healthExport.status.permissionRequired')
+          : state.access === 'needsInstall'
+            ? t('healthExport.status.needsInstall')
+            : t('healthExport.status.unavailable');
 
   return (
     <Section title={t('healthExport.sectionTitle')} footer={t('healthExport.footer')}>
@@ -79,9 +82,11 @@ export function HealthExportSection() {
           }
         />
         {status ? <ListRow title={t('healthExport.statusLabel')} value={status} /> : null}
-        {on && state.access === 'missing' ? (
+        {on && (state.access === 'missing' || state.access === 'partial') ? (
           <ListRow
-            title={t('healthExport.grant')}
+            title={
+              state.access === 'missing' ? t('healthExport.grant') : t('healthExport.grantMore')
+            }
             action
             onPress={() => {
               setBusy(true);
@@ -115,7 +120,9 @@ export function HealthExportSection() {
             : note === 'unsupported' || note === 'failed'
               ? t('healthExport.unavailable')
               : on
-                ? t('healthExport.onNote')
+                ? state.historyPending
+                  ? t('healthExport.historyNote')
+                  : t('healthExport.onNote')
                 : t('healthExport.offNote')}
       </p>
     </Section>

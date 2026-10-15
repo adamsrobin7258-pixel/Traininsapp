@@ -145,6 +145,16 @@ export class WorkoutRepository {
     return rows.map(toWorkout);
   }
 
+  /** IDs of every completed workout of the profile, oldest first. */
+  async completedIds(profileId: string): Promise<string[]> {
+    const rows = await this.db.query<{ id: string }>(
+      `SELECT id FROM workouts WHERE profile_id = ? AND status = 'completed'
+       ORDER BY started_at`,
+      [profileId],
+    );
+    return rows.map((row) => row.id);
+  }
+
   async loadDetail(profileId: string, id: string): Promise<WorkoutDetail | null> {
     const workout = await this.findWorkout(profileId, id);
     if (!workout) return null;

@@ -14,6 +14,7 @@ import { migration013RecoveryAndFitnessGoal } from './013_recovery_and_fitness_g
 import { migration014GoalTargets } from './014_goal_targets';
 import { migration015ActivityCaloriesTarget } from './015_activity_calories_target';
 import { migration016HealthConnectExports } from './016_health_connect_exports';
+import { migration017HealthConnectExportTypes } from './017_health_connect_export_types';
 import type { Migration } from './types';
 
 /** All migrations in ascending order. Append new migrations at the end. */
@@ -34,6 +35,7 @@ export const migrations: readonly Migration[] = [
   migration014GoalTargets,
   migration015ActivityCaloriesTarget,
   migration016HealthConnectExports,
+  migration017HealthConnectExportTypes,
 ];
 
 export type { Migration } from './types';

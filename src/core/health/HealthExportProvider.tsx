@@ -20,7 +20,10 @@ export type HealthExportView = HealthExportState | { loading: true };
 
 interface HealthExportContextValue {
   state: HealthExportView;
-  /** Asks for the permission and turns the export on (only when it was granted). */
+  /**
+   * Asks for the permissions and turns the export on (only when sessions were granted); the
+   * history follows in the background.
+   */
   enable: () => Promise<EnableResult>;
   disable: () => Promise<void>;
   /** Fire and forget – never throws, never delays the caller's own work. */
@@ -31,6 +34,14 @@ interface HealthExportContextValue {
   /** Checks the permission again, e.g. after the user returns from Health Connect. */
   refresh: () => Promise<void>;
 }
+
+const UNSUPPORTED: HealthExportState = {
+  enabled: false,
+  access: 'unsupported',
+  lastSuccessAt: null,
+  waiting: 0,
+  historyPending: false,
+};
 
 const HealthExportContext = createContext<HealthExportContextValue | null>(null);
 
@@ -52,7 +63,7 @@ export function HealthExportProvider({
       if (mounted.current) setState(next);
     } catch {
       if (mounted.current) {
-        setState({ enabled: false, access: 'unsupported', lastSuccessAt: null, waiting: 0 });
+        setState(UNSUPPORTED);
       }
     }
   }, [service, profile.id]);
@@ -65,7 +76,7 @@ export function HealthExportProvider({
       },
       () => {
         if (mounted.current) {
-          setState({ enabled: false, access: 'unsupported', lastSuccessAt: null, waiting: 0 });
+          setState(UNSUPPORTED);
         }
       },
     );
@@ -89,7 +100,9 @@ export function HealthExportProvider({
       state,
       enable: async () => {
         try {
-          return (await service.enable(profile.id)).result;
+          const { result, history } = await service.enable(profile.id);
+          after(history);
+          return result;
         } finally {
           await refresh();
         }

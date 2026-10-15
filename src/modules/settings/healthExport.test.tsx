@@ -93,6 +93,23 @@ describe('Health Connect export setting', () => {
     expect(await exportSection().findByText('Verbunden')).toBeInTheDocument();
   });
 
+  it('sessions granted, calories and distance not: "ohne Kalorien oder Distanz" and a way to allow them', async () => {
+    const store = new FakeHealthExport();
+    store.grantOnRequest = ['exercise'];
+    await renderApp('/settings/app', { healthExportPlatform: store });
+    await userEvent.click(await waitFor(toggle));
+    expect(
+      await exportSection().findByText('Verbunden – ohne Kalorien oder Distanz'),
+    ).toBeInTheDocument();
+    expect(toggle()).toHaveAttribute('aria-checked', 'true');
+    store.grantOnRequest = true;
+    await userEvent.click(
+      exportSection().getByRole('button', { name: 'Kalorien und Distanz erlauben' }),
+    );
+    expect(await exportSection().findByText('Verbunden')).toBeInTheDocument();
+    expect(store.requests).toBe(2);
+  });
+
   it('finishing a workout writes it once to Health Connect, after it is saved', async () => {
     const store = new FakeHealthExport();
     const { services } = await renderApp('/training', {
