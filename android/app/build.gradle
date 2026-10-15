@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
 
 // Single source of truth for the app version: package.json ("version": "MAJOR.MINOR.PATCH").
 // versionCode is derived deterministically, e.g. 0.1.1 -> 101, 1.2.3 -> 10203.
@@ -32,6 +33,10 @@ android {
             keyPassword 'android'
         }
     }
+    kotlinOptions {
+        // Matches the Java 21 target from capacitor.build.gradle.
+        jvmTarget = JavaVersion.VERSION_21.toString()
+    }
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -55,6 +60,11 @@ dependencies {
     implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
     implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
     implementation project(':capacitor-android')
+    // Health Connect export (HealthExportPlugin.kt): the same client and coroutines versions the
+    // health plugin already ships – declared here because a module's own dependencies are not
+    // visible to the app's code.
+    implementation 'androidx.health.connect:connect-client:1.1.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

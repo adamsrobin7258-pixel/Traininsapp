@@ -50,3 +50,26 @@ export * from './progress';
 export * from './weightRules';
 export * from './steps';
 export { activityTypeLabel } from './activityLabels';
+export * from './healthExport';
+export {
+  EXPORT_OFF,
+  HealthExportRepository,
+  type ExportStatus,
+  type HealthExportRecord,
+  type HealthExportSetting,
+} from './healthExportRepository';
+export {
+  EXPORT_CATCH_UP_DAYS,
+  HealthExportService,
+  type EnableResult,
+  type ExportOptions,
+  type ExportOutcome,
+  type HealthExportAccess,
+  type HealthExportSources,
+  type HealthExportState,
+} from './healthExportService';
+export {
+  HealthExportProvider,
+  useHealthExport,
+  type HealthExportView,
+} from './HealthExportProvider';

@@ -37,6 +37,7 @@ Pull Request und einen Eintrag in diesem Dokument.
 | `imported_weights`                                                                    | Aus Health Connect importiertes Tagesgewicht (früheste Messung des Tages), nur Anzeige                            | **Gesundheitsdaten** |
 | `daily_activity`                                                                      | Aus Health Connect importierte Tageswerte: Schritte, aktive Kalorien, nur Anzeige                                 | **Gesundheitsdaten** |
 | `external_workouts`                                                                   | Aus Health Connect importierte Aktivitäten: Typ, Zeit, Dauer, aktive Kalorien, Distanz, Quelle                    | **Gesundheitsdaten** |
+| `health_connect_exports`                                                              | Welche eigenen Trainings/Aktivitäten an Health Connect übertragen wurden: IDs, Status, Zeitpunkte – keine Werte   | **Gesundheitsdaten** |
 | `manual_activities`                                                                   | Selbst erfasste Aktivitäten: Sportart, Tag, optional Startzeit, Dauer, Distanz, Gewicht der Berechnung, kcal      | **Gesundheitsdaten** |
 | `recovery_entries`                                                                    | Eigene Tagesangabe zur Erholung (schlecht/mittelmäßig/gut) und Ruhetag – subjektiv, für den Kalethra-Score        | **Gesundheitsdaten** |
 | `goal_targets`                                                                        | Eigene Ziele mit Gültigkeitsbeginn: Trainings/Woche, aktive Minuten/Woche, Schritte/Tag                           | personenbezogen      |
@@ -304,14 +305,14 @@ dem Gerät unbekannt ist. Details in [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 
 ## Berechtigungen
 
-| Berechtigung                  | Status                                                                                                                                                                                                                            |
-| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Internet (Android `INTERNET`) | Nur für Open Food Facts: Barcode-Abfrage (lokal unbekannter Barcode) und die automatische Online-Produktsuche (nur der Suchtext). Die Lebensmittelsuche funktioniert auch ohne Internet. Sonst keine Verbindungen.                |
-| Standort                      | nicht angefragt ⏳ (siehe [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))                                                                                                                                                             |
-| Health Connect (Android)      | Nur nach Einschalten durch den Nutzer: Leserechte für Gewicht, Schritte, aktive Kalorien, Trainings (Aktivitäten) und Distanz. Keine Schreib-, Verlaufs- oder Hintergrundrechte. Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md). |
-| HealthKit (iOS)               | nicht angefragt ⏳                                                                                                                                                                                                                |
-| Kamera                        | Nur für den Barcode-Scanner; angefragt erst beim Öffnen des Scanners. Das Bild wird auf dem Gerät ausgewertet (Android ZXing, iOS Apple Vision), nicht gespeichert und nicht gesendet.                                            |
-| Benachrichtigungen            | nicht angefragt ⏳                                                                                                                                                                                                                |
+| Berechtigung                  | Status                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Internet (Android `INTERNET`) | Nur für Open Food Facts: Barcode-Abfrage (lokal unbekannter Barcode) und die automatische Online-Produktsuche (nur der Suchtext). Die Lebensmittelsuche funktioniert auch ohne Internet. Sonst keine Verbindungen.                                                                                                                                                                                                |
+| Standort                      | nicht angefragt ⏳ (siehe [GPS_ARCHITECTURE.md](GPS_ARCHITECTURE.md))                                                                                                                                                                                                                                                                                                                                             |
+| Health Connect (Android)      | Nur nach Einschalten durch den Nutzer: Leserechte für Gewicht, Schritte, aktive Kalorien, Trainings (Aktivitäten) und Distanz. Seit Phase 30 zusätzlich – nur wenn der Nutzer „Einstellungen → App → Health Connect“ einschaltet – das eine Schreibrecht `WRITE_EXERCISE` (Trainingseinheiten). Keine weiteren Schreib-, keine Verlaufs- oder Hintergrundrechte. Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md). |
+| HealthKit (iOS)               | nicht angefragt ⏳                                                                                                                                                                                                                                                                                                                                                                                                |
+| Kamera                        | Nur für den Barcode-Scanner; angefragt erst beim Öffnen des Scanners. Das Bild wird auf dem Gerät ausgewertet (Android ZXing, iOS Apple Vision), nicht gespeichert und nicht gesendet.                                                                                                                                                                                                                            |
+| Benachrichtigungen            | nicht angefragt ⏳                                                                                                                                                                                                                                                                                                                                                                                                |
 
 ## Offene Punkte
 
@@ -323,3 +324,19 @@ dem Gerät unbekannt ist. Details in [OPEN_FOOD_FACTS.md](OPEN_FOOD_FACTS.md).
 4. Datenschutzerklärung, Einwilligungstexte, Store-Angaben (Google Play Data Safety, Apple
    Privacy Nutrition Label).
 5. Für die spätere Cloud: Auftragsverarbeitungsvertrag, EU-Region, Löschkonzept für Tombstones.
+
+## Health Connect: Übertragen eigener Trainings (Phase 30)
+
+Optional und **standardmäßig aus** (Einstellungen → App → Health Connect). Erst nach dem
+Einschalten und der Freigabe in Health Connect schreibt Kalethra eigene, abgeschlossene Trainings
+und manuell erfasste Aktivitäten als Trainingseinheit in Health Connect – lokal auf dem Gerät,
+ohne Server.
+
+| Wird geschrieben                                    | Wird **nie** geschrieben                                           |
+| --------------------------------------------------- | ------------------------------------------------------------------ |
+| Art der Einheit (z. B. Krafttraining, Tennis)       | Kalorien, Distanz, Sätze, Gewichte, Titel, Notizen                 |
+| Beginn und Ende                                     | aus Health Connect importierte Aktivitäten (nie zurückgeschrieben) |
+| technische ID der Einheit (`kalethra:workout:<id>`) | Profil, Gewicht, Ziele, Ernährung                                  |
+
+Ausschalten löscht nichts – weder in Kalethra noch in Health Connect. Protokolle nennen nur die
+Fehlerart, nie Daten eines Trainings. Details: [HEALTH_CONNECT.md](HEALTH_CONNECT.md#übertragen-kalethra--health-connect-phase-30).

@@ -1,6 +1,11 @@
 import { StorageService, type OpenedDatabase } from '@/core/database';
 import { getPlatform, httpGetJson } from '@/core/platform';
-import { createHealthPlatform, type HealthPlatform } from '@/core/platform/health';
+import {
+  createHealthExportPlatform,
+  createHealthPlatform,
+  type HealthExportPlatform,
+  type HealthPlatform,
+} from '@/core/platform/health';
 import {
   combineActivities,
   countableActivities,
@@ -13,6 +18,7 @@ import {
 } from '@/core/activity';
 import {
   ACTIVITY_WEIGHT_WINDOW_DAYS,
+  HealthExportService,
   HealthSyncService,
   mergeWeightDays,
   pickActivityWeight,
@@ -63,6 +69,11 @@ export interface AppServices {
   weight: WeightService;
   /** Health Connect import (read-only, local). Never writes Kalethra's own weight. */
   healthSync: HealthSyncService;
+  /**
+   * Optional export of Kalethra's own workouts and activities to Health Connect (off by
+   * default; Settings → App → Health Connect). Writes only, never reads.
+   */
+  healthExport: HealthExportService;
   training: TrainingServices;
   nutrition: NutritionServices;
   /** Read-only view on body weight for nutrition (weight itself lives in health). */
@@ -88,6 +99,8 @@ export function createServices(
   referenceCatalog: ReferenceCatalog = createBlsCatalog(),
   /** The device's health store; tests pass a fake. */
   healthPlatform: HealthPlatform = createHealthPlatform(),
+  /** Writing to the device's health store (Android only); tests pass a fake. */
+  healthExportPlatform: HealthExportPlatform = createHealthExportPlatform(),
 ): AppServices {
   const weight = new WeightService(new WeightRepository(db), clock);
   const profile = new ProfileService(new ProfileRepository(db), clock);
@@ -111,6 +124,18 @@ export function createServices(
     },
   };
   const activities = new ManualActivityService(db, clock, activityWeight);
+  // The export reads Kalethra's own records through their services – no SQL of its own.
+  const healthExport = new HealthExportService(
+    healthExportPlatform,
+    db,
+    {
+      workout: (profileId, id) => training.workouts.find(profileId, id),
+      workoutsSince: (profileId, from) => training.workouts.completedSince(profileId, from),
+      activity: (profileId, id) => activities.find(profileId, id),
+      activitiesBetween: (profileId, from, to) => activities.listBetween(profileId, from, to),
+    },
+    clock,
+  );
   // Versioned targets – also the switch "Aktivitätskalorien anrechnen" (kind activityCalories).
   const targets = new TargetService(db, clock);
   const bodyWeight: BodyWeightSource = {
@@ -289,6 +314,7 @@ export function createServices(
     storage: new StorageService(db, security, clock),
     weight,
     healthSync,
+    healthExport,
     training,
     nutrition,
     bodyWeight,

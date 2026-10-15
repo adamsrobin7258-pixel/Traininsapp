@@ -595,3 +595,13 @@ Details: [PRIVACY.md](PRIVACY.md). Kurzfassung für Entwickler:
   [PRIVACY.md](PRIVACY.md)); auf dem Xiaomi 15 Ultra validiert (SQLCipher 4.17.0
   Community). Erst danach wurde `LOCAL_DATABASE_ENCRYPTED` aktiviert und `weight_entries` angelegt.
 - Android-Backup und Geräteübertragung sind für alle App-Daten abgeschaltet.
+
+## Health-Connect-Export (Migration 16, Phase 30)
+
+`health_connect_exports` – Buchführung des optionalen Exports eigener Trainings
+(`source_kind = workout`) und manueller Aktivitäten (`activity`) nach Health Connect. Eine Zeile je
+Kalethra-Datensatz (eindeutig je Profil, Art, ID); `client_record_id` ist die stabile ID in
+Health Connect, `exported_version` der zuletzt geschriebene Stand (`updated_at` in ms), `status`
+`pending` · `exported` · `failed` · `skipped`, `last_error` nur ein Code. Rein additiv:
+`workouts` und `manual_activities` bleiben unverändert. Zugriff nur über
+`HealthExportRepository`; die Einstellung liegt in `app_settings` (`healthConnectExport`).

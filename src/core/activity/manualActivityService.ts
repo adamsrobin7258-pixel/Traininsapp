@@ -67,6 +67,11 @@ export class ManualActivityService {
     return this.repository.recent(profileId, limit);
   }
 
+  /** An activity, or `null` when it does not exist (anymore). */
+  async find(profileId: string, id: string): Promise<ManualActivity | null> {
+    return this.repository.find(profileId, id);
+  }
+
   async get(profileId: string, id: string): Promise<ManualActivity> {
     const activity = await this.repository.find(profileId, id);
     if (!activity) throw new ActivityError('not-found');

@@ -71,7 +71,7 @@ test('connects Health Connect after an explanation, shows the data and disconnec
   await section.getByRole('button', { name: /^Health Connect/ }).click();
   const sheet = page.getByRole('dialog');
   await expect(sheet.getByText(/ausschließlich für deine persönliche Übersicht/)).toBeVisible();
-  await expect(sheet.getByText('Kalethra schreibt nichts in Health Connect.')).toBeVisible();
+  await expect(sheet.getByText(/Diese Verbindung liest nur/)).toBeVisible();
   expect(await noHorizontalScroll(page)).toBe(true);
   await sheet.getByRole('button', { name: 'Mit Health Connect verbinden' }).click();
   await expect(sheet.getByRole('status')).toContainText('Verbunden');

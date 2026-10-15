@@ -1,7 +1,9 @@
-# Health Connect (Phase 6.2 / 6.3)
+# Health Connect (Phase 6.2 / 6.3 / 30)
 
 Kalethra liest auf Android ausgewählte Gesundheitsdaten aus Health Connect: Gewicht, Schritte,
 aktive Kalorien (Phase 6.2) und Aktivitäten mit Dauer, aktiven Kalorien und Distanz (Phase 6.3).
+Seit Phase 30 kann es – optional, standardmäßig aus – eigene Trainings und Aktivitäten als
+Trainingseinheiten **nach** Health Connect übertragen ([Übertragen](#übertragen-kalethra--health-connect-phase-30)).
 Apple Health folgt in einer eigenen Phase.
 
 ## Grundsätze
@@ -135,16 +137,57 @@ selbst ab; alle lesen über `HealthSyncService`.
   alle 15 Minuten; manuell jederzeit. Upsert nach Health-Connect-ID (keine Duplikate, auch nach
   erneutem Verbinden); Entfernen nur nach vollständig erfolgreichem Lesen.
 
+## Übertragen: Kalethra → Health Connect (Phase 30)
+
+Einstellung **Einstellungen → App → Health Connect** – „Trainings und Aktivitäten aus Kalethra
+mit Health Connect synchronisieren.“ Standard: **aus**. Nur auf Android sichtbar (Health Connect
+vorhanden); auf iOS und im Web nie.
+
+| Thema          | Umsetzung                                                                                                                                                                                                                                                                                          |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Berechtigung   | Nur `WRITE_EXERCISE`. Angefragt beim Einschalten; der Schalter gilt erst als an, wenn Health Connect sie erteilt hat (danach erneut geprüft). Abgelehnt → bleibt aus, ruhiger Hinweis. Entzogen → „Berechtigung erforderlich“, „Berechtigung erteilen“, nichts geht verloren.                      |
+| Datentyp       | `ExerciseSessionRecord` (Trainingseinheit) mit Art, Beginn, Ende. **Keine Kalorien**, keine Distanz, keine Titel oder Notizen.                                                                                                                                                                     |
+| Krafttraining  | Kalethra-Trainingsarten Kraft, Hypertrophie, Powerlifting → `STRENGTH_TRAINING`; Gewichtheben → `WEIGHTLIFTING`; Calisthenics, Laufen, Gehen, Rad, Mobilität/Dehnen (`STRETCHING`), Sonstiges (`OTHER_WORKOUT`). Hyrox: kein passender Typ → nicht übertragen.                                     |
+| Aktivitäten    | Nur **manuell erfasste** (Kalethra), nie aus Health Connect importierte. 47 Sportarten mit passendem Typ (`ACTIVITY_EXPORT_TYPES`); ohne passenden Typ (Schwimmen ohne Becken/Freiwasser, Padel, Feldhockey, CrossFit, Zirkel, Seilspringen, Aerobic, Tai-Chi, Reiten …) und ohne Startzeit nicht. |
+| Zeitpunkt      | Direkt nach „Training beenden“ bzw. Speichern einer Aktivität. Beim Einschalten einmal die letzten 30 Tage. Beim App-Start und bei Rückkehr in den Vordergrund nur noch **wartende** Einträge (höchstens 50, Abbruch beim ersten Fehler) – nie die ganze Historie.                                 |
+| Duplikate      | Stabile `clientRecordId` `kalethra:workout:<id>` bzw. `kalethra:activity:<id>`: Health Connect aktualisiert statt neu anzulegen. Zusätzlich `health_connect_exports` mit geschriebener Version – Unverändertes wird nicht erneut gesendet (Neustart, erneutes Öffnen, Aus/An).                     |
+| Änderungen     | Korrigierte Trainingsdauer oder bearbeitete Aktivität → gleiche ID, neue Version (`clientRecordVersion` = `updated_at`) ersetzt die alte – aber nur für bereits bekannte Einträge, nie Historie „durch die Hintertür“.                                                                             |
+| Fehler         | Training/Aktivität ist **vorher** gespeichert; der Export läuft danach eigenständig und wirft nie. Fehlgeschlagen → `failed`, später erneut; ungültig/ohne Typ → `skipped`, nie wiederholt.                                                                                                        |
+| Aus            | Nichts wird geschrieben, nichts gelöscht – weder in Kalethra noch in Health Connect. Gelöschte Kalethra-Trainings bleiben in Health Connect.                                                                                                                                                       |
+| Kein Rückfluss | Der Import überspringt Einträge von `com.kalethra.app`; da keine Kalorien geschrieben werden, ändern sich auch die Tagessummen nicht.                                                                                                                                                              |
+
+### Architektur
+
+```
+modules/settings/HealthExportSection   Schalter, Status, Berechtigungen verwalten
+modules/training                       nach finish / Dauer-Korrektur / Aktivität speichern → exportWorkout/-Activity (fire-and-forget)
+app/HealthSyncTrigger                  retryWaiting bei Start und Vordergrund
+core/health/healthExport.ts            Regeln (rein): Typzuordnung, Session bauen
+core/health/healthExportService.ts     Ablauf, idempotent, seriell
+core/health/healthExportRepository.ts  SQL (health_connect_exports, app_settings)
+core/platform/health/export.ts         HealthExportPlatform; Android: registerPlugin('KalethraHealthExport')
+android/app/…/HealthExportPlugin.kt    natives Schreiben (connect-client 1.1.0)
+```
+
+Das Lesen bleibt bei `@capgo/capacitor-health`; dessen `saveSample` kann keine
+Trainingseinheiten schreiben und setzt keine `clientRecordId` – deshalb das eigene, kleine
+Plugin. Es nutzt dieselbe `connect-client`-Version, es kommt keine neue Bibliothek in die APK.
+Eine spätere Lesefunktion (z. B. Schlaf, Herzfrequenz) erweitert `HealthPlatform`, nicht den
+Export.
+
 ## Android-Konfiguration
 
 - Das Plugin deklariert über 40 Health-Berechtigungen. Das App-Manifest entfernt alle außer den
-  fünf Leserechten (`tools:node="remove"`). `tests/nativeConfig.test.ts` prüft das Manifest, die
+  fünf Leserechten und dem Schreibrecht `WRITE_EXERCISE` des Exports (`tools:node="remove"`). `tests/nativeConfig.test.ts` prüft das Manifest, die
   CI prüft die fertige APK (`aapt2 dump permissions`).
 - `<queries>` für `com.google.android.apps.healthdata`, die Begründungs-Activity
   (`ACTION_SHOW_PERMISSIONS_RATIONALE`) und der Android-14-Alias (`VIEW_PERMISSION_USAGE`) kommen
   aus dem Plugin-Manifest. Die Activity zeigt `public/privacypolicy.html` (offline).
 - minSdk 26, compile/target 36 – passend zum Plugin (minSdk 26, compileSdk 36,
   `connect-client` 1.1.0).
+- Phase 30: Kotlin im App-Modul (`kotlin-gradle-plugin` 2.4.20, wie das Health-Plugin),
+  `HealthExportPlugin` wird in `MainActivity` registriert. iOS bleibt unberührt (kein Plugin,
+  keine Abhängigkeit im Xcode-Projekt).
 
 ## Vor einer Play-Store-Veröffentlichung
 
@@ -153,4 +196,5 @@ selbst ab; alle lesen über `HealthSyncService`.
   Verantwortlichen ergänzen.
 - Begründung je Berechtigung: Gewicht (Übersicht), Schritte und aktive Kalorien (Tageswerte),
   Trainings (Aktivitätenliste, optionale Kalorienanrechnung), Distanz (Strecke der Aktivitäten;
-  technisch nötig für Kalorien pro Aktivität).
+  technisch nötig für Kalorien pro Aktivität), `WRITE_EXERCISE` (eigene Trainings auf Wunsch in
+  Health Connect speichern).

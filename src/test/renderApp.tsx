@@ -5,7 +5,7 @@ import { createRoutes } from '@/app/router';
 import { createServices, loadInitialState, type AppServices } from '@/app/services';
 import type { DatabaseSecurity } from '@/core/database';
 import type { ReferenceCatalog } from '@/core/nutrition';
-import type { HealthPlatform } from '@/core/platform/health';
+import type { HealthExportPlatform, HealthPlatform } from '@/core/platform/health';
 import { createTestDatabase, ENCRYPTED_TEST_SECURITY } from './database';
 import { FakeFoodProvider } from './fakeFoodProvider';
 import { createTestReferenceCatalog } from './testReferenceCatalog';
@@ -20,6 +20,8 @@ interface RenderAppOptions {
   referenceCatalog?: ReferenceCatalog;
   /** Health store stand-in; by default none (like the browser build). */
   healthPlatform?: HealthPlatform;
+  /** Health store stand-in for the export (writing); by default none. */
+  healthExportPlatform?: HealthExportPlatform;
 }
 
 /**
@@ -35,6 +37,7 @@ export async function renderApp(initialPath = '/', options: RenderAppOptions = {
     foodProvider,
     options.referenceCatalog ?? createTestReferenceCatalog(),
     options.healthPlatform,
+    options.healthExportPlatform,
   );
   if (options.prepare) {
     const profile = await services.profile.ensureLocalProfile();

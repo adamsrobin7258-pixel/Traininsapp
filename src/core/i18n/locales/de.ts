@@ -1306,11 +1306,34 @@ export const de = {
       other: 'Sonstige Aktivität',
     },
   },
+  healthExport: {
+    sectionTitle: 'Health Connect',
+    toggle: 'Mit Health Connect synchronisieren',
+    description: 'Trainings und Aktivitäten aus Kalethra mit Health Connect synchronisieren.',
+    footer:
+      'Optional und standardmäßig aus. Übertragen werden nur Art, Beginn und Ende deiner Trainings und erfassten Aktivitäten – keine Kalorien, keine Notizen. Ausschalten löscht nichts, weder in Kalethra noch in Health Connect.',
+    statusLabel: 'Status',
+    status: {
+      connected: 'Verbunden',
+      permissionRequired: 'Berechtigung erforderlich',
+      needsInstall: 'Health Connect nicht installiert',
+      unavailable: 'Nicht verfügbar',
+    },
+    grant: 'Berechtigung erteilen',
+    manage: 'Health-Connect-Berechtigungen verwalten',
+    onNote:
+      'Neue Trainings und Aktivitäten werden nach dem Speichern übertragen. Beim Einschalten wurden die letzten 30 Tage übernommen.',
+    offNote: 'Aus: Kalethra überträgt nichts an Health Connect.',
+    denied:
+      'Ohne Berechtigung kann Kalethra nichts übertragen. Kalethra funktioniert normal weiter – du kannst es jederzeit erneut versuchen.',
+    needsInstall: 'Installiere oder aktualisiere Health Connect, um Trainings zu übertragen.',
+    unavailable: 'Health Connect ist auf diesem Gerät gerade nicht verfügbar.',
+  },
   healthConnect: {
     name: 'Health Connect',
     sectionTitle: 'Gesundheitsdaten',
     sectionFooter:
-      'Optional. Kalethra liest nur, schreibt nichts und speichert die Werte verschlüsselt auf diesem Gerät.',
+      'Optional. Kalethra liest diese Werte und speichert sie verschlüsselt auf diesem Gerät. Was Kalethra selbst überträgt, legst du unten unter „Health Connect“ fest.',
     sheetTitle: 'Health Connect',
     countActivity: 'Aktivitätskalorien anrechnen',
     countActivityHint:
@@ -1348,7 +1371,8 @@ export const de = {
       distance: 'Strecke deiner Aktivitäten',
     },
     promises: {
-      readOnly: 'Kalethra schreibt nichts in Health Connect.',
+      readOnly:
+        'Diese Verbindung liest nur. Ob Kalethra eigene Trainings überträgt, legst du unter „Health Connect“ fest.',
       local:
         'Die Werte werden nur in Kalethra auf diesem Gerät gespeichert, verschlüsselt. Kalethra überträgt sie an keinen Server und synchronisiert sie in keine Cloud.',
       goals:

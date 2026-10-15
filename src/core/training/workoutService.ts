@@ -114,6 +114,16 @@ export class WorkoutService {
   }
 
   /** Trained minutes on a local day ; `null` if none. */
+  /** A workout without exercises, or `null` when it does not exist (anymore). */
+  async find(profileId: string, workoutId: string): Promise<Workout | null> {
+    return this.store.repos.workouts.findWorkout(profileId, workoutId);
+  }
+
+  /** Completed workouts started on or after a local day, oldest first (no sets). */
+  async completedSince(profileId: string, fromLocalDate: string): Promise<Workout[]> {
+    return this.store.repos.workouts.completedSince(profileId, fromLocalDate);
+  }
+
   async trainedMinutesOn(profileId: string, localDate: string): Promise<number | null> {
     const seconds = await this.store.repos.workouts.trainedSecondsOn(profileId, localDate);
     return seconds === null ? null : Math.round(seconds / 60);

@@ -47,7 +47,7 @@ describe('Health Connect settings', () => {
 
     const sheet = await openConnection();
     expect(sheet.getByText(/ausschließlich für deine persönliche Übersicht/)).toBeVisible();
-    expect(sheet.getByText('Kalethra schreibt nichts in Health Connect.')).toBeVisible();
+    expect(sheet.getByText(/Diese Verbindung liest nur/)).toBeVisible();
     expect(sheet.getByText(/an keinen Server/)).toBeVisible();
     expect(
       sheet.getByText(/richten sich weiter nur nach deinen eigenen Gewichtseinträgen/),

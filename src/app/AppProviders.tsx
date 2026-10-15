@@ -3,7 +3,7 @@ import { ActivityProvider } from '@/core/activity';
 import { I18nProvider } from '@/core/i18n';
 import { getDeviceLanguages } from '@/core/platform';
 import { resolveLocale, resolveTheme, SettingsProvider, useSettings } from '@/core/settings';
-import { HealthSyncProvider, WeightProvider } from '@/core/health';
+import { HealthExportProvider, HealthSyncProvider, WeightProvider } from '@/core/health';
 import { StorageProvider } from '@/core/storage';
 import { NutritionProvider } from '@/core/nutrition';
 import { TrainingProvider } from '@/core/training';
@@ -33,23 +33,25 @@ export function AppProviders({ services, initialState, children }: AppProvidersP
             <StorageProvider service={services.storage}>
               <WeightProvider service={services.weight}>
                 <HealthSyncProvider service={services.healthSync}>
-                  <TrainingProvider services={services.training}>
-                    <NutritionProvider services={services.nutrition}>
-                      <ActivityProvider service={services.activities}>
-                        <RecoveryProvider service={services.recovery}>
-                          <TargetsProvider service={services.targets}>
-                            <ScoreProvider service={services.score}>
-                              <ProgressGoalsProvider service={services.progress}>
-                                <NutritionGoalSync />
-                                <HealthSyncTrigger />
-                                {children}
-                              </ProgressGoalsProvider>
-                            </ScoreProvider>
-                          </TargetsProvider>
-                        </RecoveryProvider>
-                      </ActivityProvider>
-                    </NutritionProvider>
-                  </TrainingProvider>
+                  <HealthExportProvider service={services.healthExport}>
+                    <TrainingProvider services={services.training}>
+                      <NutritionProvider services={services.nutrition}>
+                        <ActivityProvider service={services.activities}>
+                          <RecoveryProvider service={services.recovery}>
+                            <TargetsProvider service={services.targets}>
+                              <ScoreProvider service={services.score}>
+                                <ProgressGoalsProvider service={services.progress}>
+                                  <NutritionGoalSync />
+                                  <HealthSyncTrigger />
+                                  {children}
+                                </ProgressGoalsProvider>
+                              </ScoreProvider>
+                            </TargetsProvider>
+                          </RecoveryProvider>
+                        </ActivityProvider>
+                      </NutritionProvider>
+                    </TrainingProvider>
+                  </HealthExportProvider>
                 </HealthSyncProvider>
               </WeightProvider>
             </StorageProvider>

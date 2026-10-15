@@ -45,9 +45,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
     <!--
-      Health Connect: read-only access to exactly these five data types – weight, steps, active
+      Health Connect: read access to exactly these five data types – weight, steps, active
       energy, exercise sessions (phase 6.3) and distance (the distance of those sessions; Health
-      Connect reports it together with their active energy). No write, history or background
+      Connect reports it together with their active energy). No history or background
       permission. Requested only after the user turns the integration on.
     -->
     <uses-permission android:name="android.permission.health.READ_WEIGHT" />
@@ -56,9 +56,15 @@
     <uses-permission android:name="android.permission.health.READ_EXERCISE" />
     <uses-permission android:name="android.permission.health.READ_DISTANCE" />
     <!--
+      Health Connect export (Settings → App → Health Connect, off by default): writing Kalethra's
+      own workouts and activities as exercise sessions. The only write permission – no calories,
+      no other record types. Requested only when the user turns the export on.
+    -->
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
+    <!--
       @capgo/capacitor-health declares many more health permissions in its own manifest. Kalethra
       must request only what it uses (Google Play health policy), so the merger removes the rest.
-      CI checks the merged APK for exactly the five permissions above.
+      CI checks the merged APK for exactly the six permissions kept here.
     -->
     <uses-permission android:name="android.permission.health.WRITE_STEPS" tools:node="remove" />
     <uses-permission android:name="android.permission.health.WRITE_DISTANCE" tools:node="remove" />

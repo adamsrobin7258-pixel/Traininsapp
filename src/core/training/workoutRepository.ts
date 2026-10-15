@@ -131,6 +131,20 @@ export class WorkoutRepository {
     return rows[0] ? toWorkout(rows[0]) : null;
   }
 
+  /**
+   * Completed workouts that started on or after a local day, oldest first – for the optional
+   * Health Connect export (core/health/healthExportService.ts). No exercises or sets.
+   */
+  async completedSince(profileId: string, fromLocalDate: string): Promise<Workout[]> {
+    const rows = await this.db.query<WorkoutRow>(
+      `SELECT * FROM workouts
+       WHERE profile_id = ? AND status = 'completed' AND local_date >= ?
+       ORDER BY started_at`,
+      [profileId, fromLocalDate],
+    );
+    return rows.map(toWorkout);
+  }
+
   async loadDetail(profileId: string, id: string): Promise<WorkoutDetail | null> {
     const workout = await this.findWorkout(profileId, id);
     if (!workout) return null;

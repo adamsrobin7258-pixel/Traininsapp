@@ -81,6 +81,7 @@ export default tseslint.config(
             'useHealthSync',
             'useImportedHealthData',
             'useHealthAutoSync',
+            'useHealthExport',
             'useActivities',
             'useActivityData',
             'useRecovery',

@@ -577,6 +577,20 @@ Geschäftslogik, Datenquellen, Abläufe, Navigation und Datenbank unverändert. 
 - Keine Bilder ergänzt; 3D-Körper unverändert
 - Offen: Gerätetest
 
+## Phase 30 – Trainings und Aktivitäten an Health Connect übertragen ✅ (Version 0.43.0)
+
+- Einstellungen → App → Health Connect: Schalter „Trainings und Aktivitäten aus Kalethra mit
+  Health Connect synchronisieren“, standardmäßig aus, nur auf Android; Status „Verbunden“ /
+  „Berechtigung erforderlich“, Berechtigungen verwalten
+- Eigenes kleines Android-Plugin (`HealthExportPlugin.kt`): nur `WRITE_EXERCISE`, nur
+  Trainingseinheiten mit Art, Beginn, Ende – keine Kalorien; stabile `clientRecordId`
+- Abgeschlossene Kalethra-Trainings und manuell erfasste Aktivitäten (mit passendem Typ und
+  Startzeit); importierte Aktivitäten nie
+- Beim Einschalten einmal die letzten 30 Tage, danach nach jedem Speichern; wartende Einträge
+  bei Start/Vordergrund; keine Duplikate (ID + `health_connect_exports`, Migration 16)
+- Fehler blockieren nie einen Trainingsabschluss; Aus löscht nichts; iOS unverändert
+- Offen: Gerätetest, nativer Build in der CI (lokal kein Android-SDK)
+
 ## Phase 29 – Anfrage verstehen, Eignung prüfen, dann sortieren ✅ (Version 0.42.0)
 
 - Ursache des „Burger“-Treffers bei „Milbona Käse“ behoben: Punkte konnten fehlende

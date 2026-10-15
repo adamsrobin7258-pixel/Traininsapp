@@ -1,4 +1,5 @@
 import { useId, useState, type SyntheticEvent } from 'react';
+import { useHealthExport } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import {
   parseRepsInput,
@@ -21,6 +22,7 @@ export function WorkoutDetailsSheet({
 }) {
   const { t } = useI18n();
   const { mutate } = useTraining();
+  const { exportWorkout } = useHealthExport();
   const titleId = useId();
   const notesId = useId();
   const durationId = useId();
@@ -53,6 +55,8 @@ export function WorkoutDetailsSheet({
         await s.workouts.updateDetails(profileId, workout.id, title, notes);
         if (minutes !== null) await s.workouts.updateDuration(profileId, workout.id, minutes);
       });
+      // A corrected duration updates the session in Health Connect – only if it was exported.
+      if (minutes !== null) exportWorkout(workout.id, { onlyKnown: true });
       onClose();
     } catch {
       setFailed(true);

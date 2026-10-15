@@ -104,7 +104,7 @@ describe('Android privacy configuration', () => {
     expect(manifest).not.toMatch(/ACCESS_(FINE|COARSE|BACKGROUND)_LOCATION/);
   });
 
-  it('keeps only five Health Connect read permissions and removes everything else', () => {
+  it('keeps five Health Connect read permissions and the one export write permission, removes the rest', () => {
     // Every health permission the app keeps (not marked tools:node="remove").
     const kept = [
       ...manifest.matchAll(
@@ -120,8 +120,12 @@ describe('Android privacy configuration', () => {
       'android.permission.health.READ_EXERCISE',
       'android.permission.health.READ_STEPS',
       'android.permission.health.READ_WEIGHT',
+      // Export (Settings → App → Health Connect): exercise sessions only, never calories.
+      'android.permission.health.WRITE_EXERCISE',
     ]);
-    expect(manifest).not.toMatch(/WRITE_[A-Z_]+"\s*\/>/);
+    expect(kept.filter((name) => name?.includes('.WRITE_'))).toEqual([
+      'android.permission.health.WRITE_EXERCISE',
+    ]);
     expect(manifest).not.toMatch(/READ_HEALTH_DATA_(HISTORY|IN_BACKGROUND)/);
 
     // Every permission the plugin declares is either kept above or removed by the merger.
@@ -143,5 +147,17 @@ describe('Android privacy configuration', () => {
 
   it('keeps the health plugin out of the iOS app until Apple Health is implemented', () => {
     expect(capacitorConfig.ios?.includePlugins).not.toContain('@capgo/capacitor-health');
+  });
+
+  it('registers the own Health Connect export plugin on Android only', () => {
+    const activity = read('android/app/src/main/java/com/kalethra/app/MainActivity.java');
+    expect(activity).toContain('registerPlugin(HealthExportPlugin.class)');
+    const plugin = read('android/app/src/main/java/com/kalethra/app/HealthExportPlugin.kt');
+    // One permission, one record type, no reading through this plugin.
+    expect(plugin).toContain('HealthPermission.getWritePermission(ExerciseSessionRecord::class)');
+    expect(plugin).not.toMatch(/getReadPermission|readRecords|ActiveCaloriesBurnedRecord/);
+    expect(plugin).toContain('clientRecordId = clientRecordId');
+    // Nothing of it in the iOS project.
+    expect(read('ios/App/App.xcodeproj/project.pbxproj')).not.toMatch(/HealthExport|HealthConnect/);
   });
 });

@@ -12,6 +12,7 @@ import {
 import { BrandLogo, List, ListRow, SceneArt, Screen, Section, SegmentedControl } from '@/ui';
 import { DataSourcesSheet } from '../components/DataSourcesSheet';
 import { HealthDataSection } from '../components/HealthDataSection';
+import { HealthExportSection } from '../components/HealthExportSection';
 import { PrivacySection } from '../components/PrivacySection';
 import { TrainingAppSection } from '../components/TrainingSettingsRows';
 import { WaterQuickAmountsSection } from '../components/WaterQuickAmountsRow';
@@ -23,7 +24,7 @@ function reportError(error: unknown) {
 
 /**
  * Einstellungen → App: how Kalethra looks and behaves – appearance, units, language, water quick
- * buttons, Health Connect, privacy and storage, about. No goals here (Einstellungen → Ziele).
+ * buttons, Health Connect (reading and the optional export), privacy and storage, about. No goals here (Einstellungen → Ziele).
  */
 export function AppSettingsScreen() {
   const { t } = useI18n();
@@ -92,6 +93,8 @@ export function AppSettingsScreen() {
       <TrainingAppSection />
 
       <HealthDataSection />
+
+      <HealthExportSection />
 
       <PrivacySection />
 

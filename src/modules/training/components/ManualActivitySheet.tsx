@@ -14,7 +14,7 @@ import {
   type ManualActivity,
   type SportDefinition,
 } from '@/core/activity';
-import { formatWeight } from '@/core/health';
+import { formatWeight, useHealthExport } from '@/core/health';
 import { useI18n, type TranslationKey } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { parseLocalDateKey, toLocalDateKey } from '@/shared/lib/date';
@@ -199,6 +199,7 @@ function ActivityForm({
   const { t, locale } = useI18n();
   const { weightUnit } = useSettings().settings;
   const { service, profileId, create, update } = useActivities();
+  const { exportActivity } = useHealthExport();
   const ids = { date: useId(), time: useId(), duration: useId(), distance: useId(), kcal: useId() };
   const today = toLocalDateKey(new Date());
   const sport = sportById(form.sportId);
@@ -275,8 +276,14 @@ function ActivityForm({
     setBusy(true);
     setFailed(false);
     try {
-      if (activity) await update(activity.id, result.input);
-      else await create(result.input);
+      // Saved first; the optional Health Connect export runs on its own afterwards. An edit
+      // updates only an activity the export already knows (no history by the back door).
+      if (activity) {
+        await update(activity.id, result.input);
+        exportActivity(activity.id, { onlyKnown: true });
+      } else {
+        exportActivity((await create(result.input)).id);
+      }
       onClose();
     } catch (error) {
       setBusy(false);

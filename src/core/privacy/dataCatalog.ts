@@ -111,6 +111,16 @@ export const DATA_CATALOG: readonly TableClassification[] = [
     syncable: false,
   },
   {
+    // Which own workouts and activities were written to Health Connect (export bookkeeping:
+    // IDs, status, times – no workout data). Device-bound, like the export setting.
+    table: 'health_connect_exports',
+    category: 'activity',
+    sensitivity: 'health',
+    exportable: false,
+    deletedWithProfile: true,
+    syncable: false,
+  },
+  {
     table: 'daily_activity',
     category: 'activity',
     sensitivity: 'health',

@@ -1288,11 +1288,34 @@ export const en: TranslationSchema = {
       other: 'Other activity',
     },
   },
+  healthExport: {
+    sectionTitle: 'Health Connect',
+    toggle: 'Sync with Health Connect',
+    description: 'Sync workouts and activities from Kalethra with Health Connect.',
+    footer:
+      'Optional and off by default. Only the type, start and end of your workouts and logged activities are shared – no calories, no notes. Turning it off deletes nothing, neither in Kalethra nor in Health Connect.',
+    statusLabel: 'Status',
+    status: {
+      connected: 'Connected',
+      permissionRequired: 'Permission required',
+      needsInstall: 'Health Connect not installed',
+      unavailable: 'Not available',
+    },
+    grant: 'Grant permission',
+    manage: 'Manage Health Connect permissions',
+    onNote:
+      'New workouts and activities are shared after saving. When turned on, the last 30 days were added.',
+    offNote: 'Off: Kalethra shares nothing with Health Connect.',
+    denied:
+      'Without permission Kalethra cannot share anything. Kalethra keeps working as usual – you can try again any time.',
+    needsInstall: 'Install or update Health Connect to share workouts.',
+    unavailable: 'Health Connect is not available on this device right now.',
+  },
   healthConnect: {
     name: 'Health Connect',
     sectionTitle: 'Health data',
     sectionFooter:
-      'Optional. Kalethra only reads, writes nothing and stores the values encrypted on this device.',
+      'Optional. Kalethra reads these values and stores them encrypted on this device. What Kalethra shares itself is set below under “Health Connect”.',
     sheetTitle: 'Health Connect',
     countActivity: 'Count activity calories',
     countActivityHint:
@@ -1330,7 +1353,8 @@ export const en: TranslationSchema = {
       distance: 'Distance of your activities',
     },
     promises: {
-      readOnly: 'Kalethra writes nothing to Health Connect.',
+      readOnly:
+        'This connection only reads. Whether Kalethra shares its own workouts is set under “Health Connect”.',
       local:
         'The values are stored only in Kalethra on this device, encrypted. Kalethra sends them to no server and syncs them to no cloud.',
       goals:

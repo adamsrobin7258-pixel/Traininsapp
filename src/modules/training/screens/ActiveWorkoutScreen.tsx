@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router';
 import { ROUTES, TRAINING_LINKS } from '@/app/routes';
+import { useHealthExport } from '@/core/health';
 import { useI18n } from '@/core/i18n';
 import { useSettings } from '@/core/settings';
 import { useTraining, useTrainingData, workoutDisplayTitle } from '@/core/training';
@@ -31,6 +32,7 @@ type View = 'focus' | 'list';
 export function ActiveWorkoutScreen() {
   const { t } = useI18n();
   const { mutate } = useTraining();
+  const { exportWorkout } = useHealthExport();
   const { restTimerSeconds } = useSettings().settings;
   const navigate = useNavigate();
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -144,6 +146,9 @@ export function ActiveWorkoutScreen() {
               setFinishing(null);
               throw error;
             }
+            // Saved first; the optional Health Connect export runs on its own and can never
+            // undo or delay finishing (it does nothing while the export is off).
+            exportWorkout(workout.id);
             // The finished workout opens with its summary; back leads to Training.
             await navigate(TRAINING_LINKS.workout(workout.id), {
               replace: true,

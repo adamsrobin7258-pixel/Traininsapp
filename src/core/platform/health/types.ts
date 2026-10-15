@@ -5,8 +5,8 @@
  *                                                                          ├─ Android: Health Connect
  *                                                                          └─ web/tests: unavailable or fake
  *
- * Domain code depends only on these types, never on Capacitor or the plugin. Read-only: no
- * adapter writes anything into the platform's health store. Units are normalised here:
+ * Domain code depends only on these types, never on Capacitor or the plugin. Read-only: this
+ * contract writes nothing; the optional export has its own contract (`export.ts`). Units are normalised here:
  * kilograms, step counts, kilocalories; times as ISO-8601 UTC.
  */
 

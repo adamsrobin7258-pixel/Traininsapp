@@ -16,7 +16,10 @@ const PLUGIN_TYPES: Record<HealthDataKind, HealthDataType> = {
   distance: 'distance',
 };
 
-/** Kalethra writes nothing to Health Connect; anything attributed to it is skipped anyway. */
+/**
+ * Sessions Kalethra wrote itself (optional export, `export.ts`) are skipped on import – they
+ * are Kalethra's own workouts and activities, never imported back as activities.
+ */
 const OWN_PACKAGE = 'com.kalethra.app';
 
 function toAccess(
@@ -28,7 +31,7 @@ function toAccess(
 }
 
 function readOptions(kinds: readonly HealthDataKind[]) {
-  // Read only. No write scopes and no history access (reads stay within the last 30 days).
+  // Read only – writing is the export plugin's job (`export.ts`). No history access (reads stay within the last 30 days).
   return { read: kinds.map((kind) => PLUGIN_TYPES[kind]) };
 }
 
